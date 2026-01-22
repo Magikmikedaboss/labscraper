@@ -1,0 +1,126 @@
+entity_type,entity_name,entity_variant,role,event_count,paper_count,original_variants,first_seen,last_seen
+assay,LC-MS,assay,primary,85,7,LC-MS; LC-MS/MS; QTOF; mass spectrometer; mass spectrometry; triple quadrupole,2026-01-22T20:07:55Z,2026-01-22T20:09:22Z
+pathway,AGGREGATION,pathway,primary,24,5,aggregation,2026-01-22T20:08:03Z,2026-01-22T20:09:23Z
+model,HUMAN,organism,context,23,9,HUMAN; Humans,2026-01-22T20:07:55Z,2026-01-22T20:09:25Z
+assay,HPLC,assay,primary,19,5,HPLC; RP-HPLC; liquid chromatography,2026-01-22T20:07:55Z,2026-01-22T20:09:23Z
+model,SERUM,biofluid,context,18,6,SERUM,2026-01-22T20:07:56Z,2026-01-22T20:09:23Z
+assay,QUANTIFICATION,assay,primary,16,4,quantification; quantitation,2026-01-22T20:07:55Z,2026-01-22T20:09:19Z
+assay,CHROMATOGRAPHY,assay,primary,15,5,chromatography,2026-01-22T20:07:55Z,2026-01-22T20:09:15Z
+model,PLASMA,biofluid,context,15,6,Plasma,2026-01-22T20:07:59Z,2026-01-22T20:09:20Z
+model,IN VIVO,unknown,context,15,4,In vivo,2026-01-22T20:07:59Z,2026-01-22T20:09:21Z
+stem_cell,MSC,,primary,11,1,MSC,2026-01-22T20:09:14Z,2026-01-22T20:09:19Z
+compound,SEMAGLUTIDE,drug,primary,10,2,SEMAGLUTIDE,2026-01-22T20:08:32Z,2026-01-22T20:09:12Z
+assay,PURIFICATION,assay,primary,10,4,SPE; purification,2026-01-22T20:07:55Z,2026-01-22T20:09:14Z
+model,FBS,unknown,context,10,2,FBS; Fetal bovine serum,2026-01-22T20:07:58Z,2026-01-22T20:09:16Z
+model,RAT,organism,context,9,1,RAT,2026-01-22T20:09:10Z,2026-01-22T20:09:12Z
+pathway,PEPTIDE DEGRADATION,pathway,primary,9,2,peptide degradation,2026-01-22T20:07:55Z,2026-01-22T20:09:19Z
+target,KINASE,protein,primary,8,2,KINASE,2026-01-22T20:08:16Z,2026-01-22T20:08:46Z
+indication,CANCER,disease,primary,8,4,cancer,2026-01-22T20:08:05Z,2026-01-22T20:09:22Z
+model,CELL CULTURE,unknown,context,8,2,Cell culture,2026-01-22T20:07:55Z,2026-01-22T20:09:18Z
+compound,GLUCAGON,drug,primary,8,3,GLUCAGON,2026-01-22T20:08:02Z,2026-01-22T20:09:12Z
+assay,affinity,metric,primary,7,4,affinity,2026-01-22T20:07:57Z,2026-01-22T20:09:13Z
+model,TISSUE,unknown,context,7,5,Tissue,2026-01-22T20:07:55Z,2026-01-22T20:09:25Z
+compound,LIRAGLUTIDE,drug,primary,7,5,LIRAGLUTIDE,2026-01-22T20:08:06Z,2026-01-22T20:09:11Z
+pathway,ACETYLATION,pathway,primary,7,2,acetylation,2026-01-22T20:09:18Z,2026-01-22T20:09:23Z
+target,RECEPTOR,protein,primary,6,4,RECEPTOR,2026-01-22T20:08:14Z,2026-01-22T20:09:12Z
+assay,efficacy,metric,primary,6,3,efficacy,2026-01-22T20:08:42Z,2026-01-22T20:09:14Z
+model,IN VITRO,unknown,context,6,4,In vitro,2026-01-22T20:07:59Z,2026-01-22T20:09:21Z
+indication,ALZHEIMER,disease,primary,6,2,Alzheimer; Alzheimer's disease,2026-01-22T20:08:31Z,2026-01-22T20:09:08Z
+assay,MS/MS,assay,primary,4,3,MS/MS,2026-01-22T20:07:59Z,2026-01-22T20:09:23Z
+assay,half-life,metric,primary,4,2,half-life,2026-01-22T20:08:16Z,2026-01-22T20:09:05Z
+pathway,PHOSPHORYLATION,pathway,primary,4,2,phosphorylation,2026-01-22T20:08:13Z,2026-01-22T20:08:58Z
+assay,internal standard,assay,primary,4,1,internal standard,2026-01-22T20:07:56Z,2026-01-22T20:07:59Z
+model,Culture media,unknown,primary,4,2,Culture media,2026-01-22T20:07:56Z,2026-01-22T20:09:18Z
+pathway,migration,pathway,primary,4,2,migration,2026-01-22T20:08:13Z,2026-01-22T20:09:18Z
+model,BLOOD,biofluid,context,4,3,BLOOD,2026-01-22T20:07:59Z,2026-01-22T20:09:20Z
+pathway,oxidation,pathway,primary,4,2,oxidation,2026-01-22T20:08:20Z,2026-01-22T20:09:05Z
+assay,mobile phase,assay,primary,4,2,mobile phase,2026-01-22T20:07:57Z,2026-01-22T20:09:11Z
+assay,bioavailability,metric,primary,3,3,bioavailability,2026-01-22T20:08:30Z,2026-01-22T20:09:14Z
+assay,accuracy,assay,primary,3,1,accuracy,2026-01-22T20:09:11Z,2026-01-22T20:09:11Z
+pathway,glycosylation,pathway,primary,3,3,glycosylation,2026-01-22T20:08:16Z,2026-01-22T20:09:22Z
+indication,DIABETES,disease,primary,3,1,diabetes,2026-01-22T20:09:10Z,2026-01-22T20:09:12Z
+assay,clearance,metric,primary,3,2,clearance,2026-01-22T20:08:16Z,2026-01-22T20:08:32Z
+pathway,proliferation,pathway,primary,3,3,proliferation,2026-01-22T20:08:36Z,2026-01-22T20:09:19Z
+assay,microscopy,assay,primary,3,2,microscopy,2026-01-22T20:08:11Z,2026-01-22T20:09:19Z
+assay,reproducibility,assay,primary,3,3,reproducibility,2026-01-22T20:07:58Z,2026-01-22T20:09:11Z
+stem_cell,stem cell,,primary,3,2,stem cell,2026-01-22T20:09:13Z,2026-01-22T20:09:25Z
+assay,retention time,assay,primary,3,1,retention time,2026-01-22T20:07:57Z,2026-01-22T20:07:58Z
+model,Endothelial cells,unknown,primary,3,1,Endothelial cells,2026-01-22T20:09:14Z,2026-01-22T20:09:19Z
+assay,selectivity,metric,primary,3,1,selectivity,2026-01-22T20:08:42Z,2026-01-22T20:08:46Z
+pathway,PROTEOLYSIS,pathway,primary,2,1,proteolysis,2026-01-22T20:08:31Z,2026-01-22T20:08:31Z
+pathway,UBIQUITINATION,pathway,primary,2,2,ubiquitination,2026-01-22T20:08:58Z,2026-01-22T20:09:22Z
+stem_cell,mesenchymal,,primary,2,1,mesenchymal,2026-01-22T20:09:14Z,2026-01-22T20:09:15Z
+compound,CALCITONIN,drug,primary,2,1,CALCITONIN,2026-01-22T20:08:49Z,2026-01-22T20:09:01Z
+assay,quadrupole,assay,primary,2,2,quadrupole,2026-01-22T20:08:02Z,2026-01-22T20:09:10Z
+assay,NMR,assay,primary,2,2,NMR,2026-01-22T20:08:02Z,2026-01-22T20:08:22Z
+pathway,proteasome,pathway,primary,2,1,proteasome,2026-01-22T20:08:43Z,2026-01-22T20:08:44Z
+assay,electrospray ionization,assay,primary,2,2,electrospray ionization,2026-01-22T20:07:59Z,2026-01-22T20:08:02Z
+indication,TYPE 2 DIABETES,disease,primary,2,1,type 2 diabetes,2026-01-22T20:09:10Z,2026-01-22T20:09:12Z
+assay,precision,assay,primary,2,2,precision,2026-01-22T20:08:08Z,2026-01-22T20:09:11Z
+assay,validation,assay,primary,2,2,validation,2026-01-22T20:07:59Z,2026-01-22T20:09:09Z
+assay,optimization,assay,primary,2,2,optimization,2026-01-22T20:07:59Z,2026-01-22T20:08:15Z
+pathway,proteolytic cleavage,pathway,primary,2,2,proteolytic cleavage,2026-01-22T20:07:59Z,2026-01-22T20:09:20Z
+model,MOUSE,organism,context,1,1,MICE,2026-01-22T20:09:02Z,2026-01-22T20:09:02Z
+target,ELASTASE,protein,primary,1,1,ELASTASE,2026-01-22T20:08:31Z,2026-01-22T20:08:31Z
+assay,precipitation,assay,primary,1,1,precipitation,2026-01-22T20:08:59Z,2026-01-22T20:08:59Z
+model,CSF,biofluid,primary,1,1,CSF,2026-01-22T20:08:49Z,2026-01-22T20:08:49Z
+assay,AUC,metric,primary,1,1,AUC,2026-01-22T20:08:33Z,2026-01-22T20:08:33Z
+model,RPMI,unknown,primary,1,1,RPMI,2026-01-22T20:09:16Z,2026-01-22T20:09:16Z
+model,Serum-free medium,unknown,primary,1,1,Serum-free medium,2026-01-22T20:09:16Z,2026-01-22T20:09:16Z
+stem_cell,stem-cell,,primary,1,1,stem-cell,2026-01-22T20:09:25Z,2026-01-22T20:09:25Z
+assay,therapeutic index,metric,primary,1,1,therapeutic index,2026-01-22T20:08:44Z,2026-01-22T20:08:44Z
+target,CARRIER PROTEIN,protein,primary,1,1,CARRIER PROTEIN,2026-01-22T20:08:17Z,2026-01-22T20:08:17Z
+target,REDUCTASE,protein,primary,1,1,REDUCTASE,2026-01-22T20:09:05Z,2026-01-22T20:09:05Z
+pathway,peptide cleavage,pathway,primary,1,1,peptide cleavage,2026-01-22T20:08:18Z,2026-01-22T20:08:18Z
+assay,repeatability,assay,primary,1,1,repeatability,2026-01-22T20:07:57Z,2026-01-22T20:07:57Z
+indication,lung cancer,disease,primary,1,1,lung cancer,2026-01-22T20:08:05Z,2026-01-22T20:08:05Z
+compound,ETELCALCETIDE,drug,primary,1,1,ETELCALCETIDE,2026-01-22T20:08:35Z,2026-01-22T20:08:35Z
+pathway,cell death,pathway,primary,1,1,cell death,2026-01-22T20:08:05Z,2026-01-22T20:08:05Z
+compound,PLECANATIDE,drug,primary,1,1,PLECANATIDE,2026-01-22T20:08:35Z,2026-01-22T20:08:35Z
+indication,HIV,disease,primary,1,1,HIV,2026-01-22T20:08:02Z,2026-01-22T20:08:02Z
+target,EXOPEPTIDASE,protein,primary,1,1,EXOPEPTIDASE,2026-01-22T20:09:14Z,2026-01-22T20:09:14Z
+assay,potency,metric,primary,1,1,potency,2026-01-22T20:09:10Z,2026-01-22T20:09:10Z
+pathway,amyloid formation,pathway,primary,1,1,amyloid formation,2026-01-22T20:09:00Z,2026-01-22T20:09:00Z
+assay,ELISA,assay,primary,1,1,ELISA,2026-01-22T20:08:22Z,2026-01-22T20:08:22Z
+pathway,reduction,pathway,primary,1,1,reduction,2026-01-22T20:08:20Z,2026-01-22T20:08:20Z
+assay,stationary phase,assay,primary,1,1,stationary phase,2026-01-22T20:07:58Z,2026-01-22T20:07:58Z
+pathway,MEK,pathway,primary,1,1,MEK,2026-01-22T20:08:44Z,2026-01-22T20:08:44Z
+pathway,enzymatic degradation,pathway,primary,1,1,enzymatic degradation,2026-01-22T20:09:23Z,2026-01-22T20:09:23Z
+target,EGFR,protein,primary,1,1,EGFR,2026-01-22T20:08:43Z,2026-01-22T20:08:43Z
+assay,quality control,assay,primary,1,1,quality control,2026-01-22T20:08:09Z,2026-01-22T20:08:09Z
+assay,time-of-flight,assay,primary,1,1,time-of-flight,2026-01-22T20:08:02Z,2026-01-22T20:08:02Z
+assay,reverse phase chromatography,assay,primary,1,1,reverse phase chromatography,2026-01-22T20:07:58Z,2026-01-22T20:07:58Z
+target,LIGASE,protein,primary,1,1,LIGASE,2026-01-22T20:08:45Z,2026-01-22T20:08:45Z
+model,Mitochondria,unknown,primary,1,1,Mitochondria,2026-01-22T20:08:05Z,2026-01-22T20:08:05Z
+target,COX2,protein,primary,1,1,COX2,2026-01-22T20:08:43Z,2026-01-22T20:08:43Z
+model,MEM,unknown,primary,1,1,MEM,2026-01-22T20:08:03Z,2026-01-22T20:08:03Z
+assay,tandem mass spectrometry,assay,primary,1,1,tandem mass spectrometry,2026-01-22T20:08:06Z,2026-01-22T20:08:06Z
+peptide,KYNETWRSED,,primary,1,1,KYNETWRSED,2026-01-22T20:09:22Z,2026-01-22T20:09:22Z
+compound,OCTREOTIDE,drug,primary,1,1,OCTREOTIDE,2026-01-22T20:08:04Z,2026-01-22T20:08:04Z
+model,In situ,unknown,primary,1,1,In situ,2026-01-22T20:08:09Z,2026-01-22T20:08:09Z
+target,KALLIKREIN,protein,primary,1,1,KALLIKREIN,2026-01-22T20:08:34Z,2026-01-22T20:08:34Z
+pathway,Ras,pathway,primary,1,1,Ras,2026-01-22T20:08:16Z,2026-01-22T20:08:16Z
+indication,anxiety,disease,primary,1,1,anxiety,2026-01-22T20:09:23Z,2026-01-22T20:09:23Z
+assay,dynamic range,assay,primary,1,1,dynamic range,2026-01-22T20:09:10Z,2026-01-22T20:09:10Z
+compound,LINACLOTIDE,drug,primary,1,1,LINACLOTIDE,2026-01-22T20:08:31Z,2026-01-22T20:08:31Z
+target,THROMBIN,protein,primary,1,1,THROMBIN,2026-01-22T20:08:14Z,2026-01-22T20:08:14Z
+model,Bovine serum albumin,unknown,primary,1,1,Bovine serum albumin,2026-01-22T20:08:59Z,2026-01-22T20:08:59Z
+assay,ion exchange chromatography,assay,primary,1,1,ion exchange chromatography,2026-01-22T20:08:02Z,2026-01-22T20:08:02Z
+compound,ABALOPARATIDE,drug,primary,1,1,ABALOPARATIDE,2026-01-22T20:08:35Z,2026-01-22T20:08:35Z
+compound,TERIPARATIDE,drug,primary,1,1,TERIPARATIDE,2026-01-22T20:08:31Z,2026-01-22T20:08:31Z
+assay,ion trap,assay,primary,1,1,ion trap,2026-01-22T20:07:56Z,2026-01-22T20:07:56Z
+pathway,translation,pathway,primary,1,1,translation,2026-01-22T20:09:25Z,2026-01-22T20:09:25Z
+assay,evaporation,assay,primary,1,1,evaporation,2026-01-22T20:07:56Z,2026-01-22T20:07:56Z
+pathway,methylation,pathway,primary,1,1,methylation,2026-01-22T20:08:15Z,2026-01-22T20:08:15Z
+target,ION CHANNEL,protein,primary,1,1,ION CHANNEL,2026-01-22T20:08:45Z,2026-01-22T20:08:45Z
+pathway,oxidative stress,pathway,primary,1,1,oxidative stress,2026-01-22T20:09:06Z,2026-01-22T20:09:06Z
+assay,SEC,assay,primary,1,1,SEC,2026-01-22T20:08:02Z,2026-01-22T20:08:02Z
+model,MSC,unknown,primary,1,1,MSC,2026-01-22T20:07:56Z,2026-01-22T20:07:56Z
+target,CHYMOTRYPSIN,protein,primary,1,1,CHYMOTRYPSIN,2026-01-22T20:08:31Z,2026-01-22T20:08:31Z
+assay,calibration,assay,primary,1,1,calibration,2026-01-22T20:09:11Z,2026-01-22T20:09:11Z
+target,TRYPSIN,protein,primary,1,1,TRYPSIN,2026-01-22T20:08:31Z,2026-01-22T20:08:31Z
+pathway,angiogenesis,pathway,primary,1,1,angiogenesis,2026-01-22T20:09:13Z,2026-01-22T20:09:13Z
+assay,MRM,assay,primary,1,1,MRM,2026-01-22T20:09:11Z,2026-01-22T20:09:11Z
+assay,affinity chromatography,assay,primary,1,1,affinity chromatography,2026-01-22T20:08:16Z,2026-01-22T20:08:16Z
+target,BIP,protein,primary,1,1,BIP,2026-01-22T20:08:04Z,2026-01-22T20:08:04Z
+assay,freeze-drying,assay,primary,1,1,freeze-drying,2026-01-22T20:09:01Z,2026-01-22T20:09:01Z

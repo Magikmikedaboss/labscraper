@@ -1,0 +1,12 @@
+entity_type,entity_name,entity_variant,role,event_count,paper_count,original_variants,first_seen,last_seen
+model,HUMAN,organism,context,23,9,HUMAN; Humans,2026-01-22T20:07:55Z,2026-01-22T20:09:25Z
+model,SERUM,biofluid,context,18,6,SERUM,2026-01-22T20:07:56Z,2026-01-22T20:09:23Z
+model,PLASMA,biofluid,context,15,6,Plasma,2026-01-22T20:07:59Z,2026-01-22T20:09:20Z
+model,IN VIVO,unknown,context,15,4,In vivo,2026-01-22T20:07:59Z,2026-01-22T20:09:21Z
+model,FBS,unknown,context,10,2,FBS; Fetal bovine serum,2026-01-22T20:07:58Z,2026-01-22T20:09:16Z
+model,RAT,organism,context,9,1,RAT,2026-01-22T20:09:10Z,2026-01-22T20:09:12Z
+model,CELL CULTURE,unknown,context,8,2,Cell culture,2026-01-22T20:07:55Z,2026-01-22T20:09:18Z
+model,TISSUE,unknown,context,7,5,Tissue,2026-01-22T20:07:55Z,2026-01-22T20:09:25Z
+model,IN VITRO,unknown,context,6,4,In vitro,2026-01-22T20:07:59Z,2026-01-22T20:09:21Z
+model,BLOOD,biofluid,context,4,3,BLOOD,2026-01-22T20:07:59Z,2026-01-22T20:09:20Z
+model,MOUSE,organism,context,1,1,MICE,2026-01-22T20:09:02Z,2026-01-22T20:09:02Z

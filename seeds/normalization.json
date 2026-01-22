@@ -1,0 +1,286 @@
+{
+  "version": "1.0",
+  "description": "Entity normalization map - collapses variants into canonical forms",
+  
+  "assay": {
+    "LC-MS": [
+      "lc-ms",
+      "lc-ms/ms",
+      "lc ms",
+      "liquid chromatography mass spectrometry",
+      "mass spectrometry",
+      "mass spectrometer",
+      "triple quadrupole",
+      "qtof",
+      "q-tof",
+      "orbitrap",
+      "esi-ms",
+      "maldi-tof"
+    ],
+    "HPLC": [
+      "hplc",
+      "high performance liquid chromatography",
+      "high-performance liquid chromatography",
+      "liquid chromatography",
+      "uplc",
+      "uhplc",
+      "rp-hplc"
+    ],
+    "SPR": [
+      "spr",
+      "surface plasmon resonance"
+    ],
+    "BLI": [
+      "bli",
+      "biolayer interferometry",
+      "bio-layer interferometry"
+    ],
+    "ELISA": [
+      "elisa",
+      "enzyme-linked immunosorbent assay"
+    ],
+    "CHROMATOGRAPHY": [
+      "chromatography",
+      "chromatographic"
+    ],
+    "PURIFICATION": [
+      "purification",
+      "purified",
+      "spe",
+      "solid phase extraction"
+    ],
+    "QUANTIFICATION": [
+      "quantification",
+      "quantitation",
+      "quantitative analysis"
+    ],
+    "NMR": [
+      "nmr",
+      "nuclear magnetic resonance"
+    ],
+    "WESTERN BLOT": [
+      "western blot",
+      "western blotting",
+      "immunoblot"
+    ],
+    "FLOW CYTOMETRY": [
+      "flow cytometry",
+      "facs"
+    ]
+  },
+
+  "compound": {
+    "SEMAGLUTIDE": [
+      "semaglutide"
+    ],
+    "LIRAGLUTIDE": [
+      "liraglutide"
+    ],
+    "GLUCAGON": [
+      "glucagon",
+      "glucagon-like peptide-1",
+      "glp-1",
+      "glp1"
+    ],
+    "INSULIN": [
+      "insulin"
+    ],
+    "EXENATIDE": [
+      "exenatide"
+    ]
+  },
+
+  "model": {
+    "IN VIVO": [
+      "in vivo"
+    ],
+    "IN VITRO": [
+      "in vitro"
+    ],
+    "CELL CULTURE": [
+      "cell culture",
+      "cultured cells",
+      "culture"
+    ],
+    "PLASMA": [
+      "plasma"
+    ],
+    "SERUM": [
+      "serum"
+    ],
+    "FBS": [
+      "fbs",
+      "fetal bovine serum",
+      "foetal bovine serum"
+    ],
+    "HUMAN": [
+      "human",
+      "humans"
+    ],
+    "RAT": [
+      "rat",
+      "rats"
+    ],
+    "MOUSE": [
+      "mouse",
+      "mice",
+      "murine"
+    ],
+    "TISSUE": [
+      "tissue",
+      "tissues"
+    ],
+    "BLOOD": [
+      "blood"
+    ],
+    "LYSATE": [
+      "lysate",
+      "cell lysate"
+    ]
+  },
+
+  "target": {
+    "KINASE": [
+      "kinase",
+      "protein kinase"
+    ],
+    "RECEPTOR": [
+      "receptor"
+    ],
+    "PROTEASE": [
+      "protease",
+      "proteases"
+    ],
+    "PEPTIDASE": [
+      "peptidase",
+      "peptidases"
+    ],
+    "MMP": [
+      "mmp",
+      "matrix metalloproteinase",
+      "matrix metalloproteinases"
+    ],
+    "CATHEPSIN": [
+      "cathepsin"
+    ],
+    "TRYPSIN": [
+      "trypsin"
+    ],
+    "CHYMOTRYPSIN": [
+      "chymotrypsin"
+    ]
+  },
+
+  "stem_cell": {
+    "MSC": [
+      "msc",
+      "mesenchymal stem cell",
+      "mesenchymal stem cells",
+      "mesenchymal stromal cell",
+      "mesenchymal stromal cells"
+    ],
+    "iPSC": [
+      "ipsc",
+      "ipscs",
+      "induced pluripotent stem cell",
+      "induced pluripotent stem cells"
+    ],
+    "ESC": [
+      "esc",
+      "escs",
+      "embryonic stem cell",
+      "embryonic stem cells"
+    ]
+  },
+
+  "pathway": {
+    "PEPTIDE DEGRADATION": [
+      "peptide degradation",
+      "proteolytic degradation",
+      "degradation"
+    ],
+    "AGGREGATION": [
+      "aggregation",
+      "protein aggregation",
+      "peptide aggregation"
+    ],
+    "ACETYLATION": [
+      "acetylation",
+      "n-acetylation",
+      "n-terminal acetylation"
+    ],
+    "PHOSPHORYLATION": [
+      "phosphorylation"
+    ],
+    "UBIQUITINATION": [
+      "ubiquitination",
+      "ubiquitylation"
+    ],
+    "PROTEOLYSIS": [
+      "proteolysis",
+      "proteolytic"
+    ],
+    "AUTOPHAGY": [
+      "autophagy"
+    ],
+    "APOPTOSIS": [
+      "apoptosis",
+      "programmed cell death"
+    ]
+  },
+
+  "indication": {
+    "CANCER": [
+      "cancer",
+      "tumor",
+      "tumour",
+      "tumors",
+      "tumours",
+      "oncology",
+      "malignancy"
+    ],
+    "TYPE 2 DIABETES": [
+      "type 2 diabetes",
+      "t2d",
+      "t2dm",
+      "diabetes mellitus type 2"
+    ],
+    "TYPE 1 DIABETES": [
+      "type 1 diabetes",
+      "t1d",
+      "t1dm",
+      "diabetes mellitus type 1"
+    ],
+    "DIABETES": [
+      "diabetes",
+      "diabetes mellitus"
+    ],
+    "ALZHEIMER": [
+      "alzheimer",
+      "alzheimer's",
+      "alzheimer's disease",
+      "alzheimer disease"
+    ],
+    "PARKINSON": [
+      "parkinson",
+      "parkinson's",
+      "parkinson's disease",
+      "parkinson disease"
+    ]
+  },
+
+  "context_only_entities": [
+    "IN VIVO",
+    "IN VITRO",
+    "CELL CULTURE",
+    "HUMAN",
+    "RAT",
+    "MOUSE",
+    "PLASMA",
+    "SERUM",
+    "FBS",
+    "TISSUE",
+    "BLOOD",
+    "LYSATE"
+  ]
+}

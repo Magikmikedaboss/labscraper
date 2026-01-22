@@ -1,0 +1,62 @@
+# Compound Seed List
+# Format: One compound per line, case-insensitive
+# Lines starting with # are comments
+
+# GLP-1 Agonists
+liraglutide
+semaglutide
+dulaglutide
+exenatide
+tirzepatide
+
+# Calcimimetics
+etelcalcetide
+cinacalcet
+evocalcet
+
+# Guanylate Cyclase Agonists
+linaclotide
+plecanatide
+
+# mTOR Inhibitors
+rapamycin
+sirolimus
+everolimus
+temsirolimus
+
+# AMPK Activators
+metformin
+phenformin
+AICAR
+
+# Peptide Therapeutics
+teriparatide
+abaloparatide
+octreotide
+lanreotide
+pasireotide
+
+# Insulin Analogs
+insulin glargine
+insulin detemir
+insulin degludec
+insulin aspart
+insulin lispro
+
+# Other Peptides
+oxytocin
+vasopressin
+desmopressin
+calcitonin
+glucagon
+
+# Antibody-Drug Conjugates (common)
+trastuzumab
+pembrolizumab
+nivolumab
+rituximab
+
+# Small Molecules (common in peptide research)
+dexamethasone
+cyclosporine
+tacrolimus
