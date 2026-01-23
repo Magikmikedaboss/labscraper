@@ -351,14 +351,14 @@ def analyze_patterns(top_n: int = 20) -> List[PatternAnalysis]:
         entity_type = row["entity_type"]
         event_count = row["event_count"]
         
-        # Get events for this entity
+        # Get events for this entity (filter by BOTH name AND type to avoid cross-contamination)
         events = cur.execute("""
             SELECT re.evidence_snippet, re.confidence
             FROM research_events re
             JOIN event_entities ee ON re.event_id = ee.event_id
             JOIN entities e ON ee.entity_id = e.entity_id
-            WHERE e.entity_name = ?
-        """, (entity_name,)).fetchall()
+            WHERE e.entity_name = ? AND e.entity_type = ?
+        """, (entity_name, entity_type)).fetchall()
         
         events_data = [dict(event) for event in events]
         
