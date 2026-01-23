@@ -1,0 +1,82 @@
+{
+  "overlay_id": "stem_cells_v1",
+  "domain": "stem_cells_regen",
+  "notes": "Prefer unambiguous terms. Avoid short abbreviations unless paired with a full form.",
+  "entities": {
+    "cell_types": [
+      "mesenchymal stem cell",
+      "mesenchymal stromal cell",
+      "induced pluripotent stem cell",
+      "embryonic stem cell",
+      "neural stem cell",
+      "hematopoietic stem cell",
+      "satellite cell",
+      "progenitor cell"
+    ],
+    "aliases": {
+      "mesenchymal stem cell": ["MSC", "MSCs", "mesenchymal stromal cell", "mesenchymal stromal cells"],
+      "induced pluripotent stem cell": ["iPSC", "iPSCs", "induced pluripotent stem cells"],
+      "embryonic stem cell": ["ESC", "ESCs", "embryonic stem cells"],
+      "neural stem cell": ["NSC", "NSCs", "neural stem cells"],
+      "hematopoietic stem cell": ["HSC", "HSCs", "hematopoietic stem cells"]
+    },
+    "processes": [
+      "differentiation",
+      "lineage commitment",
+      "reprogramming",
+      "cell fate",
+      "self-renewal",
+      "pluripotency",
+      "multipotency",
+      "clonogenicity",
+      "engraftment",
+      "cell homing",
+      "immune evasion"
+    ],
+    "models_and_systems": [
+      "organoid",
+      "organoids",
+      "spheroid",
+      "3D culture",
+      "co-culture",
+      "xenograft",
+      "patient-derived organoid",
+      "disease model",
+      "in vivo"
+    ],
+    "markers": [
+      "SOX2",
+      "NANOG",
+      "OCT4",
+      "POU5F1",
+      "KLF4",
+      "c-MYC",
+      "MYC",
+      "TRA-1-60",
+      "SSEA-4",
+      "CD73",
+      "CD90",
+      "CD105",
+      "CD34",
+      "CD45"
+    ],
+    "barriers": [
+      "tumorigenicity",
+      "teratoma formation",
+      "heterogeneity",
+      "batch variability",
+      "poor engraftment",
+      "immune rejection",
+      "genomic instability",
+      "off-target differentiation"
+    ]
+  },
+  "exclusions": {
+    "terms": [
+      "stem cell clinic",
+      "stem cell spa",
+      "miracle cure",
+      "guaranteed results"
+    ]
+  }
+}

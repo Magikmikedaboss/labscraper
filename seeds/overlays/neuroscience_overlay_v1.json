@@ -1,0 +1,78 @@
+{
+  "overlay_id": "neuroscience_v1",
+  "domain": "neuroscience_cognition",
+  "notes": "Focus on models, brain regions, methods, and neurodegeneration terms. Avoid consumer nootropic language.",
+  "entities": {
+    "brain_regions": [
+      "hippocampus",
+      "prefrontal cortex",
+      "amygdala",
+      "striatum",
+      "cerebellum",
+      "motor cortex",
+      "visual cortex",
+      "hypothalamus"
+    ],
+    "cell_types": [
+      "neuron",
+      "neurons",
+      "astrocyte",
+      "astrocytes",
+      "microglia",
+      "oligodendrocyte",
+      "oligodendrocytes"
+    ],
+    "processes": [
+      "synaptic plasticity",
+      "long-term potentiation",
+      "long-term depression",
+      "neuroinflammation",
+      "myelination",
+      "axonal transport",
+      "synaptogenesis",
+      "neurogenesis"
+    ],
+    "methods": [
+      "electrophysiology",
+      "patch clamp",
+      "calcium imaging",
+      "two-photon imaging",
+      "functional MRI",
+      "fMRI",
+      "EEG",
+      "MEG",
+      "single-cell RNA sequencing",
+      "scRNA-seq",
+      "optogenetics",
+      "chemogenetics"
+    ],
+    "diseases_and_topics": [
+      "Alzheimer's disease",
+      "Parkinson's disease",
+      "amyotrophic lateral sclerosis",
+      "ALS",
+      "frontotemporal dementia",
+      "epilepsy",
+      "major depressive disorder",
+      "schizophrenia",
+      "autism spectrum disorder"
+    ],
+    "biomarkers_and_proteins": [
+      "amyloid beta",
+      "beta-amyloid",
+      "tau",
+      "alpha-synuclein",
+      "BDNF",
+      "GFAP",
+      "synaptophysin"
+    ]
+  },
+  "exclusions": {
+    "terms": [
+      "nootropic stack",
+      "supplement stack",
+      "buy now",
+      "coupon"
+    ]
+  }
+}
