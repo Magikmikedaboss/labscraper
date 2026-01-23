@@ -160,25 +160,25 @@ def get_entity_role(entity: dict, norm_map: dict) -> str:
     return "context" if is_context_entity(entity, norm_map) else "primary"
 
 
-def normalize_entity_list(entities: List[dict], norm_map: dict) -> List[dict]:
+def normalize_entity_list(entities: List[dict], norm_map: dict, overlay_aliases: Optional[Dict[str, str]] = None) -> List[dict]:
     """
     Normalize a list of entities and add role information.
     
     Args:
         entities: List of entity dicts
         norm_map: Normalization map
+        overlay_aliases: Optional overlay alias map (from load_overlay_aliases)
         
     Returns:
         List of normalized entities with role field added
     """
     normalized = []
     for entity in entities:
-        norm_entity = normalize_entity(entity, norm_map)
+        norm_entity = normalize_entity(entity, norm_map, overlay_aliases)
         norm_entity["role"] = get_entity_role(norm_entity, norm_map)
         normalized.append(norm_entity)
     
     return normalized
-
 
 def get_primary_entities(entities: List[dict], norm_map: dict) -> List[dict]:
     """

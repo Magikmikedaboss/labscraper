@@ -45,9 +45,13 @@ def merge_seed_dict(base: dict, overlay: dict) -> dict:
                 # Merge nested dicts
                 tmp = dict(out[k])
                 for dk, dv in v.items():
-                    if dk in tmp and isinstance(tmp[dk], list) and isinstance(dv, list):
-                        # Merge nested lists
-                        tmp[dk] = sorted(set(tmp[dk] + dv))
+                    if dk in tmp:
+                        if isinstance(tmp[dk], list) and isinstance(dv, list):
+                            # Merge nested lists
+                            tmp[dk] = sorted(set(tmp[dk] + dv))
+                        else:
+                            # Preserve base value, do not overwrite
+                            pass
                     else:
                         # Add new nested key
                         tmp[dk] = dv

@@ -8,7 +8,6 @@ pathway,PEPTIDE DEGRADATION,pathway,primary,9,2,peptide degradation,stem_cells_r
 target,KINASE,protein,primary,8,2,KINASE,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:16Z,2026-01-22T20:08:46Z
 indication,CANCER,disease,primary,8,4,cancer,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:05Z,2026-01-22T20:09:22Z
 compound,GLUCAGON,drug,primary,8,3,GLUCAGON,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:02Z,2026-01-22T20:09:12Z
-assay,affinity,metric,primary,7,4,affinity,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:07:57Z,2026-01-22T20:09:13Z
 compound,LIRAGLUTIDE,drug,primary,7,5,LIRAGLUTIDE,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:06Z,2026-01-22T20:09:11Z
 pathway,ACETYLATION,pathway,primary,7,2,acetylation,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:09:18Z,2026-01-22T20:09:23Z
 target,RECEPTOR,protein,primary,6,4,RECEPTOR,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:14Z,2026-01-22T20:09:12Z
@@ -17,11 +16,9 @@ indication,ALZHEIMER,disease,primary,6,2,Alzheimer; Alzheimer's disease,stem_cel
 assay,MS/MS,assay,primary,4,3,MS/MS,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:07:59Z,2026-01-22T20:09:23Z
 assay,half-life,metric,primary,4,2,half-life,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:16Z,2026-01-22T20:09:05Z
 pathway,PHOSPHORYLATION,pathway,primary,4,2,phosphorylation,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:13Z,2026-01-22T20:08:58Z
-assay,internal standard,assay,primary,4,1,internal standard,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:07:56Z,2026-01-22T20:07:59Z
 model,Culture media,unknown,primary,4,2,Culture media,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:07:56Z,2026-01-22T20:09:18Z
 pathway,migration,pathway,primary,4,2,migration,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:13Z,2026-01-22T20:09:18Z
 pathway,oxidation,pathway,primary,4,2,oxidation,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:20Z,2026-01-22T20:09:05Z
-assay,mobile phase,assay,primary,4,2,mobile phase,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:07:57Z,2026-01-22T20:09:11Z
 assay,bioavailability,metric,primary,3,3,bioavailability,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:30Z,2026-01-22T20:09:14Z
 assay,accuracy,assay,primary,3,1,accuracy,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:09:11Z,2026-01-22T20:09:11Z
 pathway,glycosylation,pathway,primary,3,3,glycosylation,stem_cells_regen,Stem Cells & Regenerative Biology,stem_cells_regen_v1,2026-01-22T20:08:16Z,2026-01-22T20:09:22Z

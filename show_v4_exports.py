@@ -24,10 +24,6 @@ except FileNotFoundError:
 except csv.Error as e:
     print('CSV parsing error: {}'.format(e))
     events = []
-if events:
-    print("   Columns: {}...".format(', '.join(list(events[0].keys())[:8])))
-else:
-    print("   No events found in export")
 
 # Show high confidence event (safely handle if none exist)
 high = next((e for e in events if e['confidence_boosted'] == 'high'), None)
@@ -82,42 +78,29 @@ except json.JSONDecodeError as e:
 
 print("\n✅ run_meta.json")
 total = meta.get('counts', {}).get('total_events', 0)
-print("   Total Events: {}".format(total))
 confidence_distribution = meta.get('confidence_distribution', {})
-if total == 0:
-    print('   High Confidence: 0.0%')
-    print('   Med Confidence: 0.0%')
-    print('   Low Confidence: 0.0%')
+process_words_demoted = meta.get('process_words_demoted', [])
+high_count = confidence_distribution.get('high', 0)
+med_count = confidence_distribution.get('med', 0)
+low_count = confidence_distribution.get('low', 0)
+if total > 0:
+    high_pct = round(high_count / total * 100, 1)
+    med_pct = round(med_count / total * 100, 1)
+    low_pct = round(low_count / total * 100, 1)
 else:
-    print("   High Confidence: {} ({}%)".format(
-        confidence_distribution.get('high', 0),
-        round(confidence_distribution.get('high', 0)/total*100, 1)))
-    print("   Med Confidence: {} ({}%)".format(
-        confidence_distribution.get('med', 0),
-        round(confidence_distribution.get('med', 0)/total*100, 1)))
-    print("   Low Confidence: {} ({}%)".format(
-        confidence_distribution.get('low', 0),
-        round(confidence_distribution.get('low', 0)/total*100, 1)))
+    high_pct = med_pct = low_pct = 0.0
+
+print("   Total Events: {}".format(total))
+print("   High Confidence: {} ({}%)".format(high_count, high_pct))
+print("   Med Confidence: {} ({}%)".format(med_count, med_pct))
+print("   Low Confidence: {} ({}%)".format(low_count, low_pct))
 
 print("\n📊 Confidence Distribution:")
-if total > 0:
-    print("   High: {} ({}%)".format(
-        confidence_distribution.get('high', 0),
-        round(confidence_distribution.get('high', 0)/total*100, 1)))
-    print("   Med: {} ({}%)".format(
-        confidence_distribution.get('med', 0),
-        round(confidence_distribution.get('med', 0)/total*100, 1)))
-    print("   Low: {} ({}%)".format(
-        confidence_distribution.get('low', 0),
-        round(confidence_distribution.get('low', 0)/total*100, 1)))
-else:
-    print("   High: 0 (0.0%)")
-    print("   Med: 0 (0.0%)")
-    print("   Low: 0 (0.0%)")
+print("   High: {} ({}%)".format(high_count, high_pct))
+print("   Med: {} ({}%)".format(med_count, med_pct))
+print("   Low: {} ({}%)".format(low_count, low_pct))
 
-print("\n🔧 Process Words Demoted: {}...".format(', '.join(meta.get('process_words_demoted', [])[:4])))
-
-print("\n✅ run_meta.json")
+print("\n🔧 Process Words Demoted: {}...".format(', '.join(process_words_demoted[:4])))
 print("   Run ID: {}".format(meta.get('run_id', 'N/A')))
 print("   Engine: {}".format(meta.get('engine_version', 'N/A')))
 print("   Total Events: {}".format(meta.get('counts', {}).get('total_events', 'N/A')))

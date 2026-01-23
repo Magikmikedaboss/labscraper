@@ -20,9 +20,20 @@ DB_PATH = Path("output") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
 
 # Process words that should be tags, not primary assay entities
+# These are generic lab terms that don't represent specific research assays
 PROCESS_WORDS_TO_DEMOTE = {
+    # Sample prep & processing
     "quantification", "quantitation", "chromatography", "purification",
-    "calibration", "validation", "optimization", "quality control"
+    "calibration", "validation", "optimization", "quality control",
+    
+    # Generic measurement terms
+    "affinity", "binding affinity", "affinity measurement", "affinity assay",
+    
+    # Mobile phase & standards
+    "internal standard", "mobile phase", "gradient", "elution",
+    
+    # Generic detection
+    "detection", "analysis", "measurement", "determination"
 }
 
 def is_process_word(entity_name: str) -> bool:
@@ -97,14 +108,13 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
     ]
     
     # Normalize with overlay aliases
+    from entity_normalizer import normalize_entity, get_entity_role
+    
     normalized = []
     for e in entity_dicts:
-        from entity_normalizer import normalize_entity
         norm_e = normalize_entity(e, norm_map, overlay_aliases)
-        from entity_normalizer import get_entity_role
         norm_e["role"] = get_entity_role(norm_e, norm_map)
-        normalized.append(norm_e)
-    
+        normalized.append(norm_e)    
     # Separate by role, demoting process words
     primary = []
     context = []
@@ -129,9 +139,9 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
 
 def export_events_domain_aware(domain_id: str = None):
     """Export events with domain awareness"""
-    with sqlite3.connect(DB_PATH) as con:
-        cur = con.cursor()
-    
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+
     norm_map = load_normalization_map()
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
     
@@ -159,9 +169,7 @@ def export_events_domain_aware(domain_id: str = None):
         LEFT JOIN entities e ON ee.entity_id = e.entity_id
         GROUP BY re.event_id
         ORDER BY re.created_at DESC
-    """).fetchall()
-    
-    # Export with enhancements
+    """).fetchall()    # Export with enhancements
     suffix = f"_{domain_id}" if domain_id else "_v5"
     events_path = OUTPUT_DIR / f"events_export{suffix}.csv"
     with open(events_path, 'w', newline='', encoding='utf-8') as f:
