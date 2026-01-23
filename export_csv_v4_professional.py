@@ -188,10 +188,19 @@ def export_events_professional():
     con.close()
     
     print(f"✅ Exported professional events: {len(events)} → {events_path}")
-    print(f"\n📊 Confidence Distribution (After Boost):")
-    print(f"   High: {confidence_changes['high']} ({confidence_changes['high']/len(events)*100:.1f}%)")
-    print(f"   Med: {confidence_changes['med']} ({confidence_changes['med']/len(events)*100:.1f}%)")
-    print(f"   Low: {confidence_changes['low']} ({confidence_changes['low']/len(events)*100:.1f}%)")
+    
+    # Safe percentage calculation (avoid ZeroDivisionError)
+    if len(events) > 0:
+        print(f"\n📊 Confidence Distribution (After Boost):")
+        print(f"   High: {confidence_changes['high']} ({confidence_changes['high']/len(events)*100:.1f}%)")
+        print(f"   Med: {confidence_changes['med']} ({confidence_changes['med']/len(events)*100:.1f}%)")
+        print(f"   Low: {confidence_changes['low']} ({confidence_changes['low']/len(events)*100:.1f}%)")
+    else:
+        print(f"\n📊 Confidence Distribution (After Boost):")
+        print(f"   High: {confidence_changes['high']} (0.0%)")
+        print(f"   Med: {confidence_changes['med']} (0.0%)")
+        print(f"   Low: {confidence_changes['low']} (0.0%)")
+    
     print(f"\n🚀 Confidence Boosts Applied:")
     print(f"   Boosted to HIGH: {confidence_changes['boosted_to_high']}")
     print(f"   Boosted to MED: {confidence_changes['boosted_to_med']}")
