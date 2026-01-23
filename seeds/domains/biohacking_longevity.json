@@ -1,0 +1,31 @@
+{
+  "id": "biohacking_longevity",
+  "name": "Biohacking & Longevity",
+  "description": "Observational analysis of research activity related to human performance, longevity, metabolism, cognition, and recovery. Not medical advice; momentum is not effectiveness.",
+  "claims_mode": "observational_only",
+  "domain_profile_version": "v1",
+  "seed_overlays": {
+    "include_files": [
+      "biomarkers.json",
+      "pathways.json",
+      "assays.json",
+      "indications.json"
+    ],
+    "prefer_types": ["biomarker", "pathway", "assay", "model", "indication"]
+  },
+  "exclusions": {
+    "terms": ["supplement", "vendor", "affiliate", "coupon", "proprietary blend", "testosterone booster"],
+    "doc_kinds": ["ecommerce", "marketing"]
+  },
+  "pattern_emphasis": {
+    "convergence": 1.05,
+    "escalation": 1.20,
+    "fragmentation": 0.90,
+    "stagnation": 1.00,
+    "abandonment": 0.90
+  },
+  "language": {
+    "allowed": ["research momentum", "observed patterns", "reported outcomes", "appears to", "associated with"],
+    "forbidden": ["works", "effective", "proven", "safe", "recommended", "treats", "cures"]
+  }
+}

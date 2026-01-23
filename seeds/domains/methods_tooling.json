@@ -1,0 +1,29 @@
+{
+  "id": "methods_tooling",
+  "name": "Methods & Tooling",
+  "description": "Surfaces method and assay convergence, measurement trends, and reproducibility language across research.",
+  "claims_mode": "observational_only",
+  "domain_profile_version": "v1",
+  "seed_overlays": {
+    "include_files": [
+      "assays.json",
+      "pathways.json"
+    ],
+    "prefer_types": ["assay", "pathway", "model"]
+  },
+  "exclusions": {
+    "terms": ["supplement", "clinic"],
+    "doc_kinds": ["ecommerce", "marketing"]
+  },
+  "pattern_emphasis": {
+    "convergence": 1.20,
+    "escalation": 1.00,
+    "fragmentation": 1.00,
+    "stagnation": 1.00,
+    "abandonment": 0.90
+  },
+  "language": {
+    "allowed": ["method convergence", "assay trends", "appears to"],
+    "forbidden": ["best method", "guaranteed"]
+  }
+}

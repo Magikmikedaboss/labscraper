@@ -6,30 +6,28 @@ print("="*70)
 print("📁 V4 PROFESSIONAL EXPORTS")
 print("="*70)
 
-# Show events
-with open('output/events_export_v4.csv', 'r', encoding='utf-8') as f:
-    reader = csv.DictReader(f)
-    try:
+events = []
+try:
+    with open('output/events_export_v4.csv', 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
         events = list(reader)
         if not events:
             print('No events found in CSV.')
             if hasattr(reader, 'fieldnames'):
                 print('CSV columns:', reader.fieldnames)
         else:
-            print(f"\n✅ events_export_v4.csv: {len(events)} events")
-            print(f"   Columns: {', '.join(list(events[0].keys())[:8])}...")
-    except FileNotFoundError:
-        print('Error: output/events_export_v4.csv not found.')
-        events = []
-    except csv.Error as e:
-        print(f'CSV parsing error: {e}')
-        events = []
-
-print(f"\n✅ events_export_v4.csv: {len(events)} events")
+            print("\n✅ events_export_v4.csv: {} events".format(len(events)))
+            print("   Columns: {}...".format(', '.join(list(events[0].keys())[:8])))
+except FileNotFoundError:
+    print('Error: output/events_export_v4.csv not found.')
+    events = []
+except csv.Error as e:
+    print('CSV parsing error: {}'.format(e))
+    events = []
 if events:
-    print(f"   Columns: {', '.join(list(events[0].keys())[:8])}...")
+    print("   Columns: {}...".format(', '.join(list(events[0].keys())[:8])))
 else:
-    print(f"   No events found in export")
+    print("   No events found in export")
 
 # Show high confidence event (safely handle if none exist)
 high = next((e for e in events if e['confidence_boosted'] == 'high'), None)
@@ -71,9 +69,7 @@ for i, c in enumerate(candidates[:10], 1):
     if name is not None and etype is not None and count is not None:
         print(f"   {i}. {name} ({etype}): {count} events")
 
-# Show run_meta
-with open('output/run_meta.json', 'r', encoding='utf-8') as f:
-    meta = json.load(f)
+meta = {}
 try:
     with open('output/run_meta.json', 'r', encoding='utf-8') as f:
         meta = json.load(f)
@@ -81,42 +77,52 @@ except FileNotFoundError:
     print('Error: output/run_meta.json not found.')
     meta = {}
 except json.JSONDecodeError as e:
-    print(f'JSON decode error: {e}')
-    meta = {}
-except KeyError as e:
-    print(f'Missing key in meta: {e}')
+    print('JSON decode error: {}'.format(e))
     meta = {}
 
-print(f"\n✅ run_meta.json")
+print("\n✅ run_meta.json")
 total = meta.get('counts', {}).get('total_events', 0)
-print(f"   Total Events: {total}")
+print("   Total Events: {}".format(total))
+confidence_distribution = meta.get('confidence_distribution', {})
 if total == 0:
     print('   High Confidence: 0.0%')
     print('   Med Confidence: 0.0%')
     print('   Low Confidence: 0.0%')
 else:
-    print(f"   High Confidence: {meta.get('confidence_distribution', {}).get('high', 0)} ({meta.get('confidence_distribution', {}).get('high', 0)/total*100:.1f}%)")
-    print(f"   Med Confidence: {meta.get('confidence_distribution', {}).get('med', 0)} ({meta.get('confidence_distribution', {}).get('med', 0)/total*100:.1f}%)")
-    print(f"   Low Confidence: {meta.get('confidence_distribution', {}).get('low', 0)} ({meta.get('confidence_distribution', {}).get('low', 0)/total*100:.1f}%)")
+    print("   High Confidence: {} ({}%)".format(
+        confidence_distribution.get('high', 0),
+        round(confidence_distribution.get('high', 0)/total*100, 1)))
+    print("   Med Confidence: {} ({}%)".format(
+        confidence_distribution.get('med', 0),
+        round(confidence_distribution.get('med', 0)/total*100, 1)))
+    print("   Low Confidence: {} ({}%)".format(
+        confidence_distribution.get('low', 0),
+        round(confidence_distribution.get('low', 0)/total*100, 1)))
 
-print(f"\n📊 Confidence Distribution:")
+print("\n📊 Confidence Distribution:")
 if total > 0:
-    print(f"   High: {meta['confidence_distribution']['high']} ({meta['confidence_distribution']['high']/total*100:.1f}%)")
-    print(f"   Med: {meta['confidence_distribution']['med']} ({meta['confidence_distribution']['med']/total*100:.1f}%)")
-    print(f"   Low: {meta['confidence_distribution']['low']} ({meta['confidence_distribution']['low']/total*100:.1f}%)")
+    print("   High: {} ({}%)".format(
+        confidence_distribution.get('high', 0),
+        round(confidence_distribution.get('high', 0)/total*100, 1)))
+    print("   Med: {} ({}%)".format(
+        confidence_distribution.get('med', 0),
+        round(confidence_distribution.get('med', 0)/total*100, 1)))
+    print("   Low: {} ({}%)".format(
+        confidence_distribution.get('low', 0),
+        round(confidence_distribution.get('low', 0)/total*100, 1)))
 else:
-    print(f"   High: {meta['confidence_distribution']['high']} (0.0%)")
-    print(f"   Med: {meta['confidence_distribution']['med']} (0.0%)")
-    print(f"   Low: {meta['confidence_distribution']['low']} (0.0%)")
+    print("   High: 0 (0.0%)")
+    print("   Med: 0 (0.0%)")
+    print("   Low: 0 (0.0%)")
 
-print(f"\n🔧 Process Words Demoted: {', '.join(meta.get('process_words_demoted', [])[:4])}...")
+print("\n🔧 Process Words Demoted: {}...".format(', '.join(meta.get('process_words_demoted', [])[:4])))
 
-print(f"\n✅ run_meta.json")
-print(f"   Run ID: {meta['run_id']}")
-print(f"   Engine: {meta['engine_version']}")
-print(f"   Total Events: {meta['counts']['total_events']}")
-print(f"   Primary Entities: {meta['counts']['primary_entities']}")
-print(f"   Context Entities: {meta['counts']['context_entities']}")
+print("\n✅ run_meta.json")
+print("   Run ID: {}".format(meta.get('run_id', 'N/A')))
+print("   Engine: {}".format(meta.get('engine_version', 'N/A')))
+print("   Total Events: {}".format(meta.get('counts', {}).get('total_events', 'N/A')))
+print("   Primary Entities: {}".format(meta.get('counts', {}).get('primary_entities', 'N/A')))
+print("   Context Entities: {}".format(meta.get('counts', {}).get('context_entities', 'N/A')))
 
 print(f"\n📊 Confidence Distribution:")
 total = meta['counts']['total_events']

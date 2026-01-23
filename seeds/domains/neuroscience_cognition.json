@@ -1,0 +1,30 @@
+{
+  "id": "neuroscience_cognition",
+  "name": "Neuroscience & Cognition",
+  "description": "Highlights model diversity, method fragmentation, translational gaps, and replication language across neuroscience research.",
+  "claims_mode": "observational_only",
+  "domain_profile_version": "v1",
+  "seed_overlays": {
+    "include_files": [
+      "assays.json",
+      "pathways.json",
+      "indications.json"
+    ],
+    "prefer_types": ["model", "assay", "pathway", "indication"]
+  },
+  "exclusions": {
+    "terms": ["nootropics store", "supplement stack", "coupon"],
+    "doc_kinds": ["ecommerce", "marketing"]
+  },
+  "pattern_emphasis": {
+    "convergence": 1.00,
+    "escalation": 1.10,
+    "fragmentation": 1.15,
+    "stagnation": 1.05,
+    "abandonment": 0.95
+  },
+  "language": {
+    "allowed": ["model divergence", "method diversity", "appears to", "reported outcomes", "replication language"],
+    "forbidden": ["boosts IQ", "fixes depression", "cures Alzheimer's"]
+  }
+}
