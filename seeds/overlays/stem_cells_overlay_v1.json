@@ -18,7 +18,8 @@
       "induced pluripotent stem cell": ["iPSC", "iPSCs", "induced pluripotent stem cells"],
       "embryonic stem cell": ["ESC", "ESCs", "embryonic stem cells"],
       "neural stem cell": ["NSC", "NSCs", "neural stem cells"],
-      "hematopoietic stem cell": ["HSC", "HSCs", "hematopoietic stem cells"]
+      "hematopoietic stem cell": ["HSC", "HSCs", "hematopoietic stem cells"],
+      "organoid": ["Organoid", "Organoids", "organoids"]
     },
     "processes": [
       "differentiation",
