@@ -89,6 +89,5 @@ The system now:
 
 ---
 
-**Current Status**: ⏳ Scraper running (3/116 PDFs processed)  
-**ETA**: ~15 minutes  
-**Next Step**: Run verification commands above once complete
+
+Once the scraper completes, run the verification commands above to confirm the results.

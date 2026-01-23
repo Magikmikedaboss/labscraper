@@ -246,20 +246,19 @@ The system:
 
 ---
 
-## Current Status
+## How to verify fixes are working
 
-**Scraper**: ⏳ RUNNING (with all 4 fixes applied)  
-**Expected completion**: 15-20 minutes  
-**Processing**: 116 PDFs from neuroscience_v1 corpus
+To confirm the fixes are applied correctly, check the following after running the scraper:
 
-**Evidence all fixes are working**:
 ```
 📋 Loaded TXT seeds:
-   Models: 133  ✅ (was 136 - 3 neural cells removed)
+  Models: 133  ✅ (should be reduced if neural cells are removed)
    
 📋 Loaded JSON seeds:
-   Neural Cells: 41  ✅ (neural_cells.json loaded)
+  Neural Cells: 41  ✅ (neural_cells.json loads as expected)
 ```
+
+These counts should match the expected reduction and successful JSON load for neural cells.
 
 ---
 
@@ -299,12 +298,3 @@ Your analysis was perfect - the system WAS treating neural cells as models inste
 
 ---
 
-**Status**: ⏳ **SCRAPER RUNNING - FINAL VERIFICATION PENDING**  
-**ETA**: 15-20 minutes  
-**Confidence**: 🎯 **VERY HIGH** (all 4 fixes verified and working)
-
-Once the scraper completes, we'll verify:
-1. No duplicates (neural cells only in neural_cell type)
-2. Overlay aliases >0 (normalization working)
-3. Neural cells in top 10 (rankings correct)
-4. Clean exports (data quality maintained)

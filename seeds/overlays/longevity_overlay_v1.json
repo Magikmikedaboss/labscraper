@@ -1,72 +1,105 @@
 {
-  "overlay_id": "longevity_v1",
+  "overlay_id": "biohacking_longevity_v1",
   "domain": "biohacking_longevity",
-  "notes": "Anchor to canonical aging hallmarks and measurement trends. Avoid supplement marketing language.",
+  "description": "Longevity-focused overlay emphasizing aging mechanisms, biological age measurement, and intervention realism",
+  "notes": "Recognizes true longevity science when measurement + mechanism language is present. Does not suppress disease or neuroscience terms.",
+  
   "entities": {
-    "hallmarks_and_mechanisms": [
-      "autophagy",
+    "aging_mechanisms": [
       "cellular senescence",
       "senescent cells",
-      "mitochondrial dysfunction",
-      "oxidative stress",
+      "autophagy",
       "proteostasis",
-      "DNA damage",
-      "telomere shortening",
+      "mitochondrial dysfunction",
+      "genomic instability",
+      "telomere attrition",
       "epigenetic alterations",
-      "inflammaging",
-      "nutrient sensing"
+      "inflammaging"
     ],
-    "canonical_pathways_terms": [
-      "mTOR",
-      "AMPK",
-      "sirtuin",
-      "sirtuins",
-      "NAD+",
-      "NAD",
-      "FOXO",
-      "IGF-1",
-      "insulin signaling"
+    
+    "nutrient_sensing": [
+      "mTOR signaling",
+      "mTOR inhibition",
+      "rapamycin treatment",
+      "AMPK activation",
+      "IGF-1 signaling",
+      "insulin signaling",
+      "FOXO transcription factor",
+      "sirtuin activity"
     ],
-    "measurement_trends": [
+    
+    "aging_measurements": [
       "epigenetic clock",
       "DNA methylation age",
-      "proteomics",
-      "metabolomics",
-      "transcriptomics",
-      "single-cell multiomics",
       "biological age",
-      "healthspan"
+      "aging biomarker",
+      "healthspan measurement",
+      "lifespan measurement",
+      "longitudinal aging study",
+      "proteomic aging",
+      "transcriptomic aging",
+      "metabolomic aging"
     ],
-    "interventions_terms": [
+    
+    "interventions": [
       "caloric restriction",
       "time-restricted feeding",
-      "fasting",
+      "fasting mimicking diet",
       "exercise intervention",
       "rapamycin",
       "metformin",
       "senolytic",
-      "senolytics"
+      "senomorphic"
     ],
-    "models": [
-      "C. elegans",
-      "Drosophila",
-      "zebrafish",
-      "mouse model",
-      "murine model"
+    
+    "longevity_models": [
+      "mouse lifespan",
+      "murine model",
+      "C. elegans longevity",
+      "Drosophila aging",
+      "zebrafish aging",
+      "non-human primate aging",
+      "human cohort study"
     ],
-    "barriers": [
-      "translation to humans",
+    
+    "aliases": {
+      "mTOR signaling": ["mTOR", "MTOR", "mammalian target of rapamycin", "mechanistic target of rapamycin"],
+      "rapamycin": ["Rapamycin", "sirolimus", "Sirolimus"],
+      "metformin": ["Metformin"],
+      "AMPK": ["AMPK activation", "AMP-activated protein kinase"],
+      "IGF-1": ["IGF-1 signaling", "insulin-like growth factor 1"],
+      "FOXO": ["FOXO transcription factor", "forkhead box O"],
+      "sirtuin": ["sirtuin activity", "SIRT1", "sirtuins"],
+      "autophagy": ["Autophagy", "autophagic"],
+      "senescence": ["cellular senescence", "senescent cells"],
+      "epigenetic clock": ["DNA methylation age", "epigenetic age", "biological age clock"],
+      "healthspan": ["healthspan measurement", "health span"],
+      "lifespan": ["lifespan measurement", "life span", "longevity"],
+      "caloric restriction": ["CR", "dietary restriction", "calorie restriction"],
+      "senolytic": ["senolytics", "senolytic drug"],
+      "C. elegans": ["C elegans", "Caenorhabditis elegans", "worm model"],
+      "Drosophila": ["fruit fly", "Drosophila melanogaster"]
+    },
+    
+    "translation_barriers": [
+      "failed replication",
+      "no lifespan extension",
+      "tradeoff",
+      "adverse effects",
+      "toxicity",
       "species differences",
-      "confounding",
-      "heterogeneous response"
+      "translation to humans",
+      "confounding factors"
     ]
   },
+  
   "exclusions": {
     "terms": [
-      "supplement",
-      "proprietary blend",
-      "biohacking store",
-      "affiliate link"
+      "anti-aging cream",
+      "fountain of youth",
+      "immortality",
+      "reverse aging guaranteed",
+      "age reversal supplement"
     ]
   }
 }

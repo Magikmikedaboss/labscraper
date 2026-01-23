@@ -139,9 +139,6 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
 
 def export_events_domain_aware(domain_id: str = None):
     """Export events with domain awareness"""
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-
     norm_map = load_normalization_map()
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
     
@@ -150,26 +147,32 @@ def export_events_domain_aware(domain_id: str = None):
     domain_name = domain.name if domain else "All Domains"
     overlay_id = f"{domain_id}_v1" if domain_id else None
     
-    # Get all events
-    events = cur.execute("""
-        SELECT 
-            re.event_id,
-            re.research_domain,
-            re.event_type,
-            re.study_stage,
-            re.outcome,
-            re.decision_driver,
-            re.evidence_snippet,
-            re.confidence,
-            re.source_id,
-            re.created_at,
-            GROUP_CONCAT(e.entity_type || ':' || e.entity_name, '; ') as entities
-        FROM research_events re
-        LEFT JOIN event_entities ee ON re.event_id = ee.event_id
-        LEFT JOIN entities e ON ee.entity_id = e.entity_id
-        GROUP BY re.event_id
-        ORDER BY re.created_at DESC
-    """).fetchall()    # Export with enhancements
+    # Use context manager for database connection
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        
+        # Get all events
+        events = cur.execute("""
+            SELECT 
+                re.event_id,
+                re.research_domain,
+                re.event_type,
+                re.study_stage,
+                re.outcome,
+                re.decision_driver,
+                re.evidence_snippet,
+                re.confidence,
+                re.source_id,
+                re.created_at,
+                GROUP_CONCAT(e.entity_type || ':' || e.entity_name, '; ') as entities
+            FROM research_events re
+            LEFT JOIN event_entities ee ON re.event_id = ee.event_id
+            LEFT JOIN entities e ON ee.entity_id = e.entity_id
+            GROUP BY re.event_id
+            ORDER BY re.created_at DESC
+        """).fetchall()
+    
+    # Export with enhancements (outside DB context)
     suffix = f"_{domain_id}" if domain_id else "_v5"
     events_path = OUTPUT_DIR / f"events_export{suffix}.csv"
     with open(events_path, 'w', newline='', encoding='utf-8') as f:
@@ -213,8 +216,6 @@ def export_events_domain_aware(domain_id: str = None):
                 source_id, created_at
             ])
     
-    con.close()
-    
     print(f"✅ Exported domain-aware events: {len(events)} → {events_path}")
     if domain_id:
         print(f"   Domain: {domain_name}")
@@ -236,9 +237,6 @@ def export_events_domain_aware(domain_id: str = None):
 
 def export_candidates_domain_aware(domain_id: str = None):
     """Export candidates with domain awareness and overlay aliases"""
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-    
     norm_map = load_normalization_map()
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
     
@@ -247,67 +245,71 @@ def export_candidates_domain_aware(domain_id: str = None):
     domain_name = domain.name if domain else "All Domains"
     overlay_id = f"{domain_id}_v1" if domain_id else None
     
-    # Get all entities
-    entities_data = cur.execute("""
-        SELECT 
-            e.entity_id,
-            e.entity_type,
-            e.entity_name,
-            e.entity_variant,
-            COUNT(DISTINCT ee.event_id) as event_count,
-            GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
-            MIN(re.created_at) as first_seen,
-            MAX(re.created_at) as last_seen
-        FROM entities e
-        JOIN event_entities ee ON e.entity_id = ee.entity_id
-        JOIN research_events re ON ee.event_id = re.event_id
-        GROUP BY e.entity_id
-        ORDER BY event_count DESC
-    """).fetchall()
+    # Use context manager for database connection
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        
+        # Get all entities
+        entities_data = cur.execute("""
+            SELECT 
+                e.entity_id,
+                e.entity_type,
+                e.entity_name,
+                e.entity_variant,
+                COUNT(DISTINCT ee.event_id) as event_count,
+                GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
+                MIN(re.created_at) as first_seen,
+                MAX(re.created_at) as last_seen
+            FROM entities e
+            JOIN event_entities ee ON e.entity_id = ee.entity_id
+            JOIN research_events re ON ee.event_id = re.event_id
+            GROUP BY e.entity_id
+            ORDER BY event_count DESC
+        """).fetchall()
+        
+        # Normalize and aggregate (with overlay aliases) - inside context
+        canonical_entities = defaultdict(lambda: {
+            "entity_type": None,
+            "entity_variant": None,
+            "event_count": 0,
+            "paper_ids": set(),
+            "first_seen": None,
+            "last_seen": None,
+            "original_names": set(),
+            "role": None
+        })
+        
+        for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
+            entity_dict = {
+                "entity_type": etype,
+                "entity_name": ename,
+                "entity_variant": evariant
+            }
+            
+            # Normalize with overlay aliases
+            from entity_normalizer import normalize_entity, get_entity_role
+            normalized = normalize_entity(entity_dict, norm_map, overlay_aliases)
+            canonical_name = normalized["entity_name"]
+            role = get_entity_role(normalized, norm_map)
+            
+            # Demote process words
+            if etype == "assay" and is_process_word(canonical_name):
+                role = "context"
+            
+            key = (etype, canonical_name)
+            canonical_entities[key]["entity_type"] = etype
+            canonical_entities[key]["entity_variant"] = evariant
+            canonical_entities[key]["event_count"] += event_count
+            canonical_entities[key]["paper_ids"].update(source_ids.split(",") if source_ids else [])
+            canonical_entities[key]["original_names"].add(ename)
+            canonical_entities[key]["role"] = role
+            
+            if canonical_entities[key]["first_seen"] is None or first_seen < canonical_entities[key]["first_seen"]:
+                canonical_entities[key]["first_seen"] = first_seen
+            if canonical_entities[key]["last_seen"] is None or last_seen > canonical_entities[key]["last_seen"]:
+                canonical_entities[key]["last_seen"] = last_seen
     
-    # Normalize and aggregate (with overlay aliases)
-    canonical_entities = defaultdict(lambda: {
-        "entity_type": None,
-        "entity_variant": None,
-        "event_count": 0,
-        "paper_ids": set(),
-        "first_seen": None,
-        "last_seen": None,
-        "original_names": set(),
-        "role": None
-    })
-    
-    for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
-        entity_dict = {
-            "entity_type": etype,
-            "entity_name": ename,
-            "entity_variant": evariant
-        }
-        
-        # Normalize with overlay aliases
-        from entity_normalizer import normalize_entity, get_entity_role
-        normalized = normalize_entity(entity_dict, norm_map, overlay_aliases)
-        canonical_name = normalized["entity_name"]
-        role = get_entity_role(normalized, norm_map)
-        
-        # Demote process words
-        if etype == "assay" and is_process_word(canonical_name):
-            role = "context"
-        
-        key = (etype, canonical_name)
-        canonical_entities[key]["entity_type"] = etype
-        canonical_entities[key]["entity_variant"] = evariant
-        canonical_entities[key]["event_count"] += event_count
-        canonical_entities[key]["paper_ids"].update(source_ids.split(",") if source_ids else [])
-        canonical_entities[key]["original_names"].add(ename)
-        canonical_entities[key]["role"] = role
-        
-        if canonical_entities[key]["first_seen"] is None or first_seen < canonical_entities[key]["first_seen"]:
-            canonical_entities[key]["first_seen"] = first_seen
-        if canonical_entities[key]["last_seen"] is None or last_seen > canonical_entities[key]["last_seen"]:
-            canonical_entities[key]["last_seen"] = last_seen
-    
-    # Export primary
+    # Export primary (outside DB context)
     suffix = f"_{domain_id}" if domain_id else "_v5"
     primary_path = OUTPUT_DIR / f"candidates_primary{suffix}.csv"
     with open(primary_path, 'w', newline='', encoding='utf-8') as f:
@@ -335,8 +337,6 @@ def export_candidates_domain_aware(domain_id: str = None):
                     data["first_seen"], data["last_seen"]
                 ])
     
-    con.close()
-    
     primary_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "primary")
     context_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
     
@@ -354,21 +354,42 @@ def write_run_meta(confidence_changes, canonical_entities, domain_id=None):
     domain = get_domain_by_id(domain_id) if domain_id else None
     overlay_id = f"{domain_id}_v1" if domain_id else None
     
+    # Ensure overlay aliases are loaded and applied for normalization
+    overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
+    overlay_aliases_count = len(overlay_aliases)
+
+    # Re-normalize canonical_entities with overlay aliases if not already
+    norm_map = load_normalization_map()
+    normalized_entities = {}
+    for (etype, ename), data in canonical_entities.items():
+        from entity_normalizer import normalize_entity
+        norm_e = normalize_entity({"entity_type": etype, "entity_name": ename}, norm_map, overlay_aliases)
+        canonical_name = norm_e["entity_name"]
+        key = (etype, canonical_name)
+        if key not in normalized_entities:
+            normalized_entities[key] = data.copy()
+            normalized_entities[key]["entity_name"] = canonical_name
+        else:
+            # Merge event counts and paper_ids if duplicate after normalization
+            normalized_entities[key]["event_count"] += data["event_count"]
+            normalized_entities[key]["paper_ids"].update(data["paper_ids"])
+            normalized_entities[key]["original_names"].update(data["original_names"])
+
     meta = {
         "run_id": datetime.now().strftime("%Y%m%d_%H%M%S"),
         "engine_version": "v5_domain_aware",
         "timestamp": datetime.now().isoformat(),
-        "database": str(DB_PATH),
+        "database": str(DB_PATH.as_posix()),
         "seeds_version": "2026-01-22",
         "domain_id": domain_id or None,
         "domain_name": domain.name if domain else "All Domains",
         "overlay_id": overlay_id,
-        "overlay_aliases_count": len(load_overlay_aliases(domain_id)) if domain_id else 0,
+        "overlay_aliases_count": overlay_aliases_count,
         "counts": {
             "total_events": confidence_changes["high"] + confidence_changes["med"] + confidence_changes["low"],
-            "total_entities": len(canonical_entities),
-            "primary_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "primary"),
-            "context_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
+            "total_entities": len(normalized_entities),
+            "primary_entities": sum(1 for _, data in normalized_entities.items() if data["role"] == "primary"),
+            "context_entities": sum(1 for _, data in normalized_entities.items() if data["role"] == "context")
         },
         "confidence_distribution": {
             "high": confidence_changes["high"],
@@ -379,13 +400,13 @@ def write_run_meta(confidence_changes, canonical_entities, domain_id=None):
         },
         "top_entities": [
             {
-                "name": ename,
+                "name": data["entity_name"],
                 "type": etype,
                 "event_count": data["event_count"],
                 "role": data["role"]
             }
-            for (etype, ename), data in sorted(
-                canonical_entities.items(),
+            for (etype, _), data in sorted(
+                normalized_entities.items(),
                 key=lambda x: x[1]["event_count"],
                 reverse=True
             )[:20]

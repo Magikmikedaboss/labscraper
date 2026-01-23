@@ -322,95 +322,93 @@ def analyze_patterns(top_n: int = 20) -> List[PatternAnalysis]:
     signal_seeds = load_outcome_signals()
     print(f"   Loaded {sum(len(v) for v in signal_seeds.values())} signal phrases")
     
-    # Connect to database
+    # Connect to database and perform all operations inside context
     print(f"\n📂 Connecting to database: {DB_PATH}")
     with sqlite3.connect(DB_PATH) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
-    
-    # Get top entities by event count
-    print(f"\n🔍 Analyzing top {top_n} entities...")
-    top_entities = cur.execute("""
-        SELECT e.entity_name, e.entity_type, COUNT(ee.event_id) as event_count
-        FROM entities e
-        JOIN event_entities ee ON e.entity_id = ee.entity_id
-        GROUP BY e.entity_id
-        ORDER BY event_count DESC
-        LIMIT ?
-    """, (top_n,)).fetchall()
-    
-    # Calculate average event count for momentum detection
-    all_counts = [row["event_count"] for row in top_entities]
-    avg_event_count = sum(all_counts) / len(all_counts) if all_counts else 1
-    
-    # Analyze each entity
-    results = []
-    
-    for row in top_entities:
-        entity_name = row["entity_name"]
-        entity_type = row["entity_type"]
-        event_count = row["event_count"]
         
-        # Get events for this entity (filter by BOTH name AND type to avoid cross-contamination)
-        events = cur.execute("""
-            SELECT re.evidence_snippet, re.confidence
-            FROM research_events re
-            JOIN event_entities ee ON re.event_id = ee.event_id
-            JOIN entities e ON ee.entity_id = e.entity_id
-            WHERE e.entity_name = ? AND e.entity_type = ?
-        """, (entity_name, entity_type)).fetchall()
+        # Get top entities by event count
+        print(f"\n🔍 Analyzing top {top_n} entities...")
+        top_entities = cur.execute("""
+            SELECT e.entity_name, e.entity_type, COUNT(ee.event_id) as event_count
+            FROM entities e
+            JOIN event_entities ee ON e.entity_id = ee.entity_id
+            GROUP BY e.entity_id
+            ORDER BY event_count DESC
+            LIMIT ?
+        """, (top_n,)).fetchall()
         
-        events_data = [dict(event) for event in events]
+        # Calculate average event count for momentum detection
+        all_counts = [row["event_count"] for row in top_entities]
+        avg_event_count = sum(all_counts) / len(all_counts) if all_counts else 1
         
-        # Detect outcome signals across all events (safely handle None snippets)
-        all_text = " ".join(
-            event.get("evidence_snippet") or ""
-            for event in events_data
-        )
-        outcome_signals = detect_outcome_signals(all_text, signal_seeds)
+        # Analyze each entity
+        results = []
         
-        # Detect pattern type
-        entity_counts = {row["entity_name"]: row["event_count"] for row in top_entities}
-        pattern_type = detect_pattern_type(entity_name, event_count, events_data, entity_counts)
-        
-        # Determine time momentum
-        time_momentum = determine_time_momentum(event_count, avg_event_count)
-        
-        # Determine confidence level
-        confidence_level = determine_confidence_level(events_data)
-        
-        # Calculate health score
-        health_score = calculate_health_score(
-            pattern_type,
-            outcome_signals,
-            time_momentum,
-            confidence_level
-        )
-        
-        # Generate interpretation
-        interpretation = generate_interpretation(
-            entity_name,
-            pattern_type,
-            health_score,
-            outcome_signals
-        )
-        
-        # Create analysis object
-        analysis = PatternAnalysis(
-            entity_name=entity_name,
-            entity_type=entity_type,
-            pattern_type=pattern_type,
-            outcome_signals=outcome_signals,
-            event_count=event_count,
-            time_momentum=time_momentum,
-            confidence_level=confidence_level,
-            health_score=health_score,
-            interpretation=interpretation
-        )
-        
-        results.append(analysis)
-    
-    con.close()
+        for row in top_entities:
+            entity_name = row["entity_name"]
+            entity_type = row["entity_type"]
+            event_count = row["event_count"]
+            
+            # Get events for this entity (filter by BOTH name AND type to avoid cross-contamination)
+            events = cur.execute("""
+                SELECT re.evidence_snippet, re.confidence
+                FROM research_events re
+                JOIN event_entities ee ON re.event_id = ee.event_id
+                JOIN entities e ON ee.entity_id = e.entity_id
+                WHERE e.entity_name = ? AND e.entity_type = ?
+            """, (entity_name, entity_type)).fetchall()
+            
+            events_data = [dict(event) for event in events]
+            
+            # Detect outcome signals across all events (safely handle None snippets)
+            all_text = " ".join(
+                event.get("evidence_snippet") or ""
+                for event in events_data
+            )
+            outcome_signals = detect_outcome_signals(all_text, signal_seeds)
+            
+            # Detect pattern type
+            entity_counts = {row["entity_name"]: row["event_count"] for row in top_entities}
+            pattern_type = detect_pattern_type(entity_name, event_count, events_data, entity_counts)
+            
+            # Determine time momentum
+            time_momentum = determine_time_momentum(event_count, avg_event_count)
+            
+            # Determine confidence level
+            confidence_level = determine_confidence_level(events_data)
+            
+            # Calculate health score
+            health_score = calculate_health_score(
+                pattern_type,
+                outcome_signals,
+                time_momentum,
+                confidence_level
+            )
+            
+            # Generate interpretation
+            interpretation = generate_interpretation(
+                entity_name,
+                pattern_type,
+                health_score,
+                outcome_signals
+            )
+            
+            # Create analysis object
+            analysis = PatternAnalysis(
+                entity_name=entity_name,
+                entity_type=entity_type,
+                pattern_type=pattern_type,
+                outcome_signals=outcome_signals,
+                event_count=event_count,
+                time_momentum=time_momentum,
+                confidence_level=confidence_level,
+                health_score=health_score,
+                interpretation=interpretation
+            )
+            
+            results.append(analysis)
     
     # Sort by health score
     results.sort(key=lambda x: x.health_score, reverse=True)

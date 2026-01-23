@@ -48,11 +48,26 @@ def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
     
     This is objective, not subjective.
     """
-    if current_conf == "high":
+    # Normalize confidence to known values (handle synonyms and unexpected values)
+    conf_normalized = current_conf.lower().strip() if current_conf else "low"
+    
+    # Map synonyms to canonical values
+    conf_map = {
+        "high": "high",
+        "med": "med",
+        "medium": "med",
+        "low": "low",
+        "": "low",
+        "none": "low"
+    }
+    
+    conf_normalized = conf_map.get(conf_normalized, "other")
+    
+    if conf_normalized == "high":
         return "high"  # Already high
     
     if not entities_str:
-        return current_conf
+        return conf_normalized
     
     # Parse entities
     entities = entities_str.split("; ") if entities_str else []
@@ -83,10 +98,10 @@ def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
         return "high"
     
     # Promote to med if has high-value entity + assay (even without model context)
-    if has_high_value and has_assay and current_conf == "low":
+    if has_high_value and has_assay and conf_normalized == "low":
         return "med"
     
-    return current_conf
+    return conf_normalized
 
 def count_entities_by_role(entities_str: str, norm_map: dict) -> tuple:
     """
@@ -169,7 +184,7 @@ def export_events_professional():
             'paper_id', 'created_at'
         ])
         
-        confidence_changes = {"low": 0, "med": 0, "high": 0, "boosted_to_high": 0, "boosted_to_med": 0}
+        confidence_changes = {"low": 0, "med": 0, "high": 0, "other": 0, "boosted_to_high": 0, "boosted_to_med": 0}
         
         for event in events:
             event_id, domain, etype, stage, outcome, decision, snippet, conf_orig, source_id, created_at, entities_str = event
@@ -180,8 +195,13 @@ def export_events_professional():
             # Apply safe confidence boost
             conf_boosted = safe_confidence_boost(all_str, conf_orig)
             
-            # Track changes
-            confidence_changes[conf_boosted] += 1
+            # Track changes (safely handle unexpected values)
+            if conf_boosted in confidence_changes:
+                confidence_changes[conf_boosted] += 1
+            else:
+                confidence_changes["other"] += 1
+                conf_boosted = "other"  # Normalize for output
+            
             if conf_orig != conf_boosted:
                 if conf_boosted == "high":
                     confidence_changes["boosted_to_high"] += 1

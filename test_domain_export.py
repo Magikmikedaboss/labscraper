@@ -20,11 +20,11 @@ with open('output/events_export_stem_cells_regen.csv', 'r', encoding='utf-8') as
         print(f"      domain_name: '{row['domain_name']}'")
         print(f"      overlay_id: '{row['overlay_id']}'")
         print(f"\n   Entity columns:")
-    print(f"      primary_entity_count: {row['primary_entity_count']}")
-    print(f"      context_entity_count: {row['context_entity_count']}")
-    
-    if row['entities_primary']:
-        print(f"      entities_primary: {row['entities_primary'][:80]}...")
+        print(f"      primary_entity_count: {row['primary_entity_count']}")
+        print(f"      context_entity_count: {row['context_entity_count']}")
+        
+        if row['entities_primary']:
+            print(f"      entities_primary: {row['entities_primary'][:80]}...")
 
 # Test candidates export
 print("\n2. Testing candidates_primary_stem_cells_regen.csv:")

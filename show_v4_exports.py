@@ -44,20 +44,17 @@ else:
         print(f"   Type: {sample['event_type']}")
         print(f"   Primary Entities ({sample['primary_entity_count']}): {sample['entities_primary'][:100]}...")
 
-# Show candidates
-with open('output/candidates_primary_v4.csv', 'r', encoding='utf-8') as f:
-    reader = csv.DictReader(f)
-    candidates = list(reader)
-
-print(f"\n✅ candidates_primary_v4.csv: {len(candidates)} entities")
-print(f"\n📊 Top 10 Primary Entities:")
+# Show candidates (single read, with error handling)
 try:
-    with open('output/candidates_primary_v4.csv', newline='', encoding='utf-8') as f:
+    with open('output/candidates_primary_v4.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        candidates = [row for row in reader]
+        candidates = list(reader)
+    print(f"\n✅ candidates_primary_v4.csv: {len(candidates)} entities")
 except (FileNotFoundError, IOError) as e:
-    print(f'Error reading candidates_primary_v4.csv: {e}')
+    print(f'\n❌ Error reading candidates_primary_v4.csv: {e}')
     candidates = []
+
+print(f"\n📊 Top 10 Primary Entities:")
 for i, c in enumerate(candidates[:10], 1):
     name = c.get('entity_name')
     etype = c.get('entity_type')
@@ -77,12 +74,16 @@ except json.JSONDecodeError as e:
     meta = {}
 
 print("\n✅ run_meta.json")
+
+# Extract safe variables from meta
 total = meta.get('counts', {}).get('total_events', 0)
 confidence_distribution = meta.get('confidence_distribution', {})
 process_words_demoted = meta.get('process_words_demoted', [])
 high_count = confidence_distribution.get('high', 0)
 med_count = confidence_distribution.get('med', 0)
 low_count = confidence_distribution.get('low', 0)
+
+# Calculate percentages safely
 if total > 0:
     high_pct = round(high_count / total * 100, 1)
     med_pct = round(med_count / total * 100, 1)
@@ -90,19 +91,18 @@ if total > 0:
 else:
     high_pct = med_pct = low_pct = 0.0
 
-
+# Use safe pre-computed variables
 print(f"\n📊 Confidence Distribution:")
-total = meta['counts']['total_events']
 if total > 0:
-    print(f"   High: {meta['confidence_distribution']['high']} ({meta['confidence_distribution']['high']/total*100:.1f}%)")
-    print(f"   Med: {meta['confidence_distribution']['med']} ({meta['confidence_distribution']['med']/total*100:.1f}%)")
-    print(f"   Low: {meta['confidence_distribution']['low']} ({meta['confidence_distribution']['low']/total*100:.1f}%)")
+    print(f"   High: {high_count} ({high_pct}%)")
+    print(f"   Med: {med_count} ({med_pct}%)")
+    print(f"   Low: {low_count} ({low_pct}%)")
 else:
-    print(f"   High: {meta['confidence_distribution']['high']} (0.0%)")
-    print(f"   Med: {meta['confidence_distribution']['med']} (0.0%)")
-    print(f"   Low: {meta['confidence_distribution']['low']} (0.0%)")
+    print(f"   High: {high_count} (0.0%)")
+    print(f"   Med: {med_count} (0.0%)")
+    print(f"   Low: {low_count} (0.0%)")
 
-print(f"\n🔧 Process Words Demoted: {', '.join(meta['process_words_demoted'][:4])}...")
+print(f"\n🔧 Process Words Demoted: {', '.join(process_words_demoted[:4])}...")
 
 print("\n" + "="*70)
 print("✅ All v4 exports ready in output/ directory!")

@@ -1,0 +1,109 @@
+{
+  "overlay_id": "biohacking_longevity_v2",
+  "description": "Longevity-focused overlay emphasizing aging mechanisms, biological age measurement, intervention realism, and translational barriers.",
+  "priority": 2,
+
+  "entity_groups": {
+
+    "aging_mechanism": [
+      "cellular senescence",
+      "senescent cells",
+      "autophagy",
+      "proteostasis",
+      "mitochondrial dysfunction",
+      "genomic instability",
+      "telomere attrition",
+      "epigenetic alterations",
+      "inflammaging"
+    ],
+
+    "nutrient_sensing_pathway": [
+      "mTOR signaling",
+      "mTOR inhibition",
+      "rapamycin treatment",
+      "AMPK activation",
+      "IGF-1 signaling",
+      "insulin signaling",
+      "FOXO transcription factor",
+      "sirtuin activity"
+    ],
+
+    "aging_measurement": [
+      "epigenetic clock",
+      "DNA methylation age",
+      "biological age",
+      "aging biomarker",
+      "healthspan measurement",
+      "lifespan measurement",
+      "longitudinal aging study",
+      "proteomic aging",
+      "transcriptomic aging",
+      "metabolomic aging"
+    ],
+
+    "longevity_intervention": [
+      "caloric restriction",
+      "time-restricted feeding",
+      "fasting mimicking diet",
+      "exercise intervention",
+      "rapamycin",
+      "metformin",
+      "senolytic",
+      "senomorphic"
+    ],
+
+    "translation_barrier": [
+      "failed replication",
+      "no lifespan extension",
+      "tradeoff",
+      "adverse effects",
+      "toxicity",
+      "species differences",
+      "translation to humans",
+      "confounding factors"
+    ],
+
+    "longevity_model": [
+      "mouse lifespan",
+      "murine model",
+      "C. elegans longevity",
+      "Drosophila aging",
+      "zebrafish aging",
+      "non-human primate aging",
+      "human cohort study"
+    ]
+  },
+
+  "promotion_rules": [
+    {
+      "if_present": ["aging_mechanism", "aging_measurement"],
+      "boost": 10,
+      "note": "True longevity signal: mechanism + measurement"
+    },
+    {
+      "if_present": ["aging_mechanism", "longevity_model"],
+      "boost": 6,
+      "note": "Mechanism validated in model organism"
+    }
+  ],
+
+  "demotion_rules": [
+    {
+      "if_present": ["neural_cell"],
+      "penalty": 2,
+      "note": "Neural biology allowed but not dominant in longevity domain"
+    },
+    {
+      "if_present": ["disease_indication"],
+      "penalty": 1,
+      "note": "Disease context retained but secondary"
+    }
+  ],
+
+  "notes": [
+    "Overlay does not suppress disease or neuroscience terms",
+    "Longevity only asserts when measurement or mechanism language is present",
+    "Designed to prevent hype-driven dominance",
+    "Supports honest stagnation and abandonment signals"
+  ]
+}
