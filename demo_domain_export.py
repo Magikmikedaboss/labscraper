@@ -1,0 +1,112 @@
+"""
+Demo: Domain-Aware Export System
+Shows how overlay aliases normalize entities and domain tracking works
+"""
+
+print("="*80)
+print("DOMAIN-AWARE EXPORT SYSTEM DEMO")
+print("="*80)
+
+print("\n📚 Step 1: Load overlay aliases")
+print("-" * 80)
+
+from entity_normalizer import load_overlay_aliases
+
+# Load stem cells overlay
+stem_aliases = load_overlay_aliases("stem_cells_regen")
+print(f"✅ Loaded {len(stem_aliases)} aliases from stem_cells_regen overlay")
+print("\nSample aliases:")
+for abbrev, canonical in list(stem_aliases.items())[:5]:
+    print(f"   {abbrev:20} → {canonical}")
+
+print("\n🔬 Step 2: Test entity normalization")
+print("-" * 80)
+
+from entity_normalizer import normalize_entity, load_normalization_map
+
+norm_map = load_normalization_map()
+
+# Test entities with abbreviations
+test_entities = [
+    {"entity_type": "stem_cell", "entity_name": "MSC"},
+    {"entity_type": "stem_cell", "entity_name": "iPSC"},
+    {"entity_type": "stem_cell", "entity_name": "ESC"},
+    {"entity_type": "marker", "entity_name": "SOX2"},
+    {"entity_type": "marker", "entity_name": "NANOG"},
+]
+
+print("Without overlay (no normalization):")
+for e in test_entities:
+    normalized = normalize_entity(e, norm_map)
+    print(f"   {e['entity_name']:20} → {normalized['entity_name']}")
+
+print("\nWith stem_cells_regen overlay (normalized):")
+for e in test_entities:
+    normalized = normalize_entity(e, norm_map, stem_aliases)
+    arrow = "→" if e['entity_name'] != normalized['entity_name'] else "="
+    print(f"   {e['entity_name']:20} {arrow} {normalized['entity_name']}")
+
+print("\n📊 Step 3: Check exported files")
+print("-" * 80)
+
+import csv
+import json
+
+# Check events export
+print("Events export (events_export_stem_cells_regen.csv):")
+with open('output/events_export_stem_cells_regen.csv', 'r', encoding='utf-8') as f:
+    reader = csv.DictReader(f)
+    row = next(reader)
+    print(f"   ✅ domain_id: '{row['domain_id']}'")
+    print(f"   ✅ domain_name: '{row['domain_name']}'")
+    print(f"   ✅ overlay_id: '{row['overlay_id']}'")
+
+# Check candidates export
+print("\nCandidates export (candidates_primary_stem_cells_regen.csv):")
+with open('output/candidates_primary_stem_cells_regen.csv', 'r', encoding='utf-8') as f:
+    reader = csv.DictReader(f)
+    rows = list(reader)
+    
+    # Find normalized stem cell entities
+    stem_cells = [r for r in rows if r['entity_type'] == 'stem_cell']
+    print(f"   ✅ Found {len(stem_cells)} stem cell entities")
+    
+    for sc in stem_cells[:3]:
+        print(f"      - {sc['entity_name']} ({sc['event_count']} events)")
+        print(f"        Original variants: {sc['original_variants']}")
+
+# Check run metadata
+print("\nRun metadata (run_meta_stem_cells_regen.json):")
+with open('output/run_meta_stem_cells_regen.json', 'r', encoding='utf-8') as f:
+    meta = json.load(f)
+    print(f"   ✅ Engine: {meta['engine_version']}")
+    print(f"   ✅ Domain: {meta['domain_name']}")
+    print(f"   ✅ Overlay: {meta['overlay_id']}")
+    print(f"   ✅ Aliases used: {meta['overlay_aliases_count']}")
+
+print("\n🎯 Step 4: Compare with/without domain")
+print("-" * 80)
+
+print("Exports available:")
+print("   1. events_export_v4.csv (no domain, no overlay)")
+print("   2. events_export_stem_cells_regen.csv (stem cells domain + overlay)")
+print("   3. Future: events_export_neuroscience_cognition.csv (neuro domain + overlay)")
+
+print("\nKey differences:")
+print("   ✅ Domain columns track which lens was used")
+print("   ✅ Overlay aliases normalize abbreviations (MSC→mesenchymal stem cell)")
+print("   ✅ run_meta.json shows overlay version for reproducibility")
+
+print("\n" + "="*80)
+print("✅ DEMO COMPLETE - Domain-aware export system working!")
+print("="*80)
+
+print("\n💡 Usage:")
+print("   # Export with stem cells domain")
+print("   python export_csv_v5_domain_aware.py --domain stem_cells_regen")
+print()
+print("   # Export with neuroscience domain")
+print("   python export_csv_v5_domain_aware.py --domain neuroscience_cognition")
+print()
+print("   # Export all domains (no filter)")
+print("   python export_csv_v5_domain_aware.py")
