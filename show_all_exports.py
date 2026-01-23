@@ -19,6 +19,9 @@ csv_files = [
 
 print("\n📊 CSV Files in output/:\n")
 
+missing_files = []
+existing_files = []
+
 for i, filename in enumerate(csv_files, 1):
     filepath = OUTPUT_DIR / filename
     if filepath.exists():
@@ -34,10 +37,29 @@ for i, filename in enumerate(csv_files, 1):
         print(f"   📅 Modified: {mod_time_str}")
         print(f"   📦 Size: {size_kb:.1f} KB")
         print()
+        
+        existing_files.append(filename)
+    else:
+        missing_files.append(filename)
+        print(f"{i}. {filename}")
+        print(f"   ❌ NOT FOUND")
+        print()
 
 print("=" * 70)
-print("\n✅ All 3 CSV exports are current!")
-print("\nTo open them:")
-print("  start output/candidates_primary_v4.csv")
-print("  start output/events_export_v4.csv")
-print("  start output/pattern_intelligence_export.csv")
+
+# Only show success if all files exist
+if not missing_files:
+    print("\n✅ All 3 CSV exports are current!")
+    print("\nTo open them:")
+    for filename in existing_files:
+        print(f"  start output/{filename}")
+else:
+    print(f"\n⚠️  Missing {len(missing_files)} file(s):")
+    for filename in missing_files:
+        print(f"   - {filename}")
+    
+    if existing_files:
+        print(f"\n✅ Found {len(existing_files)} file(s):")
+        print("\nTo open existing files:")
+        for filename in existing_files:
+            print(f"  start output/{filename}")

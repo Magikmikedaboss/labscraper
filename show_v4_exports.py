@@ -14,14 +14,24 @@ with open('output/events_export_v4.csv', 'r', encoding='utf-8') as f:
 print(f"\n✅ events_export_v4.csv: {len(events)} events")
 print(f"   Columns: {', '.join(list(events[0].keys())[:8])}...")
 
-# Show high confidence event
-high = [e for e in events if e['confidence_boosted'] == 'high'][0]
-print(f"\n📋 Sample HIGH Confidence Event:")
-print(f"   Event ID: {high['event_id']}")
-print(f"   Type: {high['event_type']}")
-print(f"   Confidence: {high['confidence_original']} → {high['confidence_boosted']}")
-print(f"   Primary Entities ({high['primary_entity_count']}): {high['entities_primary'][:100]}...")
-print(f"   Context Entities ({high['context_entity_count']}): {high['entities_context'][:100]}...")
+# Show high confidence event (safely handle if none exist)
+high = next((e for e in events if e['confidence_boosted'] == 'high'), None)
+if high:
+    print(f"\n📋 Sample HIGH Confidence Event:")
+    print(f"   Event ID: {high['event_id']}")
+    print(f"   Type: {high['event_type']}")
+    print(f"   Confidence: {high['confidence_original']} → {high['confidence_boosted']}")
+    print(f"   Primary Entities ({high['primary_entity_count']}): {high['entities_primary'][:100]}...")
+    print(f"   Context Entities ({high['context_entity_count']}): {high['entities_context'][:100]}...")
+else:
+    print(f"\n⚠️  No HIGH confidence events found")
+    # Show a medium or low confidence event instead
+    sample = events[0] if events else None
+    if sample:
+        print(f"\n📋 Sample Event (confidence: {sample['confidence_boosted']}):")
+        print(f"   Event ID: {sample['event_id']}")
+        print(f"   Type: {sample['event_type']}")
+        print(f"   Primary Entities ({sample['primary_entity_count']}): {sample['entities_primary'][:100]}...")
 
 # Show candidates
 with open('output/candidates_primary_v4.csv', 'r', encoding='utf-8') as f:

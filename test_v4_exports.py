@@ -39,7 +39,7 @@ def test_process_words_demoted():
     with open(meta_path, 'r', encoding='utf-8') as f:
         meta = json.load(f)
     
-    demoted_in_meta = set(meta.get("process_words_demoted", []))
+    demoted_in_meta = set(x.lower() for x in meta.get("process_words_demoted", []))
     if process_words.issubset(demoted_in_meta):
         print(f"✅ PASS: All process words listed as demoted in run_meta.json")
     else:
@@ -119,7 +119,11 @@ def test_entity_count_columns():
         reader = csv.DictReader(f)
         events = list(reader)
     
-    # Check columns exist
+    # Check columns exist (first verify events is not empty)
+    if not events:
+        print(f"❌ FAIL: Events export is empty")
+        return False
+    
     required_cols = ['primary_entity_count', 'context_entity_count', 
                      'entities_primary', 'entities_context', 'entities_all']
     

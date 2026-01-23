@@ -27,6 +27,12 @@ def view_export():
         reader = csv.DictReader(f)
         rows = list(reader)
     
+    # Check for empty export
+    if not rows:
+        print(f"\n⚠️  Export file is empty - no data to display")
+        print(f"\nRun: python export_pattern_intelligence.py")
+        return
+    
     print(f"\n📊 Total Entities Analyzed: {len(rows)}")
     
     # Pattern distribution
@@ -89,10 +95,18 @@ def view_export():
     total_signals = total_positive + total_neutral + total_negative + total_replication
     
     print(f"   Total Signals Detected: {total_signals}")
-    print(f"   Positive:    {total_positive:4d} ({total_positive/total_signals*100:5.1f}%)")
-    print(f"   Neutral:     {total_neutral:4d} ({total_neutral/total_signals*100:5.1f}%)")
-    print(f"   Negative:    {total_negative:4d} ({total_negative/total_signals*100:5.1f}%)")
-    print(f"   Replication: {total_replication:4d} ({total_replication/total_signals*100:5.1f}%)")
+    
+    # Handle zero total_signals to avoid ZeroDivisionError
+    if total_signals > 0:
+        print(f"   Positive:    {total_positive:4d} ({total_positive/total_signals*100:5.1f}%)")
+        print(f"   Neutral:     {total_neutral:4d} ({total_neutral/total_signals*100:5.1f}%)")
+        print(f"   Negative:    {total_negative:4d} ({total_negative/total_signals*100:5.1f}%)")
+        print(f"   Replication: {total_replication:4d} ({total_replication/total_signals*100:5.1f}%)")
+    else:
+        print(f"   Positive:    {total_positive:4d} (0.0%)")
+        print(f"   Neutral:     {total_neutral:4d} (0.0%)")
+        print(f"   Negative:    {total_negative:4d} (0.0%)")
+        print(f"   Replication: {total_replication:4d} (0.0%)")
     
     # Sample interpretations
     print(f"\n💬 Sample Interpretations:")
