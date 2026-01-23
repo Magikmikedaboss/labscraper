@@ -110,16 +110,19 @@ def view_export():
     
     # Sample interpretations
     print(f"\n💬 Sample Interpretations:")
-    print(f"\n1. Highest Score ({sorted_rows[0]['entity_name']}):")
-    print(f"   {sorted_rows[0]['interpretation']}")
-    
-    if len(sorted_rows) >= 10:
-        mid_idx = len(sorted_rows) // 2
-        print(f"\n2. Mid-Range Score ({sorted_rows[mid_idx]['entity_name']}):")
-        print(f"   {sorted_rows[mid_idx]['interpretation']}")
-    
-    print(f"\n3. Lowest Score ({sorted_rows[-1]['entity_name']}):")
-    print(f"   {sorted_rows[-1]['interpretation']}")
+    length = len(sorted_rows)
+    if length >= 1:
+        print(f"\n1. Highest Score ({sorted_rows[0]['entity_name']}):")
+        print(f"   {sorted_rows[0]['interpretation']}")
+    if length >= 3:
+        mid_idx = length // 2
+        # Only print mid if not duplicating highest/lowest
+        if mid_idx != 0 and mid_idx != length - 1:
+            print(f"\n2. Mid-Range Score ({sorted_rows[mid_idx]['entity_name']}):")
+            print(f"   {sorted_rows[mid_idx]['interpretation']}")
+    if length >= 2:
+        print(f"\n3. Lowest Score ({sorted_rows[-1]['entity_name']}):")
+        print(f"   {sorted_rows[-1]['interpretation']}")
     
     # Export info
     print(f"\n" + "="*80)

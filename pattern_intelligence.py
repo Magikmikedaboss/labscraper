@@ -324,9 +324,9 @@ def analyze_patterns(top_n: int = 20) -> List[PatternAnalysis]:
     
     # Connect to database
     print(f"\n📂 Connecting to database: {DB_PATH}")
-    con = sqlite3.connect(DB_PATH)
-    con.row_factory = sqlite3.Row
-    cur = con.cursor()
+    with sqlite3.connect(DB_PATH) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
     
     # Get top entities by event count
     print(f"\n🔍 Analyzing top {top_n} entities...")

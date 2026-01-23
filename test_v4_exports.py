@@ -102,9 +102,15 @@ def test_confidence_boost():
     
     print(f"\n✅ Boost rule: {meta['confidence_boost_rule']}")
     print(f"✅ Confidence distribution after boost:")
-    print(f"   High: {meta['confidence_distribution']['high']} ({meta['confidence_distribution']['high']/len(events)*100:.1f}%)")
-    print(f"   Med: {meta['confidence_distribution']['med']} ({meta['confidence_distribution']['med']/len(events)*100:.1f}%)")
-    print(f"   Low: {meta['confidence_distribution']['low']} ({meta['confidence_distribution']['low']/len(events)*100:.1f}%)")
+    total = len(events)
+    if total > 0:
+        print(f"   High: {meta['confidence_distribution']['high']} ({meta['confidence_distribution']['high']/total*100:.1f}%)")
+        print(f"   Med: {meta['confidence_distribution']['med']} ({meta['confidence_distribution']['med']/total*100:.1f}%)")
+        print(f"   Low: {meta['confidence_distribution']['low']} ({meta['confidence_distribution']['low']/total*100:.1f}%)")
+    else:
+        print(f"   High: {meta['confidence_distribution']['high']} (0.0%)")
+        print(f"   Med: {meta['confidence_distribution']['med']} (0.0%)")
+        print(f"   Low: {meta['confidence_distribution']['low']} (0.0%)")
     
     return True
 

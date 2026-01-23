@@ -1,51 +1,51 @@
 entity_name,entity_type,pattern_type,health_score,event_count,positive_signals,neutral_signals,negative_signals,replication_signals,total_signals,time_momentum,confidence_level,interpretation,export_timestamp
-LC-MS,assay,convergence,63,42,1,5,0,1,7,increasing,med,LC-MS shows promising and active research with convergence around consistent methods and predominantly positive outcome language.,2026-01-22 16:40:08
-affinity,assay,escalation,59,7,1,1,0,1,3,stable,med,affinity shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:40:08
-mass spectrometer,assay,escalation,58,8,1,3,0,0,4,stable,med,mass spectrometer shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:40:08
-LIRAGLUTIDE,compound,escalation,58,7,1,0,0,1,2,stable,med,LIRAGLUTIDE shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:40:08
-Plasma,model,convergence,57,15,1,2,0,0,3,increasing,med,Plasma shows exploratory research with convergence around consistent methods and predominantly positive outcome language.,2026-01-22 16:40:08
-In vivo,model,convergence,56,15,1,1,0,0,2,increasing,med,In vivo shows exploratory research with convergence around consistent methods and predominantly positive outcome language.,2026-01-22 16:40:08
-RAT,model,escalation,56,9,1,1,0,0,2,stable,med,RAT shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:40:08
-quantitation,assay,escalation,56,6,1,1,0,0,2,stable,med,quantitation shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:40:08
-efficacy,assay,escalation,55,6,1,0,0,0,1,stable,med,efficacy shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:40:08
-HPLC,assay,escalation,53,9,0,0,0,1,1,stable,med,HPLC shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-mass spectrometry,assay,convergence,52,30,0,2,0,0,2,increasing,med,mass spectrometry shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:40:08
-chromatography,assay,convergence,51,15,0,1,0,0,1,increasing,med,chromatography shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:40:08
-purification,assay,escalation,51,9,0,1,0,0,1,stable,med,purification shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-KINASE,target,escalation,51,8,1,1,1,0,3,stable,med,KINASE shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-SERUM,model,convergence,50,18,0,0,0,0,0,increasing,med,SERUM shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:40:08
-SEMAGLUTIDE,compound,convergence,50,10,1,0,0,0,1,stable,med,SEMAGLUTIDE shows exploratory research with convergence around consistent methods and predominantly positive outcome language.,2026-01-22 16:40:08
-liquid chromatography,assay,escalation,50,8,0,0,0,0,0,stable,med,liquid chromatography shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-GLUCAGON,compound,escalation,50,8,1,0,1,0,2,stable,med,GLUCAGON shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-Tissue,model,escalation,50,7,0,0,0,0,0,stable,med,Tissue shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-Alzheimer,indication,escalation,50,5,1,0,1,0,2,stable,med,Alzheimer shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-cancer,indication,escalation,48,8,0,0,1,1,2,stable,med,cancer shows exploratory research with increasing validation efforts and predominantly negative outcome language.,2026-01-22 16:40:08
-MSC,stem_cell,convergence,47,11,1,2,1,0,4,stable,med,MSC shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:40:08
-quantification,assay,convergence,46,10,0,1,0,0,1,stable,med,quantification shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:40:08
-RECEPTOR,target,escalation,46,6,0,1,1,0,2,stable,med,RECEPTOR shows exploratory research with increasing validation efforts and predominantly negative outcome language.,2026-01-22 16:40:08
-In vitro,model,escalation,45,6,0,0,1,0,1,stable,med,In vitro shows exploratory research with increasing validation efforts and predominantly negative outcome language.,2026-01-22 16:40:08
-HUMAN,model,convergence,40,20,0,0,2,0,2,increasing,med,HUMAN shows exploratory research with convergence around consistent methods and predominantly negative outcome language.,2026-01-22 16:40:08
-half-life,assay,escalation,40,4,1,0,0,0,1,decreasing,med,half-life shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:40:08
-migration,pathway,escalation,40,4,1,0,0,0,1,decreasing,med,migration shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:40:08
-MS/MS,assay,escalation,35,4,0,0,0,0,0,decreasing,med,MS/MS shows stalled or uncertain research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-phosphorylation,pathway,escalation,35,4,0,0,0,0,0,decreasing,med,phosphorylation shows stalled or uncertain research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-mobile phase,assay,escalation,35,4,0,0,0,0,0,decreasing,med,mobile phase shows stalled or uncertain research with increasing validation efforts and mixed outcome language.,2026-01-22 16:40:08
-acetylation,pathway,fragmentation,26,7,2,1,2,0,5,stable,med,acetylation shows stalled or uncertain research remaining methodologically diverse and mixed outcome language.,2026-01-22 16:40:08
-Cell culture,model,fragmentation,25,8,0,0,0,0,0,stable,med,Cell culture shows stalled or uncertain research remaining methodologically diverse and mixed outcome language.,2026-01-22 16:40:08
-FBS,model,fragmentation,25,6,0,0,0,0,0,stable,med,FBS shows stalled or uncertain research remaining methodologically diverse and mixed outcome language.,2026-01-22 16:40:08
-aggregation,pathway,stagnation,22,24,1,2,1,0,4,increasing,med,aggregation shows stalled or uncertain research encountering persistent technical barriers and mixed outcome language.,2026-01-22 16:40:08
-peptide degradation,pathway,fragmentation,21,9,0,1,1,0,2,stable,med,peptide degradation shows stalled or uncertain research remaining methodologically diverse and predominantly negative outcome language.,2026-01-22 16:40:08
-internal standard,assay,fragmentation,12,4,0,2,0,0,2,decreasing,med,internal standard shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:40:08
-BLOOD,model,fragmentation,11,4,0,1,0,0,1,decreasing,med,BLOOD shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:40:08
-Culture media,model,fragmentation,10,4,0,0,0,0,0,decreasing,med,Culture media shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:40:08
-Fetal bovine serum,model,fragmentation,10,4,0,0,0,0,0,decreasing,med,Fetal bovine serum shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:40:08
-oxidation,pathway,fragmentation,10,4,0,0,0,0,0,decreasing,med,oxidation shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:40:08
-bioavailability,assay,abandonment,0,3,0,1,0,0,1,decreasing,med,bioavailability shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:40:08
-accuracy,assay,abandonment,0,3,0,2,0,0,2,decreasing,med,accuracy shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:40:08
-glycosylation,pathway,abandonment,0,3,0,0,1,0,1,decreasing,med,glycosylation shows declining research attention with declining research interest and predominantly negative outcome language.,2026-01-22 16:40:08
-diabetes,indication,abandonment,0,3,0,0,0,0,0,decreasing,med,diabetes shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:40:08
-clearance,assay,abandonment,0,3,1,0,0,0,1,decreasing,med,clearance shows declining research attention with declining research interest and predominantly positive outcome language.,2026-01-22 16:40:08
-proliferation,pathway,abandonment,0,3,0,0,0,0,0,decreasing,med,proliferation shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:40:08
-microscopy,assay,abandonment,0,3,0,0,0,0,0,decreasing,med,microscopy shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:40:08
-reproducibility,assay,abandonment,0,3,0,1,0,0,1,decreasing,med,reproducibility shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:40:08
-stem cell,stem_cell,abandonment,0,3,0,0,0,0,0,decreasing,med,stem cell shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:40:08
+LC-MS,assay,convergence,63,42,1,5,0,1,7,increasing,med,LC-MS shows promising and active research with convergence around consistent methods and predominantly positive outcome language.,2026-01-22 16:52:15
+affinity,assay,escalation,59,7,1,1,0,1,3,stable,med,affinity shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:52:15
+mass spectrometer,assay,escalation,58,8,1,3,0,0,4,stable,med,mass spectrometer shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:52:15
+LIRAGLUTIDE,compound,escalation,58,7,1,0,0,1,2,stable,med,LIRAGLUTIDE shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:52:15
+Plasma,model,convergence,57,15,1,2,0,0,3,increasing,med,Plasma shows exploratory research with convergence around consistent methods and predominantly positive outcome language.,2026-01-22 16:52:15
+In vivo,model,convergence,56,15,1,1,0,0,2,increasing,med,In vivo shows exploratory research with convergence around consistent methods and predominantly positive outcome language.,2026-01-22 16:52:15
+RAT,model,escalation,56,9,1,1,0,0,2,stable,med,RAT shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:52:15
+quantitation,assay,escalation,56,6,1,1,0,0,2,stable,med,quantitation shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:52:15
+efficacy,assay,escalation,55,6,1,0,0,0,1,stable,med,efficacy shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:52:15
+HPLC,assay,escalation,53,9,0,0,0,1,1,stable,med,HPLC shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+mass spectrometry,assay,convergence,52,30,0,2,0,0,2,increasing,med,mass spectrometry shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:52:15
+chromatography,assay,convergence,51,15,0,1,0,0,1,increasing,med,chromatography shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:52:15
+purification,assay,escalation,51,9,0,1,0,0,1,stable,med,purification shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+KINASE,target,escalation,51,8,1,1,1,0,3,stable,med,KINASE shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+SERUM,model,convergence,50,18,0,0,0,0,0,increasing,med,SERUM shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:52:15
+SEMAGLUTIDE,compound,convergence,50,10,1,0,0,0,1,stable,med,SEMAGLUTIDE shows exploratory research with convergence around consistent methods and predominantly positive outcome language.,2026-01-22 16:52:15
+liquid chromatography,assay,escalation,50,8,0,0,0,0,0,stable,med,liquid chromatography shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+GLUCAGON,compound,escalation,50,8,1,0,1,0,2,stable,med,GLUCAGON shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+Tissue,model,escalation,50,7,0,0,0,0,0,stable,med,Tissue shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+Alzheimer,indication,escalation,50,5,1,0,1,0,2,stable,med,Alzheimer shows exploratory research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+cancer,indication,escalation,48,8,0,0,1,1,2,stable,med,cancer shows exploratory research with increasing validation efforts and predominantly negative outcome language.,2026-01-22 16:52:15
+MSC,stem_cell,convergence,47,11,1,2,1,0,4,stable,med,MSC shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:52:15
+quantification,assay,convergence,46,10,0,1,0,0,1,stable,med,quantification shows exploratory research with convergence around consistent methods and mixed outcome language.,2026-01-22 16:52:15
+RECEPTOR,target,escalation,46,6,0,1,1,0,2,stable,med,RECEPTOR shows exploratory research with increasing validation efforts and predominantly negative outcome language.,2026-01-22 16:52:15
+In vitro,model,escalation,45,6,0,0,1,0,1,stable,med,In vitro shows exploratory research with increasing validation efforts and predominantly negative outcome language.,2026-01-22 16:52:15
+HUMAN,model,convergence,40,20,0,0,2,0,2,increasing,med,HUMAN shows exploratory research with convergence around consistent methods and predominantly negative outcome language.,2026-01-22 16:52:15
+half-life,assay,escalation,40,4,1,0,0,0,1,decreasing,med,half-life shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:52:15
+migration,pathway,escalation,40,4,1,0,0,0,1,decreasing,med,migration shows exploratory research with increasing validation efforts and predominantly positive outcome language.,2026-01-22 16:52:15
+MS/MS,assay,escalation,35,4,0,0,0,0,0,decreasing,med,MS/MS shows stalled or uncertain research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+phosphorylation,pathway,escalation,35,4,0,0,0,0,0,decreasing,med,phosphorylation shows stalled or uncertain research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+mobile phase,assay,escalation,35,4,0,0,0,0,0,decreasing,med,mobile phase shows stalled or uncertain research with increasing validation efforts and mixed outcome language.,2026-01-22 16:52:15
+acetylation,pathway,fragmentation,26,7,2,1,2,0,5,stable,med,acetylation shows stalled or uncertain research remaining methodologically diverse and mixed outcome language.,2026-01-22 16:52:15
+Cell culture,model,fragmentation,25,8,0,0,0,0,0,stable,med,Cell culture shows stalled or uncertain research remaining methodologically diverse and mixed outcome language.,2026-01-22 16:52:15
+FBS,model,fragmentation,25,6,0,0,0,0,0,stable,med,FBS shows stalled or uncertain research remaining methodologically diverse and mixed outcome language.,2026-01-22 16:52:15
+aggregation,pathway,stagnation,22,24,1,2,1,0,4,increasing,med,aggregation shows stalled or uncertain research encountering persistent technical barriers and mixed outcome language.,2026-01-22 16:52:15
+peptide degradation,pathway,fragmentation,21,9,0,1,1,0,2,stable,med,peptide degradation shows stalled or uncertain research remaining methodologically diverse and predominantly negative outcome language.,2026-01-22 16:52:15
+internal standard,assay,fragmentation,12,4,0,2,0,0,2,decreasing,med,internal standard shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:52:15
+BLOOD,model,fragmentation,11,4,0,1,0,0,1,decreasing,med,BLOOD shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:52:15
+Culture media,model,fragmentation,10,4,0,0,0,0,0,decreasing,med,Culture media shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:52:15
+Fetal bovine serum,model,fragmentation,10,4,0,0,0,0,0,decreasing,med,Fetal bovine serum shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:52:15
+oxidation,pathway,fragmentation,10,4,0,0,0,0,0,decreasing,med,oxidation shows declining research attention remaining methodologically diverse and mixed outcome language.,2026-01-22 16:52:15
+bioavailability,assay,abandonment,0,3,0,1,0,0,1,decreasing,med,bioavailability shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:52:15
+accuracy,assay,abandonment,0,3,0,2,0,0,2,decreasing,med,accuracy shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:52:15
+glycosylation,pathway,abandonment,0,3,0,0,1,0,1,decreasing,med,glycosylation shows declining research attention with declining research interest and predominantly negative outcome language.,2026-01-22 16:52:15
+diabetes,indication,abandonment,0,3,0,0,0,0,0,decreasing,med,diabetes shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:52:15
+clearance,assay,abandonment,0,3,1,0,0,0,1,decreasing,med,clearance shows declining research attention with declining research interest and predominantly positive outcome language.,2026-01-22 16:52:15
+proliferation,pathway,abandonment,0,3,0,0,0,0,0,decreasing,med,proliferation shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:52:15
+microscopy,assay,abandonment,0,3,0,0,0,0,0,decreasing,med,microscopy shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:52:15
+reproducibility,assay,abandonment,0,3,0,1,0,0,1,decreasing,med,reproducibility shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:52:15
+stem cell,stem_cell,abandonment,0,3,0,0,0,0,0,decreasing,med,stem cell shows declining research attention with declining research interest and mixed outcome language.,2026-01-22 16:52:15

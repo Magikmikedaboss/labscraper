@@ -120,8 +120,8 @@ def count_entities_by_role(entities_str: str, norm_map: dict) -> tuple:
 
 def export_events_professional():
     """Export events with professional polish"""
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
     
     norm_map = load_normalization_map()
     
