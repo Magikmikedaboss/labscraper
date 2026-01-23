@@ -362,8 +362,12 @@ def analyze_patterns(top_n: int = 20) -> List[PatternAnalysis]:
         
         events_data = [dict(event) for event in events]
         
-        # Detect outcome signals across all events
-        all_text = " ".join(event["evidence_snippet"] for event in events_data)
+        # Detect outcome signals across all events (safely handle None snippets)
+        all_text = " ".join(
+            event.get("evidence_snippet") or "" 
+            for event in events_data 
+            if event.get("evidence_snippet")
+        )
         outcome_signals = detect_outcome_signals(all_text, signal_seeds)
         
         # Detect pattern type

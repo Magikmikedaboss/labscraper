@@ -12,11 +12,18 @@ from pattern_intelligence import analyze_patterns
 OUTPUT_DIR = Path("output")
 OUTPUT_FILE = OUTPUT_DIR / "pattern_intelligence_export.csv"
 
+# Ensure output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def export_to_csv(results, output_file):
     """Export pattern analysis results to CSV"""
     
     print(f"\n📊 Exporting {len(results)} pattern analyses to CSV...")
+    
+    # Ensure parent directory exists
+    output_file = Path(output_file)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
     
     # Get current timestamp
     export_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

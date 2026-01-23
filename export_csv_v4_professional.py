@@ -308,7 +308,7 @@ def write_run_meta(confidence_changes, canonical_entities):
         "database": str(DB_PATH),
         "seeds_version": "2026-01-22",
         "counts": {
-            "total_events": sum(confidence_changes.values()) - confidence_changes["boosted_to_high"] - confidence_changes["boosted_to_med"],
+            "total_events": confidence_changes["high"] + confidence_changes["med"] + confidence_changes["low"],
             "total_entities": len(canonical_entities),
             "primary_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "primary"),
             "context_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
