@@ -151,26 +151,48 @@ def export_events_domain_aware(domain_id: str = None):
     with sqlite3.connect(DB_PATH) as con:
         cur = con.cursor()
         
-        # Get all events
-        events = cur.execute("""
-            SELECT 
-                re.event_id,
-                re.research_domain,
-                re.event_type,
-                re.study_stage,
-                re.outcome,
-                re.decision_driver,
-                re.evidence_snippet,
-                re.confidence,
-                re.source_id,
-                re.created_at,
-                GROUP_CONCAT(e.entity_type || ':' || e.entity_name, '; ') as entities
-            FROM research_events re
-            LEFT JOIN event_entities ee ON re.event_id = ee.event_id
-            LEFT JOIN entities e ON ee.entity_id = e.entity_id
-            GROUP BY re.event_id
-            ORDER BY re.created_at DESC
-        """).fetchall()
+        # Get all events (with optional domain filter)
+        if domain_id:
+            events = cur.execute("""
+                SELECT 
+                    re.event_id,
+                    re.research_domain,
+                    re.event_type,
+                    re.study_stage,
+                    re.outcome,
+                    re.decision_driver,
+                    re.evidence_snippet,
+                    re.confidence,
+                    re.source_id,
+                    re.created_at,
+                    GROUP_CONCAT(e.entity_type || ':' || e.entity_name, '; ') as entities
+                FROM research_events re
+                LEFT JOIN event_entities ee ON re.event_id = ee.event_id
+                LEFT JOIN entities e ON ee.entity_id = e.entity_id
+                WHERE re.research_domain = ?
+                GROUP BY re.event_id
+                ORDER BY re.created_at DESC
+            """, (domain_id,)).fetchall()
+        else:
+            events = cur.execute("""
+                SELECT 
+                    re.event_id,
+                    re.research_domain,
+                    re.event_type,
+                    re.study_stage,
+                    re.outcome,
+                    re.decision_driver,
+                    re.evidence_snippet,
+                    re.confidence,
+                    re.source_id,
+                    re.created_at,
+                    GROUP_CONCAT(e.entity_type || ':' || e.entity_name, '; ') as entities
+                FROM research_events re
+                LEFT JOIN event_entities ee ON re.event_id = ee.event_id
+                LEFT JOIN entities e ON ee.entity_id = e.entity_id
+                GROUP BY re.event_id
+                ORDER BY re.created_at DESC
+            """).fetchall()
     
     # Export with enhancements (outside DB context)
     suffix = f"_{domain_id}" if domain_id else "_v5"
@@ -249,23 +271,42 @@ def export_candidates_domain_aware(domain_id: str = None):
     with sqlite3.connect(DB_PATH) as con:
         cur = con.cursor()
         
-        # Get all entities
-        entities_data = cur.execute("""
-            SELECT 
-                e.entity_id,
-                e.entity_type,
-                e.entity_name,
-                e.entity_variant,
-                COUNT(DISTINCT ee.event_id) as event_count,
-                GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
-                MIN(re.created_at) as first_seen,
-                MAX(re.created_at) as last_seen
-            FROM entities e
-            JOIN event_entities ee ON e.entity_id = ee.entity_id
-            JOIN research_events re ON ee.event_id = re.event_id
-            GROUP BY e.entity_id
-            ORDER BY event_count DESC
-        """).fetchall()
+        # Get all entities (with optional domain filter)
+        if domain_id:
+            entities_data = cur.execute("""
+                SELECT 
+                    e.entity_id,
+                    e.entity_type,
+                    e.entity_name,
+                    e.entity_variant,
+                    COUNT(DISTINCT ee.event_id) as event_count,
+                    GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
+                    MIN(re.created_at) as first_seen,
+                    MAX(re.created_at) as last_seen
+                FROM entities e
+                JOIN event_entities ee ON e.entity_id = ee.entity_id
+                JOIN research_events re ON ee.event_id = re.event_id
+                WHERE re.research_domain = ?
+                GROUP BY e.entity_id
+                ORDER BY event_count DESC
+            """, (domain_id,)).fetchall()
+        else:
+            entities_data = cur.execute("""
+                SELECT 
+                    e.entity_id,
+                    e.entity_type,
+                    e.entity_name,
+                    e.entity_variant,
+                    COUNT(DISTINCT ee.event_id) as event_count,
+                    GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
+                    MIN(re.created_at) as first_seen,
+                    MAX(re.created_at) as last_seen
+                FROM entities e
+                JOIN event_entities ee ON e.entity_id = ee.entity_id
+                JOIN research_events re ON ee.event_id = re.event_id
+                GROUP BY e.entity_id
+                ORDER BY event_count DESC
+            """).fetchall()
         
         # Normalize and aggregate (with overlay aliases) - inside context
         canonical_entities = defaultdict(lambda: {

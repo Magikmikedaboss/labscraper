@@ -1,8 +1,16 @@
 import os
+import sys
 from pathlib import Path
 import datetime
 
 output_dir = Path('output')
+
+# Check if output directory exists
+if not output_dir.exists() or not output_dir.is_dir():
+    print(f"Output directory '{output_dir}' does not exist or is not a directory.")
+    print("Please run the scraper first to generate output files.")
+    sys.exit(0)
+
 files = []
 
 for f in output_dir.iterdir():

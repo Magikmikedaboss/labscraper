@@ -36,7 +36,7 @@ if hours_ago > 1:
     print(f"\n⚠️  WARNING: This export is from {hours_ago:.1f} hours ago!")
     print("   If you just ran the scraper, there should be a more recent export.")
 else:
-    print(f"\n✅ This export is recent (less than 1 hour old)")
+    print("\n✅ This export is recent (less than 1 hour old)")
 
 print("\n" + "="*70)
 print("EXPORT SUMMARY")
