@@ -120,31 +120,31 @@ def count_entities_by_role(entities_str: str, norm_map: dict) -> tuple:
 
 def export_events_professional():
     """Export events with professional polish"""
-    with sqlite3.connect(DB_PATH) as con:
-        cur = con.cursor()
-    
     norm_map = load_normalization_map()
     
-    # Get all events
-    events = cur.execute("""
-        SELECT 
-            re.event_id,
-            re.research_domain,
-            re.event_type,
-            re.study_stage,
-            re.outcome,
-            re.decision_driver,
-            re.evidence_snippet,
-            re.confidence,
-            re.source_id,
-            re.created_at,
-            GROUP_CONCAT(e.entity_type || ':' || e.entity_name, '; ') as entities
-        FROM research_events re
-        LEFT JOIN event_entities ee ON re.event_id = ee.event_id
-        LEFT JOIN entities e ON ee.entity_id = e.entity_id
-        GROUP BY re.event_id
-        ORDER BY re.created_at DESC
-    """).fetchall()
+    # Get all events - keep connection open during query
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        
+        events = cur.execute("""
+            SELECT 
+                re.event_id,
+                re.research_domain,
+                re.event_type,
+                re.study_stage,
+                re.outcome,
+                re.decision_driver,
+                re.evidence_snippet,
+                re.confidence,
+                re.source_id,
+                re.created_at,
+                GROUP_CONCAT(e.entity_type || ':' || e.entity_name, '; ') as entities
+            FROM research_events re
+            LEFT JOIN event_entities ee ON re.event_id = ee.event_id
+            LEFT JOIN entities e ON ee.entity_id = e.entity_id
+            GROUP BY re.event_id
+            ORDER BY re.created_at DESC
+        """).fetchall()
     
     # Export with enhancements
     events_path = OUTPUT_DIR / "events_export_v4.csv"
@@ -184,8 +184,6 @@ def export_events_professional():
                 primary_str, context_str, all_str,
                 source_id, created_at
             ])
-    
-    con.close()
     
     print(f"✅ Exported professional events: {len(events)} → {events_path}")
     

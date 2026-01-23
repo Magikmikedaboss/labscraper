@@ -145,7 +145,7 @@ def detect_pattern_type(
     # Check for escalation (look for progression signals in events)
     escalation_keywords = ["in vivo", "clinical", "human", "patient", "phase"]
     has_escalation = any(
-        any(kw in event.get("evidence_snippet", "").lower() for kw in escalation_keywords)
+        any(kw in (event.get("evidence_snippet") or "").lower() for kw in escalation_keywords)
         for event in events_data
     )
     if has_escalation:
@@ -364,9 +364,8 @@ def analyze_patterns(top_n: int = 20) -> List[PatternAnalysis]:
         
         # Detect outcome signals across all events (safely handle None snippets)
         all_text = " ".join(
-            event.get("evidence_snippet") or "" 
-            for event in events_data 
-            if event.get("evidence_snippet")
+            event.get("evidence_snippet") or ""
+            for event in events_data
         )
         outcome_signals = detect_outcome_signals(all_text, signal_seeds)
         
