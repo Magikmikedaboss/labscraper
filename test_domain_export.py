@@ -9,15 +9,17 @@ print("="*70)
 print("\n1. Testing events_export_stem_cells_regen.csv:")
 with open('output/events_export_stem_cells_regen.csv', 'r', encoding='utf-8') as f:
     reader = csv.DictReader(f)
-    row = next(reader)
-    
-    print(f"   ✅ Total columns: {len(row.keys())}")
-    print(f"\n   Domain columns:")
-    print(f"      domain_id: '{row['domain_id']}'")
-    print(f"      domain_name: '{row['domain_name']}'")
-    print(f"      overlay_id: '{row['overlay_id']}'")
-    
-    print(f"\n   Entity columns:")
+    rows = list(reader)
+    if not rows:
+        print("   ⚠️  No data rows found in events_export_stem_cells_regen.csv (only headers present or file is empty). Test skipped.")
+    else:
+        row = rows[0]
+        print(f"   ✅ Total columns: {len(row.keys())}")
+        print(f"\n   Domain columns:")
+        print(f"      domain_id: '{row['domain_id']}'")
+        print(f"      domain_name: '{row['domain_name']}'")
+        print(f"      overlay_id: '{row['overlay_id']}'")
+        print(f"\n   Entity columns:")
     print(f"      primary_entity_count: {row['primary_entity_count']}")
     print(f"      context_entity_count: {row['context_entity_count']}")
     

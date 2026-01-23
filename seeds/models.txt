@@ -64,9 +64,6 @@ HSC
 PBMC
 hepatocytes
 cardiomyocytes
-neurons
-astrocytes
-microglia
 fibroblasts
 keratinocytes
 endothelial cells

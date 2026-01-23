@@ -90,22 +90,6 @@ if total > 0:
 else:
     high_pct = med_pct = low_pct = 0.0
 
-print("   Total Events: {}".format(total))
-print("   High Confidence: {} ({}%)".format(high_count, high_pct))
-print("   Med Confidence: {} ({}%)".format(med_count, med_pct))
-print("   Low Confidence: {} ({}%)".format(low_count, low_pct))
-
-print("\n📊 Confidence Distribution:")
-print("   High: {} ({}%)".format(high_count, high_pct))
-print("   Med: {} ({}%)".format(med_count, med_pct))
-print("   Low: {} ({}%)".format(low_count, low_pct))
-
-print("\n🔧 Process Words Demoted: {}...".format(', '.join(process_words_demoted[:4])))
-print("   Run ID: {}".format(meta.get('run_id', 'N/A')))
-print("   Engine: {}".format(meta.get('engine_version', 'N/A')))
-print("   Total Events: {}".format(meta.get('counts', {}).get('total_events', 'N/A')))
-print("   Primary Entities: {}".format(meta.get('counts', {}).get('primary_entities', 'N/A')))
-print("   Context Entities: {}".format(meta.get('counts', {}).get('context_entities', 'N/A')))
 
 print(f"\n📊 Confidence Distribution:")
 total = meta['counts']['total_events']

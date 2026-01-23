@@ -148,6 +148,7 @@ print(f"📋 Loaded JSON seeds:")
 print(f"   Assays: {len(SEEDS.get('assays', {}).get('assays', []))}")
 print(f"   Pathways: {len(SEEDS.get('pathways', {}).get('pathways', []))}")
 print(f"   Indications: {len(SEEDS.get('indications', {}).get('indications', []))}")
+print(f"   Neural Cells: {len(SEEDS.get('neural_cells', {}).get('neural_cells', []))}")
 
 # ---------------------------------------------------------
 # Peptide/Sequence Extraction (existing logic)
@@ -335,7 +336,21 @@ def extract_all_entities(sentence: str, title: str = "") -> list[dict]:
                 })
                 extracted_names.add(name)
     
-    # 6) ASSAY: Methods/assays (NEW - PHASE 1)
+    # 6) NEURAL_CELL: Neural cell types (NEW - PRIMARY NEUROSCIENCE ENTITIES)
+    neural_cells_data = SEEDS.get("neural_cells", {})
+    for neural_cell in neural_cells_data.get("neural_cells", []):
+        # Use word boundary for better matching
+        if re.search(r'\b' + re.escape(neural_cell.lower()) + r'\b', s_l):
+            if neural_cell not in extracted_names:
+                ents.append({
+                    "entity_type": "neural_cell",
+                    "entity_name": neural_cell,
+                    "entity_variant": "cell_type",
+                    "role": "tested"
+                })
+                extracted_names.add(neural_cell)
+    
+    # 7) ASSAY: Methods/assays (NEW - PHASE 1)
     assays_data = SEEDS.get("assays", {})
     for assay in assays_data.get("assays", []):
         # Use word boundary for better matching
@@ -362,7 +377,7 @@ def extract_all_entities(sentence: str, title: str = "") -> list[dict]:
                 })
                 extracted_names.add(metric)
     
-    # 7) PATHWAY: Signaling pathways (NEW - PHASE 1)
+    # 8) PATHWAY: Signaling pathways (NEW - PHASE 1)
     pathways_data = SEEDS.get("pathways", {})
     for pathway in pathways_data.get("pathways", []):
         # Use word boundary for better matching
@@ -376,7 +391,7 @@ def extract_all_entities(sentence: str, title: str = "") -> list[dict]:
                 })
                 extracted_names.add(pathway)
     
-    # 8) INDICATION: Diseases/conditions (NEW - PHASE 1)
+    # 9) INDICATION: Diseases/conditions (NEW - PHASE 1)
     indications_data = SEEDS.get("indications", {})
     for indication in indications_data.get("indications", []):
         # Use word boundary for better matching

@@ -1,36 +1,94 @@
 {
-  "overlay_id": "neuroscience_v1",
+  "overlay_id": "neuroscience_cognition_v1",
   "domain": "neuroscience_cognition",
-  "notes": "Focus on models, brain regions, methods, and neurodegeneration terms. Avoid consumer nootropic language.",
+  "notes": "Strengthened overlay with terms actually appearing in corpus. Neural cells promoted to primary entities.",
+  "aliases": {
+    "Neurons": "neuron",
+    "neurons": "neuron",
+    "neuronal": "neuron",
+    "Neuron": "neuron",
+    "Microglia": "microglia",
+    "microglial": "microglia",
+    "Astrocytes": "astrocyte",
+    "astrocytes": "astrocyte",
+    "astrocytic": "astrocyte",
+    "Astrocyte": "astrocyte",
+    "Oligodendrocytes": "oligodendrocyte",
+    "oligodendrocytes": "oligodendrocyte",
+    "oligodendroglial": "oligodendrocyte",
+    "Alzheimer": "Alzheimer's disease",
+    "Alzheimer's": "Alzheimer's disease",
+    "AD": "Alzheimer's disease",
+    "Parkinson": "Parkinson's disease",
+    "Parkinson's": "Parkinson's disease",
+    "PD": "Parkinson's disease",
+    "neuroinflammation": "neuroinflammation",
+    "neurodegeneration": "neurodegeneration",
+    "cell death": "cell death",
+    "apoptosis": "apoptosis",
+    "synapse": "synapse",
+    "synapses": "synapse",
+    "synaptic": "synapse",
+    "dendrite": "dendrite",
+    "dendrites": "dendrite",
+    "dendritic": "dendrite",
+    "axon": "axon",
+    "axons": "axon",
+    "axonal": "axon"
+  },
   "entities": {
     "brain_regions": [
       "hippocampus",
       "prefrontal cortex",
+      "cortex",
+      "cortical",
       "amygdala",
       "striatum",
       "cerebellum",
       "motor cortex",
       "visual cortex",
-      "hypothalamus"
+      "hypothalamus",
+      "thalamus",
+      "brainstem",
+      "cerebral cortex",
+      "frontal lobe",
+      "temporal lobe",
+      "parietal lobe",
+      "occipital lobe"
     ],
-    "cell_types": [
+    "neural_cells": [
       "neuron",
       "neurons",
+      "neuronal",
+      "microglia",
+      "microglial",
       "astrocyte",
       "astrocytes",
-      "microglia",
+      "astrocytic",
       "oligodendrocyte",
-      "oligodendrocytes"
+      "oligodendrocytes",
+      "oligodendroglial",
+      "neural progenitor",
+      "neural stem cell"
     ],
     "processes": [
       "synaptic plasticity",
       "long-term potentiation",
+      "LTP",
       "long-term depression",
+      "LTD",
       "neuroinflammation",
+      "neurodegeneration",
       "myelination",
+      "demyelination",
       "axonal transport",
       "synaptogenesis",
-      "neurogenesis"
+      "neurogenesis",
+      "cell death",
+      "apoptosis",
+      "necrosis",
+      "excitotoxicity",
+      "oxidative stress"
     ],
     "methods": [
       "electrophysiology",
@@ -44,27 +102,52 @@
       "single-cell RNA sequencing",
       "scRNA-seq",
       "optogenetics",
-      "chemogenetics"
+      "chemogenetics",
+      "immunohistochemistry",
+      "confocal microscopy"
     ],
-    "diseases_and_topics": [
+    "diseases": [
       "Alzheimer's disease",
+      "Alzheimer",
       "Parkinson's disease",
+      "Parkinson",
       "amyotrophic lateral sclerosis",
       "ALS",
       "frontotemporal dementia",
+      "FTD",
       "epilepsy",
       "major depressive disorder",
+      "depression",
       "schizophrenia",
-      "autism spectrum disorder"
+      "autism spectrum disorder",
+      "autism",
+      "Huntington's disease",
+      "multiple sclerosis",
+      "stroke",
+      "traumatic brain injury",
+      "TBI"
     ],
-    "biomarkers_and_proteins": [
+    "biomarkers": [
       "amyloid beta",
       "beta-amyloid",
+      "Aβ",
       "tau",
+      "phospho-tau",
       "alpha-synuclein",
       "BDNF",
       "GFAP",
-      "synaptophysin"
+      "synaptophysin",
+      "neurofilament",
+      "S100B"
+    ],
+    "neurotransmitters": [
+      "glutamate",
+      "GABA",
+      "dopamine",
+      "serotonin",
+      "acetylcholine",
+      "norepinephrine",
+      "epinephrine"
     ]
   },
   "exclusions": {
@@ -72,7 +155,8 @@
       "nootropic stack",
       "supplement stack",
       "buy now",
-      "coupon"
+      "coupon",
+      "discount code"
     ]
   }
 }
