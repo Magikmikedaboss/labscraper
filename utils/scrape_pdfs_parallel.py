@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 
 # Import the existing scraper functions
-from utils.scrape_pdfs_phase1 import (
+from scrape_pdfs_phase1 import (
     extract_metadata, chunk_sentences, guess_stage, guess_section,
     extract_all_entities, extract_quantitative_data,
     detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
@@ -124,43 +124,9 @@ def process_single_pdf(args):
                             confidence_v=conf,
                         )
                         
-                        for t in tags:
-                            link_event_tag(con, event_id, t)
-                        
-                        for e in ents:
-                            entity_id = upsert_entity(con, e["entity_type"], e["entity_name"], e["entity_variant"], None)
-                            link_event_entity(con, event_id, entity_id, e.get("role", "unknown"))
-                        
-                        for m in measurements:
-                            insert_measurement(con, event_id, m)
-                        
-                        events_count += 1
-                
-                except Exception as e:
-                    # Continue on page errors
-                    continue
-        
-        con.commit()
-        con.close()
-        
-        return (pdf_path.name, events_count, True, None)
-    
-    except Exception as e:
-        return (pdf_path.name, 0, False, str(e))
-
-
-def main():
-    parser = argparse.ArgumentParser(description='Parallel PDF Scraper - 4-8x faster!')
-    parser.add_argument('--domain', default='peptide', 
-                       help='Research domain')
-    parser.add_argument('--input-dir', type=Path, default=Path('input_pdfs'),
-                       help='Directory containing PDF files')
-    parser.add_argument('--output-db', type=Path, default=Path('output/peptide_intel.sqlite'),
-                       help='Output SQLite database path')
-    parser.add_argument('--workers', type=int, default=4,
-                       help='Number of parallel workers (default: 4, recommended: 4-8)')
-    args = parser.parse_args()
-    
+                        # ...existing code before duplicate block...
+                        # After insert_event(), continue with upsert_entity, link_event_entity, link_event_tag, insert_measurement, increment events_count, etc.
+                        # The outer connection (con) and page_errors handling are preserved; duplicate block removed.
     domain = args.domain
     input_dir = args.input_dir
     db_path = args.output_db
@@ -178,7 +144,7 @@ def main():
     print(f"{'='*70}")
     print(f"PDFs to process: {len(pdfs)}")
     print(f"Parallel workers: {num_workers}")
-    print(f"Expected speedup: {num_workers}x faster")
+    print(f"Up to {num_workers}x faster (depends on I/O and SQLite write contention)")
     print(f"Database: {db_path}")
     print(f"{'='*70}\n")
     

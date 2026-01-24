@@ -8,7 +8,7 @@ import csv
 import json
 from pathlib import Path
 from collections import defaultdict
-from utils.overlay_scorer import OverlayScorer, load_domain_config
+from .overlay_scorer import OverlayScorer, load_domain_config
 
 
 def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
@@ -37,9 +37,10 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     print(f"\n📋 Overlays: {', '.join(overlay_ids)}")
     
     # Connect to database
-    con = sqlite3.connect(db_path)
-    con.row_factory = sqlite3.Row
-    cur = con.cursor()
+    with sqlite3.connect(db_path) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        # ...existing code...
     
     # Step 1: Score all events
     print("\n📊 Step 1: Scoring events...")

@@ -13,10 +13,10 @@ import argparse
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
-from utils.entity_normalizer import load_normalization_map, normalize_entity_list, load_overlay_aliases
-from utils.axon_domains import get_domain_by_id
+from entity_normalizer import load_normalization_map, normalize_entity_list, load_overlay_aliases
+from axon_domains import get_domain_by_id
 
-DB_PATH = Path("runs") / "peptide_intel.sqlite"
+DB_PATH = Path("output") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
 
 # Process words that should be tags, not primary assay entities
@@ -108,7 +108,7 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
     ]
     
     # Normalize with overlay aliases
-    from utils.entity_normalizer import normalize_entity, get_entity_role
+    from entity_normalizer import normalize_entity, get_entity_role
     
     normalized = []
     for e in entity_dicts:
@@ -328,7 +328,7 @@ def export_candidates_domain_aware(domain_id: str = None):
             }
             
             # Normalize with overlay aliases
-            from utils.entity_normalizer import normalize_entity, get_entity_role
+            from entity_normalizer import normalize_entity, get_entity_role
             normalized = normalize_entity(entity_dict, norm_map, overlay_aliases)
             canonical_name = normalized["entity_name"]
             role = get_entity_role(normalized, norm_map)
@@ -403,7 +403,7 @@ def write_run_meta(confidence_changes, canonical_entities, domain_id=None):
     norm_map = load_normalization_map()
     normalized_entities = {}
     for (etype, ename), data in canonical_entities.items():
-        from utils.entity_normalizer import normalize_entity
+        from entity_normalizer import normalize_entity
         norm_e = normalize_entity({"entity_type": etype, "entity_name": ename}, norm_map, overlay_aliases)
         canonical_name = norm_e["entity_name"]
         key = (etype, canonical_name)

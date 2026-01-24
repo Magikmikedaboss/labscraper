@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
-from utils.entity_normalizer import load_normalization_map, normalize_entity_list
+from .entity_normalizer import load_normalization_map, normalize_entity_list
 
 DB_PATH = Path("output") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
@@ -238,30 +238,7 @@ def export_events_professional():
 
 def export_candidates_professional():
     """Export candidates with process words demoted"""
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-    
     norm_map = load_normalization_map()
-    
-    # Get all entities
-    entities_data = cur.execute("""
-        SELECT 
-            e.entity_id,
-            e.entity_type,
-            e.entity_name,
-            e.entity_variant,
-            COUNT(DISTINCT ee.event_id) as event_count,
-            GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
-            MIN(re.created_at) as first_seen,
-            MAX(re.created_at) as last_seen
-        FROM entities e
-        JOIN event_entities ee ON e.entity_id = ee.entity_id
-        JOIN research_events re ON ee.event_id = re.event_id
-        GROUP BY e.entity_id
-        ORDER BY event_count DESC
-    """).fetchall()
-    
-    # Normalize and aggregate
     canonical_entities = defaultdict(lambda: {
         "entity_type": None,
         "entity_variant": None,
@@ -272,36 +249,46 @@ def export_candidates_professional():
         "original_names": set(),
         "role": None
     })
-    
-    for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
-        entity_dict = {
-            "entity_type": etype,
-            "entity_name": ename,
-            "entity_variant": evariant
-        }
-        
-        normalized = normalize_entity_list([entity_dict], norm_map)[0]
-        canonical_name = normalized["entity_name"]
-        role = normalized["role"]
-        
-        # Demote process words
-        if etype == "assay" and is_process_word(canonical_name):
-            role = "context"
-        
-        key = (etype, canonical_name)
-        canonical_entities[key]["entity_type"] = etype
-        canonical_entities[key]["entity_variant"] = evariant
-        canonical_entities[key]["event_count"] += event_count
-        canonical_entities[key]["paper_ids"].update(source_ids.split(",") if source_ids else [])
-        canonical_entities[key]["original_names"].add(ename)
-        canonical_entities[key]["role"] = role
-        
-        if canonical_entities[key]["first_seen"] is None or first_seen < canonical_entities[key]["first_seen"]:
-            canonical_entities[key]["first_seen"] = first_seen
-        if canonical_entities[key]["last_seen"] is None or last_seen > canonical_entities[key]["last_seen"]:
-            canonical_entities[key]["last_seen"] = last_seen
-    
-    # Export primary
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        entities_data = cur.execute("""
+            SELECT 
+                e.entity_id,
+                e.entity_type,
+                e.entity_name,
+                e.entity_variant,
+                COUNT(DISTINCT ee.event_id) as event_count,
+                GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
+                MIN(re.created_at) as first_seen,
+                MAX(re.created_at) as last_seen
+            FROM entities e
+            JOIN event_entities ee ON e.entity_id = ee.entity_id
+            JOIN research_events re ON ee.event_id = re.event_id
+            GROUP BY e.entity_id
+            ORDER BY event_count DESC
+        """).fetchall()
+        for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
+            entity_dict = {
+                "entity_type": etype,
+                "entity_name": ename,
+                "entity_variant": evariant
+            }
+            normalized = normalize_entity_list([entity_dict], norm_map)[0]
+            canonical_name = normalized["entity_name"]
+            role = normalized["role"]
+            if etype == "assay" and is_process_word(canonical_name):
+                role = "context"
+            key = (etype, canonical_name)
+            canonical_entities[key]["entity_type"] = etype
+            canonical_entities[key]["entity_variant"] = evariant
+            canonical_entities[key]["event_count"] += event_count
+            canonical_entities[key]["paper_ids"].update(source_ids.split(",") if source_ids else [])
+            canonical_entities[key]["original_names"].add(ename)
+            canonical_entities[key]["role"] = role
+            if canonical_entities[key]["first_seen"] is None or first_seen < canonical_entities[key]["first_seen"]:
+                canonical_entities[key]["first_seen"] = first_seen
+            if canonical_entities[key]["last_seen"] is None or last_seen > canonical_entities[key]["last_seen"]:
+                canonical_entities[key]["last_seen"] = last_seen
     primary_path = OUTPUT_DIR / "candidates_primary_v4.csv"
     with open(primary_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -310,13 +297,11 @@ def export_candidates_professional():
             'event_count', 'paper_count', 'original_variants',
             'first_seen', 'last_seen'
         ])
-        
         sorted_entities = sorted(
             canonical_entities.items(),
             key=lambda x: x[1]["event_count"],
             reverse=True
         )
-        
         for (etype, ename), data in sorted_entities:
             if data["role"] == "primary":
                 writer.writerow([
@@ -325,16 +310,11 @@ def export_candidates_professional():
                     "; ".join(sorted(data["original_names"])),
                     data["first_seen"], data["last_seen"]
                 ])
-    
-    con.close()
-    
     primary_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "primary")
     context_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
-    
-    print(f"✅ Exported professional candidates:")
-    print(f"   Primary entities: {primary_count} → {primary_path}")
+    print(f"\u2705 Exported professional candidates:")
+    print(f"   Primary entities: {primary_count} \u2192 {primary_path}")
     print(f"   Context entities: {context_count}")
-    
     return canonical_entities
 
 def write_run_meta(confidence_changes, canonical_entities):
@@ -346,7 +326,7 @@ def write_run_meta(confidence_changes, canonical_entities):
         "database": str(DB_PATH),
         "seeds_version": "2026-01-22",
         "counts": {
-            "total_events": confidence_changes["high"] + confidence_changes["med"] + confidence_changes["low"],
+            "total_events": sum(confidence_changes.values()),
             "total_entities": len(canonical_entities),
             "primary_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "primary"),
             "context_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
