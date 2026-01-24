@@ -3,7 +3,7 @@ Cleanup Obsolete Files
 Removes old export scripts and documentation that have been superseded by v5
 """
 
-import os
+import argparse
 from pathlib import Path
 
 # Files to remove
@@ -40,44 +40,49 @@ OBSOLETE_OUTPUTS = [
     "output/relationships_export.csv",
 ]
 
-def cleanup():
+def remove_files(file_list, label, dry_run=False):
+    """Helper to remove files from a list"""
+    removed_count = 0
+    print(f"\n{label}:")
+    for filepath in file_list:
+        path = Path(filepath)
+        if path.exists():
+            if dry_run:
+                print(f"   🔍 Would remove: {filepath}")
+                removed_count += 1
+            else:
+                try:
+                    path.unlink()
+                    print(f"   ✅ Removed: {filepath}")
+                    removed_count += 1
+                except OSError as e:
+                    print(f"   ❌ Failed to remove {filepath}: {e}")
+        else:
+            print(f"   ⏭️  Already gone: {filepath}")
+    return removed_count
+
+def cleanup(dry_run=False):
     """Remove obsolete files"""
     print("=" * 70)
-    print("CLEANING UP OBSOLETE FILES")
+    if dry_run:
+        print("DRY RUN - CLEANING UP OBSOLETE FILES")
+    else:
+        print("CLEANING UP OBSOLETE FILES")
     print("=" * 70)
     
     removed_count = 0
     
     # Remove obsolete files
-    print("\n📁 Removing obsolete files:")
-    for filepath in OBSOLETE_FILES:
-        path = Path(filepath)
-        if path.exists():
-            try:
-                path.unlink()
-                print(f"   ✅ Removed: {filepath}")
-                removed_count += 1
-            except Exception as e:
-                print(f"   ❌ Failed to remove {filepath}: {e}")
-        else:
-            print(f"   ⏭️  Already gone: {filepath}")
+    removed_count += remove_files(OBSOLETE_FILES, "📁 Removing obsolete files", dry_run)
     
     # Remove obsolete outputs
-    print("\n📊 Removing obsolete exports:")
-    for filepath in OBSOLETE_OUTPUTS:
-        path = Path(filepath)
-        if path.exists():
-            try:
-                path.unlink()
-                print(f"   ✅ Removed: {filepath}")
-                removed_count += 1
-            except Exception as e:
-                print(f"   ❌ Failed to remove {filepath}: {e}")
-        else:
-            print(f"   ⏭️  Already gone: {filepath}")
+    removed_count += remove_files(OBSOLETE_OUTPUTS, "📊 Removing obsolete exports", dry_run)
     
     print("\n" + "=" * 70)
-    print(f"✅ Cleanup complete! Removed {removed_count} files")
+    if dry_run:
+        print(f"🔍 Dry run complete! Would remove {removed_count} files")
+    else:
+        print(f"✅ Cleanup complete! Removed {removed_count} files")
     print("=" * 70)
     
     print("\n📋 Keeping:")
@@ -88,4 +93,8 @@ def cleanup():
     print("   ✅ Core documentation (DOMAIN_EXPORT_V5_SUMMARY.md, etc.)")
 
 if __name__ == "__main__":
-    cleanup()
+    parser = argparse.ArgumentParser(description="Cleanup obsolete files")
+    parser.add_argument('--dry-run', action='store_true', help='Show what would be removed without actually deleting')
+    args = parser.parse_args()
+    
+    cleanup(dry_run=args.dry_run)
