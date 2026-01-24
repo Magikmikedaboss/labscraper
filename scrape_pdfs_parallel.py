@@ -163,11 +163,14 @@ def main():
     parser.add_argument('--workers', type=int, default=4,
                        help='Number of parallel workers (default: 4, recommended: 4-8)')
     args = parser.parse_args()
-    
+
     domain = args.domain
     input_dir = args.input_dir
     db_path = args.output_db
     num_workers = args.workers
+
+    # Ensure output database directory exists
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     
     if not input_dir.exists():
         raise SystemExit(f"Missing folder: {input_dir.resolve()}")

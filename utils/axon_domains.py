@@ -210,7 +210,27 @@ def get_domain_by_id(domain_id: str, domains_dir: str = "seeds/domains") -> Opti
     Returns:
         DomainProfile if found, None otherwise
     """
-    path = os.path.join(domains_dir, f"{domain_id}.json")
+    # Prevent path traversal attacks by sanitizing the domain_id
+    if not domain_id or not isinstance(domain_id, str):
+        return None
+
+    # Reject domain_id containing path separators or traversal sequences
+    if "/" in domain_id or "\\" in domain_id or ".." in domain_id:
+        return None
+
+    # Build path safely using basename to prevent traversal
+    safe_filename = os.path.basename(f"{domain_id}.json")
+    path = os.path.join(domains_dir, safe_filename)
+
+    # Verify the resolved path stays within the domains directory
+    try:
+        resolved_path = os.path.realpath(path)
+        resolved_domains_dir = os.path.realpath(domains_dir)
+        if not resolved_path.startswith(resolved_domains_dir + os.sep) and resolved_path != resolved_domains_dir:
+            return None
+    except (OSError, ValueError):
+        return None
+
     if not os.path.exists(path):
         return None
     try:

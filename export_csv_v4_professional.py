@@ -218,28 +218,28 @@ def export_events_professional():
 
 def export_candidates_professional():
     """Export candidates with process words demoted"""
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-    
-    norm_map = load_normalization_map()
-    
-    # Get all entities
-    entities_data = cur.execute("""
-        SELECT 
-            e.entity_id,
-            e.entity_type,
-            e.entity_name,
-            e.entity_variant,
-            COUNT(DISTINCT ee.event_id) as event_count,
-            GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
-            MIN(re.created_at) as first_seen,
-            MAX(re.created_at) as last_seen
-        FROM entities e
-        JOIN event_entities ee ON e.entity_id = ee.entity_id
-        JOIN research_events re ON ee.event_id = re.event_id
-        GROUP BY e.entity_id
-        ORDER BY event_count DESC
-    """).fetchall()
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+
+        norm_map = load_normalization_map()
+
+        # Get all entities
+        entities_data = cur.execute("""
+            SELECT
+                e.entity_id,
+                e.entity_type,
+                e.entity_name,
+                e.entity_variant,
+                COUNT(DISTINCT ee.event_id) as event_count,
+                GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
+                MIN(re.created_at) as first_seen,
+                MAX(re.created_at) as last_seen
+            FROM entities e
+            JOIN event_entities ee ON e.entity_id = ee.entity_id
+            JOIN research_events re ON ee.event_id = re.event_id
+            GROUP BY e.entity_id
+            ORDER BY event_count DESC
+        """).fetchall()
     
     # Normalize and aggregate
     canonical_entities = defaultdict(lambda: {
@@ -305,9 +305,7 @@ def export_candidates_professional():
                     "; ".join(sorted(data["original_names"])),
                     data["first_seen"], data["last_seen"]
                 ])
-    
-    con.close()
-    
+
     primary_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "primary")
     context_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
     
