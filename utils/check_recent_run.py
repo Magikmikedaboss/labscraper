@@ -27,16 +27,24 @@ print("NEUROSCIENCE RUN INFORMATION")
 print("="*70)
 
 from datetime import timezone
-timestamp = datetime.datetime.fromisoformat(meta['timestamp'])
+timestamp_str = meta.get('timestamp')
+if not timestamp_str:
+    print("Error: No timestamp in metadata")
+    exit(1)
+try:
+    timestamp = datetime.datetime.fromisoformat(timestamp_str)
+except ValueError:
+    print(f"Error: Invalid timestamp format: {timestamp_str}")
+    exit(1)
 if timestamp.tzinfo is None:
     # Assume UTC if no timezone info
     timestamp = timestamp.replace(tzinfo=timezone.utc)
 else:
     timestamp = timestamp.astimezone(timezone.utc)
-print(f"\nRun ID: {meta['run_id']}")
+print(f"\nRun ID: {meta.get('run_id', 'Unknown')}")
 print(f"Timestamp: {timestamp.strftime('%Y-%m-%d %I:%M:%S %p')}")
-print(f"Engine: {meta['engine_version']}")
-print(f"Domain: {meta['domain_name']}")
+print(f"Engine: {meta.get('engine_version', 'Unknown')}")
+print(f"Domain: {meta.get('domain_name', 'Unknown')}")
 
 # Calculate how long ago
 now = datetime.datetime.now(timezone.utc)
@@ -54,9 +62,10 @@ else:
 print("\n" + "="*70)
 print("EXPORT SUMMARY")
 print("="*70)
-print(f"Total Events: {meta['counts']['total_events']}")
-print(f"Total Entities: {meta['counts']['total_entities']}")
-print(f"Primary Entities: {meta['counts']['primary_entities']}")
-print(f"Context Entities: {meta['counts']['context_entities']}")
+counts = meta.get('counts', {})
+print(f"Total Events: {counts.get('total_events', 0)}")
+print(f"Total Entities: {counts.get('total_entities', 0)}")
+print(f"Primary Entities: {counts.get('primary_entities', 0)}")
+print(f"Context Entities: {counts.get('context_entities', 0)}")
 
 print("\n" + "="*70)

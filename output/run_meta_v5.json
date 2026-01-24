@@ -1,0 +1,169 @@
+{
+  "run_id": "20260124_083943",
+  "engine_version": "v5_domain_aware",
+  "timestamp": "2026-01-24T08:39:43.710706",
+  "database": "runs/peptide_intel.sqlite",
+  "seeds_version": "2026-01-22",
+  "domain_id": null,
+  "domain_name": "All Domains",
+  "overlay_id": null,
+  "overlay_aliases_count": 0,
+  "counts": {
+    "total_events": 5887,
+    "total_entities": 329,
+    "primary_entities": 314,
+    "context_entities": 15
+  },
+  "confidence_distribution": {
+    "high": 49,
+    "med": 2733,
+    "low": 3105,
+    "boosted_to_high": 12,
+    "boosted_to_med": 0
+  },
+  "top_entities": [
+    {
+      "name": "astrocytes",
+      "type": "neural_cell",
+      "event_count": 440,
+      "role": "primary"
+    },
+    {
+      "name": "In vivo",
+      "type": "model",
+      "event_count": 392,
+      "role": "primary"
+    },
+    {
+      "name": "microglia",
+      "type": "neural_cell",
+      "event_count": 320,
+      "role": "primary"
+    },
+    {
+      "name": "neurons",
+      "type": "neural_cell",
+      "event_count": 312,
+      "role": "primary"
+    },
+    {
+      "name": "MOUSE",
+      "type": "model",
+      "event_count": 213,
+      "role": "context"
+    },
+    {
+      "name": "PLASMA",
+      "type": "model",
+      "event_count": 199,
+      "role": "context"
+    },
+    {
+      "name": "HUMAN",
+      "type": "model",
+      "event_count": 165,
+      "role": "context"
+    },
+    {
+      "name": "neuronal",
+      "type": "neural_cell",
+      "event_count": 118,
+      "role": "primary"
+    },
+    {
+      "name": "SERUM",
+      "type": "model",
+      "event_count": 117,
+      "role": "context"
+    },
+    {
+      "name": "ALZHEIMER",
+      "type": "indication",
+      "event_count": 116,
+      "role": "primary"
+    },
+    {
+      "name": "RECEPTOR",
+      "type": "target",
+      "event_count": 95,
+      "role": "primary"
+    },
+    {
+      "name": "In vitro",
+      "type": "model",
+      "event_count": 94,
+      "role": "primary"
+    },
+    {
+      "name": "microglial",
+      "type": "neural_cell",
+      "event_count": 92,
+      "role": "primary"
+    },
+    {
+      "name": "MTOR",
+      "type": "target",
+      "event_count": 79,
+      "role": "primary"
+    },
+    {
+      "name": "RAT",
+      "type": "model",
+      "event_count": 73,
+      "role": "context"
+    },
+    {
+      "name": "cell death",
+      "type": "pathway",
+      "event_count": 68,
+      "role": "primary"
+    },
+    {
+      "name": "AUTOPHAGY",
+      "type": "pathway",
+      "event_count": 60,
+      "role": "primary"
+    },
+    {
+      "name": "stroke",
+      "type": "indication",
+      "event_count": 59,
+      "role": "primary"
+    },
+    {
+      "name": "CSF",
+      "type": "model",
+      "event_count": 58,
+      "role": "primary"
+    },
+    {
+      "name": "TISSUE",
+      "type": "model",
+      "event_count": 58,
+      "role": "context"
+    }
+  ],
+  "process_words_demoted": [
+    "affinity assay",
+    "elution",
+    "mobile phase",
+    "quality control",
+    "gradient",
+    "measurement",
+    "calibration",
+    "validation",
+    "optimization",
+    "affinity",
+    "determination",
+    "detection",
+    "analysis",
+    "chromatography",
+    "quantitation",
+    "internal standard",
+    "affinity measurement",
+    "purification",
+    "quantification",
+    "binding affinity"
+  ],
+  "confidence_boost_rule": "HIGH if (compound|target|stem_cell) + assay + model_context; MED if (compound|target|stem_cell) + assay"
+}

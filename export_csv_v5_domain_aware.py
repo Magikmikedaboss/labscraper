@@ -47,14 +47,23 @@ def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
     - (compound OR target OR stem_cell) AND
     - assay AND
     - model context (in vivo/in vitro/human/rat/plasma/serum)
-    
+
     This is objective, not subjective.
     """
-    if current_conf == "high":
+    # Normalize confidence to canonical buckets
+    conf_map = {
+        "low": "low", "med": "med", "high": "high",
+        "Low": "low", "Med": "med", "High": "high",
+        "LOW": "low", "MED": "med", "HIGH": "high",
+        None: "low", "": "low"  # Default to low for null/empty
+    }
+    conf_norm = conf_map.get(current_conf, "other")
+
+    if conf_norm == "high":
         return "high"  # Already high
-    
+
     if not entities_str:
-        return current_conf
+        return conf_norm
     
     # Parse entities
     entities = entities_str.split("; ") if entities_str else []
@@ -85,10 +94,10 @@ def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
         return "high"
     
     # Promote to med if has high-value entity + assay (even without model context)
-    if has_high_value and has_assay and current_conf == "low":
+    if has_high_value and has_assay and conf_norm == "low":
         return "med"
-    
-    return current_conf
+
+    return conf_norm
 
 def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: dict = None) -> tuple:
     """
@@ -208,7 +217,7 @@ def export_events_domain_aware(domain_id: str = None):
             'paper_id', 'created_at'
         ])
         
-        confidence_changes = {"low": 0, "med": 0, "high": 0, "boosted_to_high": 0, "boosted_to_med": 0}
+        confidence_changes = {"low": 0, "med": 0, "high": 0, "other": 0, "boosted_to_high": 0, "boosted_to_med": 0}
         
         for event in events:
             event_id, domain_col, etype, stage, outcome, decision, snippet, conf_orig, source_id, created_at, entities_str = event

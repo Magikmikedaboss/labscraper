@@ -7,6 +7,7 @@ import multiprocessing as mp
 from multiprocessing import Pool
 import sqlite3
 import argparse
+import logging
 from pathlib import Path
 from datetime import datetime, timezone
 import pdfplumber
@@ -137,7 +138,9 @@ def process_single_pdf(args):
                         events_count += 1
                 
                 except Exception as e:
-                    # Continue on page errors
+                    # Log page errors
+                    logging.error(f"Error processing page {page_idx} of {pdf_path.name}: {e}")
+                    logging.exception(e)
                     continue
         
         con.commit()
@@ -155,7 +158,7 @@ def main():
                        help='Research domain')
     parser.add_argument('--input-dir', type=Path, default=Path('input_pdfs'),
                        help='Directory containing PDF files')
-    parser.add_argument('--output-db', type=Path, default=Path('output/peptide_intel.sqlite'),
+    parser.add_argument('--output-db', type=Path, default=Path('runs/peptide_intel.sqlite'),
                        help='Output SQLite database path')
     parser.add_argument('--workers', type=int, default=4,
                        help='Number of parallel workers (default: 4, recommended: 4-8)')

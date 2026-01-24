@@ -42,7 +42,10 @@ def check_compound_extraction():
             if line.startswith('#') and not line.startswith('##'):
                 current_category = line[1:].strip()
             continue
-        seed_compounds.append(line)
+        # Strip inline comments
+        line = line.split('#', 1)[0].strip()
+        if line:
+            seed_compounds.append(line)
     
     print(f"   Total in seeds: {len(seed_compounds)}")
     print(f"\n   Sample (first 20):")

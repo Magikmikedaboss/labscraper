@@ -37,6 +37,9 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     print(f"\n📋 Overlays: {', '.join(overlay_ids)}")
     
     # Connect to database
+    db_file = Path(db_path)
+    if not db_file.exists():
+        raise FileNotFoundError(f"Database file not found: {db_file}")
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
     cur = con.cursor()
@@ -328,7 +331,7 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     print("\n" + "="*70)
     print("✅ DUAL-LENS EXPORT COMPLETE")
     print("="*70)
-    print(f"\nOutput files:")
+    print("\nOutput files:")
     print(f"  📊 {entities_file}")
     print(f"  📋 {events_file}")
     print(f"  📄 {report_file}")

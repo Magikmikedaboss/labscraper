@@ -1,4 +1,4 @@
-# Multi-Folder Scraping Guide
+ t# Multi-Folder Scraping Guide
 
 ## What's Happening Now
 
@@ -116,7 +116,7 @@ After completion, you'll have:
 `output/entities_dual_lens_biohacking_longevity.csv`
 
 Columns:
-```
+```csv
 entity_name, entity_type, entity_variant, event_count,
 science_research_v1_score, science_research_v1_bucket,
 biohacking_curiosity_v1_score, biohacking_curiosity_v1_bucket
@@ -126,7 +126,7 @@ biohacking_curiosity_v1_score, biohacking_curiosity_v1_bucket
 `output/events_dual_lens_biohacking_longevity.csv`
 
 Columns:
-```
+```csv
 event_id, event_type, stage, outcome, evidence_snippet,
 science_research_v1_score, biohacking_curiosity_v1_score,
 entities_primary, entities_context, ...
@@ -204,7 +204,7 @@ python scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdf
 ## Monitoring Progress
 
 The scraper shows:
-```
+```text
 PDFs:   2%|█ | 1/65 [00:18<19:32, 18.32s/it]
 ```
 

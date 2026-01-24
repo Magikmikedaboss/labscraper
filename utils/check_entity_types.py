@@ -57,15 +57,12 @@ for compound in compounds:
     if result:
         snippet = result[0]
         if len(snippet) > 150:
-            print(f"\n
- Found '{compound}':")
+            print(f"\nFound '{compound}':")
             print(f"  {snippet[:150]}...")
         else:
-            print(f"\n
- Found '{compound}':")
+            print(f"\nFound '{compound}':")
             print(f"  {snippet}")
     else:
-        print(f"\n
- No '{compound}' found")
+        print(f"\nNo '{compound}' found")
 
 con.close()

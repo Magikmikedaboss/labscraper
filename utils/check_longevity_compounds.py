@@ -7,7 +7,9 @@ def check_longevity_compounds():
     compounds_text = Path('seeds/base/compounds.txt').read_text(encoding='utf-8').lower()
     parsed_compounds_set = set()
     for line in compounds_text.splitlines():
-        compound = ' '.join(line.strip().split())
+        # Strip inline comments
+        line = line.split('#', 1)[0].strip()
+        compound = ' '.join(line.split())
         if compound:
             parsed_compounds_set.add(compound)
     
@@ -82,7 +84,7 @@ def check_longevity_compounds():
         print("\n" + "="*70)
         print("RECOMMENDATIONS")
         print("="*70)
-        print("\nTo add missing longevity compounds, append to seeds/compounds.txt:")
+        print("\nTo add missing longevity compounds, append to seeds/base/compounds.txt:")
         print("\n# longevity & anti-aging compounds")
         for c in missing[:10]:  # Show first 10
             print(c)

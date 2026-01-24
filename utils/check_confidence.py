@@ -18,10 +18,11 @@ def check_confidence_distribution():
     low = con.execute("SELECT COUNT(*) FROM research_events WHERE confidence = 'low'").fetchone()[0]
     
     print(f"\nTotal Events: {total}")
-    percent = lambda count: (count/total*100) if total else 0
+    def percent(count):
+        return (count/total*100) if total else 0
     print(f"  High: {high} ({percent(high):.1f}%)")
-    print(f"  Med:  {percent(med):.1f}%)")
-    print(f"  Low:  {percent(low):.1f}%)")
+    print(f"  Med: {med} ({percent(med):.1f}%)")
+    print(f"  Low: {low} ({percent(low):.1f}%)")
     
     # Sample high confidence events
     print("\n" + "="*60)

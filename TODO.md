@@ -1,37 +1,24 @@
-# Reorganization Plan for Axon-Engine Structure
+# Fixes to Apply Based on User Feedback
 
-## Step 1: Create New Directories
-- Create config/dual_lens/
-- Create seeds/base/
-- Create seeds/domain/
-- Rename input_pdfs/ to input/
-- Create input/pdfs/ and move subdirs from input/ to input/pdfs/
-- Create input/rss_cache/
-- Rename output/ to runs/
-- Create runs/biohacking_longevity/run_2026-01-25_1015/outputs/
-- Create runs/neuroscience_cognition/run_2026-01-25_1201/outputs/
-- Create runs/stem_cells_regen/
-- Create exports/
-- Create exports/latest/biohacking_longevity/
-- Create exports/latest/neuroscience_cognition/
-- Create exports/snapshots/2026-01/
-- Create db/
-- Create logs/
-- Create utils/
+## Markdown Files
+- [ ] DUAL_LENS_OVERLAY_GUIDE.md: Replace bold labels with headings, add language to code blocks
+- [ ] MULTI_FOLDER_SCRAPING_GUIDE.md: Add CSV language to column blocks, add text to progress block
 
-## Step 2: Move Files
-- Move seeds/ txt/json files to seeds/base/ (rename .json to .txt if needed)
-- Create seeds/domain/ txt files (empty)
-- Move runs/ (old output/) files to appropriate subdirs and exports/
-- Move .py files to utils/
-- Rename scrape_pdfs.py to run_engine.py in utils/
-- Create run_rss_ingest.py (empty)
-- Create config/feeds.json (empty)
-- Create db/ sqlite files (placeholders)
-- Create logs/ files (empty)
+## Python Files
+- [ ] export_csv_v5_domain_aware.py: Add conf_map to safe_confidence_boost for normalization
+- [ ] export_dual_lens.py: Remove f-string from print, add db existence check
+- [ ] scrape_pdfs_parallel.py: Improve exception handling in page loop
+- [ ] utils/check_compound_extraction.py: Add db existence check
+- [ ] utils/check_confidence.py: Replace lambda with function, fix print formatting
+- [ ] utils/check_entity_types.py: Fix f-strings with newlines
+- [ ] utils/check_longevity_compounds.py: Update file path in prints, strip comments in parsing
+- [ ] utils/check_neural_cell_results.py: Fix indentation for DB queries
+- [ ] utils/check_recent_run.py: Safe key access for meta dict
+- [ ] utils/demo_domain_export.py: Fix relative imports
 
-## Step 3: Update Script References
-- Search and replace path references in .py files (e.g., 'input_pdfs' -> 'input/pdfs', 'output' -> 'runs')
+## Data Files
+- [ ] runs/biohacking_longevity/run_2026-01-25_1015/run_meta.json: Update timestamp and run_id
+- [ ] seeds/base/targets.txt: Normalize Unicode and hyphens (but this is a data file, perhaps update the loader)
 
-## Step 4: Verify Structure
-- List directories to confirm layout matches target
+## Completion
+- [ ] Verify all changes applied correctly

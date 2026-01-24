@@ -12,6 +12,7 @@ import hashlib
 import sqlite3
 import argparse
 import json
+import unicodedata
 from pathlib import Path
 from datetime import datetime, timezone
 import pdfplumber
@@ -122,13 +123,19 @@ def load_seed_file(filepath: Path) -> set:
     if not filepath.exists():
         print(f"  ⚠️  Seed file not found: {filepath}")
         return seeds
-    
+
     with open(filepath, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith('#'):
+                # Normalize Unicode: decompose and remove accents
+                line = unicodedata.normalize('NFKD', line).encode('ascii', 'ignore').decode('ascii')
+                # Canonicalize hyphens
+                line = re.sub(r'[-–—]', '-', line)
+                # Add both hyphenated and hyphenless versions
                 seeds.add(line.lower())
-    
+                seeds.add(line.replace('-', '').lower())
+
     return seeds
 
 # Load existing TXT seed files

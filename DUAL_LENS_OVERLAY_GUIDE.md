@@ -1,4 +1,4 @@
-# Dual-Lens Overlay System Guide
+e# Dual-Lens Overlay System Guide
 
 ## Overview
 
@@ -39,7 +39,7 @@ The biohacking_longevity domain now supports **dual-lens analysis** using two co
 - Biohacking terminology
 
 **Boost Terms:**
-```
+```text
 mechanism: +3
 pathway: +3
 replication: +4
@@ -49,7 +49,7 @@ statistically significant: +3
 ```
 
 **Demote Terms:**
-```
+```text
 anecdotal: -2
 self-reported: -2
 stack: -1
@@ -87,7 +87,7 @@ biohack: -1
 - Rodent models
 
 **Boost Terms:**
-```
+```text
 protocol: +3
 stack: +3
 self-experiment: +3
@@ -98,7 +98,7 @@ sleep/energy/focus/cognition: +2
 ```
 
 **Demote Terms:**
-```
+```text
 in vitro: -1
 cell line: -1
 rodent model: -1
@@ -126,7 +126,7 @@ molecular mechanism: -1
 
 Run the scraper with one overlay at a time:
 
-**Science View:**
+### Science View
 ```bash
 python scrape_pdfs.py \
   --input-dir input_pdfs/longevity_v1 \
@@ -134,7 +134,7 @@ python scrape_pdfs.py \
   --overlay science_research_v1
 ```
 
-**Curiosity View:**
+### Curiosity View
 ```bash
 python scrape_pdfs.py \
   --input-dir input_pdfs/longevity_v1 \

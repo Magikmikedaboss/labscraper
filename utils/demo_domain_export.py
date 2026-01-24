@@ -10,7 +10,10 @@ print("="*80)
 print("\n📚 Step 1: Load overlay aliases")
 print("-" * 80)
 
-from .entity_normalizer import load_overlay_aliases
+try:
+    from utils.entity_normalizer import load_overlay_aliases
+except ImportError:
+    from entity_normalizer import load_overlay_aliases
 
 # Load stem cells overlay
 stem_aliases = load_overlay_aliases("stem_cells_regen")
@@ -22,7 +25,10 @@ for abbrev, canonical in list(stem_aliases.items())[:5]:
 print("\n🔬 Step 2: Test entity normalization")
 print("-" * 80)
 
-from .entity_normalizer import normalize_entity, load_normalization_map
+try:
+    from utils.entity_normalizer import normalize_entity, load_normalization_map
+except ImportError:
+    from entity_normalizer import normalize_entity, load_normalization_map
 
 norm_map = load_normalization_map()
 
