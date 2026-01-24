@@ -1,0 +1,56 @@
+{
+  "description": "Model weighting system - assigns context strength based on translational relevance",
+  "tiers": {
+    "A": "Human relevance (highest weight)",
+    "B": "Translational models",
+    "C": "Preclinical models",
+    "D": "Reductionist systems"
+  },
+  "weights": {
+    "human": 2.0,
+    "humans": 2.0,
+    "primary human cells": 1.8,
+    "human tissue": 1.9,
+    "biopsy": 1.8,
+    "tissue": 1.7,
+    "csf": 1.7,
+    "cerebrospinal fluid": 1.7,
+    "plasma": 1.6,
+    "serum": 1.6,
+    "blood": 1.6,
+    "clinical sample": 1.9,
+    "patient": 1.9,
+    "patients": 1.9,
+    
+    "non-human primate": 1.4,
+    "primate": 1.4,
+    "pig": 1.3,
+    "organoid": 1.4,
+    "organoids": 1.4,
+    "ipsc": 1.4,
+    "ipsc-derived": 1.4,
+    "ex vivo": 1.3,
+    "xenograft": 1.3,
+    "xenografts": 1.3,
+    
+    "mouse": 1.0,
+    "mice": 1.0,
+    "rat": 1.0,
+    "rats": 1.0,
+    "zebrafish": 1.0,
+    "drosophila": 0.9,
+    "c. elegans": 0.9,
+    "worm": 0.9,
+    
+    "cell line": 0.7,
+    "cell lines": 0.7,
+    "hek293": 0.6,
+    "hek-293": 0.6,
+    "hela": 0.6,
+    "cho": 0.6,
+    "lysate": 0.55,
+    "cell-free": 0.5,
+    "cell-free system": 0.5,
+    "in vitro": 0.8
+  }
+}
