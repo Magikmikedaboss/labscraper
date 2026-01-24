@@ -80,13 +80,13 @@ python scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_p
 ## How It Works
 
 ### Sequential (Original)
-```
+```text
 PDF 1 → PDF 2 → PDF 3 → PDF 4 → ... → PDF 65
 [====================================] 15 min
 ```
 
 ### Parallel (4 workers)
-```
+```text
 Worker 1: PDF 1  → PDF 5  → PDF 9  → ...
 Worker 2: PDF 2  → PDF 6  → PDF 10 → ...
 Worker 3: PDF 3  → PDF 7  → PDF 11 → ...

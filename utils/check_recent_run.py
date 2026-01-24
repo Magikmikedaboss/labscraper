@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import datetime
+from datetime import timezone
 
 
 # Check the metadata file
@@ -16,7 +17,7 @@ except json.JSONDecodeError:
     print(f"Error: Metadata file '{meta_file}' is not valid JSON.")
     meta = None
 except Exception as e:
-    print(f"Error opening metadata file '{meta_file}': {e}")
+    print(f"Error opening metadata file '{meta_file}': {type(e).__name__}: {e}")
     meta = None
 
 if meta is None:
