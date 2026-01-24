@@ -1,0 +1,52 @@
+{
+  "id": "science_research_v1",
+  "description": "Emphasizes mechanistic biology, replication, translational progress, and experimental rigor.",
+  
+  "boost_terms": {
+    "mechanism": 3,
+    "pathway": 3,
+    "dose-dependent": 2,
+    "in vivo": 3,
+    "in vitro": 1,
+    "replication": 4,
+    "independent cohort": 4,
+    "statistically significant": 3,
+    "p-value": 2,
+    "randomized": 3,
+    "controlled": 3,
+    "clinical trial": 4,
+    "phase i": 3,
+    "phase ii": 3,
+    "phase iii": 4,
+    "limitations": 2,
+    "confounding": 2,
+    "causal": 3,
+    "biomarker": 2,
+    "translational": 3
+  },
+  
+  "demote_terms": {
+    "anecdotal": -2,
+    "self-reported": -2,
+    "lifestyle": -1,
+    "stack": -1,
+    "biohack": -1,
+    "optimization": -1,
+    "routine": -1
+  },
+  
+  "priority_entities": {
+    "pathway": 2,
+    "assay": 2,
+    "model": 2,
+    "compound": 1,
+    "indication": 2
+  },
+  
+  "pattern_bias": {
+    "convergence": 1.5,
+    "replication": 2.0,
+    "fragmentation": 0.8,
+    "escalation": 1.0
+  }
+}

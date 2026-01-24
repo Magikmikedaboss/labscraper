@@ -68,6 +68,20 @@ fibroblasts
 keratinocytes
 endothelial cells
 smooth muscle cells
+primary neurons
+cortical neurons
+hippocampal neurons
+microglia
+astrocytes
+oligodendrocytes
+adipocytes
+myocytes
+macrophages
+monocytes
+t cells
+b cells
+nk cells
+splenocytes
 
 # Biofluids
 serum
@@ -88,6 +102,13 @@ spheroid
 spheroids
 3D culture
 hydrogel
+co-culture
+transwell
+microfluidic
+organ-on-chip
+brain slice
+acute brain slice
+iPSC-derived neurons
 
 # Animal Models
 xenograft
@@ -156,3 +177,9 @@ paraffin-embedded
 FFPE
 fresh frozen
 cryopreserved
+brown adipose tissue
+white adipose tissue
+liver tissue
+skeletal muscle
+pancreatic islets
+bone marrow

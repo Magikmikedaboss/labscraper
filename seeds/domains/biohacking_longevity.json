@@ -3,7 +3,12 @@
   "name": "Biohacking & Longevity",
   "description": "Observational analysis of research activity related to human performance, longevity, metabolism, cognition, and recovery. Not medical advice; momentum is not effectiveness.",
   "claims_mode": "observational_only",
-  "domain_profile_version": "v1",
+  "domain_profile_version": "v2",
+  "dual_lens": true,
+  "overlays": [
+    "science_research_v1",
+    "biohacking_curiosity_v1"
+  ],
   "seed_overlays": {
     "include_files": [
       "biomarkers.json",

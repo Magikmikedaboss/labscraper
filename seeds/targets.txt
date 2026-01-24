@@ -14,6 +14,11 @@ PGC1A
 PPARα
 PPARγ
 PPARδ
+FASN
+ACC
+CPT1
+PDK1
+HK2
 
 # GLP-1 Pathway
 GLP1R
@@ -42,6 +47,11 @@ IL1B
 IL-1β
 COX2
 COX-2
+IFNG
+IL10
+TLR4
+TLR9
+NLRP3
 
 # Oxidative Stress
 NRF2
@@ -123,8 +133,6 @@ granzyme
 caspase
 CASP1
 CASP8
-CASP3
-CASP9
 proteasome subunit
 ubiquitin ligase
 deubiquitinase
@@ -144,6 +152,24 @@ CDK4
 CDK6
 CCND1
 RB1
+CDKN2A
+p16
+CDKN1A
+p21
+
+# Longevity / Aging Targets
+TERT
+TERC
+WRN
+LMNA
+
+# Neuroscience Targets
+BDNF
+NTRK2
+GRIN2B
+MAPT
+APP
+SNCA
 
 # Stem Cell Markers
 OCT4
