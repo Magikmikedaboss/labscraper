@@ -185,7 +185,7 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     print("\n📝 Step 3: Exporting entities CSV...")
     
     output_path = Path(output_dir)
-    output_path.mkdir(exist_ok=True)
+    output_path.mkdir(parents=True, exist_ok=True)
     
     entities_file = output_path / f"entities_dual_lens_{domain_id}.csv"
     

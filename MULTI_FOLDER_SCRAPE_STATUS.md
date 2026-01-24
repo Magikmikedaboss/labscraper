@@ -69,4 +69,6 @@ Scrape two folders into one combined database:
 
 ## Status: 🔄 SCRAPING IN PROGRESS
 
+Last updated: 2026-01-25 10:15
+
 Waiting for Folder 1 to complete...

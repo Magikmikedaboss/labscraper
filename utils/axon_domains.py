@@ -202,16 +202,21 @@ def load_all_domains(domains_dir: str) -> Dict[str, DomainProfile]:
 def get_domain_by_id(domain_id: str, domains_dir: str = "seeds/domains") -> Optional[DomainProfile]:
     """
     Get a specific domain profile by ID.
-    
+
     Args:
         domain_id: Domain identifier
         domains_dir: Path to domains directory
-        
+
     Returns:
         DomainProfile if found, None otherwise
     """
-    domains = load_all_domains(domains_dir)
-    return domains.get(domain_id)
+    path = os.path.join(domains_dir, f"{domain_id}.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        return load_domain_profile(path)
+    except (FileNotFoundError, json.JSONDecodeError, ValueError):
+        return None
 
 
 # Example usage
@@ -223,7 +228,7 @@ if __name__ == "__main__":
     print("AXON LABS DOMAIN PROFILES")
     print("="*70)
     
-    for domain_id, profile in domains.items():
+    for _domain_id, profile in domains.items():
         print(f"\n{profile.name} ({profile.id})")
         print(f"  Version: {profile.domain_profile_version}")
         print(f"  Claims Mode: {profile.claims_mode}")

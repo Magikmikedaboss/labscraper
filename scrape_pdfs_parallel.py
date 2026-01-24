@@ -145,11 +145,11 @@ def process_single_pdf(args):
         
         con.commit()
         con.close()
-        
-        return (pdf_path.name, events_count, True, None)
-    
+
     except Exception as e:
         return (pdf_path.name, 0, False, str(e))
+    else:
+        return (pdf_path.name, events_count, True, None)
 
 
 def main():
@@ -208,21 +208,21 @@ def main():
             failed_pdfs.append((pdf_name, error_msg))
     
     print(f"\n{'='*70}")
-    print(f"SCRAPING COMPLETE")
+    print("SCRAPING COMPLETE")
     print(f"{'='*70}")
     print(f"✅ Total events inserted: {total_events}")
     print(f"✅ Successful PDFs: {len(pdfs) - len(failed_pdfs)}/{len(pdfs)}")
     print(f"✅ Database: {db_path.resolve()}")
-    
+
     if failed_pdfs:
         print(f"\n⚠️  Failed PDFs ({len(failed_pdfs)}):")
         for pdf_name, error in failed_pdfs[:10]:  # Show first 10
             print(f"   - {pdf_name}: {error[:80]}")
         if len(failed_pdfs) > 10:
             print(f"   ... and {len(failed_pdfs) - 10} more")
-    
+
     print(f"\n{'='*70}")
-    print(f"Next step: Run dual-lens export")
+    print("Next step: Run dual-lens export")
     print(f"  python export_dual_lens.py {db_path} {domain}")
     print(f"{'='*70}\n")
 

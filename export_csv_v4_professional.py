@@ -13,30 +13,10 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 from utils.entity_normalizer import load_normalization_map, normalize_entity_list
+from utils.process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
 
 DB_PATH = Path("output") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
-
-# Process words that should be tags, not primary assay entities
-# These are generic lab terms that don't represent specific research assays
-PROCESS_WORDS_TO_DEMOTE = {
-    # Sample prep & processing
-    "quantification", "quantitation", "chromatography", "purification",
-    "calibration", "validation", "optimization", "quality control",
-    
-    # Generic measurement terms
-    "affinity", "binding affinity", "affinity measurement", "affinity assay",
-    
-    # Mobile phase & standards
-    "internal standard", "mobile phase", "gradient", "elution",
-    
-    # Generic detection
-    "detection", "analysis", "measurement", "determination"
-}
-
-def is_process_word(entity_name: str) -> bool:
-    """Check if entity is a process word that should be demoted to tag"""
-    return entity_name.lower() in PROCESS_WORDS_TO_DEMOTE
 
 def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
     """
@@ -273,7 +253,7 @@ def export_candidates_professional():
         "role": None
     })
     
-    for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
+    for _entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
         entity_dict = {
             "entity_type": etype,
             "entity_name": ename,

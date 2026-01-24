@@ -70,8 +70,6 @@ try:
             print("No rows found in events_export_stem_cells_regen.csv.")
 except (FileNotFoundError, PermissionError) as e:
     print(f"Error opening events export file: {e}")
-except Exception as e:
-    print(f"Unexpected error: {e}")
 
 # Check candidates export
 print("\nCandidates export (candidates_primary_stem_cells_regen.csv):")

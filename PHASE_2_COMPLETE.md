@@ -259,7 +259,7 @@ Apply overlay scoring to pattern detection:
 
 ## Summary
 
-**Phase 2 is complete and working perfectly!**
+### Phase 2 is complete and working perfectly!
 
 ✅ Overlay scoring implemented
 ✅ Dual-lens export functional

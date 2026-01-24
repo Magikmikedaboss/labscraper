@@ -9,7 +9,7 @@ def check_compound_extraction():
     print("="*70)
     
     # Check what was extracted
-    db_path = Path("output/test_enhanced_seeds.sqlite")
+    db_path = Path("runs/test_enhanced_seeds.sqlite")
     con = sqlite3.connect(db_path)
     cur = con.cursor()
     
@@ -30,17 +30,14 @@ def check_compound_extraction():
     
     # Check what's in seed file
     print("\n📋 COMPOUNDS AVAILABLE IN SEED FILE:")
-    seeds_path = Path("seeds/compounds.txt")
+    seeds_path = Path("seeds/base/compounds.txt")
     lines = seeds_path.read_text(encoding='utf-8').split('\n')
     
     seed_compounds = []
-    current_category = None
-    
+
     for line in lines:
         line = line.strip()
         if not line or line.startswith('#'):
-            if line.startswith('#') and not line.startswith('##'):
-                current_category = line[1:].strip()
             continue
         # Strip inline comments
         line = line.split('#', 1)[0].strip()

@@ -15,30 +15,10 @@ from collections import defaultdict
 from datetime import datetime
 from utils.entity_normalizer import load_normalization_map, normalize_entity_list, load_overlay_aliases
 from utils.axon_domains import get_domain_by_id
+from utils.process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
 
 DB_PATH = Path("runs") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
-
-# Process words that should be tags, not primary assay entities
-# These are generic lab terms that don't represent specific research assays
-PROCESS_WORDS_TO_DEMOTE = {
-    # Sample prep & processing
-    "quantification", "quantitation", "chromatography", "purification",
-    "calibration", "validation", "optimization", "quality control",
-    
-    # Generic measurement terms
-    "affinity", "binding affinity", "affinity measurement", "affinity assay",
-    
-    # Mobile phase & standards
-    "internal standard", "mobile phase", "gradient", "elution",
-    
-    # Generic detection
-    "detection", "analysis", "measurement", "determination"
-}
-
-def is_process_word(entity_name: str) -> bool:
-    """Check if entity is a process word that should be demoted to tag"""
-    return entity_name.lower() in PROCESS_WORDS_TO_DEMOTE
 
 def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
     """
@@ -146,7 +126,7 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
     
     return (len(primary), len(context), primary_str, context_str, all_str)
 
-def export_events_domain_aware(domain_id: str = None):
+def export_events_domain_aware(domain_id: str | None = None):
     """Export events with domain awareness"""
     norm_map = load_normalization_map()
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
@@ -266,7 +246,7 @@ def export_events_domain_aware(domain_id: str = None):
     
     return confidence_changes
 
-def export_candidates_domain_aware(domain_id: str = None):
+def export_candidates_domain_aware(domain_id: str | None = None):
     """Export candidates with domain awareness and overlay aliases"""
     norm_map = load_normalization_map()
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
@@ -329,7 +309,7 @@ def export_candidates_domain_aware(domain_id: str = None):
             "role": None
         })
         
-        for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
+        for _entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
             entity_dict = {
                 "entity_type": etype,
                 "entity_name": ename,
