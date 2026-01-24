@@ -59,12 +59,64 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     
     # Get all entities
     entities = cur.execute("SELECT * FROM entities").fetchall()
-    
+
+    # Apply entity type precedence and normalization
+    def normalize_entity_type(name: str, entity_type: str) -> str:
+        """Apply type precedence rules"""
+        name_lower = name.lower()
+        # Neural cells
+        if name_lower in {"microglia", "astrocyte", "neuron", "neurons", "astrocytes"}:
+            return "neural_cell"
+        # Stem cells
+        if name_lower in {"ipsc", "msc", "esc"}:
+            return "stem_cell"
+        # Organoids -> model
+        if name_lower in {"organoid", "organoids"}:
+            return "model"
+        return entity_type
+
+    # Normalize entities: merge duplicates by canonical name + type
+    entity_canonical = {}  # (canonical_name, canonical_type) -> merged_entity
+    entity_id_mapping = {}  # old_entity_id -> canonical_entity_id
+
+    for entity in entities:
+        name = entity['entity_name']
+        entity_type = entity['entity_type']
+
+        # Apply type precedence
+        canonical_type = normalize_entity_type(name, entity_type)
+
+        # Create canonical name (lowercase)
+        canonical_name = name.lower()
+
+        key = (canonical_name, canonical_type)
+
+        if key not in entity_canonical:
+            # Create new canonical entity
+            canonical_entity = dict(entity)
+            canonical_entity['entity_name'] = canonical_name  # Use lowercase canonical name
+            canonical_entity['entity_type'] = canonical_type
+            canonical_entity['original_names'] = [name]  # Track original names
+            entity_canonical[key] = canonical_entity
+        else:
+            # Merge into existing canonical entity
+            canonical_entity = entity_canonical[key]
+            if name not in canonical_entity['original_names']:
+                canonical_entity['original_names'].append(name)
+
+        # Map old entity_id to canonical entity_id
+        entity_id_mapping[entity['entity_id']] = entity_canonical[key]['entity_id']
+
+    # Update entities list to use canonical entities
+    entities = list(entity_canonical.values())
+
     # Get entity-event relationships
     entity_events = defaultdict(list)  # entity_id -> [event_ids]
-    
+
     for row in cur.execute("SELECT entity_id, event_id FROM event_entities"):
-        entity_events[row['entity_id']].append(row['event_id'])
+        # Map to canonical entity_id
+        canonical_id = entity_id_mapping.get(row['entity_id'], row['entity_id'])
+        entity_events[canonical_id].append(row['event_id'])
     
     # Extract models from events for model weighting
     # Get all entities of type 'model' linked to each event
@@ -90,7 +142,6 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     
     for entity in entities:
         entity_id = entity['entity_id']
-        entity_type = entity['entity_type']
         event_ids = entity_events.get(entity_id, [])
         
         # Get models associated with this entity
@@ -286,14 +337,28 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
 
 if __name__ == "__main__":
     import sys
-    
+    import re
+
     if len(sys.argv) < 2:
         print("Usage: python export_dual_lens.py <database_path> [domain_id]")
         print("\nExample:")
         print("  python export_dual_lens.py output/biohacking_dual_lens.sqlite biohacking_longevity")
         sys.exit(1)
-    
+
     db_path = sys.argv[1]
     domain_id = sys.argv[2] if len(sys.argv) > 2 else "biohacking_longevity"
-    
+
+    # Validate domain_id to prevent path traversal
+    valid_domain_ids = ['biohacking_longevity', 'drug_discovery', 'methods_tooling', 'neuroscience_cognition', 'stem_cells_regen']
+    if domain_id not in valid_domain_ids:
+        print(f"❌ Invalid domain_id: {domain_id}")
+        print(f"Valid domains: {', '.join(valid_domain_ids)}")
+        sys.exit(1)
+
+    # Additional safety check: ensure domain_id contains only safe characters
+    if not re.match(r'^[a-zA-Z0-9_-]+$', domain_id):
+        print(f"❌ Invalid domain_id format: {domain_id}")
+        print("Domain ID must contain only letters, numbers, underscores, and hyphens")
+        sys.exit(1)
+
     export_dual_lens(db_path, domain_id)

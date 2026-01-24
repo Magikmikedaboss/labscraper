@@ -402,7 +402,21 @@ def extract_entities(sentence: str) -> list[dict]:
                     "role": "tested"
                 })
                 extracted_names.add(name)
-    
+
+    # Type precedence rules
+    neural_cell_names = {"microglia", "astrocyte", "neuron", "neurons"}
+    model_names = {"organoid", "organoids"}
+    stem_cell_names = {"ipsc", "msc", "esc"}
+
+    for e in ents:
+        name_lower = e["entity_name"].lower()
+        if name_lower in neural_cell_names:
+            e["entity_type"] = "neural_cell"
+        elif name_lower in model_names:
+            e["entity_type"] = "model"
+        elif name_lower in stem_cell_names:
+            e["entity_type"] = "stem_cell"
+
     return ents
 
 # ---------------------------------------------------------

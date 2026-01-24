@@ -22,7 +22,15 @@
     "confounding": 2,
     "causal": 3,
     "biomarker": 2,
-    "translational": 3
+    "translational": 3,
+    "lc-ms": 2,
+    "mass spectrometry": 2,
+    "elisa": 2,
+    "western blot": 2,
+    "flow cytometry": 2,
+    "rna-seq": 2,
+    "immunohistochemistry": 2,
+    "confocal microscopy": 2
   },
   
   "demote_terms": {
@@ -32,7 +40,10 @@
     "stack": -1,
     "biohack": -1,
     "optimization": -1,
-    "routine": -1
+    "routine": -1,
+    "efficacy": -3,
+    "effective": -2,
+    "effectiveness": -2
   },
   
   "priority_entities": {

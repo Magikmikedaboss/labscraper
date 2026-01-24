@@ -91,7 +91,14 @@ class OverlayScorer:
                     score += weight  # weight is already negative
             
             scores[overlay_id] = score
-        
+
+        # Efficacy demotion for science overlay
+        assay_keywords = ["lc-ms", "elisa", "western blot", "rna-seq", "flow cytometry", "mass spectrometry", "hplc", "nmr", "fluorescence", "spectrometry"]
+        for overlay_id in self.overlays:
+            if overlay_id == "science_research_v1":
+                if ("efficacy" in text_lower or "effective" in text_lower) and not any(k in text_lower for k in assay_keywords):
+                    scores[overlay_id] -= 1.0
+
         return scores
     
     def apply_entity_priority(self, entity_type: str, overlay_id: str) -> float:
@@ -175,13 +182,16 @@ class OverlayScorer:
         
         # Step 6: Apply lens-specific post-adjustments
         # 🎯 Infrastructure dampening (biohacking_curiosity lens only)
-        # Prevents generic models from crowding out compounds/indications
-        INFRA_MODELS = {"human", "humans", "serum", "plasma", "blood", "tissue"}
-        
+        # Prevents generic models/context from crowding out compounds/indications
+        INFRA_MODELS = {"human", "humans", "serum", "plasma", "blood", "tissue", "in vivo", "in vitro"}
+
         if overlay_id == "biohacking_curiosity_v1":
             entity_name = entity.get('entity_name', '').lower()
-            if entity_type == "model" and entity_name in INFRA_MODELS:
-                final_score *= 0.65  # De-emphasize infrastructure, not suppress
+
+            # Dampen infrastructure (extended list)
+            INFRA_EXTENDED = INFRA_MODELS | {"tissue", "blood"}
+            if entity_name in INFRA_EXTENDED:
+                final_score *= 0.5  # Stronger dampening for extended infra list
         
         return final_score
     

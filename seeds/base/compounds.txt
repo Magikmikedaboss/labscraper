@@ -1,0 +1,82 @@
+# Compound Seed List
+# Format: One compound per line, lowercase, case-insensitive
+
+# GLP-1 agonists
+liraglutide
+semaglutide
+dulaglutide
+exenatide
+tirzepatide
+
+# calcimimetics
+etelcalcetide
+cinacalcet
+evocalcet
+
+# guanylate cyclase agonists
+linaclotide
+plecanatide
+
+# mtor inhibitors
+rapamycin
+sirolimus
+everolimus
+temsirolimus
+
+# ampk activators
+metformin
+phenformin
+aicar
+
+# peptide therapeutics
+teriparatide
+abaloparatide
+octreotide
+lanreotide
+pasireotide
+
+# insulin analogs
+insulin glargine
+insulin detemir
+insulin degludec
+insulin aspart
+insulin lispro
+
+# other peptides
+oxytocin
+vasopressin
+desmopressin
+calcitonin
+glucagon
+
+# monoclonal antibodies
+trastuzumab
+pembrolizumab
+nivolumab
+rituximab
+
+# small molecules (common in peptide-related research)
+dexamethasone
+cyclosporine
+tacrolimus
+
+# longevity & anti-aging compounds
+nad+
+nmn
+resveratrol
+spermidine
+fisetin
+quercetin
+curcumin
+berberine
+alpha-ketoglutarate
+ca-akg
+urolithin a
+apigenin
+luteolin
+pterostilbene
+sulforaphane
+egcg
+astaxanthin
+coq10
+pqq
