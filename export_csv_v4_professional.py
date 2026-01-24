@@ -200,17 +200,17 @@ def export_events_professional():
     
     # Safe percentage calculation (avoid ZeroDivisionError)
     if len(events) > 0:
-        print(f"\n📊 Confidence Distribution (After Boost):")
+        print("\n📊 Confidence Distribution (After Boost):")
         print(f"   High: {confidence_changes['high']} ({confidence_changes['high']/len(events)*100:.1f}%)")
         print(f"   Med: {confidence_changes['med']} ({confidence_changes['med']/len(events)*100:.1f}%)")
         print(f"   Low: {confidence_changes['low']} ({confidence_changes['low']/len(events)*100:.1f}%)")
     else:
-        print(f"\n📊 Confidence Distribution (After Boost):")
+        print("\n📊 Confidence Distribution (After Boost):")
         print(f"   High: {confidence_changes['high']} (0.0%)")
         print(f"   Med: {confidence_changes['med']} (0.0%)")
         print(f"   Low: {confidence_changes['low']} (0.0%)")
-    
-    print(f"\n🚀 Confidence Boosts Applied:")
+
+    print("\n🚀 Confidence Boosts Applied:")
     print(f"   Boosted to HIGH: {confidence_changes['boosted_to_high']}")
     print(f"   Boosted to MED: {confidence_changes['boosted_to_med']}")
     
@@ -324,7 +324,7 @@ def write_run_meta(confidence_changes, canonical_entities):
         "database": str(DB_PATH),
         "seeds_version": "2026-01-22",
         "counts": {
-            "total_events": confidence_changes["high"] + confidence_changes["med"] + confidence_changes["low"],
+            "total_events": confidence_changes["high"] + confidence_changes["med"] + confidence_changes["low"] + confidence_changes["other"],
             "total_entities": len(canonical_entities),
             "primary_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "primary"),
             "context_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
@@ -333,6 +333,7 @@ def write_run_meta(confidence_changes, canonical_entities):
             "high": confidence_changes["high"],
             "med": confidence_changes["med"],
             "low": confidence_changes["low"],
+            "other": confidence_changes["other"],
             "boosted_to_high": confidence_changes["boosted_to_high"],
             "boosted_to_med": confidence_changes["boosted_to_med"]
         },
@@ -360,10 +361,13 @@ def write_run_meta(confidence_changes, canonical_entities):
     print(f"✅ Wrote run metadata: {meta_path}")
 
 if __name__ == "__main__":
+    # Ensure output directory exists
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
     print("=" * 70)
     print("CSV EXPORT v4 - PROFESSIONAL POLISH")
     print("=" * 70)
-    
+
     canonical_entities = export_candidates_professional()
     confidence_changes = export_events_professional()
     write_run_meta(confidence_changes, canonical_entities)

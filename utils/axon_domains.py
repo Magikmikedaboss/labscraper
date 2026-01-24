@@ -231,11 +231,15 @@ def get_domain_by_id(domain_id: str, domains_dir: str = "seeds/domains") -> Opti
     except (OSError, ValueError):
         return None
 
-    if not os.path.exists(path):
+    if not os.path.isfile(path):
         return None
+
+    if not os.access(path, os.R_OK):
+        return None
+
     try:
         return load_domain_profile(path)
-    except (FileNotFoundError, json.JSONDecodeError, ValueError):
+    except (FileNotFoundError, json.JSONDecodeError, ValueError, OSError):
         return None
 
 
