@@ -7,13 +7,15 @@ from typing import List, Dict, Optional, Tuple
 # ---------- Basic unit / numeric signals ----------
 UNIT_PATTERNS = [
     r"\bmpa\b", r"\bkpa\b", r"\bgpa\b",
-    r"\bkn\b", r"\bn\b", r"\bmn\b",
+    r"\bkn\b", r"\bmn\b",
     r"\bmm\b", r"\bcm\b", r"\bm\b",
-    r"\bin\b", r"\bft\b",
+    # Removed overly broad 'in' and 'n' patterns to avoid false positives
+    r"\bft\b",
     r"\bw/m2k\b", r"\bw/m·k\b", r"\bw/mk\b",
     r"\bwh\b", r"\bkwh\b", r"\bkw\b",
     r"\bpa\b", r"\bppm\b",
-    r"\b%(\b|$)", r"\bpercent\b",
+    # Improved percent sign detection: match '%' after a digit and followed by whitespace or end-of-string
+    r"(?<=\d)%(?=\s|$)", r"\bpercent\b",
     r"\b°c\b", r"\bdegc\b", r"\b°f\b"
 ]
 

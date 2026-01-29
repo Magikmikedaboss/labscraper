@@ -21,8 +21,9 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
 
-    haz = [h for h in HAZARDS if h in s_l]
-    resil = [t for t in RESILIENCE_TERMS if t in s_l]
+    # Use word-boundary matching for hazards and resilience terms
+    haz = list_hits(s_l, HAZARDS)
+    resil = list_hits(s_l, RESILIENCE_TERMS)
 
     if not haz and not resil:
         return None, []

@@ -32,10 +32,11 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     mats = list_hits(s_l, MATERIALS)
     props = [p for p in PROPERTIES if p in s_l]
 
-    # Signal: materials + property, or strong unit/numeric measurement + property
+    # Signal: materials + property, or strong unit/numeric measurement + property, or test marker alone
     signal = (mats and props) or (props and (has_unit_signal(s_l) or has_number(s_l))) or contains_any(s_l, TEST_MARKERS)
 
-    if not signal or not props:
+    # Allow test markers alone to trigger detection, even if props is empty
+    if not signal or (not props and not contains_any(s_l, TEST_MARKERS)):
         return None, []
 
     for m in mats[:5]:

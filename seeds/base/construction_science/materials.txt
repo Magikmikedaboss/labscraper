@@ -11,7 +11,7 @@ cmu
 grout
 timber
 glulam
-lvL
+LVL
 plywood
 osb
 frp

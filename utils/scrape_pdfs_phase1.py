@@ -861,6 +861,11 @@ def main():
                                             entity_id = upsert_entity(con, e["entity_type"], e["entity_name"], e["entity_variant"], None)
                                             link_event_entity(con, event_id, entity_id, e.get("role", "unknown"))
 
+                                        # Update entity coverage stats for construction_science
+                                        if ents:
+                                            events_with_entities += 1
+                                            total_entities_extracted += len(ents)
+
                                         # No measurements for v1 construction lenses
                                         inserted_events += 1
                                     if not any_event:
