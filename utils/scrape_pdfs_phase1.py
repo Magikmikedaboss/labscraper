@@ -18,13 +18,20 @@ from datetime import datetime, timezone
 import pdfplumber
 from tqdm import tqdm
 
-# Import the new entity extractor
-from .entity_extractor import load_seeds, extract_entities as extract_new_entities, score_event_confidence
+from typing import Optional, List, Dict, Tuple
 
+# Import the new entity extractor
+try:
+    from .entity_extractor import load_seeds, extract_entities as extract_new_entities, score_event_confidence
+except ImportError:
+    from entity_extractor import load_seeds, extract_entities as extract_new_entities, score_event_confidence
 # Default paths (can be overridden via CLI)
 DB_PATH = Path("output") / "peptide_intel.sqlite"
 INPUT_DIR = Path("input_pdfs")
-RESEARCH_DOMAIN = "peptide"
+
+# RESEARCH_DOMAIN is the research axis (e.g., methods_tooling, drug_discovery), not an entity type like 'peptide'.
+# Default is now a valid domain. Do not use entity names here.
+RESEARCH_DOMAIN = "methods_tooling"
 
 # Load JSON seeds for new entity types
 SEEDS = load_seeds("seeds")
@@ -41,7 +48,7 @@ def sha16(s: str) -> str:
 def sha64(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
-def chunk_sentences(text: str) -> list[str]:
+def chunk_sentences(text: str) -> List[str]:
     parts = re.split(r"(?<=[\.\?\!])\s+", text.replace("\n", " "))
     return [p.strip() for p in parts if p.strip()]
 
@@ -140,22 +147,54 @@ def load_seed_file(filepath: Path) -> set:
 
 # Load existing TXT seed files
 SEEDS_DIR = Path("seeds")
-COMPOUND_SEED_LIST = load_seed_file(SEEDS_DIR / "compounds.txt")
-TARGET_SEED_LIST = load_seed_file(SEEDS_DIR / "targets.txt")
-MODEL_SEED_LIST = load_seed_file(SEEDS_DIR / "models.txt")
-STOPWORD_SEED_LIST = load_seed_file(SEEDS_DIR / "stopwords.txt")
 
-print(f"📋 Loaded TXT seeds:")
-print(f"   Compounds: {len(COMPOUND_SEED_LIST)}")
-print(f"   Targets: {len(TARGET_SEED_LIST)}")
-print(f"   Models: {len(MODEL_SEED_LIST)}")
-print(f"   Stopwords: {len(STOPWORD_SEED_LIST)}")
+# Load base ontology based on domain (multi-ontology support)
+def load_base_ontology(domain: str):
+    """Load the appropriate base ontology for the given domain"""
+    base_ontology = "life_sciences"  # default
 
-print(f"📋 Loaded JSON seeds:")
-print(f"   Assays: {len(SEEDS.get('assays', {}).get('assays', []))}")
-print(f"   Pathways: {len(SEEDS.get('pathways', {}).get('pathways', []))}")
-print(f"   Indications: {len(SEEDS.get('indications', {}).get('indications', []))}")
-print(f"   Neural Cells: {len(SEEDS.get('neural_cells', {}).get('neural_cells', []))}")
+    # Check if domain has a specific base ontology configured
+    ontologies_path = SEEDS_DIR / ".." / "config" / "ontologies.json"
+    if ontologies_path.exists():
+        try:
+            ontologies_config = json.loads(ontologies_path.read_text())
+            if domain in ontologies_config:
+                base_ontology = ontologies_config[domain].get("base_ontology", base_ontology)
+        except Exception as e:
+            print(f"Warning: Could not load ontologies config: {e}")
+
+    # Load the base ontology seeds
+    base_dir = SEEDS_DIR / "base" / base_ontology
+    if base_dir.exists():
+        compound_file = base_dir / "compounds.txt" if base_ontology == "life_sciences" else base_dir / "materials.txt"
+        target_file = base_dir / "targets.txt" if base_ontology == "life_sciences" else base_dir / "systems.txt"
+        model_file = base_dir / "models.txt" if base_ontology == "life_sciences" else base_dir / "environments.txt"
+        assay_file = base_dir / "assays.txt" if base_ontology == "life_sciences" else base_dir / "test_methods.txt"
+        indication_file = base_dir / "indications.txt" if base_ontology == "life_sciences" else base_dir / "failure_modes.txt"
+    else:
+        # Fallback to original files
+        compound_file = SEEDS_DIR / "compounds.txt"
+        target_file = SEEDS_DIR / "targets.txt"
+        model_file = SEEDS_DIR / "models.txt"
+        assay_file = None
+        indication_file = None
+
+    compound_seeds = load_seed_file(compound_file) if compound_file and compound_file.exists() else set()
+    target_seeds = load_seed_file(target_file) if target_file and target_file.exists() else set()
+    model_seeds = load_seed_file(model_file) if model_file and model_file.exists() else set()
+    assay_seeds = load_seed_file(assay_file) if assay_file and assay_file.exists() else set()
+    indication_seeds = load_seed_file(indication_file) if indication_file and indication_file.exists() else set()
+    stopword_seeds = load_seed_file(SEEDS_DIR / "stopwords.txt")
+
+    return compound_seeds, target_seeds, model_seeds, assay_seeds, indication_seeds, stopword_seeds
+
+# Seed lists will be loaded in main() after parsing arguments
+COMPOUND_SEED_LIST = set()
+TARGET_SEED_LIST = set()
+MODEL_SEED_LIST = set()
+ASSAY_SEED_LIST = set()
+INDICATION_SEED_LIST = set()
+STOPWORD_SEED_LIST = set()
 
 # ---------------------------------------------------------
 # Peptide/Sequence Extraction (existing logic)
@@ -245,7 +284,7 @@ def is_probable_peptide(seq: str, sentence: str = "") -> bool:
 # ---------------------------------------------------------
 # PHASE 1: Enhanced Entity Extraction
 # ---------------------------------------------------------
-def extract_all_entities(sentence: str, title: str = "") -> list[dict]:
+def extract_all_entities(sentence: str, title: str = "") -> List[Dict]:
     """
     PHASE 1: Extract ALL entity types including new ones
     
@@ -399,18 +438,34 @@ def extract_all_entities(sentence: str, title: str = "") -> list[dict]:
                 extracted_names.add(pathway)
     
     # 9) INDICATION: Diseases/conditions (NEW - PHASE 1)
-    indications_data = SEEDS.get("indications", {})
-    for indication in indications_data.get("indications", []):
-        # Use word boundary for better matching
-        if re.search(r'\b' + re.escape(indication.lower()) + r'\b', s_l):
-            if indication not in extracted_names:
-                ents.append({
-                    "entity_type": "indication",
-                    "entity_name": indication,
-                    "entity_variant": "disease",
-                    "role": "indication"
-                })
-                extracted_names.add(indication)
+    # First try domain-specific indications from base ontology
+    if INDICATION_SEED_LIST:
+        for indication in INDICATION_SEED_LIST:
+            if re.search(r'\b' + re.escape(indication) + r'\b', s_l):
+                name = indication.upper() if indication.isupper() or len(indication) <= 5 else indication
+                if name not in extracted_names:
+                    ents.append({
+                        "entity_type": "indication",
+                        "entity_name": name,
+                        "entity_variant": "condition",
+                        "role": "indication"
+                    })
+                    extracted_names.add(name)
+
+    # Fallback to JSON indications if no domain-specific ones
+    if not INDICATION_SEED_LIST:
+        indications_data = SEEDS.get("indications", {})
+        for indication in indications_data.get("indications", []):
+            # Use word boundary for better matching
+            if re.search(r'\b' + re.escape(indication.lower()) + r'\b', s_l):
+                if indication not in extracted_names:
+                    ents.append({
+                        "entity_type": "indication",
+                        "entity_name": indication,
+                        "entity_variant": "disease",
+                        "role": "indication"
+                    })
+                    extracted_names.add(indication)
     
     return ents
 
@@ -427,7 +482,7 @@ QUANTITATIVE_PATTERNS = [
     (r't1/2.*?(\d+\.?\d*)\s*(min|hour|day|hr|h)', 'half_life'),
 ]
 
-def extract_quantitative_data(sentence: str) -> list[dict]:
+def extract_quantitative_data(sentence: str) -> List[Dict]:
     """Extract numerical measurements from sentence"""
     measurements = []
     s_l = sentence.lower()
@@ -506,7 +561,7 @@ def detect_failure_reason(sentence_l: str) -> str:
             return reason
     return "unknown"
 
-def detect_decision(sentence_l: str) -> tuple[str, str | None]:
+def detect_decision(sentence_l: str) -> Tuple[str, Optional[str]]:
     for decision, phrases in DECISION_PHRASES.items():
         if any(p in sentence_l for p in phrases):
             return decision, None
@@ -619,7 +674,7 @@ def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_gue
 def upsert_tag(con, tag: str):
     con.execute("INSERT OR IGNORE INTO tags(tag) VALUES(?)", (tag,))
 
-def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str | None, organism: str | None) -> str:
+def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: Optional[str], organism: Optional[str]) -> str:
     key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
     entity_id = sha16(key)
     con.execute(
@@ -630,8 +685,8 @@ def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str |
     return entity_id
 
 def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: int,
-                 domain: str, event_type: str, study_stage: str, biological_system: str | None, application_area: str | None,
-                 outcome: str, failure_reason: str, decision_taken: str, decision_driver: str | None,
+                 domain: str, event_type: str, study_stage: str, biological_system: Optional[str], application_area: Optional[str],
+                 outcome: str, failure_reason: str, decision_taken: str, decision_driver: Optional[str],
                  evidence_snippet: str, evidence_strength_v: str, confidence_v: str) -> str:
     base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
     event_id = sha16(base)
@@ -676,7 +731,7 @@ def insert_measurement(con, event_id: str, measurement: dict):
          measurement['value'], measurement['unit'], measurement['context'], now_iso()),
     )
 
-def normalize_event_key(event_type: str, entities: list, page: int, snippet: str) -> str:
+def normalize_event_key(event_type: str, entities: List, page: int, snippet: str) -> str:
     entity_str = "|".join(sorted(e['entity_name'] for e in entities))
     snippet_hash = sha16(snippet[:100])
     return f"{event_type}|{entity_str}|{page}|{snippet_hash}"
@@ -686,18 +741,40 @@ def normalize_event_key(event_type: str, entities: list, page: int, snippet: str
 # ---------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description='Scrape PDFs for research intelligence - Phase 1 Enhanced')
-    parser.add_argument('--domain', default='peptide', 
-                       help='Research domain (peptide, stem_cell, oncology, etc.)')
+    parser.add_argument('--domain', default='methods_tooling', 
+                       help='Research domain (methods_tooling, drug_discovery, etc. — do NOT use entity names like peptide)')
     parser.add_argument('--input-dir', type=Path, default=Path('input_pdfs'),
                        help='Directory containing PDF files')
     parser.add_argument('--output-db', type=Path, default=Path('output/peptide_intel.sqlite'),
                        help='Output SQLite database path')
     args = parser.parse_args()
     
-    global RESEARCH_DOMAIN, INPUT_DIR, DB_PATH
+
+    # Guard: prevent entity names as domains
+    ENTITY_NAMES = {"peptide", "protein", "cell", "compound", "target", "assay", "model", "indication", "stem_cell"}
+    if args.domain.lower() in ENTITY_NAMES:
+        print(f"❌ Invalid domain: '{args.domain}'. Do not use entity names as domains. Use a research axis like 'methods_tooling' or 'drug_discovery'.")
+        exit(1)
+
+    global RESEARCH_DOMAIN, INPUT_DIR, DB_PATH, COMPOUND_SEED_LIST, TARGET_SEED_LIST, MODEL_SEED_LIST, ASSAY_SEED_LIST, INDICATION_SEED_LIST, STOPWORD_SEED_LIST
     RESEARCH_DOMAIN = args.domain
     INPUT_DIR = args.input_dir
     DB_PATH = args.output_db
+
+    # Load seeds for the specified domain
+    COMPOUND_SEED_LIST, TARGET_SEED_LIST, MODEL_SEED_LIST, ASSAY_SEED_LIST, INDICATION_SEED_LIST, STOPWORD_SEED_LIST = load_base_ontology(RESEARCH_DOMAIN)
+
+    print(f"📋 Loaded TXT seeds:")
+    print(f"   Compounds: {len(COMPOUND_SEED_LIST)}")
+    print(f"   Targets: {len(TARGET_SEED_LIST)}")
+    print(f"   Models: {len(MODEL_SEED_LIST)}")
+    print(f"   Stopwords: {len(STOPWORD_SEED_LIST)}")
+
+    print(f"📋 Loaded JSON seeds:")
+    print(f"   Assays: {len(SEEDS.get('assays', {}).get('assays', []))}")
+    print(f"   Pathways: {len(SEEDS.get('pathways', {}).get('pathways', []))}")
+    print(f"   Indications: {len(SEEDS.get('indications', {}).get('indications', []))}")
+    print(f"   Neural Cells: {len(SEEDS.get('neural_cells', {}).get('neural_cells', []))}")
     
     if not INPUT_DIR.exists():
         raise SystemExit(f"Missing folder: {INPUT_DIR.resolve()}")
