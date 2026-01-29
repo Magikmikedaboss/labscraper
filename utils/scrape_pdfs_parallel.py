@@ -1,6 +1,6 @@
 """
 Parallel PDF Scraper - Process multiple PDFs simultaneously
-Uses multiprocessing to speed up scraping by 4-8x
+Uses multiprocessing to speed up scraping by 4-8x (depending on PDF size/IO)
 """
 
 import multiprocessing as mp
@@ -8,13 +8,11 @@ from multiprocessing import Pool
 import sqlite3
 import argparse
 from pathlib import Path
-from datetime import datetime, timezone
 import pdfplumber
 from tqdm import tqdm
+from typing import List, Tuple, Optional
 
-
-# Import the existing scraper functions
-from scrape_pdfs_phase1 import (
+from .scrape_pdfs_phase1 import (
     extract_metadata, chunk_sentences, guess_stage, guess_section,
     extract_all_entities, extract_quantitative_data,
     detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
@@ -22,175 +20,223 @@ from scrape_pdfs_phase1 import (
     suggested_keep, normalize_event_key,
     upsert_source, insert_document, insert_chunk, insert_event,
     link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-    now_iso, sha16, sha64, RESEARCH_DOMAIN,
+    sha16, sha64,
     FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
 )
 
-def process_single_pdf(args):
+
+def _connect(db_path: Path) -> sqlite3.Connection:
+    """Create a sqlite connection configured for concurrent writes."""
+    con = sqlite3.connect(str(db_path), timeout=30.0)
+    con.execute("PRAGMA journal_mode=WAL;")
+    con.execute("PRAGMA synchronous=NORMAL;")
+    con.execute("PRAGMA busy_timeout=30000;")
+    return con
+
+
+def _has_signal(s_l: str) -> bool:
+    return (
+        any(p in s_l for lst in FAILURE_PHRASES.values() for p in lst)
+        or any(p in s_l for lst in DECISION_PHRASES.values() for p in lst)
+        or any(p in s_l for lst in METHOD_TAGS.values() for p in lst)
+    )
+
+
+def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
     """
-    Process a single PDF file
-    Returns: (pdf_path, events_count, success, error_msg)
+    Worker: process one PDF end-to-end.
+    Returns: (pdf_name, events_inserted, success, error_message)
     """
-    pdf_path, domain, db_path = args
-    
+    pdf_path_s, domain, db_path_s = job
+    pdf_path = Path(pdf_path_s)
+    db_path = Path(db_path_s)
+
+    con: Optional[sqlite3.Connection] = None
+
     try:
-        # Create a separate connection for this process with timeout
-        con = sqlite3.connect(db_path, timeout=30.0)
-        
-        # Enable WAL mode for better concurrency
-        con.execute("PRAGMA journal_mode=WAL")
-        con.execute("PRAGMA busy_timeout=30000")
-        
+        con = _connect(db_path)
+
         source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
         file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
-        
+
         events_count = 0
-        
+        seen_events = set()
+
         with pdfplumber.open(str(pdf_path)) as pdf:
             metadata = extract_metadata(pdf_path, pdf)
+
             upsert_source(con, source_id, pdf_path.name, metadata)
             doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
-            
-            seen_events = set()
-            
+
             for page_idx, page in enumerate(pdf.pages, start=1):
-                try:
-                    text = page.extract_text() or ""
-                    if not text.strip():
+                text = page.extract_text() or ""
+                if not text.strip():
+                    continue
+
+                section = guess_section(text.lower())
+                chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
+
+                for sent in chunk_sentences(text):
+                    s_l = sent.lower()
+                    if not _has_signal(s_l):
                         continue
-                    
-                    section = guess_section(text.lower())
-                    chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
-                    
-                    for sent in chunk_sentences(text):
-                        s_l = sent.lower()
-                        
-                        # Quick signal check
-                        has_signal = (
-                            any(p in s_l for lst in FAILURE_PHRASES.values() for p in lst) or
-                            any(p in s_l for lst in DECISION_PHRASES.values() for p in lst) or
-                            any(p in s_l for lst in METHOD_TAGS.values() for p in lst)
+
+                    tags = detect_method_tags(s_l)
+                    failure_reason = detect_failure_reason(s_l)
+                    decision_taken, decision_driver = detect_decision(s_l)
+                    outcome = detect_outcome(s_l)
+                    stage = guess_stage(s_l)
+                    event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
+                    strength = evidence_strength(s_l)
+
+                    ents = extract_all_entities(sent, metadata.get("title", "") or "")
+                    measurements = extract_quantitative_data(sent)
+
+                    conf = confidence_score_phase1(
+                        bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l
+                    )
+                    keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
+
+                    if keep == 0 and event_type == "other":
+                        continue
+
+                    event_key = normalize_event_key(event_type, ents, page_idx, sent)
+                    if event_key in seen_events:
+                        continue
+                    seen_events.add(event_key)
+
+                    bio_sys = None
+                    if "serum" in tags:
+                        bio_sys = "serum/plasma"
+                    elif "organoid" in s_l:
+                        bio_sys = "organoid"
+                    elif "cell line" in s_l or "cells" in s_l:
+                        bio_sys = "cells"
+
+                    event_id = insert_event(
+                        con=con,
+                        source_id=source_id,
+                        doc_id=doc_id,
+                        chunk_id=chunk_id,
+                        page_number=page_idx,
+                        domain=domain,
+                        event_type=event_type,
+                        study_stage=stage,
+                        biological_system=bio_sys,
+                        application_area=None,
+                        outcome=outcome,
+                        failure_reason=failure_reason,
+                        decision_taken=decision_taken,
+                        decision_driver=decision_driver,
+                        evidence_snippet=sent,
+                        evidence_strength_v=strength,
+                        confidence_v=conf,
+                    )
+
+                    for t in tags:
+                        link_event_tag(con, event_id, t)
+
+                    for e in ents:
+                        entity_id = upsert_entity(
+                            con,
+                            e["entity_type"],
+                            e["entity_name"],
+                            e.get("entity_variant"),
+                            None
                         )
-                        if not has_signal:
-                            continue
-                        
-                        tags = detect_method_tags(s_l)
-                        failure_reason = detect_failure_reason(s_l)
-                        decision_taken, decision_driver = detect_decision(s_l)
-                        outcome = detect_outcome(s_l)
-                        stage = guess_stage(s_l)
-                        event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
-                        strength = evidence_strength(s_l)
-                        
-                        ents = extract_all_entities(sent, metadata.get('title', ''))
-                        measurements = extract_quantitative_data(sent)
-                        
-                        conf = confidence_score_phase1(bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l)
-                        keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
-                        
-                        if keep == 0 and event_type == "other":
-                            continue
-                        
-                        event_key = normalize_event_key(event_type, ents, page_idx, sent)
-                        if event_key in seen_events:
-                            continue
-                        seen_events.add(event_key)
-                        
-                        bio_sys = None
-                        if "serum" in tags:
-                            bio_sys = "serum/plasma"
-                        elif "organoid" in s_l:
-                            bio_sys = "organoid"
-                        elif "cell line" in s_l or "cells" in s_l:
-                            bio_sys = "cells"
-                        
-                        event_id = insert_event(
-                            con=con,
-                            source_id=source_id,
-                            doc_id=doc_id,
-                            chunk_id=chunk_id,
-                            page_number=page_idx,
-                            domain=domain,
-                            event_type=event_type,
-                            study_stage=stage,
-                            biological_system=bio_sys,
-                            application_area=None,
-                            outcome=outcome,
-                            failure_reason=failure_reason,
-                            decision_taken=decision_taken,
-                            decision_driver=decision_driver,
-                            evidence_snippet=sent,
-                            evidence_strength_v=strength,
-                            confidence_v=conf,
-                        )
-                        
-                        # ...existing code before duplicate block...
-                        # After insert_event(), continue with upsert_entity, link_event_entity, link_event_tag, insert_measurement, increment events_count, etc.
-                        # The outer connection (con) and page_errors handling are preserved; duplicate block removed.
-    domain = args.domain
-    input_dir = args.input_dir
-    db_path = args.output_db
-    num_workers = args.workers
-    
+                        link_event_entity(con, event_id, entity_id, e.get("role", "unknown"))
+
+                    for m in measurements:
+                        insert_measurement(con, event_id, m)
+
+                    events_count += 1
+
+        con.commit()
+        return (pdf_path.name, events_count, True, "")
+
+    except Exception as e:
+        return (pdf_path.name, 0, False, str(e))
+
+    finally:
+        if con is not None:
+            try:
+                con.close()
+            except Exception:
+                pass
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Parallel PDF Scraper (Phase 1 Enhanced)")
+    parser.add_argument("--domain", default="methods_tooling", help="Research domain (methods_tooling, drug_discovery, etc. — do NOT use entity names like peptide)")
+    parser.add_argument("--input-dir", type=Path, default=Path("input_pdfs"), help="Directory with PDFs")
+    parser.add_argument("--output-db", type=Path, default=Path("output/peptide_intel.sqlite"), help="Output DB path")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=max(1, (mp.cpu_count() or 2) - 1),
+        help="Number of worker processes (default: cpu_count-1)",
+    )
+    args = parser.parse_args()
+
+
+    # Guard: prevent entity names as domains
+    ENTITY_NAMES = {"peptide", "protein", "cell", "compound", "target", "assay", "model", "indication", "stem_cell"}
+    if args.domain.lower() in ENTITY_NAMES:
+        print(f"❌ Invalid domain: '{args.domain}'. Do not use entity names as domains. Use a research axis like 'methods_tooling' or 'drug_discovery'.")
+        exit(1)
+
+    input_dir: Path = args.input_dir
+    db_path: Path = args.output_db
+    domain: str = args.domain
+    num_workers: int = max(1, args.workers)
+
     if not input_dir.exists():
         raise SystemExit(f"Missing folder: {input_dir.resolve()}")
-    
+
     pdfs = sorted(input_dir.glob("*.pdf"))
     if not pdfs:
         raise SystemExit(f"No PDFs found in: {input_dir.resolve()}")
-    
-    print(f"\n{'='*70}")
-    print(f"PARALLEL PDF SCRAPER")
-    print(f"{'='*70}")
-    print(f"PDFs to process: {len(pdfs)}")
-    print(f"Parallel workers: {num_workers}")
-    print(f"Up to {num_workers}x faster (depends on I/O and SQLite write contention)")
-    print(f"Database: {db_path}")
-    print(f"{'='*70}\n")
-    
-    # Prepare arguments for each PDF
-    pdf_args = [(pdf, domain, db_path) for pdf in pdfs]
-    
-    # Process PDFs in parallel
+
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Prepare jobs (strings are safer to pickle across platforms)
+    jobs: List[Tuple[str, str, str]] = [(str(p), domain, str(db_path)) for p in pdfs]
+
     total_events = 0
-    failed_pdfs = []
-    
+    failed: List[Tuple[str, str]] = []
+
     with Pool(processes=num_workers) as pool:
-        # Use imap_unordered for better progress tracking
-        results = list(tqdm(
-            pool.imap_unordered(process_single_pdf, pdf_args),
-            total=len(pdfs),
-            desc="PDFs"
-        ))
-    
-    # Collect results
-    for pdf_name, events_count, success, error_msg in results:
-        if success:
-            total_events += events_count
-        else:
-            failed_pdfs.append((pdf_name, error_msg))
-    
-    print(f"\n{'='*70}")
-    print(f"SCRAPING COMPLETE")
-    print(f"{'='*70}")
+        for pdf_name, events_count, ok, err in tqdm(
+            pool.imap_unordered(process_single_pdf, jobs),
+            total=len(jobs),
+            desc="PDFs",
+        ):
+            if ok:
+                total_events += events_count
+            else:
+                failed.append((pdf_name, err))
+
+    print("\n" + "=" * 70)
+    print("SCRAPING COMPLETE")
+    print("=" * 70)
     print(f"✅ Total events inserted: {total_events}")
-    print(f"✅ Successful PDFs: {len(pdfs) - len(failed_pdfs)}/{len(pdfs)}")
+    print(f"✅ Successful PDFs: {len(pdfs) - len(failed)}/{len(pdfs)}")
     print(f"✅ Database: {db_path.resolve()}")
-    
-    if failed_pdfs:
-        print(f"\n⚠️  Failed PDFs ({len(failed_pdfs)}):")
-        for pdf_name, error in failed_pdfs[:10]:  # Show first 10
-            print(f"   - {pdf_name}: {error[:80]}")
-        if len(failed_pdfs) > 10:
-            print(f"   ... and {len(failed_pdfs) - 10} more")
-    
-    print(f"\n{'='*70}")
-    print(f"Next step: Run dual-lens export")
+
+    if failed:
+        print(f"\n⚠️  Failed PDFs ({len(failed)}):")
+        for pdf_name, err in failed[:10]:
+            msg = (err or "").replace("\n", " ")
+            print(f"   - {pdf_name}: {msg[:120]}")
+        if len(failed) > 10:
+            print(f"   ... and {len(failed) - 10} more")
+
+    print("\n" + "=" * 70)
+    print("Next step: Run dual-lens export")
     print(f"  python export_dual_lens.py {db_path} {domain}")
-    print(f"{'='*70}\n")
+    print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
-    # Required for Windows multiprocessing
-    mp.freeze_support()
+    mp.freeze_support()  # Windows-safe
     main()

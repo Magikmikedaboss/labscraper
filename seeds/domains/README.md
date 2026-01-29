@@ -1,4 +1,31 @@
 # Axon Labs Domain Profiles
+# IMPORTANT: Domains vs Entities
+
+**Domains** are the organizing axes for research intelligence (e.g., methods_tooling, drug_discovery, neuroscience_cognition, etc.).
+
+**Entities** (such as peptides, proteins, cell types) are extracted and tracked within each domain, but are not valid as top-level domains themselves.
+
+**Do not use entity names (like 'peptide') as domains.**
+
+If your research is about construction science, methods, or tooling, use the `methods_tooling` domain. Peptides and other biological entities will still be extracted as entities within that domain.
+
+If your research is about drug discovery, use the `drug_discovery` domain. Peptides will be treated as primary entities, but the domain remains `drug_discovery`.
+
+This distinction keeps your taxonomy clean and prevents confusion between research axes and extracted entities.
+
+- Domain-specific seed overlays (load different seed files per domain)
+- Multi-domain support (one entity, multiple domain lenses)
+- Domain-specific confidence thresholds
+- Domain-specific outcome signal weights
+
+## Ontology Guidance: Domain → Lens → Entities → Evidence
+
+- **Domain**: The research axis (e.g., methods_tooling, drug_discovery)
+- **Lens**: The observational or scoring perspective (e.g., dual-lens overlays)
+- **Entities**: Extracted items of interest (e.g., peptides, models, assays)
+- **Evidence**: The supporting text, data, or patterns
+
+This structure ensures clarity and extensibility for all research intelligence workflows.
 
 Domain profiles provide **observational lenses** for research intelligence without rewriting the core engine.
 

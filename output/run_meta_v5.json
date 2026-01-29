@@ -1,169 +1,48 @@
 {
-  "run_id": "20260124_083943",
+  "run_id": "20260129_110536",
   "engine_version": "v5_domain_aware",
-  "timestamp": "2026-01-24T08:39:43.710706",
-  "database": "runs/peptide_intel.sqlite",
+  "timestamp": "2026-01-29T11:05:36.216125",
+  "database": "output/peptide_intel.sqlite",
   "seeds_version": "2026-01-22",
   "domain_id": null,
   "domain_name": "All Domains",
   "overlay_id": null,
   "overlay_aliases_count": 0,
   "counts": {
-    "total_events": 5887,
-    "total_entities": 329,
-    "primary_entities": 314,
-    "context_entities": 15
+    "total_events": 404,
+    "total_entities": 0,
+    "primary_entities": 0,
+    "context_entities": 0
   },
   "confidence_distribution": {
-    "high": 49,
-    "med": 2733,
-    "low": 3105,
-    "boosted_to_high": 12,
+    "high": 0,
+    "med": 6,
+    "low": 398,
+    "boosted_to_high": 0,
     "boosted_to_med": 0
   },
-  "top_entities": [
-    {
-      "name": "astrocytes",
-      "type": "neural_cell",
-      "event_count": 440,
-      "role": "primary"
-    },
-    {
-      "name": "In vivo",
-      "type": "model",
-      "event_count": 392,
-      "role": "primary"
-    },
-    {
-      "name": "microglia",
-      "type": "neural_cell",
-      "event_count": 320,
-      "role": "primary"
-    },
-    {
-      "name": "neurons",
-      "type": "neural_cell",
-      "event_count": 312,
-      "role": "primary"
-    },
-    {
-      "name": "MOUSE",
-      "type": "model",
-      "event_count": 213,
-      "role": "context"
-    },
-    {
-      "name": "PLASMA",
-      "type": "model",
-      "event_count": 199,
-      "role": "context"
-    },
-    {
-      "name": "HUMAN",
-      "type": "model",
-      "event_count": 165,
-      "role": "context"
-    },
-    {
-      "name": "neuronal",
-      "type": "neural_cell",
-      "event_count": 118,
-      "role": "primary"
-    },
-    {
-      "name": "SERUM",
-      "type": "model",
-      "event_count": 117,
-      "role": "context"
-    },
-    {
-      "name": "ALZHEIMER",
-      "type": "indication",
-      "event_count": 116,
-      "role": "primary"
-    },
-    {
-      "name": "RECEPTOR",
-      "type": "target",
-      "event_count": 95,
-      "role": "primary"
-    },
-    {
-      "name": "In vitro",
-      "type": "model",
-      "event_count": 94,
-      "role": "primary"
-    },
-    {
-      "name": "microglial",
-      "type": "neural_cell",
-      "event_count": 92,
-      "role": "primary"
-    },
-    {
-      "name": "MTOR",
-      "type": "target",
-      "event_count": 79,
-      "role": "primary"
-    },
-    {
-      "name": "RAT",
-      "type": "model",
-      "event_count": 73,
-      "role": "context"
-    },
-    {
-      "name": "cell death",
-      "type": "pathway",
-      "event_count": 68,
-      "role": "primary"
-    },
-    {
-      "name": "AUTOPHAGY",
-      "type": "pathway",
-      "event_count": 60,
-      "role": "primary"
-    },
-    {
-      "name": "stroke",
-      "type": "indication",
-      "event_count": 59,
-      "role": "primary"
-    },
-    {
-      "name": "CSF",
-      "type": "model",
-      "event_count": 58,
-      "role": "primary"
-    },
-    {
-      "name": "TISSUE",
-      "type": "model",
-      "event_count": 58,
-      "role": "context"
-    }
-  ],
+  "top_entities": [],
   "process_words_demoted": [
-    "affinity assay",
-    "elution",
-    "mobile phase",
-    "quality control",
-    "gradient",
-    "measurement",
+    "quantification",
     "calibration",
-    "validation",
-    "optimization",
-    "affinity",
     "determination",
     "detection",
+    "affinity",
+    "quality control",
+    "affinity assay",
+    "measurement",
+    "elution",
     "analysis",
     "chromatography",
-    "quantitation",
     "internal standard",
-    "affinity measurement",
+    "optimization",
+    "gradient",
     "purification",
-    "quantification",
-    "binding affinity"
+    "binding affinity",
+    "quantitation",
+    "mobile phase",
+    "affinity measurement",
+    "validation"
   ],
   "confidence_boost_rule": "HIGH if (compound|target|stem_cell) + assay + model_context; MED if (compound|target|stem_cell) + assay"
 }

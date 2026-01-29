@@ -1,0 +1,16 @@
+{
+  "construction_science": {
+    "label": "Construction Science & Built Environment Physics",
+    "base_path": "seeds/base/construction_science",
+    "types": [
+      "materials",
+      "systems",
+      "test_methods",
+      "environments",
+      "failure_modes",
+      "properties",
+      "hazards",
+      "codes"
+    ]
+  }
+}

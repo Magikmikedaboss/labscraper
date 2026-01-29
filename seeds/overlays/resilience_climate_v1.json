@@ -1,0 +1,36 @@
+{
+  "overlay_id": "resilience_climate_v1",
+  "label": "Resilience & Climate v1",
+  "description": "Climate resilience and environmental adaptation overlay",
+  "pattern_emphasis": {
+    "escalation": 1.20,
+    "stagnation": 1.15,
+    "fragmentation": 1.10,
+    "convergence": 1.05
+  },
+  "language_guardrails": {
+    "observational_only": true,
+    "forbidden_words": [
+      "works",
+      "effective",
+      "proven",
+      "safe",
+      "recommended",
+      "treats",
+      "cures",
+      "guaranteed",
+      "miracle",
+      "breakthrough"
+    ],
+    "allowed_phrases": [
+      "climate adaptation",
+      "environmental exposure",
+      "resilience patterns",
+      "observed degradation",
+      "associated with",
+      "reported limitations",
+      "service life"
+    ]
+  },
+  "version": "v1"
+}

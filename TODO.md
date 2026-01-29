@@ -1,15 +1,12 @@
-# TODO: Fix Issues in export_csv_v4_professional.py and utils/axon_domains.py
-
-## export_csv_v4_professional.py
-- [x] Add directory creation for OUTPUT_DIR using OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-- [x] Update total_events calculation in write_run_meta to include "other" bucket
-- [x] Add "other" to confidence_distribution in write_run_meta
-- [x] Change specific f-strings without placeholders to plain strings (Ruff F541)
-
-## utils/axon_domains.py
-- [x] Add os.path.isfile and os.access checks in get_domain_by_id
-- [x] Add OSError to exception handling in get_domain_by_id
-
-## Verification
-- [x] Run export_csv_v4_professional.py to ensure no errors (failed due to missing DB, but no syntax errors)
-- [x] Run utils/axon_domains.py to ensure no errors (ran successfully)
+- [x] Create seeds/base/life_sciences/ folder
+- [x] Move compounds.txt, targets.txt, models.txt, indications.txt into seeds/base/life_sciences/
+- [x] Create assays.txt in seeds/base/life_sciences/ from the JSON assays list
+- [x] Backup original life_sciences JSON to life_sciences_backup.json
+- [ ] Verify seeds/base/life_sciences/ contains compounds.txt, targets.txt, models.txt, indications.txt, assays.txt
+- [x] Verify construction_science/ folder exists with materials.txt, systems.txt, test_methods.txt, environments.txt, failure_modes.txt
+- [x] Verify config/domains/ has construction_science.json
+- [ ] Verify config/domains/ has life_sciences domain configs (biohacking_longevity.json, neuroscience_cognition.json, stem_cells_regen.json)
+- [x] Verify seeds/overlays/ has construction_research_v1.json and resilience_climate_v1.json
+- [ ] Verify seeds/overlays/ has life_sciences overlays (neuroscience_overlay_v1.json, longevity_overlay_v1.json)
+- [x] Verify config/ontologies.json registry is correct
+- [ ] Verify life_sciences seeds are properly registered in config/ontologies.json

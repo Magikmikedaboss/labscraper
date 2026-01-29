@@ -1,0 +1,53 @@
+# Structural + building systems (case-insensitive)
+
+# Structural systems
+foundation
+footing
+pile foundation
+slab
+slab-on-grade
+beam
+girder
+column
+joist
+truss
+diaphragm
+shear wall
+moment frame
+braced frame
+brace frame
+load-bearing wall
+retaining wall
+
+# Building envelope assemblies
+roof assembly
+wall assembly
+floor assembly
+building envelope
+thermal envelope
+facade system
+curtain wall system
+rainscreen
+roofing membrane
+
+# Mechanical / air
+HVAC
+ventilation
+air handling unit
+heat pump
+ductwork
+air distribution
+
+# Water / moisture systems
+drainage system
+waterproofing
+flashing
+vapor retarder
+vapor control layer
+
+# Construction approaches
+prefabrication
+modular construction
+offsite construction
+panelized construction
+onsite construction

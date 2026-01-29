@@ -1,0 +1,64 @@
+{
+  "interaction_rules": [
+    {
+      "failure_mode": "corrosion",
+      "environment_context": "coastal_chemical",
+      "weight_boost": 2,
+      "description": "Corrosion risk increases in coastal/saline environments"
+    },
+    {
+      "failure_mode": "cracking",
+      "environment_context": "climate_exposure",
+      "weight_boost": 2,
+      "description": "Cracking risk increases with freeze-thaw cycling"
+    },
+    {
+      "failure_mode": "moisture_intrusion",
+      "environment_context": "moisture_humidity",
+      "weight_boost": 2,
+      "description": "Moisture intrusion risk increases in humid conditions"
+    },
+    {
+      "failure_mode": "fatigue_failure",
+      "environment_context": "wind_seismic",
+      "weight_boost": 2,
+      "description": "Fatigue risk increases with dynamic/seismic loading"
+    },
+    {
+      "failure_mode": "thermal_degradation",
+      "environment_context": "fire_uv",
+      "weight_boost": 2,
+      "description": "Thermal degradation risk increases with fire/UV exposure"
+    },
+    {
+      "failure_mode": "corrosion",
+      "environment_context": "moisture_humidity",
+      "weight_boost": 1,
+      "description": "Corrosion risk increases with moisture exposure"
+    },
+    {
+      "failure_mode": "spalling",
+      "environment_context": "climate_exposure",
+      "weight_boost": 1,
+      "description": "Spalling risk increases with thermal cycling"
+    },
+    {
+      "failure_mode": "delamination",
+      "environment_context": "moisture_humidity",
+      "weight_boost": 1,
+      "description": "Delamination risk increases with moisture ingress"
+    },
+    {
+      "failure_mode": "settlement",
+      "environment_context": "aging_time",
+      "weight_boost": 1,
+      "description": "Settlement risk increases over time"
+    },
+    {
+      "failure_mode": "erosion",
+      "environment_context": "wind_seismic",
+      "weight_boost": 1,
+      "description": "Erosion risk increases with wind loading"
+    }
+  ]
+}

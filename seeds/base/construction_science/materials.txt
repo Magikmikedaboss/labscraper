@@ -1,0 +1,98 @@
+# Construction materials (case-insensitive)
+
+# Cementitious / concrete
+concrete
+cement
+portland cement
+supplementary cementitious material
+SCM
+fly ash
+slag
+silica fume
+limestone calcined clay cement
+LC3
+geopolymer
+alkali-activated
+low-carbon concrete
+ultra-high performance concrete
+UHPC
+shotcrete
+grout
+mortar
+
+# Metals
+steel
+structural steel
+rebar
+reinforcing steel
+stainless steel
+galvanized steel
+aluminum
+welded connection
+bolted connection
+
+# Timber / bio-based
+wood
+timber
+mass timber
+cross-laminated timber
+CLT
+glulam
+laminated veneer lumber
+LVL
+plywood
+OSB
+
+# Masonry / stone
+brick
+masonry
+CMU
+concrete masonry unit
+stone
+mortar joint
+
+# Polymers / composites
+fiber-reinforced polymer
+FRP
+GFRP
+CFRP
+epoxy
+polyurethane
+polymer composite
+adhesive anchor
+
+# Insulation / envelope materials
+insulation
+mineral wool
+glass wool
+fiberglass
+cellulose insulation
+spray foam
+XPS
+EPS
+polyisocyanurate
+aerogel
+vapor barrier
+air barrier
+weather resistive barrier
+WRB
+sealant
+membrane
+
+# Glazing / facade
+glass
+double glazing
+triple glazing
+low-e
+low emissivity
+curtain wall
+cladding
+EIFS
+
+# Advanced / functional
+phase change material
+PCM
+self-healing concrete
+bio-based binder
+carbonated concrete
+recycled aggregate

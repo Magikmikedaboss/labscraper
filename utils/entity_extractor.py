@@ -8,12 +8,18 @@ from typing import Dict, List, Tuple, Optional
 # Seed loading
 # ----------------------------
 
+def load_text_seed_file(path: Path) -> list:
+    """
+    Loads a text file and returns a list of non-empty, stripped lines.
+    """
+    return [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
 def load_seed_file(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 def load_seeds(seeds_dir: str = "seeds") -> Dict[str, dict]:
     """
-    Loads all *.json seed files in ./seeds.
+    Loads all *.json seed files in ./seeds and base ontology text files.
     Returns a dict like {"assays": {...}, "pathways": {...}, ...}
     """
     d = {}
@@ -21,9 +27,36 @@ def load_seeds(seeds_dir: str = "seeds") -> Dict[str, dict]:
     if not p.exists():
         return d
 
+    # Store JSON seeds and ontology seeds under separate top-level keys
+    d['json_seeds'] = {}
+    d['ontology_seeds'] = {}
+
+    # Load JSON seed files (existing behavior)
     for fp in p.glob("*.json"):
         key = fp.stem
-        d[key] = load_seed_file(fp)
+        d['json_seeds'][key] = load_seed_file(fp)
+
+    # Load base ontology text files (new for multi-ontology support)
+    base_dir = p / "base"
+    if base_dir.exists():
+        for ontology_dir in base_dir.glob("*"):
+            if ontology_dir.is_dir():
+                ontology_name = ontology_dir.name
+                if ontology_name not in d['ontology_seeds']:
+                    d['ontology_seeds'][ontology_name] = {}
+                for txt_file in ontology_dir.glob("*.txt"):
+                    entity_type = txt_file.stem
+                    # Check for collision with JSON seeds
+                    if (
+                        ontology_name in d['json_seeds']
+                        and entity_type in d['json_seeds'][ontology_name]
+                    ):
+                        import warnings
+                        warnings.warn(
+                            f"Ontology seed '{ontology_name}/{entity_type}' collides with JSON seed. Both are preserved under separate namespaces."
+                        )
+                    d['ontology_seeds'][ontology_name][entity_type] = load_text_seed_file(txt_file)
+
     return d
 
 # ----------------------------

@@ -350,7 +350,14 @@ if __name__ == "__main__":
     domain_id = sys.argv[2] if len(sys.argv) > 2 else "biohacking_longevity"
 
     # Validate domain_id to prevent path traversal
-    valid_domain_ids = ['biohacking_longevity', 'drug_discovery', 'methods_tooling', 'neuroscience_cognition', 'stem_cells_regen']
+    valid_domain_ids = [
+        'biohacking_longevity',
+        'drug_discovery',
+        'methods_tooling',
+        'neuroscience_cognition',
+        'stem_cells_regen',
+        'peptide',  # legacy / peptide intelligence pipeline
+    ]
     if domain_id not in valid_domain_ids:
         print(f"❌ Invalid domain_id: {domain_id}")
         print(f"Valid domains: {', '.join(valid_domain_ids)}")

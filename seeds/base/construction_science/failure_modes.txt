@@ -1,0 +1,44 @@
+# Failure modes / adverse outcomes (case-insensitive)
+
+# Structural/material failures
+collapse
+partial collapse
+buckling
+fatigue failure
+fracture
+cracking
+microcracking
+spalling
+delamination
+debonding
+creep rupture
+settlement
+
+# Durability degradation
+corrosion
+rebar corrosion
+chloride ingress
+carbonation
+sulfate attack
+ASR
+alkali-silica reaction
+erosion
+abrasion
+weathering
+
+# Envelope / indoor environment failures
+moisture intrusion
+water intrusion
+leakage
+air leakage
+thermal bridging
+condensation
+mold
+mold growth
+rot
+decay
+
+# Fire / safety
+fire spread
+smoke infiltration
+loss of fire resistance
