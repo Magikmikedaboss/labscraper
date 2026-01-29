@@ -1,44 +1,37 @@
-# Failure modes / adverse outcomes (case-insensitive)
-
-# Structural/material failures
-collapse
-partial collapse
-buckling
-fatigue failure
-fracture
+# failure modes / distress mechanisms
 cracking
 microcracking
 spalling
 delamination
 debonding
-creep rupture
+buckling
+yielding
+fracture
+fatigue
+creep
 settlement
-
-# Durability degradation
+differential settlement
+deflection
+excessive deflection
 corrosion
-rebar corrosion
-chloride ingress
-carbonation
+pitting corrosion
+chloride-induced corrosion
 sulfate attack
-ASR
 alkali-silica reaction
-erosion
-abrasion
-weathering
-
-# Envelope / indoor environment failures
-moisture intrusion
-water intrusion
+asr
+freeze-thaw
+scaling
+efflorescence
 leakage
-air leakage
-thermal bridging
-condensation
-mold
+water intrusion
 mold growth
 rot
-decay
-
-# Fire / safety
-fire spread
-smoke infiltration
-loss of fire resistance
+termite damage
+fire damage
+thermal cracking
+shear failure
+punching shear
+bearing failure
+uplift failure
+overturning
+progressive collapse

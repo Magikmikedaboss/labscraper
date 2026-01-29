@@ -1,53 +1,36 @@
-# Tests / measurements / methods (case-insensitive)
-
-# Structural / mechanical tests
-compressive strength
-tensile strength
-flexural strength
-shear strength
-fracture toughness
-fatigue testing
-creep testing
-impact testing
-load test
-static loading
-dynamic loading
-cyclic loading
-
-# Durability / degradation
-freeze-thaw test
-freeze thaw test
-chloride ingress test
-salt spray test
-carbonation test
-sulfate attack
-alkali-silica reaction
-ASR
-corrosion rate
-rebar corrosion
-weathering test
-accelerated aging
-service life modeling
-
-# Thermal / energy physics
-thermal conductivity
-U-value
-U value
-R-value
-R value
-heat flux
-thermal bridging
+# tests and inspection methods
+astm c39
+astm c31
+astm c143
+astm c150
+astm c494
+astm e119
+astm e330
+asce 41
+aci 318
+asce 7
+ul 263
+rebound hammer
+schmidt hammer
+ultrasonic pulse velocity
+upv
+ground penetrating radar
+gpr
 infrared thermography
-thermography
-blower door test
-air permeability
-airtightness test
-
-# Moisture / hygrothermal
-water vapor permeability
-vapor permeability
-moisture diffusion
-water absorption
+core sample
+core sampling
+pull-out test
+half-cell potential
+carbonation depth
+chloride content
+compressive strength test
+tensile test
+flexural test
+load test
+visual inspection
+borescope
+dye penetrant
+magnetic particle inspection
 capillary absorption
 sorption isotherm
 condensation risk

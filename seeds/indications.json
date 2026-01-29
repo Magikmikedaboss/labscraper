@@ -1,0 +1,6 @@
+{
+  "indications": [
+    {"name": "Alzheimer's disease", "type": "neurodegenerative", "description": "Progressive neurodegenerative disorder"},
+    {"name": "Type 2 Diabetes", "type": "metabolic", "description": "Chronic metabolic disorder"}
+  ]
+}

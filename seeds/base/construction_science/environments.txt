@@ -1,53 +1,18 @@
-# Environmental conditions (case-insensitive)
-
-# Temperature / cycling
-extreme heat
-extreme cold
-thermal cycling
-freeze-thaw cycle
-freeze thaw cycle
-heat island
-solar exposure
-thermal shock
-
-# Moisture / humidity
-high humidity
-low humidity
-coastal exposure
+# environments.txt
+coastal
 marine environment
-salt air
-rain exposure
-flooding
-groundwater
-capillary action
-condensation
-dew point
-
-# Chemical / corrosive
-acidic exposure
-alkaline exposure
-saline environment
 chloride exposure
-sulfate exposure
-industrial pollution
-agricultural runoff
-corrosive atmosphere
-
-# Wind / seismic
+freeze-thaw
+high humidity
+arid climate
+high temperature
+thermal cycling
+sulfate soil
+flood zone
 high wind
-hurricane
-tornado
-earthquake
-seismic activity
-wind-driven rain
-
-# Fire / UV
-fire exposure
-UV radiation
-ultraviolet degradation
-
-# Long-term / aging
-accelerated aging
+seismic zone
+deicing salts
+industrial atmosphere
 service life
 design life
 warranty period

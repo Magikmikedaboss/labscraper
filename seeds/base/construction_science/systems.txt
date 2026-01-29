@@ -1,53 +1,29 @@
-# Structural + building systems (case-insensitive)
-
-# Structural systems
+# systems.txt
 foundation
 footing
-pile foundation
 slab
 slab-on-grade
 beam
 girder
 column
-joist
-truss
-diaphragm
+wall
 shear wall
-moment frame
-braced frame
-brace frame
-load-bearing wall
+roof
+roof deck
+truss
+joist
+diaphragm
+connection
+weld
+bolt
+anchor
 retaining wall
-
-# Building envelope assemblies
-roof assembly
-wall assembly
-floor assembly
-building envelope
-thermal envelope
-facade system
-curtain wall system
-rainscreen
-roofing membrane
-
-# Mechanical / air
-HVAC
-ventilation
-air handling unit
-heat pump
-ductwork
-air distribution
-
-# Water / moisture systems
-drainage system
-waterproofing
+basement
+façade
+cladding
+window
 flashing
-vapor retarder
-vapor control layer
-
-# Construction approaches
-prefabrication
-modular construction
+waterproofing
 offsite construction
 panelized construction
 onsite construction

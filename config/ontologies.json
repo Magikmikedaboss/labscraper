@@ -12,5 +12,16 @@
       "hazards",
       "codes"
     ]
+  },
+  "life_sciences": {
+    "label": "Life Sciences & Biomedical Research",
+    "base_path": "seeds/base/life_sciences",
+    "types": [
+      "compounds",
+      "targets",
+      "models",
+      "indications",
+      "assays"
+    ]
   }
 }

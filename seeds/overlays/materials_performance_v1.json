@@ -1,0 +1,9 @@
+{
+  "id": "materials_performance_v1",
+  "name": "Materials Performance Lens",
+  "version": "v1",
+  "description": "Identifies and scores material performance, durability, and degradation in construction science.",
+  "schema": {
+    "fields": ["material", "performance_metric", "durability"]
+  }
+}

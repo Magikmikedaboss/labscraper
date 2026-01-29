@@ -1,0 +1,10 @@
+earthquake
+flood
+fire
+windstorm
+corrosion
+freeze-thaw
+chemical attack
+settlement
+impact
+vandalism

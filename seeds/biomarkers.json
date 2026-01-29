@@ -1,0 +1,6 @@
+{
+  "biomarkers": [
+    {"name": "CRP", "type": "protein", "description": "C-reactive protein, inflammation marker"},
+    {"name": "HbA1c", "type": "glycated_hemoglobin", "description": "Glycated hemoglobin, diabetes marker"}
+  ]
+}

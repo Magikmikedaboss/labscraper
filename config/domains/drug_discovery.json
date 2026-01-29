@@ -8,9 +8,9 @@
     "include_files": [
       "targets.txt",
       "compounds.txt",
-      "assays.json",
+      "base/life_sciences/assays.txt",
       "pathways.json",
-      "indications.json"
+      "base/life_sciences/indications.txt"
     ],
     "prefer_types": ["target", "compound", "assay", "pathway", "indication"]
   },

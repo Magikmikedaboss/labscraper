@@ -6,11 +6,9 @@
   "domain_profile_version": "v1",
   "seed_overlays": {
     "include_files": [
-      "assays.json",
-      "pathways.json",
-      "indications.json"
+      "pathways.json"
     ],
-    "prefer_types": ["model", "assay", "pathway", "indication"]
+    "prefer_types": ["model", "pathway"]
   },
   "exclusions": {
     "terms": ["nootropics store", "supplement stack", "coupon"],

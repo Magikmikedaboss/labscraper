@@ -1,53 +1,28 @@
-# Construction materials (case-insensitive)
-
-# Cementitious / concrete
+# materials.txt
 concrete
-cement
-portland cement
-supplementary cementitious material
-SCM
-fly ash
-slag
-silica fume
-limestone calcined clay cement
-LC3
-geopolymer
-alkali-activated
-low-carbon concrete
-ultra-high performance concrete
-UHPC
-shotcrete
-grout
-mortar
-
-# Metals
+reinforced concrete
+rebar
 steel
 structural steel
-rebar
-reinforcing steel
-stainless steel
-galvanized steel
-aluminum
-welded connection
-bolted connection
-
-# Timber / bio-based
-wood
-timber
-mass timber
-cross-laminated timber
-CLT
-glulam
-laminated veneer lumber
-LVL
-plywood
-OSB
-
-# Masonry / stone
-brick
+prestressed concrete
 masonry
-CMU
-concrete masonry unit
+brick
+cmu
+grout
+timber
+glulam
+lvL
+plywood
+osb
+frp
+carbon fiber
+epoxy
+sealant
+bitumen
+asphalt
+gypsum
+insulation
+vapor barrier
 stone
 mortar joint
 

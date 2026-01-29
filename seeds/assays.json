@@ -1,0 +1,6 @@
+{
+  "assays": [
+    {"name": "ELISA", "type": "immunoassay", "description": "Enzyme-linked immunosorbent assay"},
+    {"name": "Western Blot", "type": "protein_detection", "description": "Protein detection method"}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "climate_resilience_v1",
+  "name": "Climate Resilience Lens",
+  "version": "v1",
+  "description": "Detects climate resilience strategies, adaptation measures, and environmental hazards in construction.",
+  "schema": {
+    "fields": ["hazard", "adaptation", "resilience_score"]
+  }
+}
