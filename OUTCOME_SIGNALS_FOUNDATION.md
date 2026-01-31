@@ -2,7 +2,7 @@
 
 ## STEP 2: Outcome Signal Detection (v1)
 
-**Date:** 2025-01-22  
+**Date:** 2026-01-22  
 **Status:** Conceptual Foundation + Seed File Created  
 **Purpose:** Detect how researchers describe outcomes (not biological truth)
 

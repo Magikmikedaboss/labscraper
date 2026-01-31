@@ -22,126 +22,22 @@
     "boosted_to_med": 0
   },
   "top_entities": [
-    {
-      "name": "IN VIVO",
-      "type": "model",
-      "event_count": 392,
-      "role": "context"
-    },
-    {
-      "name": "microglia",
-      "type": "neural_cell",
-      "event_count": 320,
-      "role": "primary"
-    },
-    {
-      "name": "astrocytes",
-      "type": "neural_cell",
-      "event_count": 264,
-      "role": "primary"
-    },
-    {
-      "name": "neurons",
-      "type": "neural_cell",
-      "event_count": 232,
-      "role": "primary"
-    },
-    {
-      "name": "MOUSE",
-      "type": "model",
-      "event_count": 213,
-      "role": "context"
-    },
-    {
-      "name": "PLASMA",
-      "type": "model",
-      "event_count": 199,
-      "role": "context"
-    },
-    {
-      "name": "astrocyte",
-      "type": "neural_cell",
-      "event_count": 176,
-      "role": "primary"
-    },
-    {
-      "name": "HUMAN",
-      "type": "model",
-      "event_count": 165,
-      "role": "context"
-    },
-    {
-      "name": "SERUM",
-      "type": "model",
-      "event_count": 117,
-      "role": "context"
-    },
-    {
-      "name": "neuronal",
-      "type": "neural_cell",
-      "event_count": 117,
-      "role": "primary"
-    },
-    {
-      "name": "ALZHEIMER",
-      "type": "indication",
-      "event_count": 116,
-      "role": "primary"
-    },
-    {
-      "name": "IN VITRO",
-      "type": "model",
-      "event_count": 94,
-      "role": "context"
-    },
-    {
-      "name": "RECEPTOR",
-      "type": "target",
-      "event_count": 92,
-      "role": "primary"
-    },
-    {
-      "name": "microglial",
-      "type": "neural_cell",
-      "event_count": 92,
-      "role": "primary"
-    },
-    {
-      "name": "neuron",
-      "type": "neural_cell",
-      "event_count": 73,
-      "role": "primary"
-    },
-    {
-      "name": "RAT",
-      "type": "model",
-      "event_count": 73,
-      "role": "context"
-    },
-    {
-      "name": "stroke",
-      "type": "indication",
-      "event_count": 59,
-      "role": "primary"
-    },
-    {
-      "name": "CSF",
-      "type": "model",
-      "event_count": 58,
-      "role": "primary"
-    },
-    {
-      "name": "TISSUE",
-      "type": "model",
-      "event_count": 58,
-      "role": "context"
-    },
-    {
-      "name": "mTOR signaling",
-      "type": "target",
-      "event_count": 58,
-      "role": "primary"
-    }
+    {"name": "IN VIVO", "type": "model", "event_count": 392, "role": "context"},
+    {"name": "microglia", "type": "neural_cell", "event_count": 412, "role": "primary"},
+    {"name": "astrocyte", "type": "neural_cell", "event_count": 440, "role": "primary"},
+    {"name": "neuron", "type": "neural_cell", "event_count": 422, "role": "primary"},
+    {"name": "MOUSE", "type": "model", "event_count": 213, "role": "context"},
+    {"name": "PLASMA", "type": "model", "event_count": 199, "role": "context"},
+    {"name": "HUMAN", "type": "model", "event_count": 165, "role": "context"},
+    {"name": "SERUM", "type": "model", "event_count": 117, "role": "context"},
+    {"name": "ALZHEIMER", "type": "indication", "event_count": 116, "role": "primary"},
+    {"name": "IN VITRO", "type": "model", "event_count": 94, "role": "context"},
+    {"name": "RECEPTOR", "type": "target", "event_count": 92, "role": "primary"},
+    {"name": "RAT", "type": "model", "event_count": 73, "role": "context"},
+    {"name": "stroke", "type": "indication", "event_count": 59, "role": "primary"},
+    {"name": "CSF", "type": "model", "event_count": 58, "role": "primary"},
+    {"name": "TISSUE", "type": "model", "event_count": 58, "role": "context"},
+    {"name": "mTOR signaling", "type": "target", "event_count": 58, "role": "primary"}
   ],
   "process_words_demoted": [
     "elution",

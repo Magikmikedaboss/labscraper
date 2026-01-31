@@ -207,5 +207,5 @@ A: Add all variants to the seed file. Future versions will support synonym mappi
 
 ---
 
-**Last Updated**: 2024
+**Last Updated**: 2026-01
 **Maintainer**: Research Intelligence Team

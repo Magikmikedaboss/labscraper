@@ -7,16 +7,12 @@
 
 **Do not use entity names (like 'peptide') as domains.**
 
-If your research is about construction science, methods, or tooling, use the `methods_tooling` domain. Peptides and other biological entities will still be extracted as entities within that domain.
+If your research is about construction science, use the `construction_science` domain. Peptides and other biological entities will still be extracted as entities within that domain.
 
 If your research is about drug discovery, use the `drug_discovery` domain. Peptides will be treated as primary entities, but the domain remains `drug_discovery`.
 
 This distinction keeps your taxonomy clean and prevents confusion between research axes and extracted entities.
 
-- Domain-specific seed overlays (load different seed files per domain)
-- Multi-domain support (one entity, multiple domain lenses)
-- Domain-specific confidence thresholds
-- Domain-specific outcome signal weights
 
 ## Ontology Guidance: Domain → Lens → Entities → Evidence
 
@@ -39,6 +35,14 @@ Domain profiles are JSON configuration files that:
 - Maintain **version history** for reproducibility
 
 ## Available Domains
+
+### 6. Construction Science (`construction_science.json`)
+- **Focus**: Materials, structural health monitoring, sustainability, building codes, and construction methods
+- **Emphasis**: Convergence/Escalation (1.15x/1.10x)
+- **Preferred Types**: material, sensor, method, code_standard, property
+- **Exclusions**: vendor/promotional language, product claims, marketing
+- **Language**: Neutral scientific phrasing, evidence-based, technical descriptions
+- **Forbidden**: Absolute claims ("guaranteed", "best", "miracle"), vendor-specific endorsements
 
 ### 1. Biohacking & Longevity (`biohacking_longevity.json`)
 - **Focus**: Human performance, longevity, metabolism, cognition, recovery

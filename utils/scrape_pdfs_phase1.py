@@ -34,6 +34,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 import pdfplumber
 from tqdm import tqdm
+from collections import deque
 
 from typing import Optional, List, Dict, Tuple
 
@@ -105,6 +106,76 @@ def guess_section(page_text_l: str) -> str:
     if "discussion" in page_text_l:
         return "discussion"
     return "unknown"
+
+# ---------------------------------------------------------
+# Context carryover (Construction Failure Lens v1.1)
+# ---------------------------------------------------------
+CONSTRUCTION_ENTITY_TYPES = {"material", "system", "environment", "failure_mode", "test_method", "code_standard", "hazard"}
+
+def merge_entities(primary: list[dict], carried: list[dict]) -> list[dict]:
+    """Merge entities, dedupe by (type,name,variant). Keep primary roles if present."""
+    seen = set()
+    out = []
+
+    def key(e: dict) -> tuple:
+        return (e.get("entity_type"), e.get("entity_name"), e.get("entity_variant"))
+
+    # primary first
+    for e in primary:
+        k = key(e)
+        if k in seen:
+            continue
+        out.append(e)
+        seen.add(k)
+
+    # then carried
+    for e in carried:
+        if e.get("entity_type") not in CONSTRUCTION_ENTITY_TYPES:
+            continue
+        k = key(e)
+        if k in seen:
+            continue
+        # default role for carried context
+        e2 = dict(e)
+        e2.setdefault("role", "context")
+        out.append(e2)
+        seen.add(k)
+
+    return out
+
+def context_carryover_entities(
+    domain: str,
+    current_sentence: str,
+    current_entities: list[dict],
+    memory: deque,
+    has_failure_signal: bool,
+    window_back: int = 3,
+) -> list[dict]:
+    """
+    If construction_science and a sentence has a failure signal, allow it to inherit
+    entities from the previous few sentences on the page.
+    """
+    if domain != "construction_science":
+        return current_entities
+
+    # Only carry over when we have a failure signal (prevents random drift)
+    if not has_failure_signal:
+        return current_entities
+
+    # If we already have decent entities, still allow small carryover (helps link env/material)
+    carried = []
+    # Look back up to window_back items in memory
+    for i in range(1, min(window_back, len(memory)) + 1):
+        carried.extend(memory[-i]["entities"])
+
+    return merge_entities(current_entities, carried)
+
+def has_construction_failure_signal(sentence_l: str) -> bool:
+    """Check if sentence has construction failure signals."""
+    for phrases in CONSTRUCTION_FAILURE_PHRASES.values():
+        if any(p in sentence_l for p in phrases):
+            return True
+    return False
 
 # ---------------------------------------------------------
 # Metadata Extraction
@@ -796,6 +867,9 @@ def main():
                             section = guess_section(text.lower())
                             chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
 
+                            # Rolling context memory for this page (construction only)
+                            page_memory = deque(maxlen=6)
+
                             for sent in chunk_sentences(text):
                                 s_l = sent.lower()
 
@@ -815,6 +889,18 @@ def main():
                                         evt, ents = lens_fn(sent)
                                         if not evt:
                                             continue
+
+                                        # Context carryover (construction only)
+                                        has_failure_signal = has_construction_failure_signal(s_l)
+                                        ents = context_carryover_entities(
+                                            domain=RESEARCH_DOMAIN,
+                                            current_sentence=sent,
+                                            current_entities=ents,
+                                            memory=page_memory,
+                                            has_failure_signal=has_failure_signal,
+                                            window_back=3,
+                                        )
+
                                         any_event = True
 
                                         event_type = evt.event_type
@@ -868,6 +954,11 @@ def main():
 
                                         # No measurements for v1 construction lenses
                                         inserted_events += 1
+
+                                    # Update page memory with this sentence's entities (even if no event)
+                                    if RESEARCH_DOMAIN == "construction_science":
+                                        page_memory.append({"sentence": sent, "entities": ents})
+
                                     if not any_event:
                                         continue
                                 else:

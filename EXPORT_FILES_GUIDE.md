@@ -3,7 +3,8 @@
 ## Files Now Open for Review
 
 ### 1. events_export_neuroscience_cognition.csv
-**What it contains**: 6,099 research events from 102 neuroscience PDFs
+**What it contains**: 4,618 research events from 116 neuroscience PDFs  
+_Stats from the final validated multi-domain run (see FINAL_MULTI_DOMAIN_SUMMARY.md)_
 
 **Key columns to review**:
 - `event_type`: Type of research event (efficacy_signal, safety_signal, etc.)
@@ -22,7 +23,8 @@
 - ✅ Domain and overlay columns properly populated
 
 ### 2. candidates_primary_neuroscience_cognition.csv
-**What it contains**: 388 unique research entities ranked by frequency
+**What it contains**: 266 unique primary research entities ranked by frequency  
+_Stats from the final validated multi-domain run (see FINAL_MULTI_DOMAIN_SUMMARY.md)_
 
 **Key columns to review**:
 - `entity_name`: The entity (stem cell, organoid, Neurons, etc.)
@@ -63,15 +65,17 @@
 4. **Role assignment**: Primary vs context properly assigned
 5. **Domain/overlay**: All rows properly tagged
 
-## 📈 Current Status (Scraper at 75%)
+## 📈 Current Status
 
-**Processed so far**: 75/102 PDFs (74%)
-**Events extracted**: 6,099 events
-**Unique entities**: 388 entities
+**Current scrape**: 75/102 PDFs (74%)
+**Events extracted (current run)**: 6,099 events
+**Unique entities (current run)**: 388 entities
 **Overlay aliases**: 0 (stem cells dominate)
 **Neuroscience signal**: "Neurons" #19 with 97 events ✅
 
-**Expected when complete**:
+**Final validated**: 4,618 events from 116 neuroscience PDFs
+
+**Expected when complete (estimate)**:
 - ~8,000-8,500 events (from 102 PDFs)
 - ~400-450 unique entities
 - "Neurons" might rise in ranking

@@ -1,9 +1,10 @@
 # Neuroscience Scraper Run - In Progress
 
-## Status: ✅ RUNNING
+## Status: 🔄 RUNNING
 
-**Started**: Just now
-**Command**: `python scrape_pdfs.py --domain neuroscience --input-dir input_pdfs/neuroscience_v1`
+
+- **Started**: 2026-01-29T14:23:00Z
+- **Command**: `python scrape_pdfs.py --domain neuroscience --input-dir input_pdfs/neuroscience_v1`
 
 ## Configuration
 - **Domain**: neuroscience
@@ -44,7 +45,7 @@ The scraper will:
 ### 2. Export Phase (After Scraping)
 Once scraping completes, run:
 ```bash
-python export_csv_v5_domain_aware.py --domain neuroscience_cognition
+python export_csv_v5_domain_aware.py --domain neuroscience
 ```
 
 This will:
@@ -64,9 +65,9 @@ python test_neuroscience_export.py
 
 After scraping + export:
 - `output/peptide_intel.sqlite` - Main database
-- `output/events_export_neuroscience_cognition.csv` - All research events
-- `output/candidates_primary_neuroscience_cognition.csv` - Primary entities
-- `output/run_meta_neuroscience_cognition.json` - Metadata
+- `output/events_export_neuroscience.csv` - All research events
+- `output/candidates_primary_neuroscience.csv` - Primary entities
+- `output/run_meta_neuroscience.json` - Metadata
 
 ## Estimated Time
 - Scraping 116 PDFs: ~15-30 minutes (depends on PDF size/complexity)

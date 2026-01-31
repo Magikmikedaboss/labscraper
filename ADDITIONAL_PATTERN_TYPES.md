@@ -185,7 +185,7 @@ Sudden spike in activity following a major discovery or publication.
 
 ---
 
-### 🟠 11. Translation Pattern
+### 🟣 11. Translation Pattern
 
 **What it means:**  
 Research moving from basic science to applied/clinical contexts.

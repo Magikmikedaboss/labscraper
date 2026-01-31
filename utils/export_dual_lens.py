@@ -36,45 +36,45 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     overlay_ids = scorer.get_overlay_ids()
     print(f"\n📋 Overlays: {', '.join(overlay_ids)}")
     
-    # Connect to database
+    # Connect to database and perform all DB operations in the context
     with sqlite3.connect(db_path) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
-        # ...existing code...
-    
-    # Step 1: Score all events
-    print("\n📊 Step 1: Scoring events...")
-    events = cur.execute("SELECT * FROM research_events").fetchall()
-    
-    event_overlay_scores = {}  # event_id -> {overlay_id: score}
-    
-    for event in events:
-        event_dict = dict(event)
-        scores = scorer.apply_event_scores(event_dict)
-        event_overlay_scores[event['event_id']] = scores
-    
-    print(f"   ✅ Scored {len(events)} events")
-    
-    # Step 2: Aggregate entity scores per overlay
-    print("\n🎯 Step 2: Calculating entity scores per overlay...")
-    
-    # Get all entities
-    entities = cur.execute("SELECT * FROM entities").fetchall()
 
-    # Apply entity type precedence and normalization
-    def normalize_entity_type(name: str, entity_type: str) -> str:
-        """Apply type precedence rules"""
-        name_lower = name.lower()
-        # Neural cells
-        if name_lower in {"microglia", "astrocyte", "neuron", "neurons", "astrocytes"}:
-            return "neural_cell"
-        # Stem cells
-        if name_lower in {"ipsc", "msc", "esc"}:
-            return "stem_cell"
-        # Organoids -> model
-        if name_lower in {"organoid", "organoids"}:
-            return "model"
-        return entity_type
+        # Step 1: Score all events
+        print("\n📊 Step 1: Scoring events...")
+        events = cur.execute("SELECT * FROM research_events").fetchall()
+
+        event_overlay_scores = {}  # event_id -> {overlay_id: score}
+
+        for event in events:
+            event_dict = dict(event)
+            scores = scorer.apply_event_scores(event_dict)
+            event_overlay_scores[event['event_id']] = scores
+
+        print(f"   ✅ Scored {len(events)} events")
+
+        # Step 2: Aggregate entity scores per overlay
+        print("\n🎯 Step 2: Calculating entity scores per overlay...")
+
+        # Get all entities
+        entities = cur.execute("SELECT * FROM entities").fetchall()
+
+        # Apply entity type precedence and normalization
+        def normalize_entity_type(name: str, entity_type: str) -> str:
+            """Apply type precedence rules"""
+            name_lower = name.lower()
+            # Neural cells
+            if name_lower in {"microglia", "astrocyte", "neuron", "neurons", "astrocytes"}:
+                return "neural_cell"
+            # Stem cells
+            if name_lower in {"ipsc", "msc", "esc"}:
+                return "stem_cell"
+            # Organoids -> model
+            if name_lower in {"organoid", "organoids"}:
+                return "model"
+            return entity_type
+        # ...existing code for entity processing, writing files, etc. (indented under with-block)
 
     # Normalize entities: merge duplicates by canonical name + type
     entity_canonical = {}  # (canonical_name, canonical_type) -> merged_entity
@@ -324,7 +324,7 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     
     print(f"   ✅ Report: {report_file}")
     
-    con.close()
+    # con.close() removed; handled by context manager
     
     print("\n" + "="*70)
     print("✅ DUAL-LENS EXPORT COMPLETE")
@@ -357,6 +357,7 @@ if __name__ == "__main__":
         'neuroscience_cognition',
         'stem_cells_regen',
         'peptide',  # legacy / peptide intelligence pipeline
+        'construction_science',
     ]
     if domain_id not in valid_domain_ids:
         print(f"❌ Invalid domain_id: {domain_id}")

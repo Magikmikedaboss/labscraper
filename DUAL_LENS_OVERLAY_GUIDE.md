@@ -1,4 +1,4 @@
-e# Dual-Lens Overlay System Guide
+# Dual-Lens Overlay System Guide
 
 ## Overview
 
@@ -257,7 +257,7 @@ pattern_type,score_science,score_curiosity,bucket_science,bucket_curiosity,...
 ## Configuration Files
 
 ### Domain File
-`seeds/domains/biohacking_longevity.json`
+`config/domains/biohacking_longevity.json`
 ```json
 {
   "id": "biohacking_longevity",

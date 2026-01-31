@@ -52,7 +52,7 @@ A complete research intelligence system with:
 
 ---
 
-## Files Created (9 Total)
+## Files Created (10 Total)
 
 ### Phase 2: Dual-Lens Overlay (4 files)
 1. `overlay_scorer.py` - Event/entity scoring engine

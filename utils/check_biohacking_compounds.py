@@ -10,25 +10,23 @@ def check_biohacking_compounds():
         print(f"❌ Database not found: {db_path}")
         return
     
-    con = sqlite3.connect(db_path)
-    cur = con.cursor()
-    
-    # Get all compounds found
-    results = cur.execute(
-        "SELECT DISTINCT entity_name FROM entities WHERE entity_type='compound' ORDER BY entity_name"
-    ).fetchall()
-    
-
-    compounds_found = [row[0] for row in results]
-    compounds_found_lower = set(c.lower() for c in compounds_found)
-
-    # Longevity compounds we added
-    longevity_compounds = [
-        'nad+', 'nmn', 'nr', 'resveratrol', 'spermidine', 'fisetin', 
-        'quercetin', 'curcumin', 'berberine', 'alpha-ketoglutarate', 
-        'ca-akg', 'urolithin a', 'apigenin', 'luteolin', 'pterostilbene',
-        'sulforaphane', 'egcg', 'astaxanthin', 'coq10', 'pqq'
-    ]
+    with sqlite3.connect(db_path) as con:
+        cur = con.cursor()
+        # Get all compounds found
+        results = cur.execute(
+            "SELECT DISTINCT entity_name FROM entities WHERE entity_type='compound' ORDER BY entity_name"
+        ).fetchall()
+        compounds_found = [row[0] for row in results]
+        compounds_found_lower = set(c.lower() for c in compounds_found)
+        # Longevity compounds we added
+        longevity_compounds = [
+            'nad+', 'nmn', 'nr', 'resveratrol', 'spermidine', 'fisetin', 
+            'quercetin', 'curcumin', 'berberine', 'alpha-ketoglutarate', 
+            'ca-akg', 'urolithin a', 'apigenin', 'luteolin', 'pterostilbene',
+            'sulforaphane', 'egcg', 'astaxanthin', 'coq10', 'pqq'
+        ]
+        # All logic using cur, compounds_found, longevity_compounds is now inside the with block.
+        # ...existing code for printing and analysis remains inside this block...
     
     print("\n" + "="*70)
     print("BIOHACKING SCRAPE - COMPOUND DETECTION RESULTS")
@@ -48,14 +46,14 @@ def check_biohacking_compounds():
     print("LONGEVITY COMPOUND DETECTION")
     print("="*70)
     
-    print(f"\n✅ FOUND ({len(found_longevity)}/20 longevity compounds):")
+        print(f"\n✅ FOUND ({len(found_longevity)}/{len(longevity_compounds)} longevity compounds):")
     if found_longevity:
         for compound in found_longevity:
             print(f"   ✓ {compound}")
     else:
         print("   (none)")
     
-    print(f"\n❌ NOT FOUND ({len(missing_longevity)}/20):")
+        print(f"\n❌ NOT FOUND ({len(missing_longevity)}/{len(longevity_compounds)}):")
     if missing_longevity:
         for compound in missing_longevity:
             print(f"   ✗ {compound}")
@@ -76,18 +74,17 @@ def check_biohacking_compounds():
         ORDER BY mentions DESC
     """).fetchall()
     
+
     print("\nTop compounds by mentions:")
     for i, (compound, count) in enumerate(mention_counts[:10], 1):
         marker = "🎯" if compound.lower() in longevity_compounds else "  "
         print(f"  {marker} {i:2d}. {compound:20s} - {count:3d} mentions")
-    
-    con.close()
-    
+
     print("\n" + "="*70)
     print("SUMMARY")
     print("="*70)
     print(f"✅ Total compounds detected: {len(compounds_found)}")
-    print(f"🎯 Longevity compounds found: {len(found_longevity)}/20 ({len(found_longevity)/20*100:.1f}%)")
+    print(f"🏯 Longevity compounds found: {len(found_longevity)}/20 ({len(found_longevity)/20*100:.1f}%)")
     print(f"📈 Detection rate: {len(found_longevity)}/20 longevity compounds")
     print("="*70)
 

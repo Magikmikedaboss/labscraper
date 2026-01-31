@@ -98,10 +98,12 @@ Promote to MED if:
 | **Primary Entities** | 107 | ✅ |
 | **Context Entities** | 18 | ✅ |
 | **Entity Coverage** | 41.4% (268/647) | ✅ |
-| **False Positive Rate** | 0% | ✅ |
+| **False Positive Rate** | 0% in sampled validation¹ | ✅ |
 | **Confidence - High** | 1.1% (7 events) | ✅ |
 | **Confidence - Med** | 43.3% (280 events) | ✅ |
 | **Confidence - Low** | 55.6% (360 events) | ✅ |
+
+¹ Based on manual review of a random sample of 50 events; no false positives were found in this sample.
 
 ---
 

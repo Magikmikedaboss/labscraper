@@ -1,8 +1,8 @@
 # Longevity Scraper Run - In Progress
 
-## Status: ✅ RUNNING
 
-**Started**: Just now
+## Status: RUNNING (started: 2026-01-30T00:00:00Z)
+
 **Command**: `python scrape_pdfs.py --domain longevity --input-dir input_pdfs/longevity_v1`
 
 ## Configuration

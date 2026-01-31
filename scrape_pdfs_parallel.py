@@ -34,38 +34,39 @@ def process_single_pdf(args):
     """
     pdf_path, domain, db_path = args
     
+
+    con = None
     try:
         # Create a separate connection for this process with timeout
         con = sqlite3.connect(db_path, timeout=30.0)
-        
         # Enable WAL mode for better concurrency
         con.execute("PRAGMA journal_mode=WAL")
         con.execute("PRAGMA busy_timeout=30000")
-        
+
         source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
         file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
-        
+
         events_count = 0
-        
+
         with pdfplumber.open(str(pdf_path)) as pdf:
             metadata = extract_metadata(pdf_path, pdf)
             upsert_source(con, source_id, pdf_path.name, metadata)
             doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
-            
+
             seen_events = set()
-            
+
             for page_idx, page in enumerate(pdf.pages, start=1):
                 try:
                     text = page.extract_text() or ""
                     if not text.strip():
                         continue
-                    
+
                     section = guess_section(text.lower())
                     chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
-                    
+
                     for sent in chunk_sentences(text):
                         s_l = sent.lower()
-                        
+
                         # Quick signal check
                         has_signal = (
                             any(p in s_l for lst in FAILURE_PHRASES.values() for p in lst) or
@@ -74,7 +75,7 @@ def process_single_pdf(args):
                         )
                         if not has_signal:
                             continue
-                        
+
                         tags = detect_method_tags(s_l)
                         failure_reason = detect_failure_reason(s_l)
                         decision_taken, decision_driver = detect_decision(s_l)
@@ -82,21 +83,21 @@ def process_single_pdf(args):
                         stage = guess_stage(s_l)
                         event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                         strength = evidence_strength(s_l)
-                        
+
                         ents = extract_all_entities(sent, metadata.get('title', ''))
                         measurements = extract_quantitative_data(sent)
-                        
+
                         conf = confidence_score_phase1(bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l)
                         keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
-                        
+
                         if keep == 0 and event_type == "other":
                             continue
-                        
+
                         event_key = normalize_event_key(event_type, ents, page_idx, sent)
                         if event_key in seen_events:
                             continue
                         seen_events.add(event_key)
-                        
+
                         bio_sys = None
                         if "serum" in tags:
                             bio_sys = "serum/plasma"
@@ -104,7 +105,7 @@ def process_single_pdf(args):
                             bio_sys = "organoid"
                         elif "cell line" in s_l or "cells" in s_l:
                             bio_sys = "cells"
-                        
+
                         event_id = insert_event(
                             con=con,
                             source_id=source_id,
@@ -124,32 +125,32 @@ def process_single_pdf(args):
                             evidence_strength_v=strength,
                             confidence_v=conf,
                         )
-                        
+
                         for t in tags:
                             link_event_tag(con, event_id, t)
-                        
+
                         for e in ents:
                             entity_id = upsert_entity(con, e["entity_type"], e["entity_name"], e["entity_variant"], None)
                             link_event_entity(con, event_id, entity_id, e.get("role", "unknown"))
-                        
+
                         for m in measurements:
                             insert_measurement(con, event_id, m)
-                        
+
                         events_count += 1
-                
+
                 except Exception as e:
                     # Log page errors
                     logging.error(f"Error processing page {page_idx} of {pdf_path.name}: {e}")
                     logging.exception(e)
                     continue
-        
-        con.commit()
-        con.close()
 
+        con.commit()
+        return (pdf_path.name, events_count, True, None)
     except Exception as e:
         return (pdf_path.name, 0, False, str(e))
-    else:
-        return (pdf_path.name, events_count, True, None)
+    finally:
+        if con is not None:
+            con.close()
 
 
 def main():

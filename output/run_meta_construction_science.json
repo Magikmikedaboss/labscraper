@@ -1,0 +1,159 @@
+{
+  "run_id": "20260130_141722",
+  "engine_version": "v5_domain_aware",
+  "timestamp": "2026-01-30T14:17:22.035330",
+  "database": "output/peptide_intel.sqlite",
+  "seeds_version": "2026-01-22",
+  "domain_id": "construction_science",
+  "domain_name": "Construction Science & Built Environment Physics",
+  "overlay_id": "construction_science_v1",
+  "overlay_aliases_count": 247,
+  "counts": {
+    "total_events": 953,
+    "total_entities": 22,
+    "primary_entities": 22,
+    "context_entities": 0
+  },
+  "confidence_distribution": {
+    "high": 2,
+    "med": 92,
+    "low": 859,
+    "boosted_to_high": 0,
+    "boosted_to_med": 0
+  },
+  "top_entities": [
+    {
+      "name": "concrete",
+      "type": "material",
+      "event_count": 24,
+      "role": "primary"
+    },
+    {
+      "name": "steel",
+      "type": "material",
+      "event_count": 19,
+      "role": "primary"
+    },
+    {
+      "name": "timber",
+      "type": "material",
+      "event_count": 19,
+      "role": "primary"
+    },
+    {
+      "name": "GLASS",
+      "type": "material",
+      "event_count": 12,
+      "role": "primary"
+    },
+    {
+      "name": "wall",
+      "type": "system",
+      "event_count": 9,
+      "role": "primary"
+    },
+    {
+      "name": "masonry",
+      "type": "material",
+      "event_count": 9,
+      "role": "primary"
+    },
+    {
+      "name": "insulation",
+      "type": "material",
+      "event_count": 7,
+      "role": "primary"
+    },
+    {
+      "name": "roof",
+      "type": "system",
+      "event_count": 4,
+      "role": "primary"
+    },
+    {
+      "name": "SCALING",
+      "type": "failure_mode",
+      "event_count": 4,
+      "role": "primary"
+    },
+    {
+      "name": "THERMAL CYCLING",
+      "type": "environment",
+      "event_count": 2,
+      "role": "primary"
+    },
+    {
+      "name": "fatigue",
+      "type": "failure_mode",
+      "event_count": 2,
+      "role": "primary"
+    },
+    {
+      "name": "corrosion",
+      "type": "failure_mode",
+      "event_count": 2,
+      "role": "primary"
+    },
+    {
+      "name": "durability",
+      "type": "environment",
+      "event_count": 2,
+      "role": "primary"
+    },
+    {
+      "name": "CONNECTION",
+      "type": "system",
+      "event_count": 2,
+      "role": "primary"
+    },
+    {
+      "name": "LEAKAGE",
+      "type": "failure_mode",
+      "event_count": 1,
+      "role": "primary"
+    },
+    {
+      "name": "ASHRAE",
+      "type": "test_method",
+      "event_count": 1,
+      "role": "primary"
+    },
+    {
+      "name": "DESIGN LIFE",
+      "type": "environment",
+      "event_count": 1,
+      "role": "primary"
+    },
+    {
+      "name": "FRACTURE",
+      "type": "failure_mode",
+      "event_count": 1,
+      "role": "primary"
+    },
+    {
+      "name": "cracking",
+      "type": "failure_mode",
+      "event_count": 1,
+      "role": "primary"
+    },
+    {
+      "name": "BEAM",
+      "type": "system",
+      "event_count": 1,
+      "role": "primary"
+    }
+  ],
+  "process_words_demoted": [
+    "inspection",
+    "testing",
+    "measurement",
+    "quality control",
+    "calibration",
+    "sampling",
+    "documentation",
+    "site survey",
+    "maintenance",
+    "safety check"
+  ],
+  "confidence_boost_rule": "HIGH if (material|structure|contractor|site|design) + inspection + model_context; MED if (material|structure|contractor|site) + inspection"
+}

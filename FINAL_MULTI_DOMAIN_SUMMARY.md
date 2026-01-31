@@ -89,11 +89,7 @@ Successfully completed a full multi-domain research intelligence pipeline with b
 ## 3. Biohacking & Longevity Corpus ✅
 
 ### Scraping Results
-- **PDFs Processed**: 34
-- **Processing Time**: ~6 minutes
-- **Events Extracted**: 957 (raw) → 5,575 (exported)
-- **Measurements**: 10 quantitative data points
-- **Relationships**: 0 detected
+- **Events Extracted**: 957 (raw) → 5,575 (exported) (expansion due to event splitting and entity-level enrichment; e.g., one raw event may yield multiple exported records when multiple entities are present)
 
 ### Export Results
 - **Total Events**: 5,575
@@ -102,17 +98,20 @@ Successfully completed a full multi-domain research intelligence pipeline with b
 - **Domain ID**: biohacking_longevity
 - **Overlay ID**: biohacking_longevity_v1
 
+
+
+
 ### Top 10 Primary Entities
-1. microglia (neural_cell) - 320 events
-2. astrocytes (neural_cell) - 264 events
-3. neurons (neural_cell) - 232 events
-4. astrocyte (neural_cell) - 176 events
-5. neuronal (neural_cell) - 117 events
-6. ALZHEIMER (indication) - 116 events
-7. RECEPTOR (target) - 92 events
-8. microglial (neural_cell) - 92 events
-9. neuron (neural_cell) - 73 events
-10. stroke (indication) - 59 events
+1. IN VIVO (model, context) - 392 events
+2. microglia (neural_cell, primary) - 320 events
+3. astrocytes (neural_cell, primary) - 264 events
+4. neurons (neural_cell, primary) - 232 events
+5. MOUSE (model, context) - 213 events
+6. PLASMA (model, context) - 199 events
+7. astrocyte (neural_cell, primary) - 176 events
+8. HUMAN (model, context) - 165 events
+9. SERUM (model, context) - 117 events
+10. neuronal (neural_cell, primary) - 117 events
 
 ### Confidence Distribution
 - **High**: 48 (0.9%)

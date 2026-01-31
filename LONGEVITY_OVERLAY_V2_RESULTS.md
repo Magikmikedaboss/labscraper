@@ -186,7 +186,7 @@ Search for papers with these terms:
       "note": "Neural biology allowed but not dominant in longevity domain"
     },
     {
-      "if_present": ["disease_indication"],
+      "if_present": ["indication"],
       "penalty": 1,
       "note": "Disease context retained but secondary"
     }

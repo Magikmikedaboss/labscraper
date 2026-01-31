@@ -51,118 +51,123 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
     pdf_path = Path(pdf_path_s)
     db_path = Path(db_path_s)
 
-    con: Optional[sqlite3.Connection] = None
-
     try:
-        con = _connect(db_path)
+        with _connect(db_path) as con:
+            source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
+            file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
 
-        source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
-        file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
+            events_count = 0
+            seen_events = set()
 
-        events_count = 0
-        seen_events = set()
+            with pdfplumber.open(str(pdf_path)) as pdf:
+                metadata = extract_metadata(pdf_path, pdf)
 
-        with pdfplumber.open(str(pdf_path)) as pdf:
-            metadata = extract_metadata(pdf_path, pdf)
+                upsert_source(con, source_id, pdf_path.name, metadata)
+                doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
 
-            upsert_source(con, source_id, pdf_path.name, metadata)
-            doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
-
-            for page_idx, page in enumerate(pdf.pages, start=1):
-                text = page.extract_text() or ""
-                if not text.strip():
-                    continue
-
-                section = guess_section(text.lower())
-                chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
-
-                for sent in chunk_sentences(text):
-                    s_l = sent.lower()
-                    if not _has_signal(s_l):
+                for page_idx, page in enumerate(pdf.pages, start=1):
+                    text = page.extract_text() or ""
+                    if not text.strip():
                         continue
 
-                    tags = detect_method_tags(s_l)
-                    failure_reason = detect_failure_reason(s_l)
-                    decision_taken, decision_driver = detect_decision(s_l)
-                    outcome = detect_outcome(s_l)
-                    stage = guess_stage(s_l)
-                    event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
-                    strength = evidence_strength(s_l)
+                    section = guess_section(text.lower())
+                    chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
 
-                    ents = extract_all_entities(sent, metadata.get("title", "") or "")
-                    measurements = extract_quantitative_data(sent)
+                    for sent in chunk_sentences(text):
+                        s_l = sent.lower()
+                        if not _has_signal(s_l):
+                            continue
 
-                    conf = confidence_score_phase1(
-                        bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l
-                    )
-                    keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
+                        tags = detect_method_tags(s_l)
+                        failure_reason = detect_failure_reason(s_l)
+                        decision_taken, decision_driver = detect_decision(s_l)
+                        outcome = detect_outcome(s_l)
+                        stage = guess_stage(s_l)
+                        event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
+                        strength = evidence_strength(s_l)
 
-                    if keep == 0 and event_type == "other":
-                        continue
+                        ents = extract_all_entities(sent, metadata.get("title", "") or "")
+                        measurements = extract_quantitative_data(sent)
 
-                    event_key = normalize_event_key(event_type, ents, page_idx, sent)
-                    if event_key in seen_events:
-                        continue
-                    seen_events.add(event_key)
-
-                    bio_sys = None
-                    if "serum" in tags:
-                        bio_sys = "serum/plasma"
-                    elif "organoid" in s_l:
-                        bio_sys = "organoid"
-                    elif "cell line" in s_l or "cells" in s_l:
-                        bio_sys = "cells"
-
-                    event_id = insert_event(
-                        con=con,
-                        source_id=source_id,
-                        doc_id=doc_id,
-                        chunk_id=chunk_id,
-                        page_number=page_idx,
-                        domain=domain,
-                        event_type=event_type,
-                        study_stage=stage,
-                        biological_system=bio_sys,
-                        application_area=None,
-                        outcome=outcome,
-                        failure_reason=failure_reason,
-                        decision_taken=decision_taken,
-                        decision_driver=decision_driver,
-                        evidence_snippet=sent,
-                        evidence_strength_v=strength,
-                        confidence_v=conf,
-                    )
-
-                    for t in tags:
-                        link_event_tag(con, event_id, t)
-
-                    for e in ents:
-                        entity_id = upsert_entity(
-                            con,
-                            e["entity_type"],
-                            e["entity_name"],
-                            e.get("entity_variant"),
-                            None
+                        conf = confidence_score_phase1(
+                            bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l
                         )
-                        link_event_entity(con, event_id, entity_id, e.get("role", "unknown"))
+                        keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
 
-                    for m in measurements:
-                        insert_measurement(con, event_id, m)
+                        if keep == 0 and event_type == "other":
+                            continue
 
-                    events_count += 1
+                        event_key = normalize_event_key(event_type, ents, page_idx, sent)
+                        if event_key in seen_events:
+                            continue
+                        seen_events.add(event_key)
 
-        con.commit()
-        return (pdf_path.name, events_count, True, "")
+                        bio_sys = None
+                        if "serum" in tags:
+                            bio_sys = "serum/plasma"
+                        elif "organoid" in s_l:
+                            bio_sys = "organoid"
+                        elif "cell line" in s_l or "cells" in s_l:
+                            bio_sys = "cells"
 
+                        event_id = insert_event(
+                            con=con,
+                            source_id=source_id,
+                            doc_id=doc_id,
+                            chunk_id=chunk_id,
+                            page_number=page_idx,
+                            domain=domain,
+                            event_type=event_type,
+                            study_stage=stage,
+                            biological_system=bio_sys,
+                            application_area=None,
+                            outcome=outcome,
+                            failure_reason=failure_reason,
+                            decision_taken=decision_taken,
+                            decision_driver=decision_driver,
+                            evidence_snippet=sent,
+                            evidence_strength_v=strength,
+                            confidence_v=conf,
+                        )
+
+                        for t in tags:
+                            link_event_tag(con, event_id, t)
+
+                        for e in ents:
+                            entity_id = upsert_entity(
+                                con,
+                                e["entity_type"],
+                                e["entity_name"],
+                                e.get("entity_variant"),
+                                None
+                            )
+                            link_event_entity(con, event_id, entity_id, e.get("role", "unknown"))
+
+                        for m in measurements:
+                            insert_measurement(con, event_id, m)
+
+                        events_count += 1
+
+            con.commit()
+            return (pdf_path.name, events_count, True, "")
     except Exception as e:
         return (pdf_path.name, 0, False, str(e))
 
-    finally:
-        if con is not None:
-            try:
-                con.close()
-            except Exception:
-                pass
+
+def _db_has_all_tables(db_path: Path) -> bool:
+    """Check if all required tables exist in the DB."""
+    required_tables = {
+        'sources', 'documents', 'chunks', 'entities',
+        'research_events', 'event_entities', 'tags', 'event_tags',
+        'quantitative_measurements', 'entity_relationships'
+    }
+    try:
+        with sqlite3.connect(db_path) as con:
+            tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+            table_names = {t[0] for t in tables}
+            return required_tables.issubset(table_names)
+    except Exception:
+        return False
 
 
 def main() -> None:
@@ -198,6 +203,13 @@ def main() -> None:
         raise SystemExit(f"No PDFs found in: {input_dir.resolve()}")
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    # Ensure DB schema is initialized before launching workers
+    schema_path = Path(__file__).resolve().parent / "schema.sql"
+    if not db_path.exists() or not _db_has_all_tables(db_path):
+        schema = schema_path.read_text(encoding="utf-8")
+        with sqlite3.connect(db_path) as con:
+            con.executescript(schema)
+            con.commit()
 
     # Prepare jobs (strings are safer to pickle across platforms)
     jobs: List[Tuple[str, str, str]] = [(str(p), domain, str(db_path)) for p in pdfs]

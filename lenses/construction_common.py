@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 
 # ---------- Basic unit / numeric signals ----------
 UNIT_PATTERNS = [
     r"\bmpa\b", r"\bkpa\b", r"\bgpa\b",
     r"\bkn\b", r"\bmn\b",
-    r"\bmm\b", r"\bcm\b", r"\bm\b",
+    r"\bmm\b", r"\bcm\b", # r"\bm\b",  # meters (removed: too short, high false positive risk)
     # Removed overly broad 'in' and 'n' patterns to avoid false positives
     r"\bft\b",
     r"\bw/m2k\b", r"\bw/m·k\b", r"\bw/mk\b",

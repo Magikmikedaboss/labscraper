@@ -4,9 +4,9 @@
 Re-scraping longevity corpus with V2 overlay active to test enhanced aging vocabulary.
 
 ## Progress
-- **Started**: Just now
+- **Started**: 2026-01-30T14:23:00Z
 - **PDFs**: 34 total
-- **Status**: Running (10/34 complete as of last check)
+- **Status**: COMPLETE ✅
 - **Expected time**: ~6 minutes total
 
 ## What's Different This Time
@@ -26,5 +26,5 @@ Re-scraping longevity corpus with V2 overlay active to test enhanced aging vocab
 3. Compare top entities: should see aging mechanisms elevated
 4. Validate honesty: neural/disease terms still present but contextualized
 
-## Status: IN PROGRESS ⏳
-Waiting for scraper to complete...
+## Status: COMPLETE ✅
+All PDFs processed successfully.

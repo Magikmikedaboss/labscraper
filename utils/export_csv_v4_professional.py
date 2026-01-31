@@ -16,27 +16,8 @@ from .entity_normalizer import load_normalization_map, normalize_entity_list
 
 DB_PATH = Path("output") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
+from .process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
 
-# Process words that should be tags, not primary assay entities
-# These are generic lab terms that don't represent specific research assays
-PROCESS_WORDS_TO_DEMOTE = {
-    # Sample prep & processing
-    "quantification", "quantitation", "chromatography", "purification",
-    "calibration", "validation", "optimization", "quality control",
-    
-    # Generic measurement terms
-    "affinity", "binding affinity", "affinity measurement", "affinity assay",
-    
-    # Mobile phase & standards
-    "internal standard", "mobile phase", "gradient", "elution",
-    
-    # Generic detection
-    "detection", "analysis", "measurement", "determination"
-}
-
-def is_process_word(entity_name: str) -> bool:
-    """Check if entity is a process word that should be demoted to tag"""
-    return entity_name.lower() in PROCESS_WORDS_TO_DEMOTE
 
 def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
     """
@@ -172,27 +153,31 @@ def export_events_professional():
             ORDER BY re.created_at DESC
         """).fetchall()
     
+    from .process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
+    
+    # Initialize confidence tracking
+    confidence_changes = {
+        "high": 0, "med": 0, "low": 0, "other": 0,
+        "boosted_to_high": 0, "boosted_to_med": 0
+    }
+    
     # Export with enhancements
     events_path = OUTPUT_DIR / "events_export_v4.csv"
     with open(events_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow([
             'event_id', 'domain', 'event_type', 'stage', 'outcome',
-            'decision_driver', 'evidence_snippet', 'confidence_original', 'confidence_boosted',
-            'primary_entity_count', 'context_entity_count',
-            'entities_primary', 'entities_context', 'entities_all',
-            'paper_id', 'created_at'
+            'decision_driver', 'evidence_snippet', 'confidence_original',
+            'confidence_boosted', 'primary_count', 'context_count',
+            'primary_entities', 'context_entities', 'all_entities',
+            'source_id', 'created_at'
         ])
         
-        confidence_changes = {"low": 0, "med": 0, "high": 0, "other": 0, "boosted_to_high": 0, "boosted_to_med": 0}
-        
-        for event in events:
-            event_id, domain, etype, stage, outcome, decision, snippet, conf_orig, source_id, created_at, entities_str = event
-            
-            # Count entities and separate by role
+        for event_id, domain, etype, stage, outcome, decision, snippet, conf_orig, source_id, created_at, entities_str in events:
+            # Count entities and demote process words
             primary_count, context_count, primary_str, context_str, all_str = count_entities_by_role(entities_str, norm_map)
             
-            # Apply safe confidence boost
+            # Apply confidence boost
             conf_boosted = safe_confidence_boost(all_str, conf_orig)
             
             # Track changes (safely handle unexpected values)

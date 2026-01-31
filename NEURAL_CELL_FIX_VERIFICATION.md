@@ -89,11 +89,12 @@ cat output/run_meta_neuroscience_cognition.json
 # - overlay_aliases_count > 0 (not 0)
 ```
 
+
 ### ✅ Step 2: Check Top Entities
 Expected to see:
 - neuron, microglia, astrocyte in top 10
 - All with type="neural_cell"
-- All with role="primary"
+- All with role="tested"
 
 ### ✅ Step 3: Check Overlay Aliases
 Expected:

@@ -13,32 +13,15 @@ import argparse
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
-from entity_normalizer import load_normalization_map, normalize_entity_list, load_overlay_aliases
-from axon_domains import get_domain_by_id
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.entity_normalizer import load_normalization_map, normalize_entity_list, load_overlay_aliases, normalize_entity, get_entity_role
+from utils.axon_domains import get_domain_by_id
+from utils.process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
 
 DB_PATH = Path("output") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
-
-# Process words that should be tags, not primary assay entities
-# These are generic lab terms that don't represent specific research assays
-PROCESS_WORDS_TO_DEMOTE = {
-    # Sample prep & processing
-    "quantification", "quantitation", "chromatography", "purification",
-    "calibration", "validation", "optimization", "quality control",
-    
-    # Generic measurement terms
-    "affinity", "binding affinity", "affinity measurement", "affinity assay",
-    
-    # Mobile phase & standards
-    "internal standard", "mobile phase", "gradient", "elution",
-    
-    # Generic detection
-    "detection", "analysis", "measurement", "determination"
-}
-
-def is_process_word(entity_name: str) -> bool:
-    """Check if entity is a process word that should be demoted to tag"""
-    return entity_name.lower() in PROCESS_WORDS_TO_DEMOTE
 
 def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
     """
@@ -108,13 +91,11 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
     ]
     
     # Normalize with overlay aliases
-    from entity_normalizer import normalize_entity, get_entity_role
-    
     normalized = []
     for e in entity_dicts:
         norm_e = normalize_entity(e, norm_map, overlay_aliases)
         norm_e["role"] = get_entity_role(norm_e, norm_map)
-        normalized.append(norm_e)    
+        normalized.append(norm_e)
     # Separate by role, demoting process words
     primary = []
     context = []
@@ -196,6 +177,7 @@ def export_events_domain_aware(domain_id: str = None):
     
     # Export with enhancements (outside DB context)
     suffix = f"_{domain_id}" if domain_id else "_v5"
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     events_path = OUTPUT_DIR / f"events_export{suffix}.csv"
     with open(events_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -328,7 +310,6 @@ def export_candidates_domain_aware(domain_id: str = None):
             }
             
             # Normalize with overlay aliases
-            from entity_normalizer import normalize_entity, get_entity_role
             normalized = normalize_entity(entity_dict, norm_map, overlay_aliases)
             canonical_name = normalized["entity_name"]
             role = get_entity_role(normalized, norm_map)
@@ -403,18 +384,41 @@ def write_run_meta(confidence_changes, canonical_entities, domain_id=None):
     norm_map = load_normalization_map()
     normalized_entities = {}
     for (etype, ename), data in canonical_entities.items():
-        from entity_normalizer import normalize_entity
         norm_e = normalize_entity({"entity_type": etype, "entity_name": ename}, norm_map, overlay_aliases)
         canonical_name = norm_e["entity_name"]
         key = (etype, canonical_name)
         if key not in normalized_entities:
-            normalized_entities[key] = data.copy()
-            normalized_entities[key]["entity_name"] = canonical_name
+            # Deep copy with new sets for mutable fields
+            normalized_entities[key] = {
+                **data,
+                "entity_name": canonical_name,
+                "paper_ids": set(data["paper_ids"]) if "paper_ids" in data else set(),
+                "original_names": set(data["original_names"]) if "original_names" in data else set(),
+            }
         else:
             # Merge event counts and paper_ids if duplicate after normalization
             normalized_entities[key]["event_count"] += data["event_count"]
-            normalized_entities[key]["paper_ids"].update(data["paper_ids"])
-            normalized_entities[key]["original_names"].update(data["original_names"])
+            if not isinstance(normalized_entities[key]["paper_ids"], set):
+                normalized_entities[key]["paper_ids"] = set(normalized_entities[key]["paper_ids"])
+            if not isinstance(data["paper_ids"], set):
+                data_paper_ids = set(data["paper_ids"])
+            else:
+                data_paper_ids = data["paper_ids"]
+            normalized_entities[key]["paper_ids"].update(data_paper_ids)
+            if not isinstance(normalized_entities[key]["original_names"], set):
+                normalized_entities[key]["original_names"] = set(normalized_entities[key]["original_names"])
+            if not isinstance(data["original_names"], set):
+                data_original_names = set(data["original_names"])
+            else:
+                data_original_names = data["original_names"]
+            normalized_entities[key]["original_names"].update(data_original_names)
+
+    # Convert set-valued fields to lists for JSON serialization
+    for ent in normalized_entities.values():
+        if isinstance(ent.get("paper_ids"), set):
+            ent["paper_ids"] = list(ent["paper_ids"])
+        if isinstance(ent.get("original_names"), set):
+            ent["original_names"] = list(ent["original_names"])
 
     meta = {
         "run_id": datetime.now().strftime("%Y%m%d_%H%M%S"),

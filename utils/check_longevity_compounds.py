@@ -4,14 +4,19 @@ def check_longevity_compounds():
     """Check which popular longevity compounds are in seeds"""
     
     # Read current compounds
-    compounds_text = Path('seeds/base/compounds.txt').read_text(encoding='utf-8').lower()
-    parsed_compounds_set = set()
-    for line in compounds_text.splitlines():
-        # Strip inline comments
-        line = line.split('#', 1)[0].strip()
-        compound = ' '.join(line.split())
-        if compound:
-            parsed_compounds_set.add(compound)
+    try:
+        compounds_text = Path('seeds/base/life_sciences/compounds.txt').read_text(encoding='utf-8').lower()
+    except (FileNotFoundError, PermissionError) as e:
+        print(f"Error: Could not read compounds file: {e}")
+        parsed_compounds_set = set()
+    else:
+        parsed_compounds_set = set()
+        for line in compounds_text.splitlines():
+            # Strip inline comments
+            line = line.split('#', 1)[0].strip()
+            compound = ' '.join(line.split())
+            if compound:
+                parsed_compounds_set.add(compound)
     
     # Popular longevity/biohacking compounds
     longevity_compounds = [
@@ -71,11 +76,8 @@ def check_longevity_compounds():
     print("CURRENT COMPOUNDS IN SEEDS")
     print("="*70)
     
-    lines = Path('seeds/base/compounds.txt').read_text(encoding='utf-8').split('\n')
-    all_compounds = [line.strip() for line in lines if line.strip() and not line.startswith('#')]
-    
+    all_compounds = sorted(parsed_compounds_set)
     print(f"\nTotal compounds: {len(all_compounds)}\n")
-    
     for i, compound in enumerate(all_compounds, 1):
         print(f"   {i:2d}. {compound}")
     
@@ -84,7 +86,7 @@ def check_longevity_compounds():
         print("\n" + "="*70)
         print("RECOMMENDATIONS")
         print("="*70)
-        print("\nTo add missing longevity compounds, append to seeds/base/compounds.txt:")
+        print("\nTo add missing longevity compounds, append to seeds/base/life_sciences/compounds.txt:")
         print("\n# longevity & anti-aging compounds")
         for c in missing[:10]:  # Show first 10
             print(c)

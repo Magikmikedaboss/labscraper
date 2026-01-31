@@ -1,4 +1,4 @@
- t# Multi-Folder Scraping Guide
+# Multi-Folder Scraping Guide
 
 ## What's Happening Now
 
@@ -151,15 +151,7 @@ Contains:
 - Estimated completion: ~20-30 minutes
 
 ### ⏸️ Folder 2: WAITING
-- Will start automatically after Folder 1
-- Or you can run manually after Folder 1 completes
 
-### 📊 Final Export: PENDING
-- Will run after both folders are scraped
-- Generates dual-lens CSV files
-- Creates comparison report
-
----
 
 ## What Makes This Powerful
 

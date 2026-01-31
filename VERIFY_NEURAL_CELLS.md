@@ -18,7 +18,7 @@ python check_neural_cell_results.py
    ✅ astrocyte
    ✅ astrocytes
    ✅ astrocytic
-   ... (12 total)
+   ... (41 total)
 
 ✅ Comparison - Model Type Entities:
    ✅ No neural terms found as 'model' type (good!)

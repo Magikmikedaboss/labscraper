@@ -6,9 +6,11 @@
   "domain_profile_version": "v1",
   "seed_overlays": {
     "include_files": [
-      "pathways.json"
+      "pathways.json",
+      "assays.txt",
+      "models.txt"
     ],
-    "prefer_types": ["pathway", "model"]
+    "prefer_types": ["pathway", "assay", "model"]
   },
   "exclusions": {
     "terms": ["supplement", "clinic"],

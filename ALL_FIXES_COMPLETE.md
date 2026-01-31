@@ -73,7 +73,7 @@
 **Issue**: Inconsistent casing, wrong neural cell types
 **Solution**: Update normalization pipeline
 
-### Priority 3: Documentation Issues (3 fixes)
+### Priority 3: Documentation Issues (4 fixes)
 
 #### Fix 10: MULTI_DOMAIN_TEST_RESULTS.md - Wrong Overlay ID
 **Status**: ⏳ PENDING
@@ -144,10 +144,11 @@ All should execute without crashes.
 
 ## 📝 Next Steps
 
+
 **Option A - Deploy Now:**
 - All critical bugs fixed
 - Safe to use in production
-- Address remaining 7 fixes in next iteration
+- Address remaining 8 fixes in next iteration
 
 **Option B - Complete All Fixes:**
 - Continue with remaining 8 fixes

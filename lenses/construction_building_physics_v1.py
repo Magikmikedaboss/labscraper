@@ -24,7 +24,7 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     entities: List[dict] = []
 
     asm = list_hits(s_l, ASSEMBLIES)
-    terms = [t for t in PHYSICS_TERMS if t in s_l]
+    terms = list_hits(s_l, PHYSICS_TERMS)
 
     if not terms:
         return None, []
@@ -39,16 +39,23 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     outcome = "improved" if contains_any(s_l, ["reduced", "lower", "improved", "decreased"]) else "unknown"
 
     score = 0
-    if terms: score += 2
-    if asm: score += 1
-    if has_number(s_l): score += 1
-    if has_unit_signal(s_l): score += 2
-    if contains_any(s_l, ["measured", "simulated", "modeled", "validated"]): score += 1
+    if terms:
+        score += 2
+    if asm:
+        score += 1
+    if has_number(s_l):
+        score += 1
+    if has_unit_signal(s_l):
+        score += 2
+    if contains_any(s_l, ["measured", "simulated", "modeled", "validated"]):
+        score += 1
 
     conf = "high" if score >= 6 else "med" if score >= 3 else "low"
 
     tags = ["building_physics_performance"]
-    if asm: tags.append("has_component")
-    if has_unit_signal(s_l): tags.append("has_units")
+    if asm:
+        tags.append("has_component")
+    if has_unit_signal(s_l):
+        tags.append("has_units")
 
     return LensEvent("building_physics_performance", outcome, conf, tags), dedupe_entities(entities)

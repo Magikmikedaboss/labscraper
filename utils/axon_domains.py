@@ -188,13 +188,14 @@ def load_all_domains(domains_dir: str) -> Dict[str, DomainProfile]:
     for fname in os.listdir(domains_dir):
         if not fname.endswith(".json"):
             continue
-        
-        prof = load_domain_profile(os.path.join(domains_dir, fname))
-        
-        if prof.id in domains:
-            raise ValueError(f"Duplicate domain id: {prof.id}")
-        
-        domains[prof.id] = prof
+        try:
+            prof = load_domain_profile(os.path.join(domains_dir, fname))
+            if prof.id in domains:
+                raise ValueError(f"Duplicate domain id: {prof.id}")
+            domains[prof.id] = prof
+        except (json.JSONDecodeError, OSError, ValueError) as e:
+            print(f"Failed to load domain profile from {fname}: {e}")
+            continue
     
     return domains
 

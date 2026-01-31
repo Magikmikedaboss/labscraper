@@ -1,0 +1,379 @@
+{
+  "construction_science": [
+    {
+      "case_name": "Marine Environment Corrosion",
+      "enhanced_result": {
+        "entity_count": 0,
+        "processing_time": 0.005118370056152344,
+        "stats": {
+          "total_entities": 0,
+          "unique_types": 0,
+          "coverage_by_type": {},
+          "avg_confidence": 0.0
+        }
+      },
+      "fallback_result": {
+        "entity_count": 0,
+        "processing_time": 0.0010600090026855469,
+        "coverage_improvement": {
+          "original_count": 0,
+          "enhanced_count": 0,
+          "new_entities": 0,
+          "coverage_improvement": 0,
+          "original_types": [],
+          "enhanced_types": [],
+          "new_types": []
+        }
+      },
+      "integrated_result": {
+        "entity_count": 0,
+        "processing_time": 0.0052318572998046875,
+        "coverage_stats": {
+          "total_extractions": 1,
+          "fallback_used": 1,
+          "fallback_usage_rate": 100.0,
+          "avg_coverage_improvement": 0.0,
+          "avg_confidence": 0,
+          "coverage_by_type": {
+            "material": {
+              "count": 0,
+              "coverage": 0
+            },
+            "system": {
+              "count": 0,
+              "coverage": 0
+            },
+            "environment": {
+              "count": 0,
+              "coverage": 0
+            },
+            "compound": {
+              "count": 0,
+              "coverage": 0
+            },
+            "target": {
+              "count": 0,
+              "coverage": 0
+            },
+            "assay": {
+              "count": 0,
+              "coverage": 0
+            }
+          }
+        }
+      },
+      "enhanced_coverage": {
+        "exact_matches": 0,
+        "partial_matches": 0,
+        "total_expected": 18,
+        "exact_coverage": 0.0,
+        "partial_coverage": 0.0
+      },
+      "integrated_coverage": {
+        "exact_matches": 0,
+        "partial_matches": 0,
+        "total_expected": 18,
+        "exact_coverage": 0.0,
+        "partial_coverage": 0.0
+      },
+      "quality_assessment": {
+        "quality_score": 0,
+        "issues": [
+          "No entities extracted"
+        ],
+        "recommendations": [
+          "Check input text quality",
+          "Verify domain configuration"
+        ]
+      }
+    },
+    {
+      "case_name": "Building Materials Performance",
+      "enhanced_result": {
+        "entity_count": 0,
+        "processing_time": 0.0003788471221923828,
+        "stats": {
+          "total_entities": 0,
+          "unique_types": 0,
+          "coverage_by_type": {},
+          "avg_confidence": 0.0
+        }
+      },
+      "fallback_result": {
+        "entity_count": 0,
+        "processing_time": 0.00011873245239257812,
+        "coverage_improvement": {
+          "original_count": 0,
+          "enhanced_count": 0,
+          "new_entities": 0,
+          "coverage_improvement": 0,
+          "original_types": [],
+          "enhanced_types": [],
+          "new_types": []
+        }
+      },
+      "integrated_result": {
+        "entity_count": 0,
+        "processing_time": 0.004689216613769531,
+        "coverage_stats": {
+          "total_extractions": 1,
+          "fallback_used": 1,
+          "fallback_usage_rate": 100.0,
+          "avg_coverage_improvement": 0.0,
+          "avg_confidence": 0,
+          "coverage_by_type": {
+            "material": {
+              "count": 0,
+              "coverage": 0
+            },
+            "system": {
+              "count": 0,
+              "coverage": 0
+            },
+            "environment": {
+              "count": 0,
+              "coverage": 0
+            },
+            "compound": {
+              "count": 0,
+              "coverage": 0
+            },
+            "target": {
+              "count": 0,
+              "coverage": 0
+            },
+            "assay": {
+              "count": 0,
+              "coverage": 0
+            }
+          }
+        }
+      },
+      "enhanced_coverage": {
+        "exact_matches": 0,
+        "partial_matches": 0,
+        "total_expected": 10,
+        "exact_coverage": 0.0,
+        "partial_coverage": 0.0
+      },
+      "integrated_coverage": {
+        "exact_matches": 0,
+        "partial_matches": 0,
+        "total_expected": 10,
+        "exact_coverage": 0.0,
+        "partial_coverage": 0.0
+      },
+      "quality_assessment": {
+        "quality_score": 0,
+        "issues": [
+          "No entities extracted"
+        ],
+        "recommendations": [
+          "Check input text quality",
+          "Verify domain configuration"
+        ]
+      }
+    }
+  ],
+  "biomedical": [
+    {
+      "case_name": "Compound Activity Study",
+      "enhanced_result": {
+        "entity_count": 1,
+        "processing_time": 0.002331972122192383,
+        "stats": {
+          "total_entities": 1,
+          "unique_types": 1,
+          "coverage_by_type": {
+            "assay": 1
+          },
+          "avg_confidence": 0.85
+        }
+      },
+      "fallback_result": {
+        "entity_count": 8,
+        "processing_time": 0.003650665283203125,
+        "coverage_improvement": {
+          "original_count": 1,
+          "enhanced_count": 8,
+          "new_entities": 7,
+          "coverage_improvement": 700.0,
+          "original_types": [
+            "assay"
+          ],
+          "enhanced_types": [
+            "assay",
+            "compound_keywords"
+          ],
+          "new_types": [
+            "compound_keywords"
+          ]
+        }
+      },
+      "integrated_result": {
+        "entity_count": 8,
+        "processing_time": 0.005408287048339844,
+        "coverage_stats": {
+          "total_extractions": 1,
+          "fallback_used": 1,
+          "fallback_usage_rate": 100.0,
+          "avg_coverage_improvement": 700.0,
+          "avg_confidence": 0.48,
+          "coverage_by_type": {
+            "material": {
+              "count": 0,
+              "coverage": 0
+            },
+            "system": {
+              "count": 0,
+              "coverage": 0
+            },
+            "environment": {
+              "count": 0,
+              "coverage": 0
+            },
+            "compound": {
+              "count": 0,
+              "coverage": 0
+            },
+            "target": {
+              "count": 0,
+              "coverage": 0
+            },
+            "assay": {
+              "count": 0,
+              "coverage": 0
+            }
+          }
+        }
+      },
+      "enhanced_coverage": {
+        "exact_matches": 0,
+        "partial_matches": 1,
+        "total_expected": 15,
+        "exact_coverage": 0.0,
+        "partial_coverage": 6.67
+      },
+      "integrated_coverage": {
+        "exact_matches": 4,
+        "partial_matches": 7,
+        "total_expected": 15,
+        "exact_coverage": 26.67,
+        "partial_coverage": 46.67
+      },
+      "quality_assessment": {
+        "quality_score": 32.81,
+        "issues": [
+          "Low average confidence: 0.48",
+          "Low high-confidence entity ratio: 0.12"
+        ],
+        "recommendations": [
+          "Consider enabling fallback classification",
+          "Review seed data quality"
+        ],
+        "metrics": {
+          "avg_confidence": 0.48,
+          "high_confidence_ratio": 0.12,
+          "type_diversity": 0.25
+        }
+      }
+    },
+    {
+      "case_name": "Drug Development Pipeline",
+      "enhanced_result": {
+        "entity_count": 0,
+        "processing_time": 0.0004642009735107422,
+        "stats": {
+          "total_entities": 0,
+          "unique_types": 0,
+          "coverage_by_type": {},
+          "avg_confidence": 0.0
+        }
+      },
+      "fallback_result": {
+        "entity_count": 5,
+        "processing_time": 0.0005409717559814453,
+        "coverage_improvement": {
+          "original_count": 0,
+          "enhanced_count": 5,
+          "new_entities": 5,
+          "coverage_improvement": 0,
+          "original_types": [],
+          "enhanced_types": [
+            "compound_keywords"
+          ],
+          "new_types": [
+            "compound_keywords"
+          ]
+        }
+      },
+      "integrated_result": {
+        "entity_count": 5,
+        "processing_time": 0.005965709686279297,
+        "coverage_stats": {
+          "total_extractions": 1,
+          "fallback_used": 1,
+          "fallback_usage_rate": 100.0,
+          "avg_coverage_improvement": 0.0,
+          "avg_confidence": 0.42,
+          "coverage_by_type": {
+            "material": {
+              "count": 0,
+              "coverage": 0
+            },
+            "system": {
+              "count": 0,
+              "coverage": 0
+            },
+            "environment": {
+              "count": 0,
+              "coverage": 0
+            },
+            "compound": {
+              "count": 0,
+              "coverage": 0
+            },
+            "target": {
+              "count": 0,
+              "coverage": 0
+            },
+            "assay": {
+              "count": 0,
+              "coverage": 0
+            }
+          }
+        }
+      },
+      "enhanced_coverage": {
+        "exact_matches": 0,
+        "partial_matches": 0,
+        "total_expected": 9,
+        "exact_coverage": 0.0,
+        "partial_coverage": 0.0
+      },
+      "integrated_coverage": {
+        "exact_matches": 1,
+        "partial_matches": 3,
+        "total_expected": 9,
+        "exact_coverage": 11.11,
+        "partial_coverage": 33.33
+      },
+      "quality_assessment": {
+        "quality_score": 25.0,
+        "issues": [
+          "Low average confidence: 0.42",
+          "Low high-confidence entity ratio: 0.00"
+        ],
+        "recommendations": [
+          "Consider enabling fallback classification",
+          "Review seed data quality"
+        ],
+        "metrics": {
+          "avg_confidence": 0.42,
+          "high_confidence_ratio": 0.0,
+          "type_diversity": 0.2
+        }
+      }
+    }
+  ]
+}

@@ -34,14 +34,14 @@ Created tier-based weighting system with 42 model weights:
 
 **New `model_factor()` Method:**
 ```python
-def model_factor(models: List[str]) -> float:
-    """Calculate average model weight, capped at 2.0"""
-    if not models:
-        return 1.0
-    
-    weights = [self.model_weights.get(m.lower(), 1.0) for m in models]
-    avg_weight = sum(weights) / len(weights)
-    return min(2.0, avg_weight)  # Cap prevents runaway scores
+
+def model_factor(self, models: List[str]) -> float:
+   """Calculate average model weight, capped at 2.0"""
+   if not models:
+      return 1.0
+   weights = [self.model_weights.get(m.lower(), 1.0) for m in models]
+   avg_weight = sum(weights) / len(weights)
+   return min(2.0, avg_weight)  # Cap prevents runaway scores
 ```
 
 **Updated Scoring Formula:**

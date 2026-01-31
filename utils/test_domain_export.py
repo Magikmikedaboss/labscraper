@@ -42,18 +42,29 @@ with open('output/candidates_primary_stem_cells_regen.csv', 'r', encoding='utf-8
         print(f"         overlay_id: '{row['overlay_id']}'")
 
 # Test run_meta
+
 print("\n3. Testing run_meta_stem_cells_regen.json:")
 import json
-with open('output/run_meta_stem_cells_regen.json', 'r', encoding='utf-8') as f:
-    meta = json.load(f)
-    
-    print(f"   ✅ Run ID: {meta['run_id']}")
-    print(f"   ✅ Engine: {meta['engine_version']}")
-    print(f"   ✅ Domain ID: {meta['domain_id']}")
-    print(f"   ✅ Domain Name: {meta['domain_name']}")
-    print(f"   ✅ Overlay ID: {meta['overlay_id']}")
-    print(f"   ✅ Overlay Aliases: {meta['overlay_aliases_count']}")
+import sys
+meta = None
+try:
+    with open('output/run_meta_stem_cells_regen.json', 'r', encoding='utf-8') as f:
+        meta = json.load(f)
+except FileNotFoundError as e:
+    print(f"   \u274c ERROR: File not found: {e}")
+    sys.exit(1)
+except json.JSONDecodeError as e:
+    print(f"   \u274c ERROR: JSON decode error: {e}")
+    sys.exit(1)
 
-print("\n" + "="*70)
-print("✅ ALL DOMAIN COLUMNS VERIFIED!")
-print("="*70)
+if meta is not None:
+    print(f"   ✅ Run ID: {meta.get('run_id', '(missing)')}")
+    print(f"   ✅ Engine: {meta.get('engine_version', '(missing)')}")
+    print(f"   ✅ Domain ID: {meta.get('domain_id', '(missing)')}")
+    print(f"   ✅ Domain Name: {meta.get('domain_name', '(missing)')}")
+    print(f"   ✅ Overlay ID: {meta.get('overlay_id', '(missing)')}")
+    print(f"   ✅ Overlay Aliases: {meta.get('overlay_aliases_count', '(missing)')}")
+
+    print("\n" + "="*70)
+    print("✅ ALL DOMAIN COLUMNS VERIFIED!")
+    print("="*70)

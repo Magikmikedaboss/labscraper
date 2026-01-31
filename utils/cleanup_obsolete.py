@@ -3,8 +3,13 @@ Cleanup Obsolete Files
 Removes old export scripts and documentation that have been superseded by v5
 """
 
+
 import argparse
 from pathlib import Path
+import os
+
+# Use BASE_DIR for safe file operations
+BASE_DIR = Path(__file__).resolve().parent
 
 # Files to remove
 OBSOLETE_FILES = [
@@ -45,20 +50,37 @@ def remove_files(file_list, label, dry_run=False):
     removed_count = 0
     print(f"\n{label}:")
     for filepath in file_list:
-        path = Path(filepath)
-        if path.exists():
-            if dry_run:
-                print(f"   🔍 Would remove: {filepath}")
-                removed_count += 1
-            else:
-                try:
-                    path.unlink()
-                    print(f"   ✅ Removed: {filepath}")
+        try:
+            path = (BASE_DIR / filepath).resolve()
+            # Ensure path is inside BASE_DIR
+            # Ensure path is inside BASE_DIR using Path containment
+            try:
+                # Python 3.9+: use is_relative_to
+                if hasattr(path, 'is_relative_to'):
+                    if not path.is_relative_to(BASE_DIR):
+                        print(f"   ❌ Skipped (outside_BASE_DIR): {filepath}")
+                        continue
+                else:
+                    # Fallback for Python <3.9
+                    path.relative_to(BASE_DIR)
+            except ValueError:
+                print(f"   ❌ Skipped (outside_BASE_DIR): {filepath}")
+                continue
+            if path.exists():
+                if dry_run:
+                    print(f"   🔍 Would remove: {filepath}")
                     removed_count += 1
-                except OSError as e:
-                    print(f"   ❌ Failed to remove {filepath}: {e}")
-        else:
-            print(f"   ⏭️  Already gone: {filepath}")
+                else:
+                    try:
+                        path.unlink()
+                        print(f"   ✅ Removed: {filepath}")
+                        removed_count += 1
+                    except OSError as e:
+                        print(f"   ❌ Failed to remove {filepath}: {e}")
+            else:
+                print(f"   ⏭️  Already gone: {filepath}")
+        except Exception as e:
+            print(f"   ❌ Error resolving {filepath}: {e}")
     return removed_count
 
 def cleanup(dry_run=False):

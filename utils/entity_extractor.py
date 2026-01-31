@@ -95,8 +95,9 @@ def extract_entities(text: str, seeds: Dict[str, dict]) -> List[Entity]:
     # --- ASSAYS
     assays = seeds.get("assays", {})
     for a in assays.get("assays", []):
-        if a.lower() in t:
-            out.append(Entity("assay", a, "assay", 0.85, "dict"))
+        name = a.get("name", "")
+        if name.lower() in t:
+            out.append(Entity("assay", name, "assay", 0.85, "dict"))
     for m in assays.get("metrics", []):
         if m.lower() in t:
             out.append(Entity("assay", m, "metric", 0.70, "dict"))

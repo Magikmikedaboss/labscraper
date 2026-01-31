@@ -20,7 +20,7 @@ I created 3 analysis scripts to help you validate and understand your scraper re
 
 **How to use:**
 ```bash
-python test_results_analysis.py
+python utils/test_results_analysis.py
 ```
 
 **Example output:**
@@ -80,7 +80,7 @@ ENHANCED SEEDS TEST RESULTS - 25 PDFs
 
 **How to use:**
 ```bash
-python check_compound_extraction.py
+python utils/check_compound_extraction.py
 ```
 
 **Example output:**
@@ -142,7 +142,7 @@ COMPOUND EXTRACTION ANALYSIS
 
 **How to use:**
 ```bash
-python check_longevity_compounds.py
+python utils/check_longevity_compounds.py
 ```
 
 **Example output:**
@@ -203,11 +203,13 @@ Total compounds: 58
 
 ## Quick Reference
 
+> **Note:** Run all commands from the repository root directory.
+
 | Script | Purpose | When to Use |
 |--------|---------|-------------|
-| `test_results_analysis.py` | Analyze scrape results | After test scrape |
-| `check_compound_extraction.py` | Verify compound detection | To confirm compounds work |
-| `check_longevity_compounds.py` | Check longevity compound coverage | Before/after adding compounds |
+| `utils/test_results_analysis.py` | Analyze scrape results | After test scrape |
+| `utils/check_compound_extraction.py` | Verify compound detection | To confirm compounds work |
+| `utils/check_longevity_compounds.py` | Check longevity compound coverage | Before/after adding compounds |
 
 ---
 
@@ -216,25 +218,25 @@ Total compounds: 58
 ### After Running Test Scrape:
 ```bash
 # 1. See overall results
-python test_results_analysis.py
+python utils/test_results_analysis.py
 
 # 2. Check compound extraction specifically
-python check_compound_extraction.py
+python utils/check_compound_extraction.py
 ```
 
 ### Before Adding New Compounds:
 ```bash
 # Check what's already there
-python check_longevity_compounds.py
+python utils/check_longevity_compounds.py
 ```
 
 ### Validating Enhanced Seeds:
 ```bash
 # Run test scrape
-python scrape_pdfs.py --input-dir input_pdfs_test --output-db output/test.sqlite
+python utils/scrape_pdfs_phase1.py --input-dir input_pdfs_test --output-db output/test.sqlite
 
 # Analyze results
-python test_results_analysis.py
+python utils/test_results_analysis.py
 ```
 
 ---
@@ -245,7 +247,7 @@ All scripts read from: `output/test_enhanced_seeds.sqlite`
 
 This database is created when you run:
 ```bash
-python scrape_pdfs.py --input-dir input_pdfs_test --output-db output/test_enhanced_seeds.sqlite
+python utils/scrape_pdfs_phase1.py --input-dir input_pdfs_test --output-db output/test_enhanced_seeds.sqlite
 ```
 
 If you want to analyze a different database, you can modify the scripts to point to a different `.sqlite` file.

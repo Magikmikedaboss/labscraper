@@ -10,28 +10,42 @@ def check_compound_extraction():
     
     # Check what was extracted
     db_path = Path("runs/test_enhanced_seeds.sqlite")
-    con = sqlite3.connect(db_path)
-    cur = con.cursor()
-    
-    print("\n📊 COMPOUNDS FOUND IN TEST SCRAPE (25 PDFs):")
-    cur.execute("""
-        SELECT DISTINCT entity_name 
-        FROM entities 
-        WHERE entity_type = 'compound' 
-        ORDER BY entity_name
-    """)
-    found_compounds = [row[0] for row in cur.fetchall()]
-    
-    print(f"   Total extracted: {len(found_compounds)}")
-    for i, compound in enumerate(found_compounds, 1):
-        print(f"   {i}. {compound}")
-    
-    con.close()
+    if not db_path.exists():
+        print(f"Error: Database file not found: {db_path}")
+        return
+    try:
+        with sqlite3.connect(db_path) as con:
+            cur = con.cursor()
+            print("\n📊 COMPOUNDS FOUND IN TEST SCRAPE (25 PDFs):")
+            try:
+                cur.execute("""
+                    SELECT DISTINCT entity_name 
+                    FROM entities 
+                    WHERE entity_type = 'compound' 
+                    ORDER BY entity_name
+                """)
+                found_compounds = [row[0] for row in cur.fetchall()]
+            except sqlite3.OperationalError as e:
+                print(f"Error: {e}")
+                return
+            print(f"   Total extracted: {len(found_compounds)}")
+            for i, compound in enumerate(found_compounds, 1):
+                print(f"      {i}. {compound}")
+            if found_compounds:
+                print("\n✅ YES - Your app CAN find compound names!")
+            else:
+                print("\n❌ NO - Your app could not find any compound names.")
+    except Exception as e:
+        print(f"Error: Could not open database: {e}")
     
     # Check what's in seed file
     print("\n📋 COMPOUNDS AVAILABLE IN SEED FILE:")
     seeds_path = Path("seeds/base/compounds.txt")
-    lines = seeds_path.read_text(encoding='utf-8').split('\n')
+    try:
+        lines = seeds_path.read_text(encoding='utf-8').split('\n')
+    except (FileNotFoundError, PermissionError) as e:
+        print(f"Error: Could not read seed file {seeds_path}: {e}")
+        return
     
     seed_compounds = []
 

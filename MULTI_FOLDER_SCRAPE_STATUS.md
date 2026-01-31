@@ -39,9 +39,9 @@ Scrape two folders into one combined database:
 ## Next Steps After Scraping
 
 1. **Verify Combined Database**
-   ```bash
-   python check_db_schema.py output/combined_biohacking_all.sqlite
-   ```
+  ```bash
+  python utils/check_db_schema.py output/combined_biohacking_all.sqlite
+  ```
 
 2. **Apply Dual-Lens Export**
    ```bash

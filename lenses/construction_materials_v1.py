@@ -30,17 +30,18 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     entities: List[dict] = []
 
     mats = list_hits(s_l, MATERIALS)
-    props = [p for p in PROPERTIES if p in s_l]
+    props = list_hits(s_l, PROPERTIES)
 
     # Signal: materials + property, or strong unit/numeric measurement + property, or test marker alone
-    signal = (mats and props) or (props and (has_unit_signal(s_l) or has_number(s_l))) or contains_any(s_l, TEST_MARKERS)
+    signal = (bool(mats) and bool(props)) or (bool(props) and (has_unit_signal(s_l) or has_number(s_l))) or contains_any(s_l, TEST_MARKERS)
 
     # Allow test markers alone to trigger detection, even if props is empty
     if not signal or (not props and not contains_any(s_l, TEST_MARKERS)):
         return None, []
 
+    # Note: matches are lowercased because list_hits is run on s_l (lowercased input)
     for m in mats[:5]:
-        entities.append(make_entity("material", m.upper() if len(m) <= 6 else m, "material", "tested"))
+        entities.append(make_entity("material", m, "material", "tested"))
 
     for p in props[:6]:
         entities.append(make_entity("property", p, "property", "measurement"))
@@ -48,17 +49,25 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     outcome = "improved" if contains_any(s_l, COMPARATORS) else "unknown"
 
     score = 0
-    if mats: score += 2
-    if props: score += 2
-    if has_number(s_l): score += 1
-    if has_unit_signal(s_l): score += 2
-    if contains_any(s_l, COMPARATORS): score += 1
+    if mats:
+        score += 2
+    if props:
+        score += 2
+    if has_number(s_l):
+        score += 1
+    if has_unit_signal(s_l):
+        score += 2
+    if contains_any(s_l, COMPARATORS):
+        score += 1
 
     conf = "high" if score >= 7 else "med" if score >= 4 else "low"
 
     tags = ["material_performance"]
-    if mats: tags.append("has_material")
-    if props: tags.append("has_property")
-    if has_unit_signal(s_l): tags.append("has_units")
+    if mats:
+        tags.append("has_material")
+    if props:
+        tags.append("has_property")
+    if has_unit_signal(s_l):
+        tags.append("has_units")
 
     return LensEvent("material_performance", outcome, conf, tags), dedupe_entities(entities)

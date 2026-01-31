@@ -74,8 +74,11 @@ def extract_metadata(pdf_path: Path, pdf) -> dict:
                 year_match = re.search(r'(19|20)\d{2}', str(pdf.metadata.get('CreationDate')))
                 if year_match:
                     metadata['year'] = int(year_match.group(0))
-            except:
-                pass
+            except Exception as e:
+                import logging
+                if isinstance(e, (KeyboardInterrupt, SystemExit)):
+                    raise
+                logging.exception(f"Error extracting year from CreationDate: {e}")
     
     # Try first page text for DOI and other metadata
     if pdf.pages:
@@ -164,18 +167,19 @@ def load_seed_file(filepath: Path) -> set:
     
     return seeds
 
-# Load seed files
-SEEDS_DIR = Path("seeds")
-COMPOUND_SEED_LIST = load_seed_file(SEEDS_DIR / "compounds.txt")
-TARGET_SEED_LIST = load_seed_file(SEEDS_DIR / "targets.txt")
-MODEL_SEED_LIST = load_seed_file(SEEDS_DIR / "models.txt")
-STOPWORD_SEED_LIST = load_seed_file(SEEDS_DIR / "stopwords.txt")
 
-print(f"📋 Loaded seeds:")
-print(f"   Compounds: {len(COMPOUND_SEED_LIST)}")
-print(f"   Targets: {len(TARGET_SEED_LIST)}")
-print(f"   Models: {len(MODEL_SEED_LIST)}")
-print(f"   Stopwords: {len(STOPWORD_SEED_LIST)}")
+def get_seeds():
+    SEEDS_DIR = Path("seeds")
+    compound = load_seed_file(SEEDS_DIR / "compounds.txt")
+    target = load_seed_file(SEEDS_DIR / "targets.txt")
+    model = load_seed_file(SEEDS_DIR / "models.txt")
+    stopword = load_seed_file(SEEDS_DIR / "stopwords.txt")
+    print(f"📋 Loaded seeds:")
+    print(f"   Compounds: {len(compound)}")
+    print(f"   Targets: {len(target)}")
+    print(f"   Models: {len(model)}")
+    print(f"   Stopwords: {len(stopword)}")
+    return compound, target, model, stopword
 
 TARGET_CONTEXT_WORDS = [
     "agonist", "antagonist", "inhibitor", "activator",

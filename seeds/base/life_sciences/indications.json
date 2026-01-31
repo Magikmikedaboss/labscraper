@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "entity_type": "indication",
+  "indications": [
+    "type 2 diabetes",
+    "type 1 diabetes",
+    "diabetes",
+    "obesity",
+    "metabolic syndrome",
+    "NAFLD",
+    "NASH",
+    "fibrosis",
+    "liver fibrosis",
+    "pulmonary fibrosis",
+    "wound healing",
+    "inflammation",
+    "chronic inflammation",
+    "osteoarthritis",
+    "rheumatoid arthritis",
+    "arthritis"
+  ]
+}

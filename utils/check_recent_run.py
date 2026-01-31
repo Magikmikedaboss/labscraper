@@ -27,7 +27,6 @@ print("\n" + "="*70)
 print("NEUROSCIENCE RUN INFORMATION")
 print("="*70)
 
-from datetime import timezone
 timestamp_str = meta.get('timestamp')
 if not timestamp_str:
     print("Error: No timestamp in metadata")

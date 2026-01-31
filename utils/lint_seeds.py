@@ -66,11 +66,11 @@ def load_json_seeds(filepath: Path) -> list:
     if isinstance(data, dict):
         # For assays.json, pathways.json, indications.json
         if 'assays' in data:
-            return data['assays'] + data.get('metrics', [])
+            return [item.get('name', '') for item in data['assays']] + data.get('metrics', [])
         elif 'pathways' in data:
             return data['pathways']
         elif 'indications' in data:
-            return data['indications']
+            return [item.get('name', '') for item in data['indications']]
     
     return []
 

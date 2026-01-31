@@ -23,7 +23,19 @@ from typing import Dict, List, Optional
 
 def load_normalization_map(path: str = "seeds/normalization.json") -> dict:
     """Load the normalization map from JSON file"""
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    import logging
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+        return json.loads(text)
+    except FileNotFoundError:
+        logging.getLogger(__name__).error(f"Normalization map file not found: {path}")
+        raise ValueError(f"Normalization map file not found: {path}")
+    except json.JSONDecodeError as e:
+        logging.getLogger(__name__).error(f"Error decoding normalization map JSON: {e}")
+        raise ValueError(f"Error decoding normalization map JSON: {e}")
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Unexpected error loading normalization map: {e}")
+        raise
 
 
 def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "seeds/overlays") -> Dict[str, str]:
@@ -48,6 +60,7 @@ def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "s
         "stem_cells_regen": "stem_cells_overlay_v1.json",
         "neuroscience_cognition": "neuroscience_overlay_v1.json",
         "biohacking_longevity": "longevity_overlay_v1.json",
+        "construction_science": "construction_science_aliases.json",
     }
     
     fname = mapping.get(domain_id)

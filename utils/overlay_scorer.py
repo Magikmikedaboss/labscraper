@@ -204,7 +204,12 @@ class OverlayScorer:
             Bucket label (strong, promising, exploratory, stalled, deprioritized)
         """
         # Normalize to 0-100 scale
-        normalized = (score / max_score * 100) if max_score > 0 else 0
+        if max_score <= 0:
+            # Defensive: avoid division by zero or negative normalization
+            normalized = 0
+            # Optionally log or warn here
+        else:
+            normalized = (score / max_score * 100)
         
         if normalized >= 80:
             return "strong"

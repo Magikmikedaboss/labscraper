@@ -27,7 +27,7 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     entities: List[dict] = []
 
     mode_hits = list_hits(s_l, FAILURE_MODES)
-    driver_hits = [d for d in FAILURE_DRIVERS if d in s_l]
+    driver_hits = list_hits(s_l, FAILURE_DRIVERS)
 
     has_failure_language = contains_any(s_l, HIGH_SIGNAL) or bool(mode_hits)
     has_causal = any(m in s_l for m in CAUSAL_MARKERS)
@@ -47,8 +47,10 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
 
     # Confidence
     score = 0
-    if mode_hits: score += 2
-    if driver_hits: score += 2
+    if mode_hits:
+        score += 2
+    if driver_hits:
+        score += 2
     if has_causal: score += 1
     if has_number(s_l): score += 1
     if has_unit_signal(s_l): score += 1
@@ -56,8 +58,10 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     conf = "high" if score >= 6 else "med" if score >= 3 else "low"
 
     tags = ["failure_analysis"]
-    if mode_hits: tags.append("has_failure_mode")
-    if driver_hits: tags.append("has_failure_driver")
+    if mode_hits:
+        tags.append("has_failure_mode")
+    if driver_hits:
+        tags.append("has_failure_driver")
     if has_causal: tags.append("has_causality")
     if has_unit_signal(s_l): tags.append("has_units")
 

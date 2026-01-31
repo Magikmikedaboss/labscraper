@@ -3,6 +3,9 @@ from pathlib import Path
 
 DB_PATH = Path("output") / "peptide_intel.sqlite"
 
+
+if not DB_PATH.exists():
+    raise FileNotFoundError(f"Database file not found: {DB_PATH}")
 con = sqlite3.connect(DB_PATH)
 cur = con.cursor()
 

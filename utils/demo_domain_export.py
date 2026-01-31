@@ -58,6 +58,7 @@ print("-" * 80)
 import csv
 import json
 
+
 # Check events export
 print("Events export (events_export_stem_cells_regen.csv):")
 try:
@@ -70,29 +71,41 @@ try:
             print("No rows found in events_export_stem_cells_regen.csv.")
 except (FileNotFoundError, PermissionError) as e:
     print(f"Error opening events export file: {e}")
+except Exception as e:
+    print(f"Unexpected error opening events export file: {e}")
+
 
 # Check candidates export
 print("\nCandidates export (candidates_primary_stem_cells_regen.csv):")
-with open('output/candidates_primary_stem_cells_regen.csv', 'r', encoding='utf-8') as f:
-    reader = csv.DictReader(f)
-    rows = list(reader)
-    
-    # Find normalized stem cell entities
-    stem_cells = [r for r in rows if r['entity_type'] == 'stem_cell']
-    print(f"   ✅ Found {len(stem_cells)} stem cell entities")
-    
-    for sc in stem_cells[:3]:
-        print(f"      - {sc['entity_name']} ({sc['event_count']} events)")
-        print(f"        Original variants: {sc['original_variants']}")
+try:
+    with open('output/candidates_primary_stem_cells_regen.csv', 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        # Find normalized stem cell entities
+        stem_cells = [r for r in rows if r['entity_type'] == 'stem_cell']
+        print(f"    Found {len(stem_cells)} stem cell entities")
+        for sc in stem_cells[:3]:
+            print(f"      - {sc['entity_name']} ({sc['event_count']} events)")
+            print(f"        Original variants: {sc['original_variants']}")
+except (FileNotFoundError, PermissionError) as e:
+    print(f"Error opening candidates export file: {e}")
+except Exception as e:
+    print(f"Unexpected error opening candidates export file: {e}")
+
 
 # Check run metadata
 print("\nRun metadata (run_meta_stem_cells_regen.json):")
-with open('output/run_meta_stem_cells_regen.json', 'r', encoding='utf-8') as f:
-    meta = json.load(f)
-    print(f"   ✅ Engine: {meta['engine_version']}")
-    print(f"   ✅ Domain: {meta['domain_name']}")
-    print(f"   ✅ Overlay: {meta['overlay_id']}")
-    print(f"   ✅ Aliases used: {meta['overlay_aliases_count']}")
+try:
+    with open('output/run_meta_stem_cells_regen.json', 'r', encoding='utf-8') as f:
+        meta = json.load(f)
+        print(f"    Engine: {meta['engine_version']}")
+        print(f"    Domain: {meta['domain_name']}")
+        print(f"    Overlay: {meta['overlay_id']}")
+        print(f"    Aliases used: {meta['overlay_aliases_count']}")
+except (FileNotFoundError, PermissionError) as e:
+    print(f"Error opening run metadata file: {e}")
+except Exception as e:
+    print(f"Unexpected error opening run metadata file: {e}")
 
 print("\n🎯 Step 4: Compare with/without domain")
 print("-" * 80)

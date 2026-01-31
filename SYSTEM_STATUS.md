@@ -207,7 +207,7 @@ python test_v4_exports.py
 - No false positives (MS/Ki/Rb nightmare eliminated)
 - Clean entity rankings (no "quantification" as top assay)
 - Meaningful confidence distribution
-- Comprehensive entity coverage (137 unique entities)
+- Comprehensive entity coverage (125 unique entities, normalized)
 
 ### ✅ System Stability
 - No crashes on ambiguous abbreviations

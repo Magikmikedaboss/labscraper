@@ -37,7 +37,7 @@ def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
         "LOW": "low", "MED": "med", "HIGH": "high",
         None: "low", "": "low"  # Default to low for null/empty
     }
-    conf_norm = conf_map.get(current_conf, "other")
+    conf_norm = conf_map.get(current_conf, "low")
 
     if conf_norm == "high":
         return "high"  # Already high
@@ -197,7 +197,7 @@ def export_events_domain_aware(domain_id: str | None = None):
             'paper_id', 'created_at'
         ])
         
-        confidence_changes = {"low": 0, "med": 0, "high": 0, "other": 0, "boosted_to_high": 0, "boosted_to_med": 0}
+        confidence_changes = {"low": 0, "med": 0, "high": 0, "boosted_to_high": 0, "boosted_to_med": 0}
         
         for event in events:
             event_id, domain_col, etype, stage, outcome, decision, snippet, conf_orig, source_id, created_at, entities_str = event

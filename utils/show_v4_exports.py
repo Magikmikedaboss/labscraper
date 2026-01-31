@@ -32,8 +32,10 @@ if high:
     print(f"   Event ID: {high.get('event_id', '<missing>')}")
     print(f"   Type: {high.get('event_type', '<missing>')}")
     print(f"   Confidence: {high.get('confidence_original', '<missing>')} → {high.get('confidence_boosted', '<missing>')}")
-    print(f"   Primary Entities ({high.get('primary_entity_count', 0)}): {high.get('entities_primary', '')[:100]}...")
-    print(f"   Context Entities ({high.get('context_entity_count', 0)}): {high.get('entities_context', '')[:100]}...")
+    entities_primary = high.get('entities_primary')
+    entities_context = high.get('entities_context')
+    print(f"   Primary Entities ({high.get('primary_entity_count', 0)}): {(entities_primary[:100] + '...') if entities_primary else '(empty)'}")
+    print(f"   Context Entities ({high.get('context_entity_count', 0)}): {(entities_context[:100] + '...') if entities_context else '(empty)'}")
 else:
     print(f"\n⚠️  No HIGH confidence events found")
     # Show a medium or low confidence event instead
@@ -42,7 +44,8 @@ else:
         print(f"\n📋 Sample Event (confidence: {sample.get('confidence_boosted', '<missing>')}):")
         print(f"   Event ID: {sample.get('event_id', '<missing>')}")
         print(f"   Type: {sample.get('event_type', '<missing>')}")
-        print(f"   Primary Entities ({sample.get('primary_entity_count', 0)}): {sample.get('entities_primary', '')[:100]}...")
+        entities_primary = sample.get('entities_primary')
+        print(f"   Primary Entities ({sample.get('primary_entity_count', 0)}): {(entities_primary[:100] + '...') if entities_primary else '(empty)'}")
 
 # Show candidates (single read, with error handling)
 try:
@@ -59,7 +62,7 @@ for i, c in enumerate(candidates[:10], 1):
     name = c.get('entity_name')
     etype = c.get('entity_type')
     count = c.get('event_count')
-    if name is not None and etype is not None and count is not None:
+    if name and etype and count:
         print(f"   {i}. {name} ({etype}): {count} events")
 
 meta = {}

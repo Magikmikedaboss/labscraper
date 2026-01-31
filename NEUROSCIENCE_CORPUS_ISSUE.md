@@ -151,7 +151,7 @@ mkdir input_pdfs/neuroscience_v2
 # Add true neuroscience PDFs (synaptic plasticity, neural circuits, etc.)
 
 # Re-run scraper
-python scrape_pdfs_phase1.py --domain neuroscience_cognition --input-dir "D:\myrepo\peptide-scraper\input_pdfs\neuroscience_v2"
+python scrape_pdfs_phase1.py --domain neuroscience_cognition --input-dir ./input_pdfs/neuroscience_v2
 
 # Export results
 python export_csv_v5_domain_aware.py --domain neuroscience_cognition
