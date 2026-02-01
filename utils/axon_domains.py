@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
@@ -31,14 +31,6 @@ class DomainProfile:
             - forbidden: List of forbidden phrases
         output_allowed_phrases: List of allowed output phrases (optional, for phrase allowlists)
     """
-        output_allowed_phrases: List[str] = field(default_factory=list)
-
-        def get_output_allowed_phrases(self) -> List[str]:
-            """
-            Get list of allowed output phrases for this domain.
-            Returns empty list if not set.
-            """
-            return self.output_allowed_phrases
     id: str
     name: str
     description: str
@@ -48,6 +40,14 @@ class DomainProfile:
     exclusions: Dict[str, Any]
     pattern_emphasis: Dict[str, float]
     language: Dict[str, List[str]]
+    output_allowed_phrases: List[str] = field(default_factory=list)
+
+    def get_output_allowed_phrases(self) -> List[str]:
+        """
+        Get list of allowed output phrases for this domain.
+        Returns empty list if not set.
+        """
+        return self.output_allowed_phrases
 
     def is_excluded_text(self, text: str) -> bool:
         """

@@ -98,7 +98,9 @@ def test_neuroscience_export():
     entity_types = {}
     for cand in candidates:
         et = cand.get('entity_type', '<unknown>')
-        entity_types[et] = entity_types.get(et, 0) + 1    print(f"\n🏷️  ENTITY TYPE DISTRIBUTION:")
+        entity_types[et] = entity_types.get(et, 0) + 1
+    
+    print(f"\n🏷️  ENTITY TYPE DISTRIBUTION:")
     for et, count in sorted(entity_types.items(), key=lambda x: x[1], reverse=True):
         print(f"  {et:20s}: {count:>4d}")
     

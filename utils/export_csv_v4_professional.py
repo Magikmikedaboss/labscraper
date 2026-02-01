@@ -77,7 +77,7 @@ def export_events_professional():
             conf_boosted = safe_confidence_boost(all_str, conf_orig)
             
             # Normalize original confidence for accurate comparison
-            conf_map = {            conf_map = {
+            conf_map = {
                 "high": "high",
                 "med": "med",
                 "medium": "med",
@@ -85,7 +85,8 @@ def export_events_professional():
                 "": "low",
                 "none": "low"
             }
-            conf_orig_normalized = conf_map.get((conf_orig or "").lower().strip(), "other")            
+            conf_orig_normalized = conf_map.get((conf_orig or "").lower().strip(), "other")
+            
             # Track changes (safely handle unexpected values)
             if conf_boosted not in confidence_changes:
                 conf_boosted = "other"  # Normalize for output
@@ -166,7 +167,8 @@ def export_candidates_professional():
             normalized_list = normalize_entity_list([entity_dict], norm_map)
             if not normalized_list:
                 continue
-            normalized = normalized_list[0]            canonical_name = normalized["entity_name"]
+            normalized = normalized_list[0]
+            canonical_name = normalized["entity_name"]
             role = normalized["role"]
             if etype == "assay" and is_process_word(canonical_name):
                 role = "context"
@@ -224,7 +226,7 @@ def write_run_meta(confidence_changes, canonical_entities):
         "run_id": datetime.now().strftime("%Y%m%d_%H%M%S"),
         "engine_version": "v4_professional",
         "timestamp": datetime.now().isoformat(),
-        "database": str(DB_PATH),
+        "database": str(DB_PATH.as_posix()),
         "seeds_version": "2026-01-22",
         "counts": {
             "total_events": confidence_changes["high"] + confidence_changes["med"] + confidence_changes["low"] + confidence_changes.get("other", 0),

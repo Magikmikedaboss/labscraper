@@ -147,9 +147,10 @@ def view_export():
         print(f"   {sorted_rows[-1].get('interpretation', 'No interpretation available')}")
     
     # Export info
-    print(f"\n" + "="*80)    print(f"📁 Export File: {OUTPUT_FILE}")
-    print(f"📋 Columns: {len(rows[0])} columns")
-    print(f"📊 Rows: {len(rows)} entities")
+    print(f"\n" + "="*80)
+    print(f"📁 Export File: {OUTPUT_FILE}")
+    print(f"� Columns: {len(rows[0])} columns")
+    print(f"�📊 Rows: {len(rows)} entities")
     print(f"\n✅ Open in Excel/Google Sheets for full analysis")
     print("="*80)
 
