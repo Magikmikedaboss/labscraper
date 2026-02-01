@@ -26,8 +26,19 @@ class DomainProfile:
         seed_overlays: Seed file preferences for this domain
         exclusions: Terms and document types to exclude
         pattern_emphasis: Soft multipliers for pattern scores
-        language: Allowed and forbidden language for this domain
+        language: Dict with keys:
+            - allowed: List of locale codes (e.g., ["en"])
+            - forbidden: List of forbidden phrases
+        output_allowed_phrases: List of allowed output phrases (optional, for phrase allowlists)
     """
+        output_allowed_phrases: List[str] = field(default_factory=list)
+
+        def get_output_allowed_phrases(self) -> List[str]:
+            """
+            Get list of allowed output phrases for this domain.
+            Returns empty list if not set.
+            """
+            return self.output_allowed_phrases
     id: str
     name: str
     description: str
@@ -164,6 +175,7 @@ def load_domain_profile(path: str) -> DomainProfile:
         exclusions=data.get("exclusions", {}),
         pattern_emphasis=data.get("pattern_emphasis", {}),
         language=data.get("language", {"allowed": [], "forbidden": []}),
+        output_allowed_phrases=data.get("output_allowed_phrases", []),
     )
 
 
@@ -190,13 +202,16 @@ def load_all_domains(domains_dir: str) -> Dict[str, DomainProfile]:
             continue
         try:
             prof = load_domain_profile(os.path.join(domains_dir, fname))
-            if prof.id in domains:
-                raise ValueError(f"Duplicate domain id: {prof.id}")
-            domains[prof.id] = prof
         except (json.JSONDecodeError, OSError, ValueError) as e:
             print(f"Failed to load domain profile from {fname}: {e}")
             continue
-    
+        
+        try:
+            if prof.id in domains:
+                raise ValueError(f"Duplicate domain id: {prof.id}")
+            domains[prof.id] = prof
+        except ValueError:
+            raise  # Re-raise duplicate ID error to fail fast    
     return domains
 
 

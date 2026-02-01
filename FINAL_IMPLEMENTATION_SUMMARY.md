@@ -15,8 +15,8 @@ The enhanced export system has been successfully implemented with a complete con
 
 ### Phase 2: Construction Science Domain ✅
 - **Complete Domain Configuration**: 5 specialized overlays for multi-lens analysis
-- **Working Overlay Aliases**: 247 entity variants normalized (concrete→cement, steel→rebar, etc.)
-- **All Lenses Implemented**: 6 specialized lens implementations
+- **Working Overlay Aliases**: 247 entity variants normalized (cement→concrete, rebar→steel, etc.)
+- **All Lenses Implemented**: 5 specialized lens implementations
 - **Seed System**: Comprehensive construction terminology
 - **Integration**: Seamless integration with enhanced export system
 
@@ -31,7 +31,7 @@ The enhanced export system has been successfully implemented with a complete con
 ### Construction Science Domain Components
 1. **`seeds/domains/construction_science.json`** - Domain configuration with 5 overlays
 2. **`seeds/overlays/construction_science_aliases.json`** - 247 entity aliases for normalization
-3. **`lenses/construction_*.py`** - 6 specialized lens implementations
+3. **`lenses/construction_*.py`** - 5 specialized lens implementations
 4. **`seeds/base/construction_science/`** - Comprehensive seed files
 
 ### Overlay Alias System
@@ -157,7 +157,7 @@ The construction science domain provides 5 different analytical perspectives:
 
 - [x] Enhanced entity extraction system working
 - [x] Construction science domain configuration loaded
-- [x] All 5 overlays and 6 lenses implemented
+- [x] All 5 overlays and 5 lenses implemented
 - [x] Export system generating correct output files
 - [x] Domain filtering and metadata tracking functional
 - [x] Integration with existing system verified

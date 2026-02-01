@@ -230,43 +230,31 @@ python utils/check_compound_extraction.py
 python utils/check_longevity_compounds.py
 ```
 
+
 ### Validating Enhanced Seeds:
-```bash
-# Run test scrape
-python utils/scrape_pdfs_phase1.py --input-dir input_pdfs_test --output-db output/test.sqlite
 
-# Analyze results
-python utils/test_results_analysis.py
-```
+To validate enhanced seeds, follow these steps:
 
----
+1. **Set the database path:**
+    - Open the validation script (e.g., `utils/check_enhanced_seeds.py`).
+    - Edit the line:
+       ```python
+       db_path = Path("runs/test_enhanced_seeds.sqlite")
+       ```
+    - Change it to your target database, for example:
+       ```python
+       db_path = Path("runs/your_database.sqlite")
+       ```
 
-## Database Requirements
+2. **Run the validation script:**
+    - Execute the script in your terminal:
+       ```bash
+       python utils/check_enhanced_seeds.py
+       ```
 
-All scripts read from: `output/test_enhanced_seeds.sqlite`
-
-This database is created when you run:
-```bash
-python utils/scrape_pdfs_phase1.py --input-dir input_pdfs_test --output-db output/test_enhanced_seeds.sqlite
-```
-
-If you want to analyze a different database, you can modify the scripts to point to a different `.sqlite` file.
-
----
-
-## Customization
-
-### To analyze a different database:
-
-Edit the script and change:
-```python
-db_path = Path("output/test_enhanced_seeds.sqlite")
-```
-
-To:
-```python
-db_path = Path("output/your_database.sqlite")
-```
+3. **Interpret the results:**
+    - The script will print a summary of seed coverage and any issues found.
+    - Review the output for missing or unexpected seeds, and address any warnings or errors as needed.
 
 ### To check different compounds:
 

@@ -124,7 +124,7 @@ This will:
 
 ## Data Freshness
 
-- **Last Updated**: 2026-01-22
+- **Last Updated**: 2026-01-31 _(snapshot date; update this field when events are regenerated)_
 - **Source PDFs**: 19 peptide research papers
 - **Events Extracted**: 647
 - **Entity Coverage**: 41.4% (268/647 events have entities)

@@ -106,14 +106,17 @@ def count_entities_by_role(entities_str: str, norm_map: dict) -> tuple:
     primary = []
     context = []
     
+
     for e in normalized:
+        # Work on a shallow copy to avoid mutating shared/cached objects
+        copy = e.copy()
         # Demote process words to context
-        if e['entity_type'] == 'assay' and is_process_word(e['entity_name']):
-            e['role'] = 'context'  # Override role
-        
-        entity_str = f"{e['entity_type']}:{e['entity_name']}"
-        
-        if e['role'] == 'primary':
+        if copy['entity_type'] == 'assay' and is_process_word(copy['entity_name']):
+            copy['role'] = 'context'  # Override role
+
+        entity_str = f"{copy['entity_type']}:{copy['entity_name']}"
+
+        if copy['role'] == 'primary':
             primary.append(entity_str)
         else:
             context.append(entity_str)

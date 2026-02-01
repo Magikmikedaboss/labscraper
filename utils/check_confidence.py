@@ -6,8 +6,6 @@ DB_PATH = Path("output") / "peptide_intel.sqlite"
 def check_confidence_distribution():
     """Check confidence score distribution"""
     with sqlite3.connect(DB_PATH) as con:
-        cur = con.cursor()
-
         total = con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0]
         high = con.execute("SELECT COUNT(*) FROM research_events WHERE confidence = 'high'").fetchone()[0]
         med = con.execute("SELECT COUNT(*) FROM research_events WHERE confidence = 'med'").fetchone()[0]
@@ -23,6 +21,10 @@ def check_confidence_distribution():
             print(f"Med confidence: {med} ({med/total*100:.1f}%)")
             print(f"Low confidence: {low} ({low/total*100:.1f}%)")
 
+
+        print("\n" + "="*60)
+        print("SAMPLE HIGH CONFIDENCE EVENTS")
+        print("="*60)
         high_events = con.execute("""
             SELECT event_type, study_stage, evidence_snippet
             FROM research_events
@@ -30,6 +32,9 @@ def check_confidence_distribution():
             LIMIT 5
         """).fetchall()
 
+
+        print("\nHigh confidence events:")
+        print("-"*30)
         for i, (etype, stage, snippet) in enumerate(high_events, 1):
             snippet_text = snippet or ""
             print(f"\n{i}. {etype} ({stage})")

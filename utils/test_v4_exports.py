@@ -21,10 +21,12 @@ def test_process_words_demoted():
     
     # Check candidates_primary_v4.csv
     primary_path = OUTPUT_DIR / "candidates_primary_v4.csv"
+    if not primary_path.exists():
+        print(f"❌ FAIL: {primary_path} not found")
+        return False
     with open(primary_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        primary_entities = [row['entity_name'].lower() for row in reader]
-    
+        primary_entities = [row['entity_name'].lower() for row in reader]    
     # Check for process words in primary
     found_in_primary = [pw for pw in process_words if pw in primary_entities]
     
@@ -36,9 +38,11 @@ def test_process_words_demoted():
     
     # Verify they exist in run_meta as demoted
     meta_path = OUTPUT_DIR / "run_meta.json"
+    if not meta_path.exists():
+        print(f"❌ FAIL: {meta_path} not found")
+        return False
     with open(meta_path, 'r', encoding='utf-8') as f:
-        meta = json.load(f)
-    
+        meta = json.load(f)    
     demoted_in_meta = set(x.lower() for x in meta.get("process_words_demoted", []))
     if process_words.issubset(demoted_in_meta):
         print(f"✅ PASS: All process words listed as demoted in run_meta.json")
@@ -64,9 +68,17 @@ def test_confidence_boost():
     print("="*70)
     
     events_path = OUTPUT_DIR / "events_export_v4.csv"
+    if not events_path.exists():
+        print(f"❌ FAIL: {events_path} not found")
+        return False
     with open(events_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         events = list(reader)
+    
+    # Verify required columns exist
+    if events and 'confidence_original' not in events[0]:
+        print(f"❌ FAIL: Missing 'confidence_original' column")
+        return False
     
     # Count confidence changes
     boosted_to_high = []
@@ -92,14 +104,15 @@ def test_confidence_boost():
         for i, event in enumerate(boosted_to_high[:3], 1):
             print(f"\n   {i}. Event {event['event_id'][:8]}...")
             print(f"      Original: {event['confidence_original']} → Boosted: {event['confidence_boosted']}")
-            print(f"      Primary entities: {event['entities_primary'][:100]}...")
-            print(f"      Context entities: {event['entities_context'][:100]}...")
-    
+            print(f"      Primary entities: {event['primary_entities'][:100]}...")
+            print(f"      Context entities: {event['context_entities'][:100]}...")    
     # Verify boost rule logic
     meta_path = OUTPUT_DIR / "run_meta.json"
+    if not meta_path.exists():
+        print(f"❌ FAIL: {meta_path} not found")
+        return False
     with open(meta_path, 'r', encoding='utf-8') as f:
-        meta = json.load(f)
-    
+        meta = json.load(f)    
     print(f"\n✅ Boost rule: {meta['confidence_boost_rule']}")
     print(f"✅ Confidence distribution after boost:")
     total = len(events)
@@ -121,6 +134,9 @@ def test_entity_count_columns():
     print("="*70)
     
     events_path = OUTPUT_DIR / "events_export_v4.csv"
+    if not events_path.exists():
+        print(f"❌ FAIL: {events_path} not found")
+        return False
     with open(events_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         events = list(reader)
@@ -130,8 +146,8 @@ def test_entity_count_columns():
         print(f"❌ FAIL: Events export is empty")
         return False
     
-    required_cols = ['primary_entity_count', 'context_entity_count', 
-                     'entities_primary', 'entities_context', 'entities_all']
+    required_cols = ['primary_count', 'context_count', 
+                     'primary_entities', 'context_entities', 'all_entities']
     
     if all(col in events[0].keys() for col in required_cols):
         print(f"✅ PASS: All required columns present")
@@ -142,15 +158,20 @@ def test_entity_count_columns():
     # Validate counts match actual entities
     errors = 0
     for event in events[:10]:  # Check first 10
-        primary_str = event['entities_primary']
-        context_str = event['entities_context']
+        primary_str = event['primary_entities']
+        context_str = event['context_entities']
         
         # Count semicolons + 1 (if not empty)
         expected_primary = len([e for e in primary_str.split('; ') if e]) if primary_str else 0
         expected_context = len([e for e in context_str.split('; ') if e]) if context_str else 0
         
-        actual_primary = int(event['primary_entity_count'])
-        actual_context = int(event['context_entity_count'])
+        try:
+            actual_primary = int(event['primary_count'])
+            actual_context = int(event['context_count'])
+        except ValueError:
+            errors += 1
+            print(f"⚠️  Event {event['event_id'][:8]}: Invalid count values")
+            continue
         
         if expected_primary != actual_primary or expected_context != actual_context:
             errors += 1
@@ -161,20 +182,46 @@ def test_entity_count_columns():
     else:
         print(f"⚠️  WARNING: {errors} events have mismatched counts")
     
-    # Show distribution
-    primary_counts = Counter(int(e['primary_entity_count']) for e in events)
-    context_counts = Counter(int(e['context_entity_count']) for e in events)
-    
+    # Helper to safely parse int, returns None on failure
+    def safe_int(val):
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return None
+
+    # Collect valid and invalid entries
+    valid_primary = []
+    valid_context = []
+    invalid_primary = []
+    invalid_context = []
+    for e in events:
+        p = safe_int(e['primary_count'])
+        c = safe_int(e['context_count'])
+        if p is not None:
+            valid_primary.append(p)
+        else:
+            invalid_primary.append(e.get('event_id', '<no id>'))
+        if c is not None:
+            valid_context.append(c)
+        else:
+            invalid_context.append(e.get('event_id', '<no id>'))
+    primary_counts = Counter(valid_primary)
+    context_counts = Counter(valid_context)
+
     print(f"\n📊 Primary Entity Count Distribution:")
     for count in sorted(primary_counts.keys())[:5]:
         print(f"   {count} entities: {primary_counts[count]} events")
-    
+    if invalid_primary:
+        print(f"⚠️  {len(invalid_primary)} events had invalid primary_entity_count: {invalid_primary}")
+
     print(f"\n📊 Context Entity Count Distribution:")
     for count in sorted(context_counts.keys())[:5]:
         print(f"   {count} entities: {context_counts[count]} events")
+    if invalid_context:
+        print(f"⚠️  {len(invalid_context)} events had invalid context_entity_count: {invalid_context}")
     
     # Show high-value events (multiple primary entities)
-    high_value = [e for e in events if int(e['primary_entity_count']) >= 3]
+    high_value = [e for e in events if safe_int(e['primary_entity_count']) >= 3]
     print(f"\n✅ Events with ≥3 primary entities: {len(high_value)} (high-value research)")
     
     return True

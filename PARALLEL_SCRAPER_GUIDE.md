@@ -28,6 +28,7 @@ with Pool(processes=num_workers) as pool:
 ```python
 # Inside process_single_pdf
 con = sqlite3.connect(db_path)  # Separate connection per worker
+con.execute('PRAGMA journal_mode=WAL')  # Enable WAL for concurrency
 # ... do work ...
 con.commit()
 con.close()

@@ -12,6 +12,7 @@ A complete research intelligence system with:
 ## Results
 
 ### Folder 1: Sequential Scraping ✅ COMPLETE
+**Last updated: 2026-01-30T14:30:00Z**
 - **Method:** Sequential scraper
 - **PDFs:** 65 files from `input_pdfs/`
 - **Time:** ~17 minutes
@@ -21,6 +22,7 @@ A complete research intelligence system with:
 - **Database:** `output/combined_biohacking_all.sqlite`
 
 ### Folder 2: Parallel Scraping 🔄 RUNNING
+**Last updated: 2026-01-30T14:30:00Z**
 - **Method:** Parallel scraper (4 workers)
 - **PDFs:** 32 files from `input_pdfs/biohacking/`
 - **Progress:** 19% complete (6/32 PDFs in 14 seconds)

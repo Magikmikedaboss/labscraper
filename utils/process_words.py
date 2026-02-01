@@ -4,20 +4,22 @@ Used by export_csv_v4_professional.py and export_csv_v5_domain_aware.py
 """
 
 # Process words that should be tags, not primary assay entities
-# These are generic lab terms that don't represent specific research assays
+# These are generic terms that don't represent specific research assays
+# Domain-appropriate for construction science
 PROCESS_WORDS_TO_DEMOTE = {
     # Sample prep & processing
-    "quantification", "quantitation", "chromatography", "purification",
+    "quantification", "quantitation", "purification",
     "calibration", "validation", "optimization", "quality control",
 
     # Generic measurement terms
-    "affinity", "binding affinity", "affinity measurement", "affinity assay",
+    "measurement", "determination", "analysis",
 
-    # Mobile phase & standards
-    "internal standard", "mobile phase", "gradient", "elution",
-
-    # Generic detection
-    "detection", "analysis", "measurement", "determination"
+    # Construction-specific generic terms
+    "testing", "evaluation", "assessment", "inspection",
+    "monitoring", "surveying",
+    # Administrative terms
+    "report", "documentation", "record", "log",
+    "procedure", "protocol", "method", "technique"
 }
 
 def is_process_word(entity_name: str) -> bool:

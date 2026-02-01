@@ -24,7 +24,7 @@
     "abandonment": 0.90
   },
   "language": {
-    "allowed": ["method convergence", "assay trends", "appears to"],
+    "allowed": ["method convergence", "assay trends", "appears to be"],
     "forbidden": ["best method", "guaranteed"]
   }
 }

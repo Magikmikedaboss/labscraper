@@ -76,7 +76,7 @@ for neural_cell in neural_cells_data.get("neural_cells", []):
                 "entity_type": "neural_cell",  # PRIMARY type
                 "entity_name": neural_cell,
                 "entity_variant": "cell_type",
-                "role": "tested"  # PRIMARY role
+                "role": "tested"  # 'tested' means primary role
             })
             extracted_names.add(neural_cell)
 ```
@@ -122,7 +122,7 @@ keratinocytes
 8. Pathway (signaling pathways)
 9. Indication (diseases)
 
-**Critical Change**: Neural cells are extracted at step 6 (as neural_cell type) BEFORE they can be caught by generic model extraction at step 4.
+**Critical Change**: Neural cells are extracted at step 6 (as neural_cell type) after model extraction (step 4), ensuring they are not caught by generic model extraction.
 
 ### Overlay Normalization:
 Once extracted, the overlay system normalizes variants:

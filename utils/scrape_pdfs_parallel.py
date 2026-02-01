@@ -7,22 +7,36 @@ import multiprocessing as mp
 from multiprocessing import Pool
 import sqlite3
 import argparse
+import re
 from pathlib import Path
 import pdfplumber
 from tqdm import tqdm
 from typing import List, Tuple, Optional
 
-from .scrape_pdfs_phase1 import (
-    extract_metadata, chunk_sentences, guess_stage, guess_section,
-    extract_all_entities, extract_quantitative_data,
-    detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
-    classify_event_type, evidence_strength, confidence_score_phase1,
-    suggested_keep, normalize_event_key,
-    upsert_source, insert_document, insert_chunk, insert_event,
-    link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-    sha16, sha64,
-    FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
-)
+try:
+    from .scrape_pdfs_phase1 import (
+        extract_metadata, chunk_sentences, guess_stage, guess_section,
+        extract_all_entities, extract_quantitative_data,
+        detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
+        classify_event_type, evidence_strength, confidence_score_phase1,
+        suggested_keep, normalize_event_key,
+        upsert_source, insert_document, insert_chunk, insert_event,
+        link_event_entity, link_event_tag, insert_measurement, upsert_entity,
+        sha16, sha64,
+        FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
+    )
+except ImportError:
+    from scrape_pdfs_phase1 import (
+        extract_metadata, chunk_sentences, guess_stage, guess_section,
+        extract_all_entities, extract_quantitative_data,
+        detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
+        classify_event_type, evidence_strength, confidence_score_phase1,
+        suggested_keep, normalize_event_key,
+        upsert_source, insert_document, insert_chunk, insert_event,
+        link_event_entity, link_event_tag, insert_measurement, upsert_entity,
+        sha16, sha64,
+        FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
+    )
 
 
 def _connect(db_path: Path) -> sqlite3.Connection:
@@ -86,7 +100,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                         strength = evidence_strength(s_l)
 
-                        ents = extract_all_entities(sent, metadata.get("title", "") or "")
+                        ents = extract_all_entities(sent, metadata.get("title", "") or "", domain)
                         measurements = extract_quantitative_data(sent)
 
                         conf = confidence_score_phase1(
@@ -107,7 +121,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                             bio_sys = "serum/plasma"
                         elif "organoid" in s_l:
                             bio_sys = "organoid"
-                        elif "cell line" in s_l or "cells" in s_l:
+                        elif "cell line" in s_l or re.search(r'\bcell culture\b|\bcell lines?\b', s_l):
                             bio_sys = "cells"
 
                         event_id = insert_event(
@@ -162,13 +176,12 @@ def _db_has_all_tables(db_path: Path) -> bool:
         'quantitative_measurements', 'entity_relationships'
     }
     try:
-        with sqlite3.connect(db_path) as con:
+        with sqlite3.connect(db_path, timeout=30.0) as con:
             tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
             table_names = {t[0] for t in tables}
             return required_tables.issubset(table_names)
     except Exception:
         return False
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Parallel PDF Scraper (Phase 1 Enhanced)")
@@ -203,14 +216,15 @@ def main() -> None:
         raise SystemExit(f"No PDFs found in: {input_dir.resolve()}")
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    
     # Ensure DB schema is initialized before launching workers
     schema_path = Path(__file__).resolve().parent / "schema.sql"
-    if not db_path.exists() or not _db_has_all_tables(db_path):
-        schema = schema_path.read_text(encoding="utf-8")
-        with sqlite3.connect(db_path) as con:
-            con.executescript(schema)
-            con.commit()
-
+    if not schema_path.exists():
+        raise SystemExit(f"Schema file not found: {schema_path}")
+    schema = schema_path.read_text(encoding="utf-8")
+    with sqlite3.connect(db_path) as con:
+        con.executescript(schema)
+        con.commit()
     # Prepare jobs (strings are safer to pickle across platforms)
     jobs: List[Tuple[str, str, str]] = [(str(p), domain, str(db_path)) for p in pdfs]
 

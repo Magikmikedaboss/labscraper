@@ -1,5 +1,5 @@
 {
-  "overlay_id": "biohacking_longevity_v1",
+  "overlay_id": "longevity_v1",
   "domain": "biohacking_longevity",
   "description": "Longevity-focused overlay emphasizing aging mechanisms, biological age measurement, and intervention realism",
   "notes": "Recognizes true longevity science when measurement + mechanism language is present. Does not suppress disease or neuroscience terms.",
@@ -64,7 +64,7 @@
     
     "aliases": {
       "mTOR signaling": ["mTOR", "MTOR", "mammalian target of rapamycin", "mechanistic target of rapamycin"],
-      "rapamycin": ["Rapamycin", "sirolimus", "Sirolimus"],
+      "rapamycin": ["Rapamycin", "rapamycin (sirolimus)", "sirolimus", "Sirolimus"],
       "metformin": ["Metformin"],
       "AMPK": ["AMPK activation", "AMP-activated protein kinase"],
       "IGF-1": ["IGF-1 signaling", "insulin-like growth factor 1"],

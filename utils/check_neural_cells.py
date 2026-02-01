@@ -22,8 +22,9 @@ for i, cell in enumerate(data['neural_cells'][:10], 1):
 
 print("\nSearching for key terms:")
 key_terms = ['neuron', 'neurons', 'microglia', 'astrocyte', 'astrocytes']
+neural_cells_lower = [cell.lower() for cell in data['neural_cells']]
 for term in key_terms:
-    if term in data['neural_cells']:
+    if term.lower() in neural_cells_lower:
         print(f"  ✅ Found: {term}")
     else:
         print(f"  ❌ Missing: {term}")

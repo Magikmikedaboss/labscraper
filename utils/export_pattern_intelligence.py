@@ -6,14 +6,13 @@ Creates a comprehensive pattern analysis export for dashboard integration.
 import csv
 from pathlib import Path
 from datetime import datetime
-from pattern_intelligence import analyze_patterns
+from .pattern_intelligence import analyze_patterns
 
 # Output path
 OUTPUT_DIR = Path("output")
 OUTPUT_FILE = OUTPUT_DIR / "pattern_intelligence_export.csv"
 
-# Ensure output directory exists
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 
 
 def export_to_csv(results, output_file):

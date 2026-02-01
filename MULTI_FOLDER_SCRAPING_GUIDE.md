@@ -150,8 +150,13 @@ Contains:
 - Time per PDF: ~18 seconds
 - Estimated completion: ~20-30 minutes
 
+
 ### ⏸️ Folder 2: WAITING
 
+- Processing: 0 / N PDFs (waiting for Folder 1 to finish)
+- Time per PDF: N/A (queue is paused)
+- Estimated start: When Folder 1 completes
+- Description: This folder is queued and will begin processing automatically once the previous folder completes. No resources are used while waiting; status will update when active.
 
 ## What Makes This Powerful
 

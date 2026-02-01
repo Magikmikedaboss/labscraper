@@ -54,8 +54,12 @@ class OverlayScorer:
             print(f"⚠️  Overlay not found: {overlay_path}")
             return
         
-        with open(overlay_path, 'r', encoding='utf-8') as f:
-            self.overlays[overlay_id] = json.load(f)
+        try:
+            with open(overlay_path, 'r', encoding='utf-8') as f:
+                self.overlays[overlay_id] = json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"⚠️  Invalid JSON in overlay {overlay_path}: {e}")
+            return
         
         print(f"✅ Loaded overlay: {overlay_id}")
     
@@ -89,6 +93,11 @@ class OverlayScorer:
             for term, weight in demote_terms.items():
                 if term.lower() in text_lower:
                     score += weight  # weight is already negative
+            
+            # Apply co-occurrence scoring for climate resilience
+            if overlay_id == "climate_resilience_v1":
+                co_occurrence_bonus = self._calculate_co_occurrence_bonus(text_lower, overlay)
+                score += co_occurrence_bonus
             
             scores[overlay_id] = score
 
@@ -229,6 +238,44 @@ class OverlayScorer:
     def is_dual_lens(self) -> bool:
         """Check if dual-lens mode is enabled"""
         return self.dual_lens
+    
+    def _calculate_co_occurrence_bonus(self, text_lower: str, overlay: Dict) -> float:
+        """
+        Calculate co-occurrence bonus for climate resilience overlay
+        
+        Boosts climate terms when they appear with materials to promote
+        climate-material interaction research signals
+        
+        Args:
+            text_lower: Lowercase text to analyze
+            overlay: Overlay configuration
+        
+        Returns:
+            Co-occurrence bonus score
+        """
+        bonus = 0.0
+        
+        # Climate terms that should be boosted when with materials
+        climate_terms = [
+            'freeze-thaw', 'freeze thaw', 'frost', 'chloride', 'salt', 'carbonation',
+            'thermal', 'temperature', 'humidity', 'uv', 'solar', 'wind', 'seismic',
+            'flood', 'arctic', 'tropical', 'climate', 'resilience', 'adaptation'
+        ]        
+        # Material terms that indicate construction context
+        material_terms = [
+            'concrete', 'steel', 'wood', 'glass', 'brick', 'masonry', 'foundation',
+            'beam', 'column', 'wall', 'roof', 'floor', 'insulation', 'coating'
+        ]
+        
+        # Check for co-occurrence
+        climate_found = any(term in text_lower for term in climate_terms)
+        material_found = any(term in text_lower for term in material_terms)
+        
+        if climate_found and material_found:
+            # Apply bonus for climate-material co-occurrence
+            bonus = 1.5
+        
+        return bonus
 
 
 def load_domain_config(domain_id: str) -> Dict[str, Any]:
@@ -238,8 +285,11 @@ def load_domain_config(domain_id: str) -> Dict[str, Any]:
     if not domain_path.exists():
         raise FileNotFoundError(f"Domain config not found: {domain_path}")
     
-    with open(domain_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    try:
+        with open(domain_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Malformed JSON in domain config {domain_path}: {e}") from e
 
 
 # Example usage

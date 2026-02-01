@@ -1,7 +1,6 @@
 -- SQLite schema for peptide_intel.sqlite (Phase 1 Enhanced)
 -- Construction-aware, supports both biomedical and construction_science domains
 
-PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS sources (
     source_id TEXT PRIMARY KEY,
@@ -100,3 +99,13 @@ CREATE TABLE IF NOT EXISTS quantitative_measurements (
     created_at TEXT,
     FOREIGN KEY (event_id) REFERENCES research_events(event_id)
 );
+
+-- Indexes for common query patterns
+CREATE INDEX IF NOT EXISTS idx_events_domain ON research_events(research_domain);
+CREATE INDEX IF NOT EXISTS idx_events_type ON research_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_events_source ON research_events(source_id);
+CREATE INDEX IF NOT EXISTS idx_sources_year ON sources(year);
+CREATE INDEX IF NOT EXISTS idx_chunks_doc ON chunks(doc_id);
+CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(entity_type);
+CREATE INDEX IF NOT EXISTS idx_event_entities_entity ON event_entities(entity_id);
+CREATE INDEX IF NOT EXISTS idx_measurements_event ON quantitative_measurements(event_id);

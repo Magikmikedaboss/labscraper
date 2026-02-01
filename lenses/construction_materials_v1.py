@@ -22,7 +22,9 @@ PROPERTIES = [
     "thermal conductivity", "fire resistance", "shrinkage", "creep", "workability"
 ]
 
-COMPARATORS = ["increased", "decreased", "improved", "reduced", "higher", "lower"]
+POSITIVE_COMPARATORS = ["increased", "improved", "higher", "enhanced"]
+NEGATIVE_COMPARATORS = ["decreased", "reduced", "lower", "degraded"]
+COMPARATORS = POSITIVE_COMPARATORS + NEGATIVE_COMPARATORS
 TEST_MARKERS = ["test", "tested", "measured", "results", "specimen", "samples"]
 
 def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
@@ -46,7 +48,12 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     for p in props[:6]:
         entities.append(make_entity("property", p, "property", "measurement"))
 
-    outcome = "improved" if contains_any(s_l, COMPARATORS) else "unknown"
+    if contains_any(s_l, POSITIVE_COMPARATORS):
+        outcome = "improved"
+    elif contains_any(s_l, NEGATIVE_COMPARATORS):
+        outcome = "degraded"
+    else:
+        outcome = "unknown"
 
     score = 0
     if mats:

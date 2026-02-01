@@ -10,8 +10,7 @@ from tqdm import tqdm
 # Default paths (can be overridden via CLI)
 DB_PATH = Path("db") / "runs.sqlite"
 INPUT_DIR = Path("input/pdfs")
-RESEARCH_DOMAIN = "peptide"
-
+RESEARCH_DOMAIN = "methods_tooling"
 # ---------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------
@@ -253,13 +252,36 @@ STEM_CELL_KEYWORDS = [
     "organoid", "differentiation", "reprogramming"
 ]
 
+
+# ---------------------------------------------------------
+# Lazy-loaded seed files
+# ---------------------------------------------------------
+
+import functools
+SEEDS_DIR = Path("seeds")
+
+@functools.lru_cache(maxsize=1)
+def _get_compound_seeds():
+    return load_seed_file(SEEDS_DIR / "compounds.txt")
+
+@functools.lru_cache(maxsize=1)
+def _get_target_seeds():
+    return load_seed_file(SEEDS_DIR / "targets.txt")
+
+@functools.lru_cache(maxsize=1)
+def _get_model_seeds():
+    return load_seed_file(SEEDS_DIR / "models.txt")
+
+@functools.lru_cache(maxsize=1)
+def _get_stopword_seeds():
+    return load_seed_file(SEEDS_DIR / "stopwords.txt")
+
 def extract_compounds(sentence: str) -> list[dict]:
     """Extract compound/drug names from sentence"""
     compounds = []
     s_l = sentence.lower()
-    
     # Check seed list
-    for compound in COMPOUND_SEED_LIST:
+    for compound in _get_compound_seeds():
         if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
             compounds.append({
                 "entity_type": "compound",
@@ -267,7 +289,6 @@ def extract_compounds(sentence: str) -> list[dict]:
                 "entity_variant": "drug",
                 "role": "tested"
             })
-    
     return compounds
 
 def extract_targets(sentence: str) -> list[dict]:
@@ -275,7 +296,7 @@ def extract_targets(sentence: str) -> list[dict]:
     targets = []
     
     # Check seed list with case-insensitive matching
-    for target in TARGET_SEED_LIST:
+    for target in _get_target_seeds():
         # Match case-insensitively (handles MTOR, mTOR, mtor, etc.)
         if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
             targets.append({
@@ -293,7 +314,7 @@ def extract_models(sentence: str) -> list[dict]:
     s_l = sentence.lower()
     
     # Check unified model seed list
-    for model in MODEL_SEED_LIST:
+    for model in _get_model_seeds():
         if re.search(r'\b' + re.escape(model) + r'\b', s_l):
             # Determine variant based on model type
             variant = "unknown"
@@ -351,7 +372,7 @@ def extract_entities(sentence: str) -> list[dict]:
     extracted_names = set()
     
     # 1) COMPOUND FIRST: Drug/molecule names (PRIORITY)
-    for compound in COMPOUND_SEED_LIST:
+    for compound in _get_compound_seeds():
         if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
             name = compound.upper()
             if name not in extracted_names:
@@ -362,7 +383,7 @@ def extract_entities(sentence: str) -> list[dict]:
                     "role": "tested"
                 })
                 extracted_names.add(name)
-    
+
     # 2) PEPTIDE SEQUENCES: Only if NOT already a compound
     presented_seqs = extract_presented_sequences(sentence)
     for seq in presented_seqs:
@@ -374,9 +395,9 @@ def extract_entities(sentence: str) -> list[dict]:
                 "role": "tested"
             })
             extracted_names.add(seq)
-    
+
     # 3) TARGET: Biological targets
-    for target in TARGET_SEED_LIST:
+    for target in _get_target_seeds():
         if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
             name = target.upper()
             if name not in extracted_names:
@@ -767,41 +788,45 @@ def normalize_event_key(event_type: str, entities: list, page: int, snippet: str
 # ---------------------------------------------------------
 # Main
 # ---------------------------------------------------------
-def main():
-    # Parse command line arguments
+def main(domain: str = None, input_dir: Path = None, db_path: Path = None):
+    # Parse command line arguments only if all parameters are None
     parser = argparse.ArgumentParser(description='Scrape PDFs for research intelligence')
-    parser.add_argument('--domain', default='peptide', 
-                       help='Research domain (peptide, stem_cell, oncology, etc.)')
+    parser.add_argument('--domain', default='methods_tooling', 
+                       help='Research domain (methods_tooling, drug_discovery, etc.)')
     parser.add_argument('--input-dir', type=Path, default=Path('input/pdfs'),
                        help='Directory containing PDF files')
     parser.add_argument('--output-db', type=Path, default=Path('db/runs.sqlite'),
                        help='Output SQLite database path')
-    args = parser.parse_args()
-    
-    # Use CLI arguments
-    global RESEARCH_DOMAIN, INPUT_DIR, DB_PATH
-    RESEARCH_DOMAIN = args.domain
-    INPUT_DIR = args.input_dir
-    DB_PATH = args.output_db
-    
-    if not INPUT_DIR.exists():
-        raise SystemExit(f"Missing folder: {INPUT_DIR.resolve()}")
 
-    pdfs = sorted(INPUT_DIR.glob("*.pdf"))
+    if domain is None and input_dir is None and db_path is None:
+        args = parser.parse_args()
+        research_domain = args.domain
+        input_dir = args.input_dir
+        db_path = args.output_db
+    else:
+        research_domain = domain if domain is not None else 'methods_tooling'
+        input_dir = input_dir if input_dir is not None else Path('input/pdfs')
+        db_path = db_path if db_path is not None else Path('db/runs.sqlite')
+    
+    if not input_dir.exists():
+        raise SystemExit(f"Missing folder: {input_dir.resolve()}")
+
+    pdfs = sorted(input_dir.glob("*.pdf"))
     if not pdfs:
-        raise SystemExit(f"No PDFs found in: {INPUT_DIR.resolve()}")
+        raise SystemExit(f"No PDFs found in: {input_dir.resolve()}")
 
     # Ensure output directory exists
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     
-    con = sqlite3.connect(DB_PATH)
-    try:
+    # Use context manager for database connection
+    with sqlite3.connect(db_path) as con:
         inserted_events = 0
         total_measurements = 0
         total_relationships = 0
         failed_pdfs = []
 
         for pdf_path in tqdm(pdfs, desc="PDFs"):
+
             try:
                 # create stable-ish ids
                 source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
@@ -879,7 +904,7 @@ def main():
                                     doc_id=doc_id,
                                     chunk_id=chunk_id,
                                     page_number=page_idx,
-                                    domain=RESEARCH_DOMAIN,
+                                    domain=research_domain,
                                     event_type=event_type,
                                     study_stage=stage,
                                     biological_system=bio_sys,
@@ -927,20 +952,15 @@ def main():
                         except Exception as e:
                             print(f"  ⚠️  Error processing page {page_idx} of {pdf_path.name}: {e}")
                             continue
-
-                # Commit after each PDF (progress persistence)
-                con.commit()
-
             except Exception as e:
-                print(f"❌ Error processing {pdf_path.name}: {e}")
-                failed_pdfs.append(pdf_path.name)
-                continue
+                print(f"  ❌ Failed to process PDF {pdf_path.name}: {e}")
+                failed_pdfs.append(str(pdf_path))
 
         print(f"\n✅ Done!")
         print(f"   Inserted: ~{inserted_events} research events")
         print(f"   Measurements: {total_measurements}")
         print(f"   Relationships: {total_relationships}")
-        print(f"   DB: {DB_PATH.resolve()}")
+        print(f"   DB: {db_path.resolve()}")
         
         if failed_pdfs:
             print(f"\n⚠️  Failed to process {len(failed_pdfs)} PDFs:")
@@ -948,9 +968,6 @@ def main():
                 print(f"   - {pdf}")
         
         print("\nNext step: Run export_csv.py to export data for analysis.")
-        
-    finally:
-        con.close()
 
 if __name__ == "__main__":
     main()

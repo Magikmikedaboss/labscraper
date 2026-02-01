@@ -8,9 +8,8 @@ Usage:
     from fallback_entity_classifier import FallbackEntityClassifier
     
     classifier = FallbackEntityClassifier(domain="construction_science")
-    entities = classifier.classify_entities(text, candidates)
+    entities = classifier.apply_fallback_classification(text, existing_entities=[])
 """
-
 import re
 import json
 from pathlib import Path
@@ -20,7 +19,6 @@ from collections import Counter
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -34,7 +32,7 @@ class CandidateEntity:
 class FallbackEntityClassifier:
     """Multi-stage fallback entity classifier for improved coverage"""
     
-    def __init__(self, domain: str = "methods_tooling"):
+    def __init__(self, domain: str = "construction"):
         self.domain = domain
         self.seeds = self._load_seeds()
         self.patterns = self._load_fallback_patterns()
@@ -43,8 +41,7 @@ class FallbackEntityClassifier:
     def _load_seeds(self) -> Dict:
         """Load seed data for fallback classification"""
         seeds = {}
-        seeds_dir = Path("seeds")
-        
+        seeds_dir = Path(__file__).resolve().parent.parent / "seeds"        
         if seeds_dir.exists():
             # Load JSON seeds
             for json_file in seeds_dir.glob("*.json"):
@@ -168,14 +165,20 @@ class FallbackEntityClassifier:
             }
         }
     
+    def normalize_domain(self, domain: Optional[str] = None) -> str:
+        """Normalize domain name for pattern lookups (removes _science, underscores)"""
+        d = domain if domain is not None else self.domain
+        return d.replace('_science', '').replace('_', '')
+
     def extract_candidate_entities(self, text: str) -> List[CandidateEntity]:
         """Extract candidate entities using various patterns"""
         candidates = []
         text_lower = text.lower()
         
         # Extract using domain-specific patterns
-        if self.domain in self.patterns:
-            for entity_type, patterns in self.patterns[self.domain].items():
+        pattern_domain = self.normalize_domain()
+        if pattern_domain in self.patterns:
+            for entity_type, patterns in self.patterns[pattern_domain].items():
                 for pattern in patterns:
                     matches = re.finditer(pattern, text_lower, re.IGNORECASE)
                     for match in matches:
@@ -294,32 +297,35 @@ class FallbackEntityClassifier:
         """Classify entity type based on text and context"""
         entity_lower = entity_text.lower()
         context_lower = context.lower()
-        
-        if self.domain not in self.context_rules:
+
+        # Normalize domain for all lookups
+        domain_normalized = self.normalize_domain()
+
+        if domain_normalized not in self.context_rules:
             return None
-        
-        rules = self.context_rules[self.domain]
-        
+
+        rules = self.context_rules[domain_normalized]
+
         # Check for exact matches in seeds
-        if 'ontology' in self.seeds and self.domain in self.seeds['ontology']:
-            ontology = self.seeds['ontology'][self.domain]
+        if 'ontology' in self.seeds and domain_normalized in self.seeds['ontology']:
+            ontology = self.seeds['ontology'][domain_normalized]
             for entity_type, entities in ontology.items():
                 if entity_lower in [e.lower() for e in entities]:
                     return entity_type
-        
+
         # Check context-based classification
         for entity_type, keywords in rules.items():
             keyword_matches = sum(1 for keyword in keywords if keyword in entity_lower or keyword in context_lower)
             if keyword_matches >= 2:
                 return entity_type
-        
+
         # Pattern-based classification
-        if self.domain in self.patterns:
-            for entity_type, patterns in self.patterns[self.domain].items():
+        if domain_normalized in self.patterns:
+            for entity_type, patterns in self.patterns[domain_normalized].items():
                 for pattern in patterns:
                     if re.search(pattern, entity_lower, re.IGNORECASE):
                         return entity_type
-        
+
         return None
     
     def apply_fallback_classification(self, text: str, existing_entities: List[Dict]) -> List[Dict]:
@@ -347,10 +353,9 @@ class FallbackEntityClassifier:
         all_entities = existing_entities + new_entities
         
         # Sort by confidence descending
-        all_entities.sort(key=lambda x: x['confidence'], reverse=True)
+        all_entities.sort(key=lambda x: x.get('confidence', 0.0), reverse=True)
         
-        return all_entities
-    
+        return all_entities    
     def get_coverage_improvement(self, original_entities: List[Dict], enhanced_entities: List[Dict]) -> Dict:
         """Calculate coverage improvement metrics"""
         original_count = len(original_entities)
@@ -419,7 +424,7 @@ if __name__ == "__main__":
     binding in the biochemical assay.
     """
     
-    bio_classifier = FallbackEntityClassifier(domain="methods_tooling")
+    bio_classifier = FallbackEntityClassifier(domain="biomedical")
     bio_candidates = bio_classifier.extract_candidate_entities(biomedical_text)
     
     print(f"Extracted {len(bio_candidates)} candidate entities")
@@ -427,6 +432,6 @@ if __name__ == "__main__":
         print(f"  {candidate.text} ({candidate.source}, confidence: {candidate.confidence})")
     
     bio_classified = bio_classifier.classify_candidates(bio_candidates, biomedical_text)
-    print(f"\nClassified {len(bio_classified)} entities")
+    
     for entity in bio_classified[:10]:  # Show first 10
         print(f"  {entity['entity_type']}: {entity['entity_name']} (confidence: {entity['confidence']})")

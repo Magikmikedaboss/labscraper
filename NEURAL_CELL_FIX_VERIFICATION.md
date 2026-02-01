@@ -106,7 +106,7 @@ Expected:
 # Count by type
 python -c "
 import sqlite3
-con = sqlite3.connect('output/peptide_intel.sqlite')
+con = sqlite3.connect('output/neuroscience_cognition.sqlite')
 cur = con.execute('SELECT entity_type, COUNT(*) FROM entities GROUP BY entity_type')
 for row in cur:
     print(f'{row[0]}: {row[1]}')

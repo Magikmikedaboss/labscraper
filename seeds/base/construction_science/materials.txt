@@ -28,16 +28,13 @@ mortar joint
 
 # Polymers / composites
 fiber-reinforced polymer
-FRP
 GFRP
 CFRP
-epoxy
 polyurethane
 polymer composite
 adhesive anchor
 
 # Insulation / envelope materials
-insulation
 mineral wool
 glass wool
 fiberglass
@@ -47,11 +44,9 @@ XPS
 EPS
 polyisocyanurate
 aerogel
-vapor barrier
 air barrier
 weather resistive barrier
 WRB
-sealant
 membrane
 
 # Glazing / facade

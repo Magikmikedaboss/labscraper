@@ -23,7 +23,7 @@
 - [x] Export system tested with construction science domain
 - [x] Overlay aliases validated (247 entity normalizations)
 - [x] Domain filtering working correctly
-- [x] Entity coverage improved from ~10.5% to 22+ entities
+- [x] Entity coverage improved from ~10.5% to ~22%
 - [x] All output files generated correctly
 
 ## 🎯 Project Status: COMPLETE

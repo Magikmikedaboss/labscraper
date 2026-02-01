@@ -17,6 +17,18 @@ HAZARDS = [
 
 RESILIENCE_TERMS = ["resilience", "adaptation", "mitigation", "risk", "hazard", "exposure", "vulnerability"]
 
+# Construction materials and systems that should boost climate signals when co-occurring
+CONSTRUCTION_MATERIALS = [
+    "concrete", "steel", "wood", "timber", "brick", "masonry", "glass", "aluminum", "copper", "plastic",
+    "composite", "polymer", "insulation", "foam", "panel", "board", "membrane", "coating", "paint", "sealant"
+]
+
+CONSTRUCTION_SYSTEMS = [
+    "roof", "wall", "floor", "foundation", "structure", "frame", "beam", "column", "slab", "deck",
+    "façade", "cladding", "curtain wall", "window", "door", "ventilation", "HVAC", "heating", "cooling",
+    "drainage", "plumbing", "electrical", "mechanical", "structural system", "building envelope"
+]
+
 def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
@@ -53,6 +65,18 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     if contains_any(s_l, ["scenario", "projection", "return period", "rcp", "ssp"]):
         score += 2
 
+    # CLIMATE CO-OCCURRENCE BOOST: When climate terms co-occur with materials or systems
+    materials_hits = list_hits(s_l, CONSTRUCTION_MATERIALS)
+    systems_hits = list_hits(s_l, CONSTRUCTION_SYSTEMS)
+    
+    if (haz or resil) and (materials_hits or systems_hits):
+        score += 2  # Boost climate signals when they relate to construction elements
+        # Add the co-occurring materials/systems as entities
+        for m in materials_hits[:3]:
+            entities.append(make_entity("material", m, "material", "context"))
+        for s in systems_hits[:3]:
+            entities.append(make_entity("system", s, "system", "context"))
+
     conf = "high" if score >= 6 else "med" if score >= 3 else "low"
 
     tags = ["climate_resilience"]
@@ -60,5 +84,7 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
         tags.append("has_hazard")
     if contains_any(s_l, ["rcp", "ssp"]):
         tags.append("climate_scenario")
+    if materials_hits or systems_hits:
+        tags.append("construction_climate_interaction")
 
     return LensEvent("climate_resilience", outcome, conf, tags), dedupe_entities(entities)

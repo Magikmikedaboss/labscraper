@@ -18,11 +18,9 @@ linaclotide
 plecanatide
 
 # mtor inhibitors
-rapamycin
-sirolimus
+rapamycin (sirolimus)
 everolimus
 temsirolimus
-
 # ampk activators
 metformin
 phenformin

@@ -84,9 +84,8 @@ python utils/export_csv_v5_domain_aware.py --domain construction_science
 
 ### 2. Overlay Integration
 - Overlay aliases are loaded for entity normalization
-- MSC → mesenchymal stem cell (example from existing system)
+- FRP → fiber reinforced polymer (construction-specific alias)
 - Domain-specific entity recognition and classification
-
 ### 3. Enhanced Entity Processing
 - Process words are demoted to context role
 - Entity counts separated by primary vs context
@@ -117,40 +116,59 @@ event_id,domain,event_type,stage,outcome,decision_driver,evidence_snippet,confid
 ```
 
 ### Run Metadata
+
 ```json
 {
-  "run_id": "20260130_123538",
-  "engine_version": "v5_domain_aware",
-  "timestamp": "2026-01-30T12:35:38.123456",
-  "database": "output/peptide_intel.sqlite",
-  "seeds_version": "2026-01-22",
-  "domain_id": "construction_science",
-  "domain_name": "Construction Science & Built Environment Physics",
-  "overlay_id": "construction_science_v1",
-  "overlay_aliases_count": 0,
-  "counts": {
-    "total_events": 7775,
-    "total_entities": 24,
-    "primary_entities": 24,
-    "context_entities": 0
-  },
-  "confidence_distribution": {
-    "high": 2,
-    "med": 91,
-    "low": 682,
-    "boosted_to_high": 0,
-    "boosted_to_med": 0
-  },
-  "top_entities": [
-    {
-      "name": "concrete",
-      "type": "material",
-      "event_count": 15,
-      "role": "primary"
-    }
-  ],
-  "process_words_demoted": ["test", "analysis", "study", "investigation"],
-  "confidence_boost_rule": "HIGH if (compound|target|stem_cell) + assay + model_context; MED if (compound|target|stem_cell) + assay"
+   "run_id": "20260130_123538",
+   "engine_version": "v5_domain_aware",
+   "timestamp": "2026-01-30T12:35:38.123456",
+   "database": "output/construction_science.sqlite",
+   "seeds_version": "2026-01-22",
+   "domain_id": "construction_science",
+   "domain_name": "Construction Science & Built Environment Physics",
+   "overlay_id": "construction_science_v1",
+   "overlay_aliases_count": 0,
+   "counts": {
+      "total_events": 7775,
+      "total_entities": 24,
+      "primary_entities": 24,
+      "context_entities": 0
+   },
+   "confidence_distribution": {
+      "high": 2,
+      "med": 91,
+      "low": 682,
+      "boosted_to_high": 0,
+      "boosted_to_med": 0
+   },
+   "top_entities": [
+      {
+         "name": "concrete",
+         "type": "material",
+         "event_count": 15,
+         "role": "primary"
+      },
+      {
+         "name": "steel",
+         "type": "material",
+         "event_count": 12,
+         "role": "primary"
+      },
+      {
+         "name": "beam",
+         "type": "component",
+         "event_count": 10,
+         "role": "primary"
+      },
+      {
+         "name": "assembly",
+         "type": "assembly",
+         "event_count": 8,
+         "role": "primary"
+      }
+   ],
+   "process_words_demoted": ["test", "analysis", "study", "investigation", "inspection", "measurement", "sampling"],
+   "confidence_boost_rule": "HIGH if (material|component|assembly) + test + model_context; MED if (material|component|assembly) + test"
 }
 ```
 
@@ -167,8 +185,8 @@ event_id,domain,event_type,stage,outcome,decision_driver,evidence_snippet,confid
 ✅ Run metadata properly generated with domain information
 
 ### 3. Overlay Integration
-✅ Overlay aliases system loaded (0 aliases for construction science)
-✅ Entity normalization working with overlay system
+✅ Overlay aliases are loaded for entity normalization
+✅ FRP → fiber reinforced polymer (example from existing system)
 ✅ Domain-specific entity recognition active
 
 ### 4. Enhanced Features

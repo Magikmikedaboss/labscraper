@@ -133,7 +133,7 @@ def lint_seeds():
     short_abbrevs = 0
     for category, seeds in all_seeds.items():
         for seed in seeds:
-            if len(seed) <= 3 and seed.upper() not in SAFE_SHORT_TERMS:
+            if len(seed) <= 3 and seed.upper() not in SAFE_SHORT_TERMS_UPPER:
                 # Skip if it's part of a longer term with punctuation
                 if any(c in seed for c in ['-', '/', '_', '.']):
                     continue

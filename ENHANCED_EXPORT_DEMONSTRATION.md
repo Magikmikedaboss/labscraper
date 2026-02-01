@@ -298,7 +298,7 @@ The enhanced export system successfully demonstrates:
 
 ### **Current Production Results**:
 - **7,775 events processed** for construction science domain
-- **247 overlay aliases working** (concrete→cement, steel→rebar, etc.)
+- **247 overlay aliases working** (cement→concrete, rebar→steel, etc.)
 - **6-sentence context carryover functional**
 - **30%+ improvement** in entity coverage
 - **100% accuracy** for major entity types

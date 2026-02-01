@@ -30,7 +30,8 @@
     "abandonment": 0.90
   },
   "language": {
-    "allowed": ["research momentum", "observed patterns", "reported outcomes", "appears to", "associated with"],
+    "allowed": ["en"],
+    "output_allowed_phrases": ["research momentum", "observed patterns", "reported outcomes", "appears to", "associated with"],
     "forbidden": ["works", "effective", "proven", "safe", "recommended", "treats", "cures"]
   }
 }

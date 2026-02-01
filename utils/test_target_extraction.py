@@ -27,11 +27,8 @@ def main():
                 FROM research_events
                 WHERE LOWER(evidence_snippet) LIKE ?
             """, (f'%{word}%',))
-        # ...existing code for the rest of the script, indented inside main()...
-
-
-if __name__ == "__main__":
-    main()
+            count = cur.fetchone()[0]
+            print(f"  {word}: {count} events")
 
 if __name__ == "__main__":
     main()

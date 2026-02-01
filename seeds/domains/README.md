@@ -1,74 +1,23 @@
 # Axon Labs Domain Profiles
 # IMPORTANT: Domains vs Entities
 
-**Domains** are the organizing axes for research intelligence (e.g., methods_tooling, drug_discovery, neuroscience_cognition, etc.).
 
-**Entities** (such as peptides, proteins, cell types) are extracted and tracked within each domain, but are not valid as top-level domains themselves.
+If your research is about analytical methods and reproducibility, use the `methods_tooling` domain. Peptides and other biological entities will still be extracted as entities within that domain.
 
-**Do not use entity names (like 'peptide') as domains.**
+---
 
-If your research is about construction science, use the `construction_science` domain. Peptides and other biological entities will still be extracted as entities within that domain.
-
-If your research is about drug discovery, use the `drug_discovery` domain. Peptides will be treated as primary entities, but the domain remains `drug_discovery`.
-
-This distinction keeps your taxonomy clean and prevents confusion between research axes and extracted entities.
+## Domain Profiles
 
 
-## Ontology Guidance: Domain → Lens → Entities → Evidence
+### 1. Methods & Tooling (`methods_tooling.json`)
+- **Focus**: Method convergence, assay trends, reproducibility language
+- **Emphasis**: Convergence (1.20x)
+- **Preferred Types**: material, sensor, method, code_standard, property, assay, pathway, model
+- **Exclusions**: vendor/promotional language, product claims, marketing, supplement, clinic
+- **Language**: "method convergence", "assay trends", "appears to"
+- **Forbidden**: "best method", "guaranteed", "works", "effective", "proven", "safe", "recommended", "treats", "cures"
 
-- **Domain**: The research axis (e.g., methods_tooling, drug_discovery)
-- **Lens**: The observational or scoring perspective (e.g., dual-lens overlays)
-- **Entities**: Extracted items of interest (e.g., peptides, models, assays)
-- **Evidence**: The supporting text, data, or patterns
-
-This structure ensures clarity and extensibility for all research intelligence workflows.
-
-Domain profiles provide **observational lenses** for research intelligence without rewriting the core engine.
-
-## What Are Domain Profiles?
-
-Domain profiles are JSON configuration files that:
-- Define domain-specific **language guardrails** (observational only, no medical claims)
-- Apply **soft emphasis** to pattern scores (lens, not rewrite)
-- Specify **preferred entity types** for each domain
-- Filter out **excluded terms** (e.g., "supplement", "coupon", "miracle")
-- Maintain **version history** for reproducibility
-
-## Available Domains
-
-### 6. Construction Science (`construction_science.json`)
-- **Focus**: Materials, structural health monitoring, sustainability, building codes, and construction methods
-- **Emphasis**: Convergence/Escalation (1.15x/1.10x)
-- **Preferred Types**: material, sensor, method, code_standard, property
-- **Exclusions**: vendor/promotional language, product claims, marketing
-- **Language**: Neutral scientific phrasing, evidence-based, technical descriptions
-- **Forbidden**: Absolute claims ("guaranteed", "best", "miracle"), vendor-specific endorsements
-
-### 1. Biohacking & Longevity (`biohacking_longevity.json`)
-- **Focus**: Human performance, longevity, metabolism, cognition, recovery
-- **Emphasis**: Escalation (1.20x), Convergence (1.05x)
-- **Preferred Types**: biomarker, pathway, assay, model, indication
-- **Exclusions**: supplement, vendor, affiliate, coupon, proprietary blend, testosterone booster
-- **Language**: "research momentum", "observed patterns", "appears to", "associated with"
-- **Forbidden**: "works", "effective", "proven", "safe", "recommended", "treats", "cures"
-
-### 2. Stem Cells & Regenerative Biology (`stem_cells_regen.json`)
-- **Focus**: MSC/iPSC models, differentiation, organoids, engraftment, translational barriers
-- **Emphasis**: Escalation (1.25x), Stagnation (1.10x)
-- **Preferred Types**: model, pathway, assay, indication
-- **Exclusions**: clinic, miracle, guaranteed, stem cell spa
-- **Language**: "research momentum", "protocol diversity", "translational friction", "reported limitations"
-- **Forbidden**: "cure", "reverses aging", "guaranteed", "FDA approved (unless cited)"
-
-### 3. Neuroscience & Cognition (`neuroscience_cognition.json`)
-- **Focus**: Model diversity, method fragmentation, translational gaps, replication language
-- **Emphasis**: Fragmentation (1.15x), Escalation (1.10x), Stagnation (1.05x)
-- **Preferred Types**: model, assay, pathway, indication
-- **Exclusions**: nootropics store, supplement stack, coupon
-- **Language**: "model divergence", "method diversity", "replication language", "reported outcomes"
-- **Forbidden**: "boosts IQ", "fixes depression", "cures Alzheimer's"
-
-### 4. Drug Discovery (`drug_discovery.json`)
+### 2. Drug Discovery (`drug_discovery.json`)
 - **Focus**: Targets, compounds, assays, escalation signals, translational development
 - **Emphasis**: Escalation (1.20x), Convergence (1.10x)
 - **Preferred Types**: target, compound, assay, pathway, indication
@@ -76,13 +25,27 @@ Domain profiles are JSON configuration files that:
 - **Language**: "research momentum", "validation effort", "appears to"
 - **Forbidden**: "approved", "clinically proven" (unless citing specific trial)
 
-### 5. Methods & Tooling (`methods_tooling.json`)
-- **Focus**: Method convergence, assay trends, reproducibility language
-- **Emphasis**: Convergence (1.20x)
-- **Preferred Types**: assay, pathway, model
-- **Exclusions**: supplement, clinic
-- **Language**: "method convergence", "assay trends", "appears to"
-- **Forbidden**: "best method", "guaranteed"
+### 3. General Biomedical (`biomedical.json`)
+- **Preferred Types**: biomarker, pathway, assay, model, indication
+- **Exclusions**: supplement, vendor, affiliate, coupon, proprietary blend, testosterone booster
+- **Language**: "research momentum", "observed patterns", "appears to", "associated with"
+- **Forbidden**: "works", "effective", "proven", "safe", "recommended", "treats", "cures"
+
+### 4. Stem Cells & Regenerative Biology (`stem_cells_regen.json`)
+- **Focus**: MSC/iPSC models, differentiation, organoids, engraftment, translational barriers
+- **Emphasis**: Escalation (1.25x), Stagnation (1.10x)
+- **Preferred Types**: model, pathway, assay, indication
+- **Exclusions**: clinic, miracle, guaranteed, stem cell spa
+- **Language**: "research momentum", "protocol diversity", "translational friction", "reported limitations"
+- **Forbidden**: "cure", "reverses aging", "guaranteed", "FDA approved (unless cited)"
+
+### 5. Neuroscience & Cognition (`neuroscience_cognition.json`)
+- **Focus**: Model diversity, method fragmentation, translational gaps, replication language
+- **Emphasis**: Fragmentation (1.15x), Escalation (1.10x), Stagnation (1.05x)
+- **Preferred Types**: model, assay, pathway, indication
+- **Exclusions**: nootropics store, supplement stack, coupon
+- **Language**: "model divergence", "method diversity", "replication language", "reported outcomes"
+- **Forbidden**: "boosts IQ", "fixes depression", "cures Alzheimer's"
 
 ## Domain Profile Structure
 

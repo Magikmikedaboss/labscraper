@@ -40,13 +40,11 @@ class EnhancedEntityExtractor:
     
     def __init__(self, domain: str = "methods_tooling"):
         self.domain = domain
-        self.seeds = self._load_seeds()
-        self.normalization_map = self._load_normalization_map()
-        self.context_patterns = self._load_context_patterns()
-        self.abbreviation_patterns = self._load_abbreviation_patterns()
-        
-        # Domain-specific configurations
-        self.domain_config = self._get_domain_config()
+        self._seeds = None
+        self._normalization_map = None
+        self._context_patterns = None
+        self._abbreviation_patterns = None
+        self._domain_config = None  # Lazy loaded via property
         
     def _load_seeds(self) -> Dict:
         """Load all seed files with enhanced error handling"""
@@ -159,10 +157,9 @@ class EnhancedEntityExtractor:
                 'fire': ['fire', 'flame', 'fr'],
                 'water': ['water', 'wtr', 'h2o'],
                 'vapor': ['vapor', 'vpr'],
-                'air': ['air', 'air'],
+                'air': ['air'],
                 'wind': ['wind', 'wnd'],
-                'seismic': ['seismic', 'earthquake', 'eq'],
-                'snow': ['snow', 'snw'],
+                'seismic': ['seismic', 'earthquake', 'eq'],                'snow': ['snow', 'snw'],
                 'ice': ['ice', 'ic'],
                 'frost': ['frost', 'frst'],
                 'freeze': ['freeze', 'frz'],
@@ -267,30 +264,101 @@ class EnhancedEntityExtractor:
             }
         }
     
-    def _get_domain_config(self) -> Dict:
+    @property
+    def seeds(self) -> Dict:
+        """Lazy load seeds on first access"""
+        if self._seeds is None:
+            self._seeds = self._load_seeds()
+        return self._seeds
+    
+    @property
+    def normalization_map(self) -> Dict:
+        """Lazy load normalization map on first access"""
+        if self._normalization_map is None:
+            self._normalization_map = self._load_normalization_map()
+        return self._normalization_map
+    
+    @property
+    def context_patterns(self) -> Dict:
+        """Lazy load context patterns on first access"""
+        if self._context_patterns is None:
+            self._context_patterns = self._load_context_patterns()
+        return self._context_patterns
+    
+    @property
+    def abbreviation_patterns(self) -> Dict:
+        """Lazy load abbreviation patterns on first access"""
+        if self._abbreviation_patterns is None:
+            self._abbreviation_patterns = self._load_abbreviation_patterns()
+        return self._abbreviation_patterns
+    
+    @property
+    def domain_config(self) -> Dict:
         """Get domain-specific configuration"""
-        if self.domain == "construction_science":
-            return {
-                'entity_types': ['material', 'system', 'environment', 'failure_mode', 'test_method', 'code_standard', 'hazard'],
-                'context_types': ['material_context', 'system_context', 'environment_context'],
-                'abbreviation_map': self.abbreviation_patterns.get('construction', {})
-            }
-        else:
-            return {
-                'entity_types': ['compound', 'target', 'model', 'assay', 'pathway', 'indication', 'stem_cell', 'peptide_class'],
-                'context_types': ['compound_context', 'target_context', 'assay_context'],
-                'abbreviation_map': {}
-            }
+        if self._domain_config is None:
+            if self.domain == "construction_science":
+                self._domain_config = {
+                    'entity_types': ['materials', 'systems', 'environments', 'failure_modes', 'test_methods', 'codes', 'hazards'],
+                    'context_types': ['material_context', 'system_context', 'environment_context'],
+                    'abbreviation_map': self.abbreviation_patterns.get('construction', {})
+                }
+            else:
+                self._domain_config = {
+                    'entity_types': ['compound', 'target', 'model', 'assay', 'pathway', 'indication', 'stem_cell', 'peptide_class'],
+                    'context_types': ['compound_context', 'target_context', 'assay_context'],
+                    'abbreviation_map': {}
+                }
+        return self._domain_config
     
     def _normalize_text(self, text: str) -> str:
         """Normalize text for entity matching"""
-        # Normalize Unicode
-        text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+        # Normalize Unicode (NFKD) and remove combining diacritics only
+        text = unicodedata.normalize('NFKD', text)
+        text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
         # Normalize hyphens
         text = re.sub(r'[-–—]', '-', text)
         # Remove extra whitespace
         text = re.sub(r'\s+', ' ', text.strip())
         return text.lower()
+    def _is_valid_entity_for_domain(self, entity_name: str, entity_type: str) -> bool:
+        """Validate if entity is appropriate for the current domain"""
+        # Filter out junk entities
+        junk_patterns = [
+            r'^[\[\]{}()]$',  # Single brackets
+            r'^[^\w\s]+$',    # Only punctuation
+            r'^\d+$',         # Only numbers
+            r'^[a-z]{1,2}$',  # Very short lowercase (likely abbreviations)
+            r'^indirect.*$',  # Indirect references
+            r'^unknown.*$',   # Unknown entities
+            r'^unspecified.*$', # Unspecified entities
+        ]
+        
+        entity_lower = entity_name.lower().strip()
+        
+        # Check against junk patterns
+        for pattern in junk_patterns:
+            if re.match(pattern, entity_lower):
+                return False
+        
+        # Domain-specific filtering
+        if self.domain == "construction_science":
+            # Filter out biomedical entity types
+            bio_entity_types = ['compound', 'target', 'pathway', 'indication', 'assay', 'peptide']
+            if entity_type in bio_entity_types:
+                return False
+            
+            # Filter out biomedical terms
+            bio_terms = ['peptide', 'compound', 'target', 'pathway', 'indication', 'assay', 'protein', 'gene']
+            if any(term in entity_lower for term in bio_terms):
+                return False
+        
+        elif self.domain in ["methods_tooling", "biohacking_longevity"]:
+            # Filter out construction-specific terms that might leak through
+            construction_terms = ['concrete', 'steel', 'wood', 'glass', 'brick', 'masonry', 'foundation', 'beam', 'column']
+            if any(term in entity_lower for term in construction_terms):
+                return False
+        
+        return True
     
     def _extract_ontology_entities(self, text: str) -> List[Entity]:
         """Extract entities using ontology seeds"""
@@ -309,25 +377,29 @@ class EnhancedEntityExtractor:
             for entity_name in ontology[entity_type]:
                 # Check exact match
                 if entity_name.lower() in text_lower:
-                    entities.append(Entity(
-                        entity_type=entity_type,
-                        entity_name=entity_name.upper(),
-                        entity_variant=None,
-                        confidence=0.8,
-                        source="ontology_exact"
-                    ))
+                    # Apply domain-specific filtering
+                    if self._is_valid_entity_for_domain(entity_name, entity_type):
+                        entities.append(Entity(
+                            entity_type=entity_type,
+                            entity_name=entity_name.upper(),
+                            entity_variant=None,
+                            confidence=0.8,
+                            source="ontology_exact"
+                        ))
                 
                 # Check abbreviation variants
-                if entity_type in self.domain_config['abbreviation_map']:
-                    for variant in self.domain_config['abbreviation_map'][entity_type]:
+                if entity_name.lower() in self.domain_config['abbreviation_map']:
+                    for variant in self.domain_config['abbreviation_map'][entity_name.lower()]:
                         if variant.lower() in text_lower and variant.lower() != entity_name.lower():
-                            entities.append(Entity(
-                                entity_type=entity_type,
-                                entity_name=entity_name.upper(),
-                                entity_variant=variant.upper(),
-                                confidence=0.6,
-                                source="ontology_abbreviation"
-                            ))
+                            # Apply domain-specific filtering to variants too
+                            if self._is_valid_entity_for_domain(variant, entity_type):
+                                entities.append(Entity(
+                                    entity_type=entity_type,
+                                    entity_name=entity_name.upper(),
+                                    entity_variant=variant.upper(),
+                                    confidence=0.6,
+                                    source="ontology_abbreviation"
+                                ))
         
         return entities
     
@@ -336,40 +408,50 @@ class EnhancedEntityExtractor:
         entities = []
         text_lower = self._normalize_text(text)
         
+        # Only extract JSON entities for non-construction domains
+        if self.domain == "construction_science":
+            return entities
+        
         # Extract assays
         if 'assays' in self.seeds:
             for assay in self.seeds['assays'].get('assays', []):
                 name = assay.get('name', '')
                 if name.lower() in text_lower:
-                    entities.append(Entity(
-                        entity_type="assay",
-                        entity_name=name,
-                        entity_variant="assay",
-                        confidence=0.85,
-                        source="json_assay"
-                    ))
+                    # Apply domain-specific filtering
+                    if self._is_valid_entity_for_domain(name, "assay"):
+                        entities.append(Entity(
+                            entity_type="assay",
+                            entity_name=name,
+                            entity_variant="assay",
+                            confidence=0.85,
+                            source="json_assay"
+                        ))
             
             for metric in self.seeds['assays'].get('metrics', []):
                 if metric.lower() in text_lower:
-                    entities.append(Entity(
-                        entity_type="assay",
-                        entity_name=metric,
-                        entity_variant="metric",
-                        confidence=0.70,
-                        source="json_metric"
-                    ))
+                    # Apply domain-specific filtering
+                    if self._is_valid_entity_for_domain(metric, "assay"):
+                        entities.append(Entity(
+                            entity_type="assay",
+                            entity_name=metric,
+                            entity_variant="metric",
+                            confidence=0.70,
+                            source="json_metric"
+                        ))
         
         # Extract pathways
         if 'pathways' in self.seeds:
             for pathway in self.seeds['pathways'].get('pathways', []):
                 if pathway.lower() in text_lower:
-                    entities.append(Entity(
-                        entity_type="pathway",
-                        entity_name=pathway,
-                        entity_variant="pathway",
-                        confidence=0.80,
-                        source="json_pathway"
-                    ))
+                    # Apply domain-specific filtering
+                    if self._is_valid_entity_for_domain(pathway, "pathway"):
+                        entities.append(Entity(
+                            entity_type="pathway",
+                            entity_name=pathway,
+                            entity_variant="pathway",
+                            confidence=0.80,
+                            source="json_pathway"
+                        ))
         
         # Extract indications
         if 'indications' in self.seeds:
@@ -379,13 +461,15 @@ class EnhancedEntityExtractor:
                 else:
                     indication_name = str(indication)
                 if indication_name.lower() in text_lower:
-                    entities.append(Entity(
-                        entity_type="indication",
-                        entity_name=indication_name,
-                        entity_variant="disease",
-                        confidence=0.75,
-                        source="json_indication"
-                    ))
+                    # Apply domain-specific filtering
+                    if self._is_valid_entity_for_domain(indication_name, "indication"):
+                        entities.append(Entity(
+                            entity_type="indication",
+                            entity_name=indication_name,
+                            entity_variant="disease",
+                            confidence=0.75,
+                            source="json_indication"
+                        ))
         
         return entities
     
@@ -396,9 +480,12 @@ class EnhancedEntityExtractor:
         
         context_types = self.domain_config.get('context_types', [])
         
+        # Map domain to context pattern key
+        domain_key = 'construction' if self.domain == 'construction_science' else 'biomedical'
+        
         for context_type in context_types:
-            if context_type in self.context_patterns.get(self.domain, {}):
-                patterns = self.context_patterns[self.domain][context_type]
+            if context_type in self.context_patterns.get(domain_key, {}):
+                patterns = self.context_patterns[domain_key][context_type]
                 for pattern in patterns:
                     if re.search(pattern, text_lower):
                         # Extract potential entities from context
@@ -642,15 +729,17 @@ def extract_entities(text: str, seeds: Dict, title: str = "") -> List[Dict]:
     
     Returns list of entity dicts for compatibility with existing code
     """
-    if seeds is not None:
-        extractor = EnhancedEntityExtractor(seeds=seeds)
+    if seeds is not None and isinstance(seeds, dict):
+        domain = seeds.get('domain', 'methods_tooling')
+        extractor = EnhancedEntityExtractor(domain=domain)
+    elif seeds is not None and isinstance(seeds, str):
+        extractor = EnhancedEntityExtractor(domain=seeds)
     else:
         extractor = EnhancedEntityExtractor()
     entities = extractor.extract_entities(text, title)
     normalized = extractor.normalize_entities(entities)
     # Convert to dict format for compatibility
     return [asdict(entity) for entity in normalized]
-
 # Example usage and testing
 if __name__ == "__main__":
     # Test with construction science

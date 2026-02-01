@@ -134,7 +134,7 @@ def calculate_coverage_score(extracted_entities: List[Dict], expected_entities: 
     partial_matches = 0
     for name in extracted_names:
         for expected in expected_lower:
-            if name in expected or expected in name:
+            if name != expected and (name in expected or expected in name):
                 partial_matches += 1
                 break
     
@@ -147,7 +147,6 @@ def calculate_coverage_score(extracted_entities: List[Dict], expected_entities: 
         'exact_coverage': round((exact_matches / total_expected * 100) if total_expected > 0 else 0, 2),
         'partial_coverage': round((partial_matches / total_expected * 100) if total_expected > 0 else 0, 2)
     }
-
 def run_comprehensive_test():
     """Run comprehensive tests for all domains and systems"""
     print("🧪 Enhanced Entity Extraction System - Comprehensive Test")
@@ -216,13 +215,16 @@ def generate_test_report(results: Dict):
         print("-" * 60)
         
         total_cases = len(domain_results)
+        if total_cases == 0:
+            print("  No test cases for this domain")
+            continue
+            
         total_enhanced_entities = sum(len(r['enhanced_result']['entities']) for r in domain_results)
         total_integrated_entities = sum(len(r['integrated_result']['entities']) for r in domain_results)
         
         avg_enhanced_coverage = sum(r['enhanced_coverage']['exact_coverage'] for r in domain_results) / total_cases
         avg_integrated_coverage = sum(r['integrated_coverage']['exact_coverage'] for r in domain_results) / total_cases
-        avg_quality_score = sum(r['quality_assessment']['quality_score'] for r in domain_results) / total_cases
-        
+        avg_quality_score = sum(r['quality_assessment']['quality_score'] for r in domain_results) / total_cases        
         print(f"  Total Test Cases: {total_cases}")
         print(f"  Total Enhanced Entities: {total_enhanced_entities}")
         print(f"  Total Integrated Entities: {total_integrated_entities}")
@@ -247,9 +249,11 @@ def generate_test_report(results: Dict):
     print("-" * 60)
     
     total_cases_all = sum(len(results[d]) for d in results)
+    if total_cases_all == 0:
+        print("  No test cases executed")
+        return
     total_entities_all = sum(len(r['integrated_result']['entities']) for domain in results for r in results[domain])
-    avg_quality_all = sum(r['quality_assessment']['quality_score'] for domain in results for r in results[domain]) / total_cases_all
-    
+    avg_quality_all = sum(r['quality_assessment']['quality_score'] for domain in results for r in results[domain]) / total_cases_all    
     print(f"  Total Test Cases: {total_cases_all}")
     print(f"  Total Entities Extracted: {total_entities_all}")
     print(f"  Average Quality Score: {avg_quality_all:.1f}/100")

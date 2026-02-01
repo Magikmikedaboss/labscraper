@@ -1,5 +1,5 @@
-# 🎯 Tri-Domain Validation - Complete Corpus Comparison
-
+# 🎯 Tri-Domain Validation - Interim Corpus Comparison
+**Status**: 🚧 **VALIDATION IN PROGRESS - TRI-DOMAIN PARTIALLY COMPLETE**
 ## 🔥 Three Corpora, Three Different Insights
 
 ### Domain 1: Mixed Peptide Corpus (Baseline)
@@ -45,7 +45,7 @@
 ---
 
 ### Domain 3: Neuroscience Corpus
-**50 PDFs - Actually Stem Cell/Organoid Papers**
+**54 PDFs - Actually Stem Cell/Organoid Papers**
 
 | Rank | Entity | Type | Events | Role |
 |------|--------|------|--------|------|
@@ -88,7 +88,7 @@
 | **Stem Cell Rank** | #4 (11 events) | #1 (371 events) | #2 (376 events) |
 | **Confidence High** | 1.1% | 2.0% | 1.8% |
 | **Confidence Med** | 43.3% | 67.4% | 59.9% |
-| **Character** | Analytical | Regenerative | Cognitive |
+| **Character** | Analytical | Regenerative | Neural Stem Cell |
 
 ---
 
@@ -131,7 +131,7 @@
 **High confidence events:**
 - Mixed (13 PDFs): 1.1% (7 events)
 - Stem cells (71 PDFs): 2.0% (76 events) - +986%!
-- Neuroscience (50 PDFs): 1.8% (89 events) - +1,171%!
+- Neuroscience (54 PDFs): 1.8% (89 events) - +1,171%!
 
 **Why**: Larger, focused corpora → more structured, high-quality events detected
 
@@ -193,7 +193,7 @@
 ### 5. System Scales Beautifully ✅
 - ✅ 13 PDFs → 647 events, 104 entities
 - ✅ 71 PDFs → 3,747 events, 333 entities
-- ✅ 50 PDFs → 5,045 events, 370 entities
+- ✅ 54 PDFs → 5,045 events, 370 entities
 - ✅ Linear scaling with maintained quality
 
 ---
@@ -261,7 +261,8 @@
 5. ✅ **Reproducibility** - Full metadata tracking
 6. ✅ **Scalability** - Linear scaling with maintained quality
 
-**Status**: 🎉 **PRODUCTION READY - TRI-DOMAIN VALIDATED**
+
+**Status**: 🚧 **VALIDATION IN PROGRESS - TRI-DOMAIN PARTIALLY COMPLETE**
 
 
 The system has been validated across 3 diverse domains with 138 PDFs total (13 + 71 + 54), proving it works perfectly with honest, domain-specific insights.

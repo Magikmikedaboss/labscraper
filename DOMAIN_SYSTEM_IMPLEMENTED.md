@@ -198,10 +198,10 @@ const domain = getDomain('stem_cells_regen');
 ```
 
 ### 3. Event Export (Optional)
-Add `domain_id` column to `events_export_v4.csv` for domain filtering in UI.
+Add `domain_id` column to `events_export_v5.csv` for domain filtering in UI.
+
 
 ---
-
 ## Design Principles
 
 ### 1. **Lens, Not Rewrite**

@@ -52,33 +52,31 @@ def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "s
     Example:
         {"msc": "mesenchymal stem cell", "ipsc": "induced pluripotent stem cell"}
     """
-    if not domain_id:
+    try:
+        from .seed_overlay_loader import load_overlay
+        overlay = load_overlay(domain_id, overlays_dir)
+    except ImportError:
+        # Fallback to direct loading if import fails
+        import logging
+        logging.getLogger(__name__).warning(
+            f"Could not import seed_overlay_loader, overlay aliases unavailable for {domain_id}"
+        )
+        overlay = None
+    
+    if not overlay:
         return {}
-    
-    # Map domain IDs to overlay files
-    mapping = {
-        "stem_cells_regen": "stem_cells_overlay_v1.json",
-        "neuroscience_cognition": "neuroscience_overlay_v1.json",
-        "biohacking_longevity": "longevity_overlay_v1.json",
-        "construction_science": "construction_science_aliases.json",
-    }
-    
-    fname = mapping.get(domain_id)
-    if not fname:
-        return {}
-    
-    overlay_path = Path(overlays_dir) / fname
-    if not overlay_path.exists():
-        return {}
-    
-    overlay = json.loads(overlay_path.read_text(encoding="utf-8"))
     
     # Extract aliases from overlay
     aliases = {}
     if "entities" in overlay and "aliases" in overlay["entities"]:
-        for canonical, alias_list in overlay["entities"]["aliases"].items():
-            for alias in alias_list:
-                aliases[alias.lower()] = canonical
+        for key, value in overlay["entities"]["aliases"].items():
+            if isinstance(value, list):
+                # Format: {canonical: [alias_list]}
+                for alias in value:
+                    aliases[alias.lower()] = key
+            elif isinstance(value, str):
+                # Format: {variant: canonical}
+                aliases[key.lower()] = value
     
     return aliases
 

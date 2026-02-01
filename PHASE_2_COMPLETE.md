@@ -9,7 +9,7 @@ Successfully implemented Phase 2 of the dual-lens overlay system, enabling the s
 ## What Was Implemented
 
 ### 1. Domain Configuration Update ✅
-**File:** `seeds/domains/biohacking_longevity.json`
+**File:** `config/domains/biohacking_longevity.json`
 - Added `"dual_lens": true` flag
 - Configured overlays: `science_research_v1`, `biohacking_curiosity_v1`
 
@@ -218,15 +218,15 @@ def bucket_score(score, max_score):
 
 ## Files Created/Modified
 
+
 ### Created (4 files):
-1. `overlay_scorer.py` - Overlay scoring engine
-2. `export_dual_lens.py` - Dual-lens export system
-3. `check_db_schema.py` - Database schema inspector
+1. `utils/overlay_scorer.py` - Overlay scoring engine
+2. `utils/export_dual_lens.py` - Dual-lens export system
+3. `utils/check_db_schema.py` - Database schema inspector
 4. `PHASE_2_COMPLETE.md` - This document
 
 ### Modified (1 file):
-1. `seeds/domains/biohacking_longevity.json` - Added `dual_lens: true`
-
+1. `config/domains/biohacking_longevity.json` - Added `dual_lens: true`
 ### Output Files (3 files):
 1. `output/entities_dual_lens_biohacking_longevity.csv`
 2. `output/events_dual_lens_biohacking_longevity.csv`

@@ -65,7 +65,7 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
             """Apply type precedence rules"""
             name_lower = name.lower()
             # Neural cells
-            if name_lower in {"microglia", "astrocyte", "neuron", "neurons", "astrocytes"}:
+            if name_lower in {"microglia", "astrocyte", "neuron", "neurons", "astrocytes", "microglial", "neuronal", "astrocytic"}:
                 return "neural_cell"
             # Stem cells
             if name_lower in {"ipsc", "msc", "esc"}:
@@ -73,117 +73,135 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
             # Organoids -> model
             if name_lower in {"organoid", "organoids"}:
                 return "model"
+            # Construction science specific precedence
+            if domain_id == "construction_science":
+                # Environment-related terms should be consistently classified as environment
+                if name_lower in {"ice", "water", "air", "moisture", "humidity", "temperature", "heat", "cold", "frost", "snow"}:
+                    return "environment"
+                # Hazard-related terms should be consistently classified as hazard
+                if name_lower in {"corrosion", "fire", "wind", "seismic", "earthquake", "flood", "storm", "lightning"}:
+                    return "hazard"
+                # Material-related terms should be consistently classified as material
+                if name_lower in {"steel", "concrete", "wood", "glass", "brick", "masonry", "plastic", "polymer", "composite"}:
+                    return "material"
+                # System-related terms should be consistently classified as system
+                if name_lower in {"structure", "building", "foundation", "roof", "wall", "floor", "frame", "assembly", "component"}:
+                    return "system"
+                # Failure modes should be consistently classified as failure_mode
+                if name_lower in {"failure", "collapse", "crack", "fracture", "buckling", "deflection", "deformation", "leakage", "damage"}:
+                    return "failure_mode"
+                # Test methods should be consistently classified as test_method
+                if name_lower in {"test", "method", "guideline", "standard", "procedure", "protocol", "assay"}:
+                    return "test_method"
             return entity_type
-        # ...existing code for entity processing, writing files, etc. (indented under with-block)
+        # Normalize entities: merge duplicates by canonical name + type
+        entity_canonical = {}  # (canonical_name, canonical_type) -> merged_entity
+        entity_id_mapping = {}  # old_entity_id -> canonical_entity_id
 
-    # Normalize entities: merge duplicates by canonical name + type
-    entity_canonical = {}  # (canonical_name, canonical_type) -> merged_entity
-    entity_id_mapping = {}  # old_entity_id -> canonical_entity_id
+        for entity in entities:
+            name = entity['entity_name']
+            entity_type = entity['entity_type']
 
-    for entity in entities:
-        name = entity['entity_name']
-        entity_type = entity['entity_type']
+            # Apply type precedence
+            canonical_type = normalize_entity_type(name, entity_type)
 
-        # Apply type precedence
-        canonical_type = normalize_entity_type(name, entity_type)
+            # Create canonical name (lowercase)
+            canonical_name = name.lower()
 
-        # Create canonical name (lowercase)
-        canonical_name = name.lower()
+            key = (canonical_name, canonical_type)
 
-        key = (canonical_name, canonical_type)
+            if key not in entity_canonical:
+                # Create new canonical entity
+                canonical_entity = dict(entity)
+                canonical_entity['entity_name'] = canonical_name  # Use lowercase canonical name
+                canonical_entity['entity_type'] = canonical_type
+                canonical_entity['original_names'] = [name]  # Track original names
+                entity_canonical[key] = canonical_entity
+            else:
+                # Merge into existing canonical entity
+                canonical_entity = entity_canonical[key]
+                if name not in canonical_entity['original_names']:
+                    canonical_entity['original_names'].append(name)
 
-        if key not in entity_canonical:
-            # Create new canonical entity
-            canonical_entity = dict(entity)
-            canonical_entity['entity_name'] = canonical_name  # Use lowercase canonical name
-            canonical_entity['entity_type'] = canonical_type
-            canonical_entity['original_names'] = [name]  # Track original names
-            entity_canonical[key] = canonical_entity
-        else:
-            # Merge into existing canonical entity
-            canonical_entity = entity_canonical[key]
-            if name not in canonical_entity['original_names']:
-                canonical_entity['original_names'].append(name)
+            # Map old entity_id to canonical entity_id
+            # Use the key to ensure consistent mapping
+            entity_id_mapping[entity['entity_id']] = key
 
-        # Map old entity_id to canonical entity_id
-        entity_id_mapping[entity['entity_id']] = entity_canonical[key]['entity_id']
+        # Update entities list to use canonical entities
+        entities = list(entity_canonical.values())
 
-    # Update entities list to use canonical entities
-    entities = list(entity_canonical.values())
+        # Get entity-event relationships
+        entity_events = defaultdict(list)  # entity_id -> [event_ids]
 
-    # Get entity-event relationships
-    entity_events = defaultdict(list)  # entity_id -> [event_ids]
+        for row in cur.execute("SELECT entity_id, event_id FROM event_entities"):
+            # Map to canonical entity_id
+            canonical_id = entity_id_mapping.get(row['entity_id'], row['entity_id'])
+            entity_events[canonical_id].append(row['event_id'])
 
-    for row in cur.execute("SELECT entity_id, event_id FROM event_entities"):
-        # Map to canonical entity_id
-        canonical_id = entity_id_mapping.get(row['entity_id'], row['entity_id'])
-        entity_events[canonical_id].append(row['event_id'])
+        # Extract models from events for model weighting
+        # Get all entities of type 'model' linked to each event
+        event_models = defaultdict(set)  # event_id -> set of model names
+
+        for row in cur.execute("""
+            SELECT ee.event_id, e.entity_name, e.entity_type
+            FROM event_entities ee
+            JOIN entities e ON ee.entity_id = e.entity_id
+            WHERE e.entity_type = 'model'
+        """):
+            event_models[row['event_id']].add(row['entity_name'])
+
+        # Build entity -> models mapping (models mentioned in entity's events)
+        entity_models_map = defaultdict(set)  # entity_id -> set of model names
+
+        for entity_id, event_ids in entity_events.items():
+            for event_id in event_ids:
+                entity_models_map[entity_id].update(event_models.get(event_id, set()))
+
+        # Calculate scores for each entity in each overlay
+        entity_scores = {}  # entity_id -> {overlay_id: {score, bucket}}
+
+        for entity in entities:
+            entity_id = entity['entity_id']
+            event_ids = entity_events.get(entity_id, [])
+
+            # Get models associated with this entity
+            models_list = list(entity_models_map.get(entity_id, set()))
+
+            entity_scores[entity_id] = {}
+
+            for overlay_id in overlay_ids:
+                # Get event scores for this entity in this overlay
+                event_scores_list = [
+                    event_overlay_scores.get(eid, {}).get(overlay_id, 0)
+                    for eid in event_ids
+                ]
+
+                # Calculate final score WITH model weighting
+                entity_dict = dict(entity)
+                entity_dict['event_count'] = len(event_ids)
+
+                final_score = scorer.calculate_entity_score(
+                    entity_dict,
+                    event_scores_list,
+                    overlay_id,
+                    entity_models=models_list  # Pass models for weighting
+                )
+
+                # Determine bucket
+                max_score = max(len(event_ids) * 2, 10)  # Rough max estimate
+                bucket = scorer.bucket_score(final_score, max_score)
+
+                entity_scores[entity_id][overlay_id] = {
+                    'score': final_score,
+                    'bucket': bucket
+                }
+
+        print(f"   ✅ Calculated scores for {len(entities)} entities")
     
-    # Extract models from events for model weighting
-    # Get all entities of type 'model' linked to each event
-    event_models = defaultdict(set)  # event_id -> set of model names
-    
-    for row in cur.execute("""
-        SELECT ee.event_id, e.entity_name, e.entity_type
-        FROM event_entities ee
-        JOIN entities e ON ee.entity_id = e.entity_id
-        WHERE e.entity_type = 'model'
-    """):
-        event_models[row['event_id']].add(row['entity_name'])
-    
-    # Build entity -> models mapping (models mentioned in entity's events)
-    entity_models_map = defaultdict(set)  # entity_id -> set of model names
-    
-    for entity_id, event_ids in entity_events.items():
-        for event_id in event_ids:
-            entity_models_map[entity_id].update(event_models.get(event_id, set()))
-    
-    # Calculate scores for each entity in each overlay
-    entity_scores = {}  # entity_id -> {overlay_id: {score, bucket}}
-    
-    for entity in entities:
-        entity_id = entity['entity_id']
-        event_ids = entity_events.get(entity_id, [])
-        
-        # Get models associated with this entity
-        models_list = list(entity_models_map.get(entity_id, set()))
-        
-        entity_scores[entity_id] = {}
-        
-        for overlay_id in overlay_ids:
-            # Get event scores for this entity in this overlay
-            event_scores_list = [
-                event_overlay_scores.get(eid, {}).get(overlay_id, 0)
-                for eid in event_ids
-            ]
-            
-            # Calculate final score WITH model weighting
-            entity_dict = dict(entity)
-            entity_dict['event_count'] = len(event_ids)
-            
-            final_score = scorer.calculate_entity_score(
-                entity_dict,
-                event_scores_list,
-                overlay_id,
-                entity_models=models_list  # Pass models for weighting
-            )
-            
-            # Determine bucket
-            max_score = max(len(event_ids) * 2, 10)  # Rough max estimate
-            bucket = scorer.bucket_score(final_score, max_score)
-            
-            entity_scores[entity_id][overlay_id] = {
-                'score': final_score,
-                'bucket': bucket
-            }
-    
-    print(f"   ✅ Calculated scores for {len(entities)} entities")
-    
-    # Step 3: Export entities with dual-lens columns
     print("\n📝 Step 3: Exporting entities CSV...")
     
     output_path = Path(output_dir)
-    output_path.mkdir(exist_ok=True)
+    output_path.mkdir(parents=True, exist_ok=True)
     
     entities_file = output_path / f"entities_dual_lens_{domain_id}.csv"
     

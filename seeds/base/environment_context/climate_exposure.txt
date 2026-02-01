@@ -2,9 +2,9 @@
 # These are risk amplifiers, not primary entities
 
 freeze-thaw
-freeze thaw cycle
+freeze-thaw cycle
 cold climate
-subzero
+sub-zero
 permafrost
 high temperature
 heat stress
@@ -12,6 +12,5 @@ thermal cycling
 extreme heat
 temperature fluctuation
 arctic conditions
-polar climate
-tundra environment
+polar climatetundra environment
 glacial exposure

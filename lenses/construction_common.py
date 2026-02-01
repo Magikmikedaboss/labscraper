@@ -51,7 +51,22 @@ def dedupe_entities(entities: List[Dict]) -> List[Dict]:
     seen = set()
     out = []
     for e in entities:
-        k = (e["entity_type"], str(e["entity_name"]).lower(), e.get("entity_variant") or "", e.get("role") or "")
+        entity_name = str(e["entity_name"]).lower()
+        
+        # Filter out junk entities
+        if not entity_name or len(entity_name) < 2:
+            continue  # Skip empty or single character entities
+            
+        if entity_name in {"]", "[", ")", "(", "{", "}", "-", "_", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "~", "`"}:
+            continue  # Skip punctuation-only entities
+            
+        if all(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in entity_name):
+            continue  # Skip entities that are only punctuation/symbols
+            
+        if entity_name in {"indirect", "direct", "positive", "negative", "control", "test", "sample", "result", "data", "method", "analysis", "study", "research", "paper", "article", "report"}:
+            continue  # Skip generic terms that aren't specific entities
+            
+        k = (e["entity_type"], entity_name, e.get("entity_variant") or "", e.get("role") or "")
         if k in seen:
             continue
         seen.add(k)

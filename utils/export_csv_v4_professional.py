@@ -12,118 +12,16 @@ import json
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
-from .entity_normalizer import load_normalization_map, normalize_entity_list
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-DB_PATH = Path("output") / "peptide_intel.sqlite"
+from entity_normalizer import load_normalization_map, normalize_entity_list
+from process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
+from export_utilities import safe_confidence_boost, count_entities_by_role
+
+DB_PATH = Path("runs") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
-from .process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
-
-
-def safe_confidence_boost(entities_str: str, current_conf: str) -> str:
-    """
-    Safe confidence promotion rule:
-    Promote to HIGH if event has:
-    - (compound OR target OR stem_cell) AND
-    - assay AND
-    - model context (in vivo/in vitro/human/rat/plasma/serum)
-    
-    This is objective, not subjective.
-    """
-    # Normalize confidence to known values (handle synonyms and unexpected values)
-    conf_normalized = current_conf.lower().strip() if current_conf else "low"
-    
-    # Map synonyms to canonical values
-    conf_map = {
-        "high": "high",
-        "med": "med",
-        "medium": "med",
-        "low": "low",
-        "": "low",
-        "none": "low"
-    }
-    
-    conf_normalized = conf_map.get(conf_normalized, "other")
-    
-    if conf_normalized == "high":
-        return "high"  # Already high
-    
-    if not entities_str:
-        return conf_normalized
-    
-    # Parse entities
-    entities = entities_str.split("; ") if entities_str else []
-    entity_types = set()
-    entity_names_lower = set()
-    
-    for e in entities:
-        if ":" in e:
-            etype, ename = e.split(":", 1)
-            entity_types.add(etype.lower())
-            entity_names_lower.add(ename.lower())
-    
-    # Check for high-value entity (compound, target, or stem_cell)
-    has_high_value = bool(entity_types & {"compound", "target", "stem_cell"})
-    
-    # Check for assay
-    has_assay = "assay" in entity_types
-    
-    # Check for model context
-    model_context_terms = {
-        "in vivo", "in vitro", "human", "rat", "mouse", "plasma", "serum",
-        "blood", "tissue", "cell culture", "fbs"
-    }
-    has_model_context = bool(entity_names_lower & model_context_terms)
-    
-    # Promote if all three conditions met
-    if has_high_value and has_assay and has_model_context:
-        return "high"
-    
-    # Promote to med if has high-value entity + assay (even without model context)
-    if has_high_value and has_assay and conf_normalized == "low":
-        return "med"
-    
-    return conf_normalized
-
-def count_entities_by_role(entities_str: str, norm_map: dict) -> tuple:
-    """
-    Count primary and context entities in a semicolon-separated string.
-    Also demotes process words to tags.
-    Returns: (primary_count, context_count, primary_str, context_str, all_str)
-    """
-    if not entities_str:
-        return (0, 0, "", "", "")
-    
-    # Parse entities
-    entity_pairs = [e.split(':', 1) for e in entities_str.split('; ') if ':' in e]
-    entity_dicts = [
-        {"entity_type": etype, "entity_name": ename}
-        for etype, ename in entity_pairs
-    ]
-    
-    # Normalize
-    normalized = normalize_entity_list(entity_dicts, norm_map)
-    
-    # Separate by role, demoting process words
-    primary = []
-    context = []
-    
-    for e in normalized:
-        # Demote process words to context
-        if e['entity_type'] == 'assay' and is_process_word(e['entity_name']):
-            e['role'] = 'context'  # Override role
-        
-        entity_str = f"{e['entity_type']}:{e['entity_name']}"
-        
-        if e['role'] == 'primary':
-            primary.append(entity_str)
-        else:
-            context.append(entity_str)
-    
-    primary_str = "; ".join(primary) if primary else ""
-    context_str = "; ".join(context) if context else ""
-    all_str = "; ".join([f"{e['entity_type']}:{e['entity_name']}" for e in normalized])
-    
-    return (len(primary), len(context), primary_str, context_str, all_str)
 
 def export_events_professional():
     """Export events with professional polish"""
@@ -131,6 +29,7 @@ def export_events_professional():
     
     # Get all events - keep connection open during query
     with sqlite3.connect(DB_PATH) as con:
+        con.execute("PRAGMA foreign_keys = ON;")
         cur = con.cursor()
         
         events = cur.execute("""
@@ -153,8 +52,6 @@ def export_events_professional():
             ORDER BY re.created_at DESC
         """).fetchall()
     
-    from .process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
-    
     # Initialize confidence tracking
     confidence_changes = {
         "high": 0, "med": 0, "low": 0, "other": 0,
@@ -168,11 +65,10 @@ def export_events_professional():
         writer.writerow([
             'event_id', 'domain', 'event_type', 'stage', 'outcome',
             'decision_driver', 'evidence_snippet', 'confidence_original',
-            'confidence_boosted', 'primary_count', 'context_count',
-            'primary_entities', 'context_entities', 'all_entities',
+            'confidence_boosted', 'primary_entity_count', 'context_entity_count',
+            'entities_primary', 'entities_context', 'entities_all',
             'source_id', 'created_at'
-        ])
-        
+        ])        
         for event_id, domain, etype, stage, outcome, decision, snippet, conf_orig, source_id, created_at, entities_str in events:
             # Count entities and demote process words
             primary_count, context_count, primary_str, context_str, all_str = count_entities_by_role(entities_str, norm_map)
@@ -180,14 +76,22 @@ def export_events_professional():
             # Apply confidence boost
             conf_boosted = safe_confidence_boost(all_str, conf_orig)
             
+            # Normalize original confidence for accurate comparison
+            conf_map = {            conf_map = {
+                "high": "high",
+                "med": "med",
+                "medium": "med",
+                "low": "low",
+                "": "low",
+                "none": "low"
+            }
+            conf_orig_normalized = conf_map.get((conf_orig or "").lower().strip(), "other")            
             # Track changes (safely handle unexpected values)
-            if conf_boosted in confidence_changes:
-                confidence_changes[conf_boosted] += 1
-            else:
-                confidence_changes["other"] += 1
+            if conf_boosted not in confidence_changes:
                 conf_boosted = "other"  # Normalize for output
+            confidence_changes[conf_boosted] += 1
             
-            if conf_orig != conf_boosted:
+            if conf_orig_normalized != conf_boosted:
                 if conf_boosted == "high":
                     confidence_changes["boosted_to_high"] += 1
                 elif conf_boosted == "med":
@@ -235,6 +139,7 @@ def export_candidates_professional():
         "role": None
     })
     with sqlite3.connect(DB_PATH) as con:
+        con.execute("PRAGMA foreign_keys = ON;")
         cur = con.cursor()
         entities_data = cur.execute("""
             SELECT 
@@ -258,8 +163,10 @@ def export_candidates_professional():
                 "entity_name": ename,
                 "entity_variant": evariant
             }
-            normalized = normalize_entity_list([entity_dict], norm_map)[0]
-            canonical_name = normalized["entity_name"]
+            normalized_list = normalize_entity_list([entity_dict], norm_map)
+            if not normalized_list:
+                continue
+            normalized = normalized_list[0]            canonical_name = normalized["entity_name"]
             role = normalized["role"]
             if etype == "assay" and is_process_word(canonical_name):
                 role = "context"
@@ -275,26 +182,35 @@ def export_candidates_professional():
             if canonical_entities[key]["last_seen"] is None or last_seen > canonical_entities[key]["last_seen"]:
                 canonical_entities[key]["last_seen"] = last_seen
     primary_path = OUTPUT_DIR / "candidates_primary_v4.csv"
-    with open(primary_path, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            'entity_type', 'entity_name', 'entity_variant', 'role',
-            'event_count', 'paper_count', 'original_variants',
-            'first_seen', 'last_seen'
-        ])
-        sorted_entities = sorted(
-            canonical_entities.items(),
-            key=lambda x: x[1]["event_count"],
-            reverse=True
-        )
-        for (etype, ename), data in sorted_entities:
-            if data["role"] == "primary":
-                writer.writerow([
-                    etype, ename, data["entity_variant"], data["role"],
-                    data["event_count"], len(data["paper_ids"]),
-                    "; ".join(sorted(data["original_names"])),
-                    data["first_seen"], data["last_seen"]
-                ])
+    try:
+        with open(primary_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                'entity_type', 'entity_name', 'entity_variant', 'role',
+                'event_count', 'paper_count', 'original_variants',
+                'first_seen', 'last_seen'
+            ])
+            sorted_entities = sorted(
+                canonical_entities.items(),
+                key=lambda x: x[1]["event_count"],
+                reverse=True
+            )
+            for (etype, ename), data in sorted_entities:
+                if data["role"] == "primary":
+                    writer.writerow([
+                        etype, ename, data["entity_variant"], data["role"],
+                        data["event_count"], len(data["paper_ids"]),
+                        "; ".join(sorted(data["original_names"])),
+                        data["first_seen"], data["last_seen"]
+                    ])
+    except (PermissionError, IOError) as e:
+        print(f"❌ Error writing candidates export file: {e}")
+        print(f"   File path: {primary_path}")
+        print("   Please check file permissions and ensure the directory exists")
+        return {}
+    except Exception as e:
+        print(f"❌ Unexpected error writing candidates export file: {e}")
+        return {}
     primary_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "primary")
     context_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
     print(f"\u2705 Exported professional candidates:")
@@ -311,7 +227,7 @@ def write_run_meta(confidence_changes, canonical_entities):
         "database": str(DB_PATH),
         "seeds_version": "2026-01-22",
         "counts": {
-            "total_events": sum(confidence_changes.values()),
+            "total_events": confidence_changes["high"] + confidence_changes["med"] + confidence_changes["low"] + confidence_changes.get("other", 0),
             "total_entities": len(canonical_entities),
             "primary_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "primary"),
             "context_entities": sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
@@ -320,6 +236,7 @@ def write_run_meta(confidence_changes, canonical_entities):
             "high": confidence_changes["high"],
             "med": confidence_changes["med"],
             "low": confidence_changes["low"],
+            "other": confidence_changes.get("other", 0),
             "boosted_to_high": confidence_changes["boosted_to_high"],
             "boosted_to_med": confidence_changes["boosted_to_med"]
         },
@@ -347,6 +264,9 @@ def write_run_meta(confidence_changes, canonical_entities):
     print(f"✅ Wrote run metadata: {meta_path}")
 
 if __name__ == "__main__":
+    # Ensure output directory exists
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    
     print("=" * 70)
     print("CSV EXPORT v4 - PROFESSIONAL POLISH")
     print("=" * 70)

@@ -2,7 +2,7 @@
   "run_id": "20260125_1201",
   "engine_version": "v5_domain_aware",
   "timestamp": "2026-01-25T12:01:00.000000",
-  "database": "output/peptide_intel.sqlite",
+  "database": "runs/neuroscience_cognition.sqlite",
   "seeds_version": "2026-01-22",
   "domain_id": "neuroscience_cognition",
   "domain_name": "Neuroscience & Cognition",

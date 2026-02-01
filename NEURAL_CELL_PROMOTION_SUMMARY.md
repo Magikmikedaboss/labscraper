@@ -5,7 +5,7 @@
 Your analysis was spot-on! The neuroscience entities (Neurons, Microglia, Astrocytes) were being treated as "model" types instead of primary research entities. This caused them to be subordinate to stem_cell entities even though they were clearly present in the corpus.
 
 
-## Three Fixes Implemented ✅
+## Four Fixes Implemented ✅
 
 ### 1. Created Neural Cells Seed File
 Seeded primary neural cell entities so they are promoted to PRIMARY and compete with stem_cell, compound, target, etc.
@@ -90,6 +90,10 @@ Top entities:
 ---
 
 ## Why This Works
+### 4. Removed Duplicates from models.txt ✅
+
+**Impact**: Ensures that neurons, astrocytes, and microglia are not counted multiple times, improving data accuracy.
+
 
 ### The Problem (Your Analysis):
 > "Neurons / Microglia / Astrocytes appear, but as models, not dominant concepts"
@@ -113,21 +117,27 @@ This is **"stem-cell-driven neuroscience research"** - which is exactly what the
 ## How to Test
 
 ### Step 1: Clean the database
+**Windows:**
 ```bash
 Remove-Item output/peptide_intel.sqlite
 python init_db.py
 ```
 
+**POSIX (Linux/macOS):**
+```bash
+rm -f output/peptide_intel.sqlite
+python init_db.py
+```
+
 ### Step 2: Re-run neuroscience scraper
 ```bash
-python scrape_pdfs_phase1.py --domain neuroscience_cognition --input-dir "D:\myrepo\peptide-scraper\input_pdfs\neuroscience_v1"
+python scrape_pdfs_phase1.py --domain neuroscience_cognition --input-dir input_pdfs/neuroscience_v1
 ```
 
 ### Step 3: Export with domain-aware system
 ```bash
 python export_csv_v5_domain_aware.py --domain neuroscience_cognition
 ```
-
 
 ### Step 4: Check results
 To verify the promotion and correct handling of neural cells:
@@ -174,12 +184,14 @@ To verify the promotion and correct handling of neural cells:
 ---
 
 
+
 1. ✅ `seeds/neural_cells.json` - NEW (41 neural cell types)
 2. ✅ `seeds/overlays/neuroscience_overlay_v1.json` - UPDATED (32 aliases, expanded entities)
 3. ✅ `scrape_pdfs_phase1.py` - UPDATED (neural_cell extraction added)
+4. ✅ `seeds/models.txt` - UPDATED (Fix #4: removed neurons, astrocytes, microglia to eliminate duplicates)
 
 ---
-**The three fixes are implemented and ready to test.**
+**The four fixes are implemented and ready to test.**
 
 Your analysis was perfect - the system was being honest but not smart about entity typing. Now:
 - ✅ Overlay is strengthened with actual corpus terms

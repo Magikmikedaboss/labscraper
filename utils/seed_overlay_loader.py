@@ -10,9 +10,13 @@ from typing import Dict, List, Any, Optional
 
 def load_json(path: str) -> Any:
     """Load JSON file safely."""
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Seed file not found: {path}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in {path}: {e}")
 
 def merge_seed_dict(base: dict, overlay: dict) -> dict:
     """
@@ -31,7 +35,19 @@ def merge_seed_dict(base: dict, overlay: dict) -> dict:
         Merged dictionary
     """
     out = dict(base)
-    
+
+    def _dedupe_and_sort(lst):
+        # Remove duplicates by equality, preserve order
+        seen = []
+        for item in lst:
+            if item not in seen:
+                seen.append(item)
+        # Try to sort if possible
+        try:
+            return sorted(seen)
+        except TypeError:
+            return seen
+
     for k, v in overlay.items():
         if k not in out:
             # New key from overlay
@@ -39,16 +55,16 @@ def merge_seed_dict(base: dict, overlay: dict) -> dict:
         else:
             # Key exists in both
             if isinstance(out[k], list) and isinstance(v, list):
-                # Merge lists, deduplicate, sort
-                out[k] = sorted(set(out[k] + v))
+                # Merge lists, deduplicate, sort if possible
+                out[k] = _dedupe_and_sort(out[k] + v)
             elif isinstance(out[k], dict) and isinstance(v, dict):
                 # Merge nested dicts
                 tmp = dict(out[k])
                 for dk, dv in v.items():
                     if dk in tmp:
                         if isinstance(tmp[dk], list) and isinstance(dv, list):
-                            # Merge nested lists
-                            tmp[dk] = sorted(set(tmp[dk] + dv))
+                            # Merge nested lists, deduplicate, sort if possible
+                            tmp[dk] = _dedupe_and_sort(tmp[dk] + dv)
                         else:
                             # Preserve base value, do not overwrite
                             pass
@@ -76,8 +92,14 @@ def load_core_seeds(seeds_dir: str = "seeds") -> Dict[str, Any]:
     core = {}
     
     # Load JSON seed files
-    json_files = ["assays.json", "pathways.json", "indications.json", 
-                  "normalization.json", "outcome_signals.json"]
+    json_files = [
+        "assays.json",
+        "backup_assays.json",
+        "pathways.json",
+        "indications.json",
+        "normalization.json",
+        "outcome_signals.json"
+    ]
     
     for fname in json_files:
         path = Path(seeds_dir) / fname

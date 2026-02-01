@@ -1,11 +1,17 @@
 import sqlite3
 import json
+from pathlib import Path
 
 print("=" * 70)
 print("NEURAL CELL EXTRACTION - VERIFICATION RESULTS")
 print("=" * 70)
 
-with sqlite3.connect('output/peptide_intel.sqlite') as con:
+db_path = Path('output/peptide_intel.sqlite')
+if not db_path.exists():
+    print(f"\u274c Database not found: {db_path}")
+    exit(1)
+
+with sqlite3.connect(str(db_path)) as con:
     # Check entity types
     print("\n1. Entity Types Distribution:")
     print("-" * 70)
@@ -16,7 +22,7 @@ with sqlite3.connect('output/peptide_intel.sqlite') as con:
         ORDER BY cnt DESC
     ''')
     for row in cur:
-        marker = "✅" if row[0] == "neural_cell" else "  "
+        marker = "\u2705" if row[0] == "neural_cell" else "  "
         print(f"   {marker} {row[0]}: {row[1]} unique entities")
 
     # Check neural cells specifically

@@ -6,11 +6,8 @@ Removes old export scripts and documentation that have been superseded by v5
 
 import argparse
 from pathlib import Path
-import os
-
 # Use BASE_DIR for safe file operations
-BASE_DIR = Path(__file__).resolve().parent
-
+BASE_DIR = Path(__file__).resolve().parents[1]
 # Files to remove
 OBSOLETE_FILES = [
     # Old export scripts (superseded by v5)

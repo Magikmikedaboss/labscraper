@@ -35,5 +35,16 @@
   },
   "exclusions": [],
   "pattern_emphasis": {},
-  "language": "en"
+  "language": {
+    "allowed": ["en"],
+    "forbidden": []
+  },
+  "dual_lens": {    "enabled": true,
+    "primary_overlay": "failure_analysis_v1",
+    "secondary_overlay": "materials_performance_v1",
+    "export_mode": "separate_files",
+    "include_primary_only": true,
+    "include_secondary_only": true,
+    "include_combined": true
+  }
 }

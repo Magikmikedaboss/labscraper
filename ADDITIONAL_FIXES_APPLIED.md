@@ -17,13 +17,6 @@
 ### 3. check_output_files.py - Missing Directory Check
 **Issue**: Script would crash if output/ directory doesn't exist
 **Fix**: Added existence check with informative message
-```python
-import sys
-# Check if output directory exists
-if not output_dir.exists() or not output_dir.is_dir():
-    print(f"Output directory '{output_dir}' does not exist...")
-    sys.exit(0)
-```
 
 ### 4. check_recent_run.py - Unnecessary f-string
 **Issue**: Line 39 had `print(f"...")` with no interpolation

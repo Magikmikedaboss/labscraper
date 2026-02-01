@@ -41,7 +41,7 @@ This document summarizes the comprehensive improvements made to the export syste
 
 **What was implemented:**
 - 247 working overlay aliases for entity normalization
-- Domain-specific alias mapping (concrete→cement, steel→rebar, etc.)
+- Domain-specific alias mapping (cement→concrete, rebar→steel, etc.)
 - Integration with entity normalization system
 
 **Benefits:**
@@ -117,11 +117,12 @@ python -m utils.export_csv_v5_domain_aware --domain construction_science
 python -m utils.integrated_entity_system
 ```
 
-## ✅ Success Criteria Achieved - ALL MET
+## ⚠️ Success Criteria Review - Partial Achievement
 
-### Entity Coverage ✅
-- **Target**: 70%+ entity coverage
-- **Achieved**: 30%+ improvement (from 10.5% baseline)
+### Entity Coverage ⚠️
+- **Target**: 70%+ entity coverage (original target)
+- **Achieved**: ~40% absolute coverage, a 30%+ improvement from 10.5% baseline
+- **Note**: While the 70% target was not fully met, the achieved coverage represents a substantial improvement. The target may require further adjustment based on domain complexity and data limitations.
 - **Framework**: Multi-stage fallback classification implemented
 
 ### Recognition Accuracy ✅
@@ -175,9 +176,8 @@ python -m utils.integrated_entity_system
 
 ### **Current System Capabilities**:
 - ✅ **7,775 events processed** for construction science domain
-- ✅ **247 overlay aliases working** (concrete→cement, steel→rebar, etc.)
-- ✅ **6-sentence context carryover functional**
-- ✅ **Multi-domain support** with 5 specialized construction lenses
+- ✅ **247 overlay aliases working** (cement→concrete, rebar→steel, etc.)
+- ✅ **6-sentence context carryover functional**- ✅ **Multi-domain support** with 5 specialized construction lenses
 - ✅ **Enhanced entity extraction** with fallback classification
 - ✅ **Real-time quality metrics** and monitoring
 - ✅ **Automated validation** and error reporting

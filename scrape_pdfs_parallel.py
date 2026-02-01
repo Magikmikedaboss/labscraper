@@ -84,7 +84,7 @@ def process_single_pdf(args):
                         event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                         strength = evidence_strength(s_l)
 
-                        ents = extract_all_entities(sent, metadata.get('title', ''))
+                        ents = extract_all_entities(sent, metadata.get('title', ''), domain)
                         measurements = extract_quantitative_data(sent)
 
                         conf = confidence_score_phase1(bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l)
@@ -155,8 +155,8 @@ def process_single_pdf(args):
 
 def main():
     parser = argparse.ArgumentParser(description='Parallel PDF Scraper - 4-8x faster!')
-    parser.add_argument('--domain', default='peptide', 
-                       help='Research domain')
+    parser.add_argument('--domain', required=True,
+                       help='Research domain (required, e.g., methods_tooling, drug_discovery, construction_science, etc.)')
     parser.add_argument('--input-dir', type=Path, default=Path('input_pdfs'),
                        help='Directory containing PDF files')
     parser.add_argument('--output-db', type=Path, default=Path('runs/peptide_intel.sqlite'),
@@ -172,6 +172,15 @@ def main():
 
     # Ensure output database directory exists
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Initialize database schema before spawning workers
+    with sqlite3.connect(db_path) as con:
+        con.execute("PRAGMA journal_mode=WAL")
+        schema_path = Path("utils/schema.sql")
+        if not schema_path.exists():
+            raise SystemExit(f"Database schema file not found: {schema_path.resolve()}\nExpected at: utils/schema.sql. Cannot initialize database schema.")
+        con.executescript(schema_path.read_text())
+        con.commit()
     
     if not input_dir.exists():
         raise SystemExit(f"Missing folder: {input_dir.resolve()}")

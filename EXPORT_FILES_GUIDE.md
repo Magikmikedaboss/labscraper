@@ -67,15 +67,16 @@ _Stats from the final validated multi-domain run (see FINAL_MULTI_DOMAIN_SUMMARY
 
 ## 📈 Current Status
 
-**Current scrape**: 75/102 PDFs (74%)
-**Events extracted (current run)**: 6,099 events
-**Unique entities (current run)**: 388 entities
-**Overlay aliases**: 0 (stem cells dominate)
-**Neuroscience signal**: "Neurons" #19 with 97 events ✅
+**Current scrape (partial corpus, current run)**: 75/102 PDFs (74%)
+**Events extracted (current run, partial corpus)**: 6,099 events
+**Unique entities (current run, partial corpus)**: 388 entities
+**Overlay aliases (current run)**: 0 (stem cells dominate)
+**Neuroscience signal (current run)**: "Neurons" #19 with 97 events
 
-**Final validated**: 4,618 events from 116 neuroscience PDFs
+**Final validated (post-validation, expanded corpus)**: 4,618 events from 116 neuroscience PDFs
+(This count includes additional/validated PDFs added after the initial scrape; the PDF count increased from 102 to 116 due to expanded corpus coverage and further validation, and event counts differ because only validated events are included in the final tally.)
 
-**Expected when complete (estimate)**:
+**Expected when complete (estimate, initial corpus)**:
 - ~8,000-8,500 events (from 102 PDFs)
 - ~400-450 unique entities
 - "Neurons" might rise in ranking

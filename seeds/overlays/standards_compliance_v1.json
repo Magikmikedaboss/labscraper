@@ -4,6 +4,6 @@
   "version": "v1",
   "description": "Extracts references to building codes, standards, and compliance language in construction science.",
   "schema": {
-    "fields": ["code_standard", "compliance_status", "reference"]
+    "fields": ["code_standard", "requirement", "compliance"]
   }
 }

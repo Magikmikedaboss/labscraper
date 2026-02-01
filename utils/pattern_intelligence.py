@@ -19,6 +19,28 @@ from dataclasses import dataclass
 DB_PATH = Path("output") / "peptide_intel.sqlite"
 SEEDS_DIR = Path("seeds")
 
+# Lazy-loaded outcome signals
+_OUTCOME_SIGNALS = None
+
+def _get_outcome_signals():
+    global _OUTCOME_SIGNALS
+    if _OUTCOME_SIGNALS is None:
+        signal_file = SEEDS_DIR / "outcome_signals.json"
+        
+        if not signal_file.exists():
+            print(f"⚠️  Warning: {signal_file} not found. Using empty signals.")
+            _OUTCOME_SIGNALS = {"positive": [], "neutral": [], "negative": [], "replication": []}
+        else:
+            with open(signal_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            _OUTCOME_SIGNALS = {
+                "positive": data.get("positive", []),
+                "neutral": data.get("neutral", []),
+                "negative": data.get("negative", []),
+                "replication": data.get("replication", [])
+            }
+    return _OUTCOME_SIGNALS
+
 
 @dataclass
 class OutcomeSignals:
@@ -51,22 +73,8 @@ class PatternAnalysis:
 # ============================================================================
 
 def load_outcome_signals() -> Dict[str, List[str]]:
-    """Load outcome signal phrases from seeds/outcome_signals.json"""
-    signal_file = SEEDS_DIR / "outcome_signals.json"
-    
-    if not signal_file.exists():
-        print(f"⚠️  Warning: {signal_file} not found. Using empty signals.")
-        return {"positive": [], "neutral": [], "negative": [], "replication": []}
-    
-    with open(signal_file, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    
-    return {
-        "positive": data.get("positive", []),
-        "neutral": data.get("neutral", []),
-        "negative": data.get("negative", []),
-        "replication": data.get("replication", [])
-    }
+    """Load outcome signal phrases from seeds/outcome_signals.json (cached)"""
+    return _get_outcome_signals()
 
 
 # ============================================================================
@@ -319,15 +327,20 @@ def analyze_patterns(top_n: int = 20) -> List[PatternAnalysis]:
     
     # Load outcome signals
     print("\n📊 Loading outcome signals...")
-    signal_seeds = load_outcome_signals()
+    signal_seeds = _get_outcome_signals()
     print(f"   Loaded {sum(len(v) for v in signal_seeds.values())} signal phrases")
     
-    # Connect to database and perform all operations inside context
+    # Check if database exists before connecting
+    if not DB_PATH.exists():
+        print(f"[ERROR] Database file not found: {DB_PATH}")
+        print("[ERROR] Pattern analysis aborted. Please run the scraper/export to generate the database.")
+        return []
+
     print(f"\n📂 Connecting to database: {DB_PATH}")
     with sqlite3.connect(DB_PATH) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
-        
+
         # Get top entities by event count
         print(f"\n🔍 Analyzing top {top_n} entities...")
         top_entities = cur.execute("""
@@ -338,7 +351,7 @@ def analyze_patterns(top_n: int = 20) -> List[PatternAnalysis]:
             ORDER BY event_count DESC
             LIMIT ?
         """, (top_n,)).fetchall()
-        
+
         # Calculate average event count for momentum detection
         all_counts = [row["event_count"] for row in top_entities]
         avg_event_count = sum(all_counts) / len(all_counts) if all_counts else 1

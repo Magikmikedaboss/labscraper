@@ -3,10 +3,10 @@
 
 ## Status: RUNNING (started: 2026-01-30T00:00:00Z)
 
-**Command**: `python scrape_pdfs.py --domain longevity --input-dir input_pdfs/longevity_v1`
+**Command**: `python scrape_pdfs.py --domain biohacking_longevity --input-dir input_pdfs/longevity_v1`
 
 ## Configuration
-- **Domain**: longevity (biohacking & longevity research)
+- **Domain**: biohacking_longevity (biohacking & longevity research)
 - **Input Directory**: input_pdfs/longevity_v1
 - **Total PDFs**: 34
 - **Output Database**: output/peptide_intel.sqlite (will append to existing data)

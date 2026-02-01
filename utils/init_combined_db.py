@@ -1,11 +1,17 @@
 import sqlite3
 from pathlib import Path
 
-db_path = Path('output/combined_biohacking_all.sqlite')
-db_path.parent.mkdir(exist_ok=True)
+DB_PATH = Path('output/combined_biohacking_all.sqlite')
+SCHEMA_PATH = Path(__file__).resolve().parent / 'schema.sql'
 
-con = sqlite3.connect(db_path)
-con.executescript(open('schema.sql').read())
-con.close()
+def main():
+    DB_PATH.parent.mkdir(exist_ok=True)
+    schema_sql = SCHEMA_PATH.read_text(encoding='utf-8')
 
-print(f'✅ Database initialized: {db_path}')
+    with sqlite3.connect(DB_PATH) as con:
+        con.executescript(schema_sql)
+
+    print(f'✅ Database initialized: {DB_PATH}')
+
+if __name__ == "__main__":
+    main()

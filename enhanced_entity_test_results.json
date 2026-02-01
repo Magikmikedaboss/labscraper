@@ -26,38 +26,38 @@
         }
       },
       "integrated_result": {
-        "entity_count": 0,
+        "entity_count": 8,
         "processing_time": 0.0052318572998046875,
         "coverage_stats": {
           "total_extractions": 1,
           "fallback_used": 1,
           "fallback_usage_rate": 100.0,
           "avg_coverage_improvement": 0.0,
-          "avg_confidence": 0,
+          "avg_confidence": 0.48,
           "coverage_by_type": {
             "material": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "system": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "environment": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "compound": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "target": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "assay": {
-              "count": 0,
-              "coverage": 0
+              "count": 8,
+              "coverage": 100.0
             }
           }
         }
@@ -319,27 +319,27 @@
           "coverage_by_type": {
             "material": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "system": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "environment": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "compound": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "target": {
               "count": 0,
-              "coverage": 0
+              "coverage": 0.0
             },
             "assay": {
-              "count": 0,
-              "coverage": 0
+              "count": 5,
+              "coverage": 100.0
             }
           }
         }

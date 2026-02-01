@@ -8,11 +8,11 @@
   "domain_name": "Neuroscience & Cognition",
   "overlay_id": "neuroscience_cognition_v1",
   "overlay_aliases_count": 3,
-    "overlay_aliases": {
-      "astrocyte": ["astrocyte", "astrocytes", "astrocytic"],
-      "neuron": ["neuron", "neurons", "neuronal"],
-      "microglia": ["microglia", "microglial"]
-    },
+  "overlay_aliases": {
+    "astrocyte": ["astrocyte", "astrocytes", "astrocytic"],
+    "neuron": ["neuron", "neurons", "neuronal"],
+    "microglia": ["microglia", "microglial"]
+  },
   "counts": {
     "total_events": 4618,
     "total_entities": 283,

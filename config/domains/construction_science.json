@@ -36,5 +36,8 @@
   },
   "exclusions": [],
   "pattern_emphasis": {},
-  "language": "en"
+  "language": {
+    "allowed": ["en"],
+    "forbidden": []
+  }
 }

@@ -47,13 +47,10 @@ def load_seeds(seeds_dir: str = "seeds") -> Dict[str, dict]:
                 for txt_file in ontology_dir.glob("*.txt"):
                     entity_type = txt_file.stem
                     # Check for collision with JSON seeds
-                    if (
-                        ontology_name in d['json_seeds']
-                        and entity_type in d['json_seeds'][ontology_name]
-                    ):
+                    if entity_type in d['json_seeds']:
                         import warnings
                         warnings.warn(
-                            f"Ontology seed '{ontology_name}/{entity_type}' collides with JSON seed. Both are preserved under separate namespaces."
+                            f"Ontology seed '{ontology_name}/{entity_type}' has same name as JSON seed '{entity_type}.json'. Both are preserved under separate namespaces."
                         )
                     d['ontology_seeds'][ontology_name][entity_type] = load_text_seed_file(txt_file)
 
@@ -92,8 +89,11 @@ def extract_entities(text: str, seeds: Dict[str, dict]) -> List[Entity]:
     t = norm(text)
     out: List[Entity] = []
 
+    # Access json_seeds namespace (or support legacy flat structure)
+    json_seeds = seeds.get("json_seeds", seeds)
+
     # --- ASSAYS
-    assays = seeds.get("assays", {})
+    assays = json_seeds.get("assays", {})
     for a in assays.get("assays", []):
         name = a.get("name", "")
         if name.lower() in t:
@@ -103,13 +103,13 @@ def extract_entities(text: str, seeds: Dict[str, dict]) -> List[Entity]:
             out.append(Entity("assay", m, "metric", 0.70, "dict"))
 
     # --- PATHWAYS
-    pathways = seeds.get("pathways", {})
+    pathways = json_seeds.get("pathways", {})
     for p in pathways.get("pathways", []):
         if p.lower() in t:
             out.append(Entity("pathway", p, "pathway", 0.80, "dict"))
 
     # --- INDICATIONS
-    indications = seeds.get("indications", {})
+    indications = json_seeds.get("indications", {})
     for ind in indications.get("indications", []):
         if ind.lower() in t:
             out.append(Entity("indication", ind, "disease", 0.75, "dict"))
@@ -135,11 +135,6 @@ def extract_entities(text: str, seeds: Dict[str, dict]) -> List[Entity]:
             dedup[k] = e
 
     return list(dedup.values())
-
-# ----------------------------
-# Confidence scoring for the EVENT
-# ----------------------------
-
 def score_event_confidence(entities: List[Entity], text: str, seeds: Dict[str, dict]) -> Tuple[str, float]:
     """
     Returns (label, score) where score is 0..1 and label in {"low","med","high"}.
@@ -167,9 +162,12 @@ def score_event_confidence(entities: List[Entity], text: str, seeds: Dict[str, d
         score += type_weights.get(e.entity_type, 0.05) * min(1.0, e.confidence)
         seen_types.add(e.entity_type)
 
+    # Access json_seeds namespace (or support legacy flat structure)
+    json_seeds = seeds.get("json_seeds", seeds)
+
     # Boost if multiple "high signal" cues appear
     boosts = 0.0
-    assays = seeds.get("assays", {})
+    assays = json_seeds.get("assays", {})
     if contains_any(t, assays.get("metrics", [])):
         boosts += 0.10
     if contains_any(t, ["lc-ms", "lc-ms/ms", "spr", "bli", "triple quadrupole", "quantitation"]):

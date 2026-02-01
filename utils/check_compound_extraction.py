@@ -8,6 +8,10 @@ def check_compound_extraction():
     print("COMPOUND EXTRACTION ANALYSIS")
     print("="*70)
     
+    # Always initialize to avoid unassigned reference
+    found_compounds = []
+    seed_compounds = []
+
     # Check what was extracted
     db_path = Path("runs/test_enhanced_seeds.sqlite")
     if not db_path.exists():
@@ -15,6 +19,7 @@ def check_compound_extraction():
         return
     try:
         with sqlite3.connect(db_path) as con:
+            con.execute("PRAGMA foreign_keys = ON;")
             cur = con.cursor()
             print("\n📊 COMPOUNDS FOUND IN TEST SCRAPE (25 PDFs):")
             try:
@@ -37,8 +42,7 @@ def check_compound_extraction():
                 print("\n❌ NO - Your app could not find any compound names.")
     except Exception as e:
         print(f"Error: Could not open database: {e}")
-    
-    # Check what's in seed file
+        return
     print("\n📋 COMPOUNDS AVAILABLE IN SEED FILE:")
     seeds_path = Path("seeds/base/compounds.txt")
     try:
@@ -46,8 +50,6 @@ def check_compound_extraction():
     except (FileNotFoundError, PermissionError) as e:
         print(f"Error: Could not read seed file {seeds_path}: {e}")
         return
-    
-    seed_compounds = []
 
     for line in lines:
         line = line.strip()
@@ -71,7 +73,6 @@ def check_compound_extraction():
     print("ANALYSIS")
     print("="*70)
 
-    print("\n✅ YES - Your app CAN find compound names!")
     print("\n📈 Coverage:")
     print(f"   - Seed file has: {len(seed_compounds)} compounds")
     print(f"   - Test found: {len(found_compounds)} compounds")

@@ -52,7 +52,7 @@ from utils.axon_domains import get_domain_by_id
 ### 5. Overlay Aliases System ✅ NEW FEATURE ADDED
 
 **Feature:** 247 working overlay aliases for entity normalization
-**Purpose:** Domain-specific terminology standardization (concrete→cement, steel→rebar, etc.)
+**Purpose:** Domain-specific terminology standardization (cement→concrete, rebar→steel, etc.)
 **Status:** ✅ **PRODUCTION READY**
 
 
@@ -270,7 +270,7 @@ Each domain now includes:
 
 **Solutions**:
 1. Always use `--domain` parameter: `--domain construction_science`
-2. Check overlay file exists: `seeds/overlays/construction_science_aliases.json`
+2. Check overlay file exists: `seeds/overlays/construction_science_overlay_v1.json`
 3. Verify domain config includes overlay in "overlays" array
 
 ### Issue: Context carryover not working
@@ -413,7 +413,7 @@ python -m utils.export_csv_v5_domain_aware --domain construction_science
 
 This will:
 - Filter to construction science domain only
-- Load 247 overlay aliases (concrete→cement, steel→rebar, etc.)
+- Load 247 overlay aliases (cement→concrete, rebar→steel, etc.)
 - Apply 6-sentence context carryover for improved entity linking
 - Export with domain_id and overlay_id columns
 - Generate enhanced run metadata with quality metrics

@@ -6,7 +6,7 @@ Combines everything into one database for comprehensive analysis
 import argparse
 from pathlib import Path
 import sqlite3
-from scrape_pdfs_parallel import process_single_pdf
+from utils.scrape_pdfs_parallel import process_single_pdf
 from multiprocessing import Pool
 from tqdm import tqdm
 import multiprocessing as mp
@@ -142,7 +142,8 @@ def main():
     
     if needs_init:
         print("🔧 Initializing database schema...")
-        schema_path = Path("schema.sql")
+        script_dir = Path(__file__).resolve().parent
+        schema_path = script_dir / "schema.sql"
         if not schema_path.exists():
             print(f"❌ Schema file not found: {schema_path}")
             return
@@ -192,31 +193,26 @@ def main():
     if failed_pdfs:
         print(f"\n⚠️  Failed PDFs ({len(failed_pdfs)}):")
         for pdf_name, error in failed_pdfs[:10]:
-            print(f"   - {pdf_name}: {error[:80]}")
+            print(f"   - {pdf_name}: {(error or 'Unknown error')[:80]}")
         if len(failed_pdfs) > 10:
-            print(f"   ... and {len(failed_pdfs) - 10} more")
-    
+            print(f"   ... and {len(failed_pdfs) - 10} more")    
     # Show database stats
     print(f"\n{'='*70}")
     print(f"DATABASE STATISTICS")
     print(f"{'='*70}")
     
-    con = sqlite3.connect(db_path)
-    
-    # Count events
-    event_count = con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0]
-    print(f"📊 Total events in database: {event_count}")
-    
-    # Count entities
-    entity_count = con.execute("SELECT COUNT(DISTINCT entity_id) FROM entities").fetchone()[0]
-    print(f"🏷️  Total unique entities: {entity_count}")
-    
-    # Count papers
-    paper_count = con.execute("SELECT COUNT(DISTINCT source_id) FROM sources").fetchone()[0]
-    print(f"📄 Total papers: {paper_count}")
-    
-    con.close()
-    
+    with sqlite3.connect(db_path) as con:
+        # Count events
+        event_count = con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0]
+        print(f"📊 Total events in database: {event_count}")
+        
+        # Count entities
+        entity_count = con.execute("SELECT COUNT(DISTINCT entity_id) FROM entities").fetchone()[0]
+        print(f"🏷️  Total unique entities: {entity_count}")
+        
+        # Count papers
+        paper_count = con.execute("SELECT COUNT(DISTINCT source_id) FROM sources").fetchone()[0]
+        print(f"📄 Total papers: {paper_count}")    
     print(f"\n{'='*70}")
     print(f"NEXT STEP: Run dual-lens export")
     print(f"  python export_dual_lens.py {db_path} {domain}")

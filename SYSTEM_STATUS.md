@@ -147,21 +147,32 @@ python view_pattern_export.py
 ```
 
 ### Full System Test (From Scratch)
-```bash
+
+> **Note:** Use the appropriate cleanup commands for your OS/shell:
+
+**PowerShell (Windows):**
+```powershell
 # Clean everything
 Remove-Item output/peptide_intel.sqlite -ErrorAction SilentlyContinue
 Remove-Item output/*.csv -ErrorAction SilentlyContinue
+```
 
-# Rebuild database
-python init_db.py
+**POSIX Shell (Linux/macOS):**
+```sh
+# Clean everything
+rm -f output/peptide_intel.sqlite
+rm -f output/*.csv
+```
+**Then continue with:**
 
-# Run scraper
-python scrape_pdfs_phase1.py
+```bash
+# Rebuild the database
+python run_rss_ingest.py
 
-# Export v4 data
+# Run exports
 python export_csv_v4_professional.py
 
-# Test results
+# Run tests to verify everything works
 python test_v4_exports.py
 ```
 

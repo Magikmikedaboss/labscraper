@@ -1,7 +1,6 @@
 {
-  "overlay_id": "biohacking_longevity_v2",
-  "description": "Longevity-focused overlay emphasizing aging mechanisms, biological age measurement, intervention realism, and translational barriers.",
-  "priority": 2,
+  "overlay_id": "longevity_overlay_v2",
+  "description": "Longevity-focused overlay emphasizing aging mechanisms, biological age measurement, intervention realism, and translational barriers.",  "priority": 2,
 
   "entity_groups": {
 

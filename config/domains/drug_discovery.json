@@ -10,7 +10,7 @@
       "compounds.txt",
       "base/life_sciences/assays.txt",
       "pathways.json",
-      "base/life_sciences/indications.txt"
+      "base/life_sciences/indications.json"
     ],
     "prefer_types": ["target", "compound", "assay", "pathway", "indication"]
   },
@@ -26,7 +26,8 @@
     "abandonment": 0.95
   },
   "language": {
-    "allowed": ["research momentum", "validation effort", "appears to"],
+    "allowed": ["en"],
+    "output_allowed_phrases": ["research momentum", "validation effort", "appears to"],
     "forbidden": ["approved", "clinically proven"]
   }
 }

@@ -25,8 +25,8 @@ from .enhanced_entity_extractor import EnhancedEntityExtractor, Entity
 from .fallback_entity_classifier import FallbackEntityClassifier, apply_fallback_classification
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 @dataclass
 class ExtractionResult:
@@ -179,8 +179,8 @@ class IntegratedEntitySystem:
     
     def _get_type_coverage_breakdown(self) -> Dict:
         """Get coverage breakdown by entity type"""
-        # This would need to be implemented based on actual usage patterns
-        # For now, return a placeholder structure
+        # TODO: Implement actual coverage tracking by entity type
+        # Currently returns placeholder structure - do not rely on these values
         return {
             'material': {'count': 0, 'coverage': 0},
             'system': {'count': 0, 'coverage': 0},
@@ -189,7 +189,7 @@ class IntegratedEntitySystem:
             'target': {'count': 0, 'coverage': 0},
             'assay': {'count': 0, 'coverage': 0}
         }
-    
+
     def validate_entity_quality(self, entities: List[Dict]) -> Dict:
         """Validate entity extraction quality"""
         if not entities:
@@ -288,7 +288,7 @@ class IntegratedEntitySystem:
             return 'supporting'
 
 # Backward compatibility function
-def extract_entities(text: str, seeds: Dict, title: str = "", domain: str = "methods_tooling") -> List[Dict]:
+def extract_entities(text: str, title: str = "", domain: str = "methods_tooling") -> List[Dict]:
     """
     Backward compatible entity extraction function
     
@@ -297,7 +297,6 @@ def extract_entities(text: str, seeds: Dict, title: str = "", domain: str = "met
     system = IntegratedEntitySystem(domain=domain)
     entities = system.extract_entities(text, title)
     return system.export_entities_for_export(entities)
-
 # Example usage and testing
 if __name__ == "__main__":
     print("Testing Integrated Entity System")
@@ -319,7 +318,7 @@ if __name__ == "__main__":
     
     print(f"Extracted {len(construction_entities)} entities")
     for entity in construction_entities:
-        print(f"  {entity['entity_type']}: {entity['entity_name']} (confidence: {entity['confidence']}, role: {entity.get('role')})")
+        print(f"  {entity['entity_type']}: {entity['entity_name']} (confidence: {entity['confidence']}, role: {entity.get('role', 'unknown')})")
     
     construction_stats = construction_system.get_coverage_stats()
     construction_quality = construction_system.validate_entity_quality(construction_entities)
@@ -343,7 +342,7 @@ if __name__ == "__main__":
     
     print(f"Extracted {len(biomedical_entities)} entities")
     for entity in biomedical_entities:
-        print(f"  {entity['entity_type']}: {entity['entity_name']} (confidence: {entity['confidence']}, role: {entity['role']})")
+        print(f"  {entity['entity_type']}: {entity['entity_name']} (confidence: {entity['confidence']}, role: {entity.get('role', 'unknown')})")
     
     biomedical_stats = biomedical_system.get_coverage_stats()
     biomedical_quality = biomedical_system.validate_entity_quality(biomedical_entities)
