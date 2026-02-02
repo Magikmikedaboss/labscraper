@@ -9,6 +9,7 @@ def check_construction_entities():
     """Check the entities extracted from construction science PDFs"""
     db_path = 'runs/construction_science.sqlite'
     
+    worker_count = 4  # Update this if your pipeline uses a different number of workers
     try:
         # Use context manager for database connection
         with sqlite3.connect(db_path) as con:
@@ -61,10 +62,21 @@ def check_construction_entities():
             for bio_sys, count in bio_systems:
                 print(f"   {bio_sys}: {count} events")
             
+            # Get PDF processing statistics
+            pdf_stats = con.execute('''
+                SELECT 
+                    COUNT(*) as total_pdfs,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failure_count
+                FROM sources
+            ''').fetchone()
+            
+            total_pdfs, success_count, failure_count = pdf_stats if pdf_stats else (0, 0, 0)
+            
             print(f"\n✅ Analysis complete!")
-            print(f"   - Successfully processed 31 PDFs with 4 workers")
-            print(f"   - 17 PDFs processed successfully, 14 failed due to database locking (normal in parallel processing)")
-            print(f"   - 691 events extracted from construction science documents")
+            print(f"   - Successfully processed {total_pdfs} PDFs with {worker_count} workers")
+            print(f"   - {success_count} PDFs processed successfully, {failure_count} failed")
+            print(f"   - {total_events} events extracted from construction science documents")
             print(f"   - Domain-specific filtering working correctly")
             
     except Exception as e:

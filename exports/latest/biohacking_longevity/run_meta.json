@@ -7,7 +7,7 @@
   "domain_id": "biohacking_longevity",
   "domain_name": "Biohacking & Longevity",
   "overlay_id": "biohacking_longevity_v1",
-  "overlay_aliases_count": 22,
+  "overlay_aliases_count": 26,
   "overlay_aliases": {
     "IN VIVO": ["in vivo", "in-vivo"],
     "IN VITRO": ["in vitro", "in-vitro"],
@@ -32,13 +32,7 @@
     "metformin": ["metformin", "glucophage"],
     "resveratrol": ["resveratrol", "trans-resveratrol"],
     "NMN": ["NMN", "nicotinamide mononucleotide"],
-    "NR": ["NR", "nicotinamide riboside"],
-    "compound": ["compound", "molecule"],
-    "target": ["target", "protein"],
-    "assay": ["assay", "test"],
-    "model": ["model", "animal model"],
-    "context": ["context", "contextual"],
-    "primary": ["primary", "main"]
+    "NR": ["NR", "nicotinamide riboside"]
   },
   "counts": {
     "total_events": 5575,

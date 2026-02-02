@@ -159,7 +159,8 @@ class EnhancedEntityExtractor:
                 'vapor': ['vapor', 'vpr'],
                 'air': ['air'],
                 'wind': ['wind', 'wnd'],
-                'seismic': ['seismic', 'earthquake', 'eq'],                'snow': ['snow', 'snw'],
+                'seismic': ['seismic', 'earthquake', 'eq'],
+                'snow': ['snow', 'snw'],
                 'ice': ['ice', 'ic'],
                 'frost': ['frost', 'frst'],
                 'freeze': ['freeze', 'frz'],
@@ -360,6 +361,60 @@ class EnhancedEntityExtractor:
         
         return True
     
+    def _get_entity_role(self, entity_name: str, entity_type: str) -> str:
+        """Determine the role of an entity (primary vs context)"""
+        entity_lower = entity_name.lower().strip()
+        
+        # Primary entities - these are the main research subjects
+        if entity_type in ['compound', 'target', 'neural_cell', 'stem_cell', 'peptide', 'indication', 'pathway']:
+            return 'primary'
+        
+        # Context entities - these provide context but aren't the main focus
+        if entity_type in ['model', 'assay', 'method']:
+            # Special case: biological fluids should be context, not primary
+            biofluids = ['serum', 'plasma', 'blood', 'csf', 'cerebrospinal fluid', 'urine', 'saliva', 'synovial fluid']
+            if entity_lower in biofluids:
+                return 'context'
+            return 'context'
+        
+        # Default to context for unknown types
+        return 'context'
+    
+    def _apply_entity_type_precedence(self, entity_name: str, entity_type: str) -> str:
+        """
+        Apply entity type precedence rules to ensure consistent classification
+        
+        Args:
+            entity_name: Name of the entity
+            entity_type: Current entity type from ontology
+        
+        Returns:
+            Corrected entity type based on precedence rules
+        """
+        entity_lower = entity_name.lower().strip()
+        
+        if self.domain == "construction_science":
+            # Environment-related terms should be consistently classified as environment
+            if entity_lower in {"ice", "water", "air", "moisture", "humidity", "temperature", "heat", "cold", "frost", "snow", "vapor", "climate", "weather", "acoustic", "sound", "thaw", "freeze"}:
+                return "environment"
+            # Hazard-related terms should be consistently classified as hazard
+            if entity_lower in {"corrosion", "fire", "wind", "seismic", "earthquake", "flood", "storm", "lightning", "tornado", "impact", "cold"}:
+                return "hazard"
+            # Material-related terms should be consistently classified as material
+            if entity_lower in {"steel", "concrete", "wood", "glass", "brick", "masonry", "plastic", "polymer", "composite", "aluminum", "copper", "board", "insulation", "panel", "coating", "timber"}:
+                return "material"
+            # System-related terms should be consistently classified as system
+            if entity_lower in {"structure", "building", "foundation", "roof", "wall", "floor", "frame", "assembly", "component", "door", "ventilation", "building envelope", "column", "heating", "cooling", "mechanical", "electrical"}:
+                return "system"
+            # Failure modes should be consistently classified as failure_mode
+            if entity_lower in {"failure", "collapse", "crack", "fracture", "buckling", "deflection", "deformation", "leakage", "damage", "rot", "deterioration", "weathering", "decay", "expansion", "creep", "shrinkage"}:
+                return "failure_mode"
+            # Test methods should be consistently classified as test_method
+            if entity_lower in {"test", "method", "guideline", "standard", "procedure", "protocol", "assay", "approach", "practice", "technique", "specification", "requirement", "code", "strategy"}:
+                return "test_method"
+        
+        return entity_type
+    
     def _extract_ontology_entities(self, text: str) -> List[Entity]:
         """Extract entities using ontology seeds"""
         entities = []
@@ -379,8 +434,10 @@ class EnhancedEntityExtractor:
                 if entity_name.lower() in text_lower:
                     # Apply domain-specific filtering
                     if self._is_valid_entity_for_domain(entity_name, entity_type):
+                        # Apply entity type precedence rules
+                        corrected_entity_type = self._apply_entity_type_precedence(entity_name, entity_type)
                         entities.append(Entity(
-                            entity_type=entity_type,
+                            entity_type=corrected_entity_type,
                             entity_name=entity_name.upper(),
                             entity_variant=None,
                             confidence=0.8,
@@ -393,8 +450,10 @@ class EnhancedEntityExtractor:
                         if variant.lower() in text_lower and variant.lower() != entity_name.lower():
                             # Apply domain-specific filtering to variants too
                             if self._is_valid_entity_for_domain(variant, entity_type):
+                                # Apply entity type precedence rules to variants too
+                                corrected_entity_type = self._apply_entity_type_precedence(variant, entity_type)
                                 entities.append(Entity(
-                                    entity_type=entity_type,
+                                    entity_type=corrected_entity_type,
                                     entity_name=entity_name.upper(),
                                     entity_variant=variant.upper(),
                                     confidence=0.6,

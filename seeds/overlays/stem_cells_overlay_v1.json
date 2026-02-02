@@ -3,10 +3,12 @@
   "domain": "stem_cells_regen",
   "notes": "Prefer unambiguous terms. Avoid short abbreviations unless paired with a full form.",
   "entities": {
-    "cell_types": [
-      "mesenchymal stem cell",
-      "induced pluripotent stem cell",
-      "embryonic stem cell",
+    "cell_types": {
+      "astrocyte": ["astrocytes"]
+    },
+    "models_and_systems": {
+      "organoid": ["organoids"]
+    },
       "neural stem cell",
       "hematopoietic stem cell",
       "satellite cell",

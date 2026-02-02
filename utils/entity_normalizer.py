@@ -168,7 +168,19 @@ def get_entity_role(entity: dict, norm_map: dict) -> str:
     Returns:
         'context' if context-only entity, 'primary' otherwise
     """
-    return "context" if is_context_entity(entity, norm_map) else "primary"
+    # Primary entities - these are the main research subjects
+    if entity["entity_type"] in ['compound', 'target', 'neural_cell', 'stem_cell', 'peptide', 'indication', 'pathway']:
+        return 'primary'
+    
+    # Context entities - these provide context but aren't the main focus
+    if entity["entity_type"] in ['model', 'assay', 'method']:
+        # Special case: biological fluids should be context, not primary
+        biofluids = ['serum', 'plasma', 'blood', 'csf', 'cerebrospinal fluid', 'urine', 'saliva', 'synovial fluid']
+        if entity["entity_name"].lower() in biofluids:
+            return 'context'  # Biological fluids and these types are always context
+    
+    # Default to context for unknown types
+    return 'context'
 
 
 def normalize_entity_list(entities: List[dict], norm_map: dict, overlay_aliases: Optional[Dict[str, str]] = None) -> List[dict]:

@@ -1,174 +1,173 @@
 {
-  "run_id": "20260130_123437",
+  "run_id": "20260202_082157",
   "engine_version": "v5_domain_aware",
-  "timestamp": "2026-01-30T12:34:37.974428",
-  "database": "output/construction_materials.sqlite",
+  "timestamp": "2026-02-02T08:21:57.928078",
+  "database": "runs/peptide_intel.sqlite",
   "seeds_version": "2026-01-22",
   "domain_id": null,
   "domain_name": "All Domains",
   "overlay_id": null,
   "overlay_aliases_count": 0,
   "counts": {
-    "total_events": 775,
-    "total_entities": 24,
-    "primary_entities": 24,
-    "context_entities": 0
+    "total_events": 6636,
+    "total_entities": 332,
+    "primary_entities": 232,
+    "context_entities": 100
   },
   "confidence_distribution": {
-    "high": 2,
-    "med": 91,
-    "low": 682,
-    "boosted_to_high": 0,
+    "high": 49,
+    "med": 2750,
+    "low": 3837,
+    "boosted_to_high": 12,
     "boosted_to_med": 0
   },
   "top_entities": [
     {
-      "name": "CONCRETE",
-      "type": "material",
-      "event_count": 24,
+      "name": "astrocytes",
+      "type": "neural_cell",
+      "event_count": 440,
       "role": "primary"
     },
     {
-      "name": "STEEL",
-      "type": "material",
-      "event_count": 19,
+      "name": "In vivo",
+      "type": "model",
+      "event_count": 392,
+      "role": "context"
+    },
+    {
+      "name": "microglia",
+      "type": "neural_cell",
+      "event_count": 320,
       "role": "primary"
     },
     {
-      "name": "TIMBER",
-      "type": "material",
-      "event_count": 18,
+      "name": "neurons",
+      "type": "neural_cell",
+      "event_count": 312,
       "role": "primary"
     },
     {
-      "name": "GLASS",
-      "type": "material",
-      "event_count": 12,
+      "name": "MOUSE",
+      "type": "model",
+      "event_count": 213,
+      "role": "context"
+    },
+    {
+      "name": "PLASMA",
+      "type": "model",
+      "event_count": 199,
+      "role": "context"
+    },
+    {
+      "name": "HUMAN",
+      "type": "model",
+      "event_count": 165,
+      "role": "context"
+    },
+    {
+      "name": "neuronal",
+      "type": "neural_cell",
+      "event_count": 118,
       "role": "primary"
     },
     {
-      "name": "WALL",
-      "type": "system",
-      "event_count": 9,
+      "name": "SERUM",
+      "type": "model",
+      "event_count": 117,
+      "role": "context"
+    },
+    {
+      "name": "ALZHEIMER",
+      "type": "indication",
+      "event_count": 116,
       "role": "primary"
     },
     {
-      "name": "INSULATION",
-      "type": "material",
-      "event_count": 7,
+      "name": "RECEPTOR",
+      "type": "target",
+      "event_count": 95,
       "role": "primary"
     },
     {
-      "name": "MASONRY",
-      "type": "material",
-      "event_count": 6,
+      "name": "In vitro",
+      "type": "model",
+      "event_count": 94,
+      "role": "context"
+    },
+    {
+      "name": "microglial",
+      "type": "neural_cell",
+      "event_count": 92,
       "role": "primary"
     },
     {
-      "name": "ROOF",
-      "type": "system",
-      "event_count": 4,
+      "name": "MTOR",
+      "type": "target",
+      "event_count": 79,
       "role": "primary"
     },
     {
-      "name": "SCALING",
-      "type": "failure_mode",
-      "event_count": 4,
+      "name": "RAT",
+      "type": "model",
+      "event_count": 73,
+      "role": "context"
+    },
+    {
+      "name": "cell death",
+      "type": "pathway",
+      "event_count": 68,
       "role": "primary"
     },
     {
-      "name": "BRICK",
-      "type": "material",
-      "event_count": 3,
+      "name": "AUTOPHAGY",
+      "type": "pathway",
+      "event_count": 60,
       "role": "primary"
     },
     {
-      "name": "THERMAL CYCLING",
-      "type": "environment",
-      "event_count": 2,
+      "name": "stroke",
+      "type": "indication",
+      "event_count": 59,
       "role": "primary"
     },
     {
-      "name": "FATIGUE",
-      "type": "failure_mode",
-      "event_count": 2,
-      "role": "primary"
+      "name": "CSF",
+      "type": "model",
+      "event_count": 58,
+      "role": "context"
     },
     {
-      "name": "CORROSION",
-      "type": "failure_mode",
-      "event_count": 2,
-      "role": "primary"
-    },
-    {
-      "name": "SERVICE LIFE",
-      "type": "environment",
-      "event_count": 2,
-      "role": "primary"
-    },
-    {
-      "name": "CONNECTION",
-      "type": "system",
-      "event_count": 2,
-      "role": "primary"
-    },
-    {
-      "name": "LEAKAGE",
-      "type": "failure_mode",
-      "event_count": 1,
-      "role": "primary"
-    },
-    {
-      "name": "ASHRAE",
-      "type": "test_method",
-      "event_count": 1,
-      "role": "primary"
-    },
-    {
-      "name": "DESIGN LIFE",
-      "type": "environment",
-      "event_count": 1,
-      "role": "primary"
-    },
-    {
-      "name": "FRACTURE",
-      "type": "failure_mode",
-      "event_count": 1,
-      "role": "primary"
-    },
-    {
-      "name": "CRACKING",
-      "type": "failure_mode",
-      "event_count": 1,
-      "role": "primary"
+      "name": "TISSUE",
+      "type": "model",
+      "event_count": 58,
+      "role": "context"
     }
   ],
   "process_words_demoted": [
-    "measurement",
-    "analysis",
-    "determination",
-    "calculation",
-    "estimation",
-    "assessment",
+    "calibration",
+    "quantitation",
+    "quantification",
     "evaluation",
-    "calculation method",
-    "analysis method",
-    "determination method",
-    "estimation method",
-    "assessment method",
-    "evaluation method",
-    "calculation procedure",
-    "analysis procedure",
-    "determination procedure",
-    "estimation procedure",
-    "assessment procedure",
-    "evaluation procedure",
-    "calculation technique",
-    "analysis technique",
-    "determination technique",
-    "estimation technique",
-    "assessment technique",
-    "evaluation technique"
+    "assessment",
+    "monitoring",
+    "report",
+    "testing",
+    "purification",
+    "record",
+    "procedure",
+    "documentation",
+    "log",
+    "inspection",
+    "method",
+    "analysis",
+    "protocol",
+    "technique",
+    "determination",
+    "quality control",
+    "optimization",
+    "validation",
+    "surveying",
+    "measurement"
   ],
-  "confidence_boost_rule": "HIGH if (material|system|failure_mode) + test_method + environment; MED if (material|system|failure_mode) + test_method"
+  "confidence_boost_rule": "Domain-specific: construction_science uses (material|system|failure_mode|environment|hazard) + assay + model_context; biomedical domains use (compound|target|stem_cell) + assay + model_context"
 }

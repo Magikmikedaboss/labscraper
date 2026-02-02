@@ -62,9 +62,11 @@ def check_construction_entities():
                 print(f"   {bio_sys}: {count} events")
             
             print(f"\n✅ Analysis complete!")
-            print(f"   - Successfully processed construction science documents")
-            print(f"   - Domain-specific filtering working correctly")
-            
+            if total_events > 0 and len(construction_entities) > 0:
+                print(f"   - Successfully processed construction science documents")
+                print(f"   - Domain-specific filtering working correctly")
+            else:
+                print(f"   ⚠️  Warning: No events or construction entities found")            
     except Exception as e:
         print(f"❌ Error checking entities: {e}")
 

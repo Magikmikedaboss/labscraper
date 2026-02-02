@@ -29,7 +29,7 @@ The enhanced export system has been successfully implemented with a complete con
 4. **`utils/export_csv_v5_domain_aware.py`** - Domain-aware export with overlay support
 
 ### Construction Science Domain Components
-1. **`seeds/domains/construction_science.json`** - Domain configuration with 5 overlays
+1. **`config/domains/construction_science.json`** - Domain configuration with 5 overlays
 2. **`seeds/overlays/construction_science_aliases.json`** - 247 entity aliases for normalization
 3. **`lenses/construction_*.py`** - 5 specialized lens implementations
 4. **`seeds/base/construction_science/`** - Comprehensive seed files
@@ -70,7 +70,7 @@ python utils/export_csv_v5_domain_aware.py --domain construction_science
 ```
 
 **Output**:
-```
+```text
 ✅ Domain: Construction Science & Built Environment Physics
 ✅ Aliases used: 247
 ✅ Primary entities: 22

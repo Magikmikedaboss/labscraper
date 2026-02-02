@@ -7,8 +7,7 @@ import sys
 import os
 sys.path.append('utils')
 
-from enhanced_entity_extractor import EnhancedEntityExtractor
-import unicodedata
+from utils.enhanced_entity_extractor import EnhancedEntityExtractor
 
 def debug_full_extraction():
     """Debug the full ontology extraction function step by step"""

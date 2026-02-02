@@ -177,7 +177,8 @@ python -m utils.integrated_entity_system
 ### **Current System Capabilities**:
 - ✅ **7,775 events processed** for construction science domain
 - ✅ **247 overlay aliases working** (cement→concrete, rebar→steel, etc.)
-- ✅ **6-sentence context carryover functional**- ✅ **Multi-domain support** with 5 specialized construction lenses
+- ✅ **6-sentence context carryover functional**
+- ✅ **Multi-domain support** with 5 specialized construction lenses
 - ✅ **Enhanced entity extraction** with fallback classification
 - ✅ **Real-time quality metrics** and monitoring
 - ✅ **Automated validation** and error reporting

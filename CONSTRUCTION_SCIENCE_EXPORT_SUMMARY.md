@@ -41,12 +41,13 @@ All components have been successfully implemented and tested:
 
 ### 3. Lens Implementations
 **Files**: `lenses/construction_*.py`
-- `construction_common.py` - Shared utilities and base classes
 - `construction_failure_v1.py` - Failure analysis lens
 - `construction_materials_v1.py` - Materials performance lens
 - `construction_building_physics_v1.py` - Building physics lens
 - `construction_climate_v1.py` - Climate resilience lens
 - `construction_compliance_v1.py` - Standards compliance lens
+
+`construction_common.py` is a shared utility module, not a lens implementation.
 
 ### 4. Seed System
 **Directory**: `seeds/base/construction_science/`
@@ -182,7 +183,7 @@ python utils/export_csv_v5_domain_aware.py
 
 - [x] Domain configuration created and validated
 - [x] All 5 overlays implemented and configured
-- [x] All 6 lens implementations created
+- [x] All 5 lens implementations created
 - [x] Seed system properly configured
 - [x] Export system working with domain filtering
 - [x] Enhanced entity processing active

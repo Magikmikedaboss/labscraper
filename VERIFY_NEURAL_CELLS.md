@@ -33,8 +33,7 @@ python check_neural_cell_results.py
 python -c "import json; data = json.load(open('output/run_meta_neuroscience_cognition.json')); print(f'Overlay aliases: {data.get(\"overlay_aliases_count\", 0)}')"
 ```
 
-**Expected**: `Overlay aliases: 15-25` (was 0 before)
-
+**Expected**: `Overlay aliases: 25-35` (was 0 before, target is ~32)
 ---
 
 ### 3. Check Top Entities

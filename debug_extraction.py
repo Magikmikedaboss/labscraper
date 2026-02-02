@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.append('utils')
 
-from enhanced_entity_extractor import EnhancedEntityExtractor
+from utils.enhanced_entity_extractor import EnhancedEntityExtractor
 import unicodedata
 import re
 
@@ -45,8 +45,8 @@ def debug_extraction():
                     print(f"  ✗ Material '{material}' not found in text")
     
     # Step 3: Check abbreviation patterns
-    print(f"\nAbbreviation patterns for 'concrete': {extractor.domain_config['abbreviation_map'].get('concrete', [])}")
-    
+    abbreviation_map = extractor.domain_config.get('abbreviation_map', {})
+    print(f"\nAbbreviation patterns for 'concrete': {abbreviation_map.get('concrete', [])}")    
     # Step 4: Test direct entity extraction
     print(f"\n=== TESTING DIRECT EXTRACTION ===")
     try:

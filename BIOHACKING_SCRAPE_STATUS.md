@@ -55,6 +55,8 @@ With 160 models (vs 123 before), we expect to find 120–160 unique models.
 
 ## Technical Notes
 
+These technical notes apply to the deduplication step of the scraper/ingestion pipeline:
+
    - Normalize filenames (strip " (1)" suffix)
    - Optionally compare file checksums or canonical names
    - Only yield one entry per unique document

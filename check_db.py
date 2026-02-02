@@ -1,8 +1,16 @@
 import sqlite3
 
+from pathlib import Path
+
+DB_PATH = Path('runs/test_construction_fix.sqlite')
+
 def main():
+    if not DB_PATH.exists():
+        print(f"❌ Database file not found: {DB_PATH}")
+        return
+
     # Use context manager for database connection
-    with sqlite3.connect('runs/test_construction_fix.sqlite') as con:
+    with sqlite3.connect(DB_PATH) as con:
         tables = [t[0] for t in con.execute('SELECT name FROM sqlite_master WHERE type="table"')]
         print('Tables:', tables)
 

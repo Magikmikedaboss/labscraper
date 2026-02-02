@@ -12,5 +12,6 @@ thermal cycling
 extreme heat
 temperature fluctuation
 arctic conditions
-polar climatetundra environment
+polar climate
+tundra environment
 glacial exposure

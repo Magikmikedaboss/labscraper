@@ -5,6 +5,7 @@ Test script to verify domain passing in parallel scraper
 
 import sys
 import os
+import traceback
 
 # Add the utils directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
@@ -29,8 +30,9 @@ def test_domain_extraction():
         for entity in construction_entities:
             print(f"  - {entity['entity_type']}: {entity['entity_name']} (variant: {entity.get('entity_variant')})")
     except Exception as e:
-        print(f"Error in construction extraction: {e}")
-    
+        traceback.print_exc()
+        raise
+
     print()
     
     # Test with methods_tooling domain
@@ -41,8 +43,9 @@ def test_domain_extraction():
         for entity in methods_tooling_entities:
             print(f"  - {entity['entity_type']}: {entity['entity_name']} (variant: {entity.get('entity_variant')})")
     except Exception as e:
-        print(f"Error in methods_tooling extraction: {e}")
-    
+        traceback.print_exc()
+        raise
+
     print()
     
     # Test EnhancedEntityExtractor directly
@@ -54,7 +57,8 @@ def test_domain_extraction():
         for entity in entities:
             print(f"  - {entity.entity_type}: {entity.entity_name} (confidence: {entity.confidence})")
     except Exception as e:
-        print(f"Error in direct extraction: {e}")
+        traceback.print_exc()
+        raise
 
 if __name__ == "__main__":
     test_domain_extraction()

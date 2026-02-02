@@ -265,7 +265,7 @@
 **Status**: 🚧 **VALIDATION IN PROGRESS - TRI-DOMAIN PARTIALLY COMPLETE**
 
 
-The system has been validated across 3 diverse domains with 138 PDFs total (13 + 71 + 54), proving it works perfectly with honest, domain-specific insights.
+The system has been validated across 3 diverse domains with 138 PDFs total (13 + 71 + 54), proving it works as expected so far (validated on these PDFs; neuroscience corpus scraping remains incomplete) with honest, domain-specific insights.
 
 ---
 

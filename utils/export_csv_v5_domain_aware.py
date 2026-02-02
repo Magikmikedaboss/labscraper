@@ -102,27 +102,31 @@ def export_events_domain_aware(domain_id: str = None):
         
         for event in events:
             event_id, domain_col, etype, stage, outcome, decision, snippet, conf_orig, source_id, created_at, entities_str = event
-            
+
             # Count entities and separate by role (with overlay aliases)
             primary_count, context_count, primary_str, context_str, all_str = count_entities_by_role(
                 entities_str, norm_map, overlay_aliases
             )
-            
+
             # Apply safe confidence boost
             conf_boosted = safe_confidence_boost(all_str, conf_orig, domain_id)
-            
+
+            # Normalize for fair comparison
+            conf_orig_norm = str(conf_orig).strip().lower() if conf_orig is not None else ''
+            conf_boosted_norm = str(conf_boosted).strip().lower() if conf_boosted is not None else ''
+
             # Track changes
-            if conf_boosted in confidence_changes:
-                confidence_changes[conf_boosted] += 1
+            if conf_boosted_norm in confidence_changes:
+                confidence_changes[conf_boosted_norm] += 1
             else:
                 confidence_changes["other"] += 1
-            
-            if conf_orig != conf_boosted:
-                if conf_boosted == "high":
+
+            if conf_orig_norm != conf_boosted_norm:
+                if conf_boosted_norm == "high":
                     confidence_changes["boosted_to_high"] += 1
-                elif conf_boosted == "med":
+                elif conf_boosted_norm == "med":
                     confidence_changes["boosted_to_med"] += 1
-            
+
             writer.writerow([
                 event_id, domain_col, etype, stage, outcome,
                 decision, snippet, conf_orig, conf_boosted,

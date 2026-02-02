@@ -91,8 +91,12 @@ def test_construction_science_comprehensive():
         # Check run metadata
         meta_path = Path("output/run_meta_construction_science.json")
         if meta_path.exists():
-            with open(meta_path, 'r') as f:
-                meta = json.load(f)
+            try:
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    meta = json.load(f)
+            except json.JSONDecodeError as e:
+                print(f"❌ Error decoding JSON in {meta_path}: {e}")
+                meta = {}
             print(f"\n📋 Run Metadata:")
             print(f"   Domain: {meta.get('domain', 'N/A')}")
             print(f"   PDFs Processed: {meta.get('pdfs_processed', 'N/A')}")

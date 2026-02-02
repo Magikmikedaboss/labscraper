@@ -354,14 +354,11 @@ def extract_models(sentence: str) -> list[dict]:
     
     return models
 
-def extract_entities(sentence: str) -> list[dict]:
+def extract_entities(sentence: str, domain: str = "methods_tooling") -> list[dict]:
     """
-    Extract all entity types with COMPOUND priority over PEPTIDE
-    - compound: drug/molecule names (PRIORITY - extracted first)
-    - peptide: literal sequences (only if not already a compound)
-    - target: biological targets
-    - model: experimental systems (cell lines, organisms, biofluids)
-    - stem_cell: stem cell markers
+    Extract all entity types based on domain
+    - construction_science: material, system, environment, failure_mode, hazard, test_method
+    - methods_tooling: compound, peptide, target, model, stem_cell (biomedical)
     
     Returns: list of {entity_type, entity_name, entity_variant, role}
     """
@@ -370,6 +367,141 @@ def extract_entities(sentence: str) -> list[dict]:
     
     # Track extracted names to avoid duplicates
     extracted_names = set()
+    
+    # Domain-specific entity extraction
+    if domain == "construction_science":
+        # Construction science entities
+        ents.extend(extract_construction_entities(sentence, extracted_names))
+    else:
+        # Default to biomedical entities for other domains
+        ents.extend(extract_biomedical_entities(sentence, extracted_names))
+    
+    return ents
+
+def extract_construction_entities(sentence: str, extracted_names: set) -> list[dict]:
+    """Extract construction science entities"""
+    ents = []
+    s_l = sentence.lower()
+    
+    # Construction materials
+    construction_materials = {
+        "concrete", "steel", "wood", "timber", "brick", "stone", "glass", "plastic",
+        "aluminum", "copper", "iron", "composite", "polymer", "ceramic", "asphalt"
+    }
+    
+    # Construction systems
+    construction_systems = {
+        "foundation", "wall", "roof", "floor", "beam", "column", "truss", "frame",
+        "slab", "panel", "cladding", "insulation", "ventilation", "plumbing", "electrical"
+    }
+    
+    # Environmental exposures
+    environmental_exposures = {
+        "temperature", "humidity", "moisture", "rain", "snow", "wind", "sunlight",
+        "UV", "freeze", "thaw", "corrosion", "rust", "mold", "mildew", "fungi"
+    }
+    
+    # Failure modes
+    failure_modes = {
+        "crack", "cracking", "fracture", "break", "failure", "collapse", "buckling",
+        "deflection", "deformation", "creep", "fatigue", "deterioration", "degradation"
+    }
+    
+    # Hazards
+    hazards = {
+        "fire", "earthquake", "flood", "wind", "seismic", "impact", "blast", "explosion"
+    }
+    
+    # Test methods
+    test_methods = {
+        "compression", "tension", "bending", "shear", "torsion", "impact", "fatigue",
+        "corrosion", "weathering", "thermal", "fire", "seismic", "load", "stress", "strain"
+    }
+    
+    # Extract materials
+    for material in construction_materials:
+        if re.search(r'\b' + re.escape(material) + r'\b', s_l):
+            name = material.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "material",
+                    "entity_name": name,
+                    "entity_variant": None,
+                    "role": "material"
+                })
+                extracted_names.add(name)
+    
+    # Extract systems
+    for system in construction_systems:
+        if re.search(r'\b' + re.escape(system) + r'\b', s_l):
+            name = system.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "system",
+                    "entity_name": name,
+                    "entity_variant": None,
+                    "role": "system"
+                })
+                extracted_names.add(name)
+    
+    # Extract environmental exposures
+    for env in environmental_exposures:
+        if re.search(r'\b' + re.escape(env) + r'\b', s_l):
+            name = env.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "environment",
+                    "entity_name": name,
+                    "entity_variant": None,
+                    "role": "exposure"
+                })
+                extracted_names.add(name)
+    
+    # Extract failure modes
+    for failure in failure_modes:
+        if re.search(r'\b' + re.escape(failure) + r'\b', s_l):
+            name = failure.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "failure_mode",
+                    "entity_name": name,
+                    "entity_variant": None,
+                    "role": "failure"
+                })
+                extracted_names.add(name)
+    
+    # Extract hazards
+    for hazard in hazards:
+        if re.search(r'\b' + re.escape(hazard) + r'\b', s_l):
+            name = hazard.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "hazard",
+                    "entity_name": name,
+                    "entity_variant": None,
+                    "role": "hazard"
+                })
+                extracted_names.add(name)
+    
+    # Extract test methods
+    for test in test_methods:
+        if re.search(r'\b' + re.escape(test) + r'\b', s_l):
+            name = test.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "test_method",
+                    "entity_name": name,
+                    "entity_variant": None,
+                    "role": "test"
+                })
+                extracted_names.add(name)
+    
+    return ents
+
+def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dict]:
+    """Extract biomedical entities (original logic)"""
+    ents = []
+    s_l = sentence.lower()
     
     # 1) COMPOUND FIRST: Drug/molecule names (PRIORITY)
     for compound in _get_compound_seeds():
@@ -871,7 +1003,7 @@ def main(domain: str = None, input_dir: Path = None, db_path: Path = None):
                                 event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                                 strength = evidence_strength(s_l)
 
-                                ents = extract_entities(sent)
+                                ents = extract_entities(sent, research_domain)
                                 measurements = extract_quantitative_data(sent)
                                 
                                 # FIX C: Pass sentence for multi-signal detection

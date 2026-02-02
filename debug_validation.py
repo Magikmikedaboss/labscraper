@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.append('utils')
 
-from enhanced_entity_extractor import EnhancedEntityExtractor
+from utils.enhanced_entity_extractor import EnhancedEntityExtractor
 
 def debug_validation():
     """Debug entity validation"""
@@ -36,7 +36,7 @@ def debug_validation():
         ("protein", "target"),    # Should be filtered out
     ]
     
-    print(f"\nTesting multiple entities:")
+    print("\nTesting multiple entities:")
     for name, type_ in test_entities:
         is_valid = extractor._is_valid_entity_for_domain(name, type_)
         print(f"  {name} ({type_}): {is_valid}")

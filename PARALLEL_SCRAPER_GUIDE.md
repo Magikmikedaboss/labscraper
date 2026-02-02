@@ -42,17 +42,17 @@ con.close()
 
 ### Basic (4 workers - default)
 ```bash
-python scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite
 ```
 
 ### Fast (8 workers - recommended for modern CPUs)
 ```bash
-python scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 8
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 8
 ```
 
 ### Conservative (2 workers - for older machines)
 ```bash
-python scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 2
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 2
 ```
 
 ---
@@ -261,7 +261,7 @@ python export_dual_lens.py output/combined.sqlite biohacking_longevity
 
 1. **Try it now:**
    ```bash
-   python scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/test_parallel.sqlite --workers 4
+   python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/test_parallel.sqlite --workers 4
    ```
 
 2. **Compare results:**

@@ -13,30 +13,21 @@ import pdfplumber
 from tqdm import tqdm
 from typing import List, Tuple, Optional
 
-try:
-    from .scrape_pdfs_phase1 import (
-        extract_metadata, chunk_sentences, guess_stage, guess_section,
-        extract_all_entities, extract_quantitative_data,
-        detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
-        classify_event_type, evidence_strength, confidence_score_phase1,
-        suggested_keep, normalize_event_key,
-        upsert_source, insert_document, insert_chunk, insert_event,
-        link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-        sha16, sha64,
-        FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
-    )
-except ImportError:
-    from scrape_pdfs_phase1 import (
-        extract_metadata, chunk_sentences, guess_stage, guess_section,
-        extract_all_entities, extract_quantitative_data,
-        detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
-        classify_event_type, evidence_strength, confidence_score_phase1,
-        suggested_keep, normalize_event_key,
-        upsert_source, insert_document, insert_chunk, insert_event,
-        link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-        sha16, sha64,
-        FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
-    )
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from scrape_pdfs_phase1 import (
+    extract_metadata, chunk_sentences, guess_stage, guess_section,
+    extract_all_entities, extract_quantitative_data,
+    detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
+    classify_event_type, evidence_strength, confidence_score_phase1,
+    suggested_keep, normalize_event_key,
+    upsert_source, insert_document, insert_chunk, insert_event,
+    link_event_entity, link_event_tag, insert_measurement, upsert_entity,
+    sha16, sha64,
+    FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
+)
 
 
 def _connect(db_path: Path) -> sqlite3.Connection:
@@ -182,6 +173,23 @@ def _db_has_all_tables(db_path: Path) -> bool:
             return required_tables.issubset(table_names)
     except Exception:
         return False
+
+def _ensure_db_schema(db_path: Path) -> None:
+    """Ensure the database has the required schema initialized."""
+    if _db_has_all_tables(db_path):
+        print(f"✅ Database schema already initialized")
+        return
+    
+    print(f"🔧 Initializing database schema...")
+    schema_path = Path(__file__).resolve().parent / "schema.sql"
+    if not schema_path.exists():
+        raise SystemExit(f"Schema file not found: {schema_path}")
+    
+    schema = schema_path.read_text(encoding="utf-8")
+    with sqlite3.connect(db_path) as con:
+        con.executescript(schema)
+        con.commit()
+    print(f"✅ Database schema initialized successfully")
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Parallel PDF Scraper (Phase 1 Enhanced)")

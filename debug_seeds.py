@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.append('utils')
 
-from enhanced_entity_extractor import EnhancedEntityExtractor
+from utils.enhanced_entity_extractor import EnhancedEntityExtractor
 import json
 from pathlib import Path
 
@@ -58,6 +58,7 @@ def debug_seeds():
         print(f"Error creating extractor: {e}")
         import traceback
         traceback.print_exc()
+        raise  # Re-raise the exception to surface it to CI
 
 if __name__ == "__main__":
     debug_seeds()

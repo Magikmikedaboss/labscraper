@@ -76,22 +76,22 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
             # Construction science specific precedence
             if domain_id == "construction_science":
                 # Environment-related terms should be consistently classified as environment
-                if name_lower in {"ice", "water", "air", "moisture", "humidity", "temperature", "heat", "cold", "frost", "snow"}:
+                if name_lower in {"ice", "water", "air", "moisture", "humidity", "temperature", "heat", "cold", "frost", "snow", "vapor", "climate", "weather", "acoustic", "sound", "thaw", "freeze"}:
                     return "environment"
                 # Hazard-related terms should be consistently classified as hazard
-                if name_lower in {"corrosion", "fire", "wind", "seismic", "earthquake", "flood", "storm", "lightning"}:
+                if name_lower in {"corrosion", "fire", "wind", "seismic", "earthquake", "flood", "storm", "lightning", "tornado", "impact", "cold"}:
                     return "hazard"
                 # Material-related terms should be consistently classified as material
-                if name_lower in {"steel", "concrete", "wood", "glass", "brick", "masonry", "plastic", "polymer", "composite"}:
+                if name_lower in {"steel", "concrete", "wood", "glass", "brick", "masonry", "plastic", "polymer", "composite", "aluminum", "copper", "board", "insulation", "panel", "coating", "timber"}:
                     return "material"
                 # System-related terms should be consistently classified as system
-                if name_lower in {"structure", "building", "foundation", "roof", "wall", "floor", "frame", "assembly", "component"}:
+                if name_lower in {"structure", "building", "foundation", "roof", "wall", "floor", "frame", "assembly", "component", "door", "ventilation", "building envelope", "column", "heating", "cooling", "mechanical", "electrical"}:
                     return "system"
                 # Failure modes should be consistently classified as failure_mode
-                if name_lower in {"failure", "collapse", "crack", "fracture", "buckling", "deflection", "deformation", "leakage", "damage"}:
+                if name_lower in {"failure", "collapse", "crack", "fracture", "buckling", "deflection", "deformation", "leakage", "damage", "rot", "deterioration", "weathering", "decay", "expansion", "creep", "shrinkage"}:
                     return "failure_mode"
                 # Test methods should be consistently classified as test_method
-                if name_lower in {"test", "method", "guideline", "standard", "procedure", "protocol", "assay"}:
+                if name_lower in {"test", "method", "guideline", "standard", "procedure", "protocol", "assay", "approach", "practice", "technique", "specification", "requirement", "code", "strategy"}:
                     return "test_method"
             return entity_type
         # Normalize entities: merge duplicates by canonical name + type

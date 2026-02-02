@@ -77,6 +77,17 @@ CREATE TABLE IF NOT EXISTS event_entities (
     FOREIGN KEY (entity_id) REFERENCES entities(entity_id)
 );
 
+-- Table for relationships between entities
+CREATE TABLE IF NOT EXISTS entity_relationships (
+    relationship_id TEXT PRIMARY KEY,
+    source_entity_id TEXT,
+    target_entity_id TEXT,
+    relationship_type TEXT,
+    created_at TEXT,
+    FOREIGN KEY (source_entity_id) REFERENCES entities(entity_id),
+    FOREIGN KEY (target_entity_id) REFERENCES entities(entity_id)
+);
+
 CREATE TABLE IF NOT EXISTS tags (
     tag TEXT PRIMARY KEY
 );

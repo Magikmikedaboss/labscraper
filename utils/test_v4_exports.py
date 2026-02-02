@@ -49,15 +49,20 @@ def test_process_words_demoted():
     else:
         print(f"⚠️  WARNING: Some process words missing from run_meta")
     
-    # Check they appear in top entities as context
+    # Check they appear in top entities as context (defensive against missing keys)
     context_process_words = [
-        e for e in meta["top_entities"] 
-        if e["name"].lower() in process_words and e["role"] == "context"
+        e for e in meta.get("top_entities", [])
+        if isinstance(e, dict)
+        and e.get("name", "").lower() in process_words
+        and e.get("role") == "context"
     ]
-    
+
     print(f"✅ PASS: Found {len(context_process_words)} process words in top entities as context:")
     for e in context_process_words:
-        print(f"   - {e['name']}: {e['event_count']} events (role: {e['role']})")
+        name = e.get('name', '<missing>')
+        event_count = e.get('event_count', '?')
+        role = e.get('role', '?')
+        print(f"   - {name}: {event_count} events (role: {role})")
     
     return True
 
@@ -113,17 +118,21 @@ def test_confidence_boost():
         return False
     with open(meta_path, 'r', encoding='utf-8') as f:
         meta = json.load(f)    
-    print(f"\n✅ Boost rule: {meta['confidence_boost_rule']}")
+    print(f"\n✅ Boost rule: {meta.get('confidence_boost_rule', '<none>')}")
     print(f"✅ Confidence distribution after boost:")
+    distribution = meta.get('confidence_distribution', {})
     total = len(events)
+    high = distribution.get('high', 0)
+    med = distribution.get('med', 0)
+    low = distribution.get('low', 0)
     if total > 0:
-        print(f"   High: {meta['confidence_distribution']['high']} ({meta['confidence_distribution']['high']/total*100:.1f}%)")
-        print(f"   Med: {meta['confidence_distribution']['med']} ({meta['confidence_distribution']['med']/total*100:.1f}%)")
-        print(f"   Low: {meta['confidence_distribution']['low']} ({meta['confidence_distribution']['low']/total*100:.1f}%)")
+        print(f"   High: {high} ({high/total*100:.1f}%)")
+        print(f"   Med: {med} ({med/total*100:.1f}%)")
+        print(f"   Low: {low} ({low/total*100:.1f}%)")
     else:
-        print(f"   High: {meta['confidence_distribution']['high']} (0.0%)")
-        print(f"   Med: {meta['confidence_distribution']['med']} (0.0%)")
-        print(f"   Low: {meta['confidence_distribution']['low']} (0.0%)")
+        print(f"   High: {high} (0.0%)")
+        print(f"   Med: {med} (0.0%)")
+        print(f"   Low: {low} (0.0%)")
     
     return True
 
@@ -219,11 +228,10 @@ def test_entity_count_columns():
         print(f"   {count} entities: {context_counts[count]} events")
     if invalid_context:
         print(f"⚠️  {len(invalid_context)} events had invalid context_entity_count: {invalid_context}")
-    
+
     # Show high-value events (multiple primary entities)
-    high_value = [e for e in events if safe_int(e['primary_entity_count']) >= 3]
-    print(f"\n✅ Events with ≥3 primary entities: {len(high_value)} (high-value research)")
-    
+    high_value = [e for e in events if safe_int(e.get('primary_count')) is not None and safe_int(e.get('primary_count')) >= 3]
+    print(f"\n✅ Events with ≥3 primary entities: {len(high_value)} (high-value research)")    
     return True
 
 def test_run_meta_json():
