@@ -182,18 +182,15 @@ CREATE INDEX IF NOT EXISTS idx_measurements_event ON quantitative_measurements(e
 -- =========================================================
 CREATE TABLE IF NOT EXISTS entity_relationships (
   relationship_id TEXT PRIMARY KEY,
-  entity_id_1 TEXT NOT NULL,            -- subject entity
-  entity_id_2 TEXT NOT NULL,            -- object entity
+  source_entity_id TEXT NOT NULL,       -- subject entity
+  target_entity_id TEXT NOT NULL,       -- object entity
   relationship_type TEXT NOT NULL,      -- more_stable_than | more_potent_than | analog_of | 
                                         -- derivative_of | less_toxic_than | etc
-  event_id TEXT,                        -- the event where this relationship was mentioned
-  confidence TEXT DEFAULT 'low',        -- low | med | high
   created_at TEXT,
-  FOREIGN KEY (entity_id_1) REFERENCES entities(entity_id) ON DELETE CASCADE,
-  FOREIGN KEY (entity_id_2) REFERENCES entities(entity_id) ON DELETE CASCADE,
-  FOREIGN KEY (event_id) REFERENCES research_events(event_id) ON DELETE SET NULL
+  FOREIGN KEY (source_entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE,
+  FOREIGN KEY (target_entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_relationships_type ON entity_relationships(relationship_type);
-CREATE INDEX IF NOT EXISTS idx_relationships_entity1 ON entity_relationships(entity_id_1);
-CREATE INDEX IF NOT EXISTS idx_relationships_entity2 ON entity_relationships(entity_id_2);
+CREATE INDEX IF NOT EXISTS idx_relationships_source ON entity_relationships(source_entity_id);
+CREATE INDEX IF NOT EXISTS idx_relationships_target ON entity_relationships(target_entity_id);

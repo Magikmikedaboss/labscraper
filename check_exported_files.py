@@ -23,7 +23,7 @@ def check_exported_files():
     ]
     
     for file_path in files_to_check:
-        if os.path.exists(file_path):
+        if file_path.exists():
             try:
                 df = pd.read_csv(file_path)
                 print(f'✅ {file_path}: {len(df)} rows')

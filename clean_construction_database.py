@@ -8,7 +8,9 @@ from pathlib import Path
 
 def clean_construction_database():
     """Remove biomedical entities from construction database"""
-    db_path = Path("db/runs.sqlite")
+    # Make path relative to script location for resilience to working-directory changes
+    script_dir = Path(__file__).parent
+    db_path = script_dir / "db/runs.sqlite"
     
     if not db_path.exists():
         print(f"❌ Database not found: {db_path}")
@@ -135,7 +137,7 @@ def clean_construction_database():
         # Summary
         print("\n📋 CLEANING SUMMARY:")
         print(f"   Construction events: {construction_events}")
-        print(f"   Biomedical entities removed: {len(biomedical_entities)}")
+        print(f"   Biomedical entities detected: {len(biomedical_entities)}")
         print(f"   Relationships removed: {removed_relationships}")
         print(f"   Entities removed: {removed_entities}")
         

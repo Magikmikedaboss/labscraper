@@ -195,7 +195,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Parallel PDF Scraper (Phase 1 Enhanced)")
     parser.add_argument("--domain", default="methods_tooling", help="Research domain (methods_tooling, drug_discovery, etc. — do NOT use entity names like peptide)")
     parser.add_argument("--input-dir", type=Path, default=Path("input_pdfs"), help="Directory with PDFs")
-    parser.add_argument("--output-db", type=Path, default=Path("output/peptide_intel.sqlite"), help="Output DB path")
+    parser.add_argument("--output-db", type=Path, default=Path("db/runs.sqlite"), help="Output DB path")
     parser.add_argument(
         "--workers",
         type=int,

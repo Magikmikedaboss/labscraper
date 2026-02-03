@@ -12,6 +12,7 @@ from datetime import datetime
 
 DB_PATH = Path("db/runs.sqlite")
 OUTPUT_DIR = Path("output")
+DOMAIN_ID = "construction_science"
 
 def export_events():
     """Export research events from construction database"""
@@ -38,14 +39,14 @@ def export_events():
             FROM research_events re
             LEFT JOIN event_entities ee ON re.event_id = ee.event_id
             LEFT JOIN entities e ON ee.entity_id = e.entity_id
-            WHERE re.research_domain = 'construction'
+            WHERE re.research_domain = ?
             GROUP BY re.event_id
             ORDER BY re.created_at DESC
-        """).fetchall()
+        """, (DOMAIN_ID,)).fetchall()
     
     # Export events
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    events_path = OUTPUT_DIR / "events_export_construction_science.csv"
+    events_path = OUTPUT_DIR / f"events_export_{DOMAIN_ID}.csv"
     
     with open(events_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -86,13 +87,13 @@ def export_entities():
             FROM entities e
             JOIN event_entities ee ON e.entity_id = ee.entity_id
             JOIN research_events re ON ee.event_id = re.event_id
-            WHERE re.research_domain = 'construction'
+            WHERE re.research_domain = ?
             GROUP BY e.entity_type, e.entity_name
             ORDER BY event_count DESC, e.entity_type
-        """).fetchall()
+        """, (DOMAIN_ID,)).fetchall()
     
     # Export entities
-    entities_path = OUTPUT_DIR / "construction_entities.csv"
+    entities_path = OUTPUT_DIR / f"{DOMAIN_ID}_entities.csv"
     
     with open(entities_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -131,12 +132,12 @@ def export_event_entities():
             FROM research_events re
             JOIN event_entities ee ON re.event_id = ee.event_id
             JOIN entities e ON ee.entity_id = e.entity_id
-            WHERE re.research_domain = 'construction'
+            WHERE re.research_domain = ?
             ORDER BY re.event_id, e.entity_type, e.entity_name
-        """).fetchall()
+        """, (DOMAIN_ID,)).fetchall()
     
     # Export relationships
-    relationships_path = OUTPUT_DIR / "construction_event_entities.csv"
+    relationships_path = OUTPUT_DIR / f"{DOMAIN_ID}_event_entities.csv"
     
     with open(relationships_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -176,13 +177,13 @@ def export_sources():
             WHERE s.source_id IN (
                 SELECT DISTINCT re.source_id 
                 FROM research_events re 
-                WHERE re.research_domain = 'construction'
+                WHERE re.research_domain = ?
             )
             ORDER BY s.imported_at DESC
-        """).fetchall()
+        """, (DOMAIN_ID,)).fetchall()
     
     # Export sources
-    sources_path = OUTPUT_DIR / "construction_sources.csv"
+    sources_path = OUTPUT_DIR / f"{DOMAIN_ID}_sources.csv"
     
     with open(sources_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -210,7 +211,7 @@ def write_run_meta(events, entities, relationships, sources):
         "engine_version": "construction_science_export_v1",
         "timestamp": datetime.now().isoformat(),
         "database": str(DB_PATH.as_posix()),
-        "domain": "construction_science",
+        "domain": DOMAIN_ID,
         "counts": {
             "total_events": len(events),
             "total_entities": len(entities),
@@ -264,7 +265,7 @@ def write_run_meta(events, entities, relationships, sources):
         for event in sorted(events, key=lambda x: confidence_priority.get(x['confidence'], 0), reverse=True)[:10]
     ]
     
-    meta_path = OUTPUT_DIR / "run_meta_construction_science.json"
+    meta_path = OUTPUT_DIR / f"run_meta_{DOMAIN_ID}.json"
     with open(meta_path, 'w', encoding='utf-8') as f:
         json.dump(meta, f, indent=2)
     

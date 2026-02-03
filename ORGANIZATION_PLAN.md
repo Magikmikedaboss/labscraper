@@ -8,7 +8,7 @@
 
 ## Proper Structure
 
-```
+```text
 input/
 ├── pdfs/
 │   ├── construction_science/     # ✅ Clean construction PDFs (27 files)

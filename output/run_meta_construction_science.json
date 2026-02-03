@@ -1,217 +1,39 @@
 {
-  "run_id": "20260203_114103",
+  "run_id": "20260203_121134",
   "engine_version": "construction_science_export_v1",
-  "timestamp": "2026-02-03T11:41:03.636658",
+  "timestamp": "2026-02-03T12:11:34.082543",
   "database": "db/runs.sqlite",
   "domain": "construction_science",
   "counts": {
-    "total_events": 1033,
-    "total_entities": 57,
-    "total_relationships": 646,
-    "total_sources": 27,
+    "total_events": 1,
+    "total_entities": 1,
+    "total_relationships": 1,
+    "total_sources": 1,
     "entity_types": {
-      "environment": 8,
-      "material": 12,
-      "failure_mode": 11,
-      "test_method": 8,
-      "hazard": 6,
-      "system": 12
+      "test_method": 1
     }
   },
   "entity_type_breakdown": {
-    "environment": 8,
-    "material": 12,
-    "failure_mode": 11,
-    "test_method": 8,
-    "hazard": 6,
-    "system": 12
+    "test_method": 1
   },
   "date_range": {
-    "earliest_event": "2026-02-02T15:53:28Z",
-    "latest_event": "2026-02-02T16:02:31Z"
+    "earliest_event": "2026-02-03T18:19:29Z",
+    "latest_event": "2026-02-03T18:19:29Z"
   },
   "top_entities": [
     {
-      "name": "CORROSION",
-      "type": "environment",
-      "event_count": 73,
-      "paper_count": 9
-    },
-    {
-      "name": "TEMPERATURE",
-      "type": "environment",
-      "event_count": 57,
-      "paper_count": 12
-    },
-    {
-      "name": "MOISTURE",
-      "type": "environment",
-      "event_count": 55,
-      "paper_count": 8
-    },
-    {
-      "name": "STEEL",
-      "type": "material",
-      "event_count": 52,
-      "paper_count": 10
-    },
-    {
-      "name": "FAILURE",
-      "type": "failure_mode",
-      "event_count": 47,
-      "paper_count": 5
-    },
-    {
-      "name": "CONCRETE",
-      "type": "material",
-      "event_count": 44,
-      "paper_count": 11
-    },
-    {
       "name": "THERMAL",
       "type": "test_method",
-      "event_count": 32,
-      "paper_count": 11
-    },
-    {
-      "name": "IMPACT",
-      "type": "hazard",
-      "event_count": 27,
-      "paper_count": 6
-    },
-    {
-      "name": "WOOD",
-      "type": "material",
-      "event_count": 23,
-      "paper_count": 5
-    },
-    {
-      "name": "STRESS",
-      "type": "test_method",
-      "event_count": 20,
-      "paper_count": 6
-    },
-    {
-      "name": "DEGRADATION",
-      "type": "failure_mode",
-      "event_count": 19,
-      "paper_count": 5
-    },
-    {
-      "name": "TIMBER",
-      "type": "material",
-      "event_count": 18,
-      "paper_count": 3
-    },
-    {
-      "name": "IRON",
-      "type": "material",
-      "event_count": 15,
-      "paper_count": 8
-    },
-    {
-      "name": "RUST",
-      "type": "environment",
-      "event_count": 12,
-      "paper_count": 3
-    },
-    {
-      "name": "GLASS",
-      "type": "material",
-      "event_count": 12,
+      "event_count": 1,
       "paper_count": 1
-    },
-    {
-      "name": "HUMIDITY",
-      "type": "environment",
-      "event_count": 10,
-      "paper_count": 5
-    },
-    {
-      "name": "WALL",
-      "type": "system",
-      "event_count": 10,
-      "paper_count": 5
-    },
-    {
-      "name": "ELECTRICAL",
-      "type": "system",
-      "event_count": 9,
-      "paper_count": 5
-    },
-    {
-      "name": "CRACKING",
-      "type": "failure_mode",
-      "event_count": 8,
-      "paper_count": 4
-    },
-    {
-      "name": "STRAIN",
-      "type": "test_method",
-      "event_count": 8,
-      "paper_count": 4
     }
   ],
   "top_events": [
     {
-      "event_id": "936edccc13b4a71e",
-      "type": "manufacturing_constraint",
+      "event_id": "12c7b74c0fe5e150",
+      "type": "other",
       "confidence": "med",
       "outcome": "unknown"
-    },
-    {
-      "event_id": "65b1cfc03e396419",
-      "type": "manufacturing_constraint",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "0093adea502387d9",
-      "type": "manufacturing_constraint",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "c6e25bb4aa69cd2e",
-      "type": "manufacturing_constraint",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "9154fe76945eca64",
-      "type": "toxicity_flag",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "9bea1216ab066230",
-      "type": "efficacy_result",
-      "confidence": "med",
-      "outcome": "successful"
-    },
-    {
-      "event_id": "d76c448b832facfd",
-      "type": "regulatory_risk",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "7ef0861756c166f3",
-      "type": "manufacturing_constraint",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "fe3e2deb4c42602e",
-      "type": "manufacturing_constraint",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "0d2cb57b9f1eed2b",
-      "type": "manufacturing_constraint",
-      "confidence": "med",
-      "outcome": "improved"
     }
   ]
 }

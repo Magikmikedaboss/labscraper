@@ -4,7 +4,6 @@ Check construction science entities for accuracy
 """
 
 import sqlite3
-import sys
 import argparse
 
 def check_construction_entities(db_path='db/runs.sqlite', worker_count=4):
@@ -85,7 +84,7 @@ def check_construction_entities(db_path='db/runs.sqlite', worker_count=4):
             print(f"   - Domain-specific filtering working correctly")
             
     except sqlite3.Error as e:
-        print(f"❌ Database error checking entities: {e}")
+            print("❌ Database error checking entities: " + str(e))
 
 def main():
     """Main function with command-line argument parsing"""
