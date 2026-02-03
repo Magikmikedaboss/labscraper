@@ -79,8 +79,8 @@ def check_construction_entities():
             print(f"   - {total_events} events extracted from construction science documents")
             print(f"   - Domain-specific filtering working correctly")
             
-    except Exception as e:
-        print(f"❌ Error checking entities: {e}")
+    except sqlite3.Error as e:
+        print(f"❌ Database error checking entities: {e}")
 
 if __name__ == "__main__":
     check_construction_entities()

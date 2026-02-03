@@ -1,215 +1,82 @@
 {
-  "run_id": "20260202_203512",
+  "run_id": "20260203_040434",
   "engine_version": "construction_science_export_v1",
-  "timestamp": "2026-02-02T20:35:12.714319",
+  "timestamp": "2026-02-03T04:04:34.804995",
   "database": "db/runs.sqlite",
   "domain": "construction_science",
   "counts": {
-    "total_events": 2507,
-    "total_entities": 134,
-    "total_relationships": 801,
+    "total_events": 1033,
+    "total_entities": 0,
+    "total_relationships": 0,
     "total_sources": 64,
-    "entity_types": {
-      "model": 55,
-      "compound": 17,
-      "target": 42,
-      "stem_cell": 7,
-      "peptide": 13
-    }
+    "entity_types": {}
   },
-  "entity_type_breakdown": {
-    "model": 55,
-    "compound": 17,
-    "target": 42,
-    "stem_cell": 7,
-    "peptide": 13
-  },
+  "entity_type_breakdown": {},
   "date_range": {
     "earliest_event": "2026-02-02T15:53:28Z",
-    "latest_event": "2026-02-02T16:08:40Z"
+    "latest_event": "2026-02-02T16:02:31Z"
   },
-  "top_entities": [
-    {
-      "name": "SERUM",
-      "type": "model",
-      "event_count": 72,
-      "paper_count": 18
-    },
-    {
-      "name": "Plasma",
-      "type": "model",
-      "event_count": 71,
-      "paper_count": 15
-    },
-    {
-      "name": "HUMAN",
-      "type": "model",
-      "event_count": 48,
-      "paper_count": 19
-    },
-    {
-      "name": "In vivo",
-      "type": "model",
-      "event_count": 47,
-      "paper_count": 13
-    },
-    {
-      "name": "DOGS",
-      "type": "model",
-      "event_count": 41,
-      "paper_count": 3
-    },
-    {
-      "name": "MICE",
-      "type": "model",
-      "event_count": 40,
-      "paper_count": 14
-    },
-    {
-      "name": "BLOOD",
-      "type": "model",
-      "event_count": 32,
-      "paper_count": 12
-    },
-    {
-      "name": "METFORMIN",
-      "type": "compound",
-      "event_count": 31,
-      "paper_count": 4
-    },
-    {
-      "name": "Humans",
-      "type": "model",
-      "event_count": 21,
-      "paper_count": 11
-    },
-    {
-      "name": "In vitro",
-      "type": "model",
-      "event_count": 18,
-      "paper_count": 10
-    },
-    {
-      "name": "Skeletal muscle",
-      "type": "model",
-      "event_count": 18,
-      "paper_count": 5
-    },
-    {
-      "name": "Tissue",
-      "type": "model",
-      "event_count": 18,
-      "paper_count": 10
-    },
-    {
-      "name": "DOG",
-      "type": "model",
-      "event_count": 16,
-      "paper_count": 1
-    },
-    {
-      "name": "Mitochondria",
-      "type": "model",
-      "event_count": 16,
-      "paper_count": 6
-    },
-    {
-      "name": "QUERCETIN",
-      "type": "compound",
-      "event_count": 15,
-      "paper_count": 4
-    },
-    {
-      "name": "TUMOR",
-      "type": "model",
-      "event_count": 15,
-      "paper_count": 6
-    },
-    {
-      "name": "RECEPTOR",
-      "type": "target",
-      "event_count": 14,
-      "paper_count": 7
-    },
-    {
-      "name": "Mitochondrial",
-      "type": "model",
-      "event_count": 13,
-      "paper_count": 5
-    },
-    {
-      "name": "MOUSE",
-      "type": "model",
-      "event_count": 12,
-      "paper_count": 7
-    },
-    {
-      "name": "differentiation",
-      "type": "stem_cell",
-      "event_count": 11,
-      "paper_count": 6
-    }
-  ],
+  "top_entities": [],
   "top_events": [
     {
-      "event_id": "5acd266ee624b682",
-      "type": "decision_point",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "cf8b7f47fff8bf7d",
-      "type": "decision_point",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "a83dc8524551ebef",
-      "type": "efficacy_result",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "d1810d148fa68638",
-      "type": "decision_point",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "fb3f3b9d33a96a62",
-      "type": "efficacy_result",
-      "confidence": "med",
-      "outcome": "unknown"
-    },
-    {
-      "event_id": "98be12d6a352e2cc",
+      "event_id": "936edccc13b4a71e",
       "type": "manufacturing_constraint",
       "confidence": "med",
       "outcome": "unknown"
     },
     {
-      "event_id": "1006357fc9947b1a",
+      "event_id": "65b1cfc03e396419",
       "type": "manufacturing_constraint",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "0093adea502387d9",
+      "type": "manufacturing_constraint",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "c6e25bb4aa69cd2e",
+      "type": "manufacturing_constraint",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "9154fe76945eca64",
+      "type": "toxicity_flag",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "9bea1216ab066230",
+      "type": "efficacy_result",
       "confidence": "med",
       "outcome": "successful"
     },
     {
-      "event_id": "19298aaf92bc26e5",
-      "type": "decision_point",
+      "event_id": "d76c448b832facfd",
+      "type": "regulatory_risk",
       "confidence": "med",
       "outcome": "unknown"
     },
     {
-      "event_id": "1c1d6eb4cf412dc3",
-      "type": "method_evaluation",
+      "event_id": "7ef0861756c166f3",
+      "type": "manufacturing_constraint",
       "confidence": "med",
       "outcome": "unknown"
     },
     {
-      "event_id": "afdfce1dab9bef7b",
-      "type": "method_evaluation",
+      "event_id": "fe3e2deb4c42602e",
+      "type": "manufacturing_constraint",
       "confidence": "med",
       "outcome": "unknown"
+    },
+    {
+      "event_id": "0d2cb57b9f1eed2b",
+      "type": "manufacturing_constraint",
+      "confidence": "med",
+      "outcome": "improved"
     }
   ]
 }

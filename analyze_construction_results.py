@@ -19,6 +19,7 @@ def analyze_construction_results():
     print(f"📊 Analyzing database: {db_path.name}")
     print()
     
+    conn = None
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -168,7 +169,8 @@ def analyze_construction_results():
     except Exception as e:
         print(f"❌ Error during analysis: {e}")
     finally:
-        conn.close()
+        if conn is not None:
+            conn.close()
 
 if __name__ == "__main__":
     analyze_construction_results()

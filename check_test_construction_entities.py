@@ -16,9 +16,9 @@ def check_construction_entities(db_path='runs/test_construction_fix.sqlite', wor
             total_sources = con.execute('SELECT COUNT(*) FROM sources').fetchone()[0]
             
             print("📊 Database Summary:")
-            print(f"   Total Events: {total_events}")
-            print(f"   Total Entities: {total_entities}")
-            print(f"   Total Sources: {total_sources}")
+            print("   Total Events: {}".format(total_events))
+            print("   Total Entities: {}".format(total_entities))
+            print("   Total Sources: {}".format(total_sources))
             print()
             
             # Check entities
@@ -39,25 +39,25 @@ def check_construction_entities(db_path='runs/test_construction_fix.sqlite', wor
                 else:
                     other_entities.append((name, etype))
             
-            print(f"   Construction entities found: {len(construction_entities)}")
+            print("   Construction entities found: {}".format(len(construction_entities)))
             for name, etype in construction_entities:
-                print(f"     - {name} ({etype})")
+                print("     - {} ({})".format(name, etype))
             
-            print(f"\n   Other entities found: {len(other_entities)}")
+            print("\n   Other entities found: {}".format(len(other_entities)))
             for name, etype in other_entities:
-                print(f"     - {name} ({etype})")
+                print("     - {} ({})".format(name, etype))
             
             # Check events by domain
             print("\n📋 Event Analysis:")
             domain_events = con.execute('SELECT research_domain, COUNT(*) FROM research_events GROUP BY research_domain').fetchall()
             for domain, count in domain_events:
-                print(f"   Domain '{domain}': {count} events")
+                print("   Domain '{}': {} events".format(domain, count))
             
             # Check biological systems
             print("\n🔬 Biological Systems:")
             bio_systems = con.execute('SELECT biological_system, COUNT(*) FROM research_events GROUP BY biological_system').fetchall()
             for bio_sys, count in bio_systems:
-                print(f"   {bio_sys}: {count} events")
+                print("   {}: {} events".format(bio_sys, count))
             
             # Get PDF processing statistics
             pdf_stats = con.execute('''
@@ -71,12 +71,12 @@ def check_construction_entities(db_path='runs/test_construction_fix.sqlite', wor
             total_pdfs, success_count, failure_count = pdf_stats if pdf_stats else (0, 0, 0)
             
             print("\n✅ Analysis complete!")
-            print(f"   - Successfully processed {total_pdfs} PDFs with {worker_count} workers")
-            print(f"   - {success_count} PDFs processed successfully, {failure_count} failed")
-            print(f"   - {total_events} events extracted from construction science documents")
-            print(f"   - Domain-specific filtering working correctly")
+            print("   - Successfully processed {} PDFs with {} workers".format(total_pdfs, worker_count))
+            print("   - {} PDFs processed successfully, {} failed".format(success_count, failure_count))
+            print("   - {} events extracted from construction science documents".format(total_events))
+            print("   - Domain-specific filtering working correctly")
     except sqlite3.Error as e:
-        print(f"❌ Database error checking entities: {e}")
+        print("❌ Database error checking entities: {}".format(e))
 
 if __name__ == "__main__":
     check_construction_entities()

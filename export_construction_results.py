@@ -38,6 +38,7 @@ def export_events():
             FROM research_events re
             LEFT JOIN event_entities ee ON re.event_id = ee.event_id
             LEFT JOIN entities e ON ee.entity_id = e.entity_id
+            WHERE re.research_domain = 'construction'
             GROUP BY re.event_id
             ORDER BY re.created_at DESC
         """).fetchall()
@@ -85,6 +86,7 @@ def export_entities():
             FROM entities e
             JOIN event_entities ee ON e.entity_id = ee.entity_id
             JOIN research_events re ON ee.event_id = re.event_id
+            WHERE re.research_domain = 'construction'
             GROUP BY e.entity_type, e.entity_name
             ORDER BY event_count DESC, e.entity_type
         """).fetchall()
@@ -129,6 +131,7 @@ def export_event_entities():
             FROM research_events re
             JOIN event_entities ee ON re.event_id = ee.event_id
             JOIN entities e ON ee.entity_id = e.entity_id
+            WHERE re.research_domain = 'construction'
             ORDER BY re.event_id, e.entity_type, e.entity_name
         """).fetchall()
     
@@ -244,7 +247,8 @@ def write_run_meta(events, entities, relationships, sources):
         for entity in sorted(entities, key=lambda x: x['event_count'], reverse=True)[:20]
     ]
     
-    # Top events by confidence
+    # Top events by confidence using priority mapping
+    confidence_priority = {'high': 3, 'med': 2, 'low': 1}
     meta["top_events"] = [
         {
             "event_id": event['event_id'],
@@ -252,7 +256,7 @@ def write_run_meta(events, entities, relationships, sources):
             "confidence": event['confidence'],
             "outcome": event['outcome'][:100] + "..." if event['outcome'] and len(event['outcome']) > 100 else (event['outcome'] or "")
         }
-        for event in sorted(events, key=lambda x: x['confidence'] or 'low', reverse=True)[:10]
+        for event in sorted(events, key=lambda x: confidence_priority.get(x['confidence'], 0), reverse=True)[:10]
     ]
     
     meta_path = OUTPUT_DIR / "run_meta_construction_science.json"

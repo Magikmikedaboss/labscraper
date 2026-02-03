@@ -217,7 +217,7 @@ def create_clean_construction_db():
         new_conn.executemany("INSERT OR IGNORE INTO sources VALUES (?,?,?,?,?,?,?,?)", sources)
         
         # Insert documents
-        new_conn.executemany("INSERT OR IGNORE INTO documents VALUES (?,?,?,?,?,?,?)", documents)
+        new_conn.executemany("INSERT OR IGNORE INTO documents (doc_id, source_id, file_path, file_type, sha256, created_at) VALUES (?,?,?,?,?,?)", documents)
         
         # Insert chunks
         new_conn.executemany("INSERT OR IGNORE INTO chunks VALUES (?,?,?,?,?,?,?)", chunks)

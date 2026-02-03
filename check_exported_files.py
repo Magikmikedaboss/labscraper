@@ -10,11 +10,15 @@ def check_exported_files():
     print('📁 CHECKING EXPORTED FILES')
     print('=' * 40)
     
+    # Make paths relative to script location for resilience to working-directory changes
+    script_dir = Path(__file__).parent
+    output_dir = script_dir / "output"
+    
     # Check if files exist
     files_to_check = [
-        'output/construction_entities.csv',
-        'output/construction_events.csv',
-        'output/construction_event_entities.csv'
+        output_dir / 'construction_entities.csv',
+        output_dir / 'construction_events.csv',
+        output_dir / 'construction_event_entities.csv'
     ]
     
     for file_path in files_to_check:
@@ -31,7 +35,9 @@ def check_exported_files():
             except pd.errors.EmptyDataError as e:
                 print(f'❌ {file_path}: Empty CSV file - {e}')
             except Exception as e:
+                # Avoid blind Exception catch - re-raise after logging
                 print(f'❌ {file_path}: Unexpected error - {e}')
+                raise
         else:
             print(f'❌ {file_path}: Not found')
 

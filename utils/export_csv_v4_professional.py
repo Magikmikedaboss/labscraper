@@ -92,13 +92,13 @@ def export_events_professional():
                 conf_boosted = "other"  # Normalize for output
             confidence_changes[conf_boosted] += 1
             
-                conf_orig_norm = str(conf_orig).strip().lower() if conf_orig is not None else ''
-                conf_boosted_norm = str(conf_boosted).strip().lower() if conf_boosted is not None else ''
-                if conf_orig_norm != conf_boosted_norm:
-                    if conf_boosted_norm == 'high':
-                        confidence_changes['boosted_to_high'] += 1
-                    elif conf_boosted_norm == 'med':
-                        confidence_changes['boosted_to_med'] += 1
+            conf_orig_norm = str(conf_orig).strip().lower() if conf_orig is not None else ''
+            conf_boosted_norm = str(conf_boosted).strip().lower() if conf_boosted is not None else ''
+            if conf_orig_norm != conf_boosted_norm:
+                if conf_boosted_norm == 'high':
+                    confidence_changes['boosted_to_high'] += 1
+                elif conf_boosted_norm == 'med':
+                    confidence_changes['boosted_to_med'] += 1
             
             writer.writerow([
                 event_id, domain, etype, stage, outcome,

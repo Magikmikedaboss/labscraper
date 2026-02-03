@@ -10,7 +10,7 @@ sqlite3.OperationalError: no such column: event_data
 The query was trying to access a column named `event_data` that doesn't exist in the `research_events` table.
 
 ## Solution
-After analyzing the database schema, I discovered the correct column names in the `research_events` table:
+After analyzing the database schema, I discovered the correct column names in the `research_events` table located in `db/runs.sqlite`:
 
 ### Table Structure
 - `event_id` (TEXT, PRIMARY KEY)
@@ -63,7 +63,7 @@ LIMIT 5
 ## Usage
 Run the fixed query with:
 ```bash
-cd D:\myrepo\peptide-scraper
+cd peptide-scraper
 python fixed_query.py
 ```
 
