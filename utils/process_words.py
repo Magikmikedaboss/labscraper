@@ -1,6 +1,6 @@
 """
 Shared module for process words demotion logic.
-Used by export_csv_v4_professional.py and export_csv_v5_domain_aware.py
+Used by export_csv.py (consolidated export system)
 """
 
 # Process words that should be tags, not primary assay entities

@@ -14,139 +14,19 @@ def create_clean_construction_db():
     # Copy schema from original
     original_db = Path("db/runs.sqlite")
     
-    # Create new database with schema
-    with sqlite3.connect(clean_db) as new_conn:
-        # Initialize schema
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS sources (
-                source_id TEXT PRIMARY KEY,
-                pdf_file TEXT NOT NULL,
-                title TEXT,
-                authors TEXT,
-                year INTEGER,
-                doi TEXT,
-                venue TEXT,
-                imported_at TEXT NOT NULL
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS documents (
-                doc_id TEXT PRIMARY KEY,
-                source_id TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                file_type TEXT NOT NULL,
-                sha256 TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                FOREIGN KEY (source_id) REFERENCES sources (source_id)
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS chunks (
-                chunk_id TEXT PRIMARY KEY,
-                doc_id TEXT NOT NULL,
-                source_id TEXT NOT NULL,
-                page_number INTEGER NOT NULL,
-                section_guess TEXT,
-                chunk_text TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                FOREIGN KEY (doc_id) REFERENCES documents (doc_id),
-                FOREIGN KEY (source_id) REFERENCES sources (source_id)
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS research_events (
-                event_id TEXT PRIMARY KEY,
-                research_domain TEXT NOT NULL,
-                event_type TEXT NOT NULL,
-                study_stage TEXT,
-                biological_system TEXT,
-                application_area TEXT,
-                outcome TEXT,
-                failure_reason TEXT,
-                decision_taken TEXT,
-                decision_driver TEXT,
-                evidence_snippet TEXT,
-                evidence_strength TEXT,
-                confidence TEXT,
-                source_id TEXT NOT NULL,
-                doc_id TEXT NOT NULL,
-                chunk_id TEXT NOT NULL,
-                page_number INTEGER NOT NULL,
-                created_at TEXT NOT NULL,
-                FOREIGN KEY (source_id) REFERENCES sources (source_id),
-                FOREIGN KEY (doc_id) REFERENCES documents (doc_id),
-                FOREIGN KEY (chunk_id) REFERENCES chunks (chunk_id)
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS entities (
-                entity_id TEXT PRIMARY KEY,
-                entity_type TEXT NOT NULL,
-                entity_name TEXT NOT NULL,
-                entity_variant TEXT,
-                organism TEXT,
-                created_at TEXT NOT NULL
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS event_entities (
-                event_id TEXT NOT NULL,
-                entity_id TEXT NOT NULL,
-                role TEXT,
-                PRIMARY KEY (event_id, entity_id),
-                FOREIGN KEY (event_id) REFERENCES research_events (event_id),
-                FOREIGN KEY (entity_id) REFERENCES entities (entity_id)
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS entity_relationships (
-                relationship_id TEXT PRIMARY KEY,
-                entity_id_1 TEXT NOT NULL,
-                entity_id_2 TEXT NOT NULL,
-                relationship_type TEXT NOT NULL,
-                event_id TEXT,
-                confidence TEXT,
-                created_at TEXT NOT NULL,
-                FOREIGN KEY (entity_id_1) REFERENCES entities (entity_id),
-                FOREIGN KEY (entity_id_2) REFERENCES entities (entity_id),
-                FOREIGN KEY (event_id) REFERENCES research_events (event_id)
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS tags (
-                tag TEXT PRIMARY KEY
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS event_tags (
-                event_id TEXT NOT NULL,
-                tag TEXT NOT NULL,
-                PRIMARY KEY (event_id, tag),
-                FOREIGN KEY (event_id) REFERENCES research_events (event_id),
-                FOREIGN KEY (tag) REFERENCES tags (tag)
-            )
-        """)
-        
-        new_conn.execute("""
-            CREATE TABLE IF NOT EXISTS quantitative_measurements (
-                measurement_id TEXT PRIMARY KEY,
-                event_id TEXT NOT NULL,
-                measurement_type TEXT NOT NULL,
-                value REAL NOT NULL,
-                unit TEXT NOT NULL,
-                context TEXT,
-                created_at TEXT NOT NULL,
-                FOREIGN KEY (event_id) REFERENCES research_events (event_id)
-            )
-        """)
+    # Precondition check: verify original database exists
+    if not original_db.exists():
+        raise SystemExit(f"❌ Original database not found: {original_db}")
+    
+    # Create new database by copying schema from original database
+    with sqlite3.connect(original_db) as old_conn, sqlite3.connect(clean_db) as new_conn:
+        # Copy schema from original database
+        for line in old_conn.iterdump():
+            if line.startswith('CREATE TABLE') or line.startswith('CREATE INDEX'):
+                try:
+                    new_conn.execute(line)
+                except sqlite3.Error as e:
+                    print(f"Warning: Could not execute schema line: {line[:100]}... Error: {e}")
         
         new_conn.commit()
     
@@ -158,9 +38,6 @@ def create_clean_construction_db():
         ).fetchall()
         
         print(f"Found {len(construction_events)} construction events")
-        
-        # Get related data
-        construction_event_ids = [event[0] for event in construction_events]
         
         # Sources
         sources = old_conn.execute(
@@ -213,35 +90,77 @@ def create_clean_construction_db():
         # Insert data into new database
         print("Inserting data into clean database...")
         
-        # Insert sources
-        new_conn.executemany("INSERT OR IGNORE INTO sources VALUES (?,?,?,?,?,?,?,?)", sources)
+        # Insert sources with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO sources 
+            (source_id, pdf_file, title, authors, year, doi, venue, imported_at) 
+            VALUES (?,?,?,?,?,?,?,?)
+        """, sources)
         
-        # Insert documents
-        new_conn.executemany("INSERT OR IGNORE INTO documents (doc_id, source_id, file_path, file_type, sha256, created_at) VALUES (?,?,?,?,?,?)", documents)
+        # Insert documents with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO documents 
+            (doc_id, source_id, file_path, file_type, sha256, created_at) 
+            VALUES (?,?,?,?,?,?)
+        """, documents)
         
-        # Insert chunks
-        new_conn.executemany("INSERT OR IGNORE INTO chunks VALUES (?,?,?,?,?,?,?)", chunks)
+        # Insert chunks with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO chunks 
+            (chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at) 
+            VALUES (?,?,?,?,?,?,?)
+        """, chunks)
         
-        # Insert entities
-        new_conn.executemany("INSERT OR IGNORE INTO entities VALUES (?,?,?,?,?,?)", entities)
+        # Insert entities with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO entities 
+            (entity_id, entity_type, entity_name, entity_variant, organism, created_at) 
+            VALUES (?,?,?,?,?,?)
+        """, entities)
         
-        # Insert events
-        new_conn.executemany("INSERT OR IGNORE INTO research_events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", construction_events)
+        # Insert events with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO research_events 
+            (event_id, research_domain, event_type, study_stage, biological_system, application_area, 
+             outcome, failure_reason, decision_taken, decision_driver, evidence_snippet, 
+             evidence_strength, confidence, source_id, doc_id, chunk_id, page_number, created_at) 
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, construction_events)
         
-        # Insert event entities
-        new_conn.executemany("INSERT OR IGNORE INTO event_entities VALUES (?,?,?)", event_entities)
+        # Insert event entities with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO event_entities 
+            (event_id, entity_id, role) 
+            VALUES (?,?,?)
+        """, event_entities)
         
-        # Insert event tags
-        new_conn.executemany("INSERT OR IGNORE INTO event_tags VALUES (?,?)", event_tags)
+        # Insert event tags with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO event_tags 
+            (event_id, tag) 
+            VALUES (?,?)
+        """, event_tags)
         
-        # Insert measurements
-        new_conn.executemany("INSERT OR IGNORE INTO quantitative_measurements VALUES (?,?,?,?,?,?,?)", measurements)
+        # Insert measurements with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO quantitative_measurements 
+            (measurement_id, event_id, measurement_type, value, unit, context, created_at) 
+            VALUES (?,?,?,?,?,?,?)
+        """, measurements)
         
-        # Insert relationships
-        new_conn.executemany("INSERT OR IGNORE INTO entity_relationships VALUES (?,?,?,?,?,?,?)", relationships)
+        # Insert relationships with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO entity_relationships 
+            (relationship_id, entity_id_1, entity_id_2, relationship_type, event_id, confidence, created_at) 
+            VALUES (?,?,?,?,?,?,?)
+        """, relationships)
         
-        # Insert tags
-        new_conn.executemany("INSERT OR IGNORE INTO tags VALUES (?)", tags)
+        # Insert tags with explicit columns
+        new_conn.executemany("""
+            INSERT OR IGNORE INTO tags 
+            (tag) 
+            VALUES (?)
+        """, tags)
         
         new_conn.commit()
     

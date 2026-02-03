@@ -5,8 +5,14 @@ Check construction science entities for accuracy in test database
 
 import sqlite3
 
-def check_construction_entities(db_path='runs/test_construction_fix.sqlite', worker_count=4):
-    """Check the entities extracted from construction science PDFs"""
+def check_construction_entities(db_path='db/runs.sqlite', worker_count=4):
+    """Check the entities extracted from construction science PDFs
+    
+    Args:
+        db_path (str): Path to the database file. Defaults to the canonical production DB.
+                      Pass a test path for testing purposes.
+        worker_count (int): Number of workers used for processing (for display purposes)
+    """
     try:
         # Use context manager for database connection
         with sqlite3.connect(db_path) as con:
@@ -76,7 +82,7 @@ def check_construction_entities(db_path='runs/test_construction_fix.sqlite', wor
             print("   - {} events extracted from construction science documents".format(total_events))
             print("   - Domain-specific filtering working correctly")
     except sqlite3.Error as e:
-        print("❌ Database error checking entities: {}".format(e))
+        print("❌ Database error checking entities ({}): {}".format(db_path, e))
 
 if __name__ == "__main__":
     check_construction_entities()

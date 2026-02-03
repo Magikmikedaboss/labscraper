@@ -1,14 +1,14 @@
 {
-  "run_id": "20260203_040434",
+  "run_id": "20260203_091548",
   "engine_version": "construction_science_export_v1",
-  "timestamp": "2026-02-03T04:04:34.804995",
+  "timestamp": "2026-02-03T09:15:48.859933",
   "database": "db/runs.sqlite",
   "domain": "construction_science",
   "counts": {
     "total_events": 1033,
     "total_entities": 0,
     "total_relationships": 0,
-    "total_sources": 64,
+    "total_sources": 27,
     "entity_types": {}
   },
   "entity_type_breakdown": {},

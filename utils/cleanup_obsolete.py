@@ -105,8 +105,7 @@ def cleanup(dry_run=False):
     print("=" * 70)
     
     print("\n📋 Keeping:")
-    print("   ✅ export_csv_v4_professional.py (stable v4)")
-    print("   ✅ export_csv_v5_domain_aware.py (latest with domain support)")
+    print("   ✅ export_csv.py (consolidated export system)")
     print("   ✅ All current exports in output/")
     print("   ✅ All domain and overlay files")
     print("   ✅ Core documentation (DOMAIN_EXPORT_V5_SUMMARY.md, etc.)")

@@ -5,6 +5,7 @@ Check the exported construction science files
 
 import pandas as pd
 import os
+from pathlib import Path
 
 def check_exported_files():
     print('📁 CHECKING EXPORTED FILES')

@@ -4,12 +4,17 @@ Check construction science entities for accuracy
 """
 
 import sqlite3
+import sys
+import argparse
 
-def check_construction_entities():
-    """Check the entities extracted from construction science PDFs"""
-    db_path = 'db/runs.sqlite'
+def check_construction_entities(db_path='db/runs.sqlite', worker_count=4):
+    """Check the entities extracted from construction science PDFs
     
-    worker_count = 4  # Update this if your pipeline uses a different number of workers
+    Args:
+        db_path (str): Path to the database file. Defaults to the canonical production DB.
+                      Pass a test path for testing purposes.
+        worker_count (int): Number of workers used for processing (for display purposes)
+    """
     try:
         # Use context manager for database connection
         with sqlite3.connect(db_path) as con:
@@ -82,5 +87,16 @@ def check_construction_entities():
     except sqlite3.Error as e:
         print(f"❌ Database error checking entities: {e}")
 
+def main():
+    """Main function with command-line argument parsing"""
+    parser = argparse.ArgumentParser(description="Check construction science entities for accuracy")
+    parser.add_argument("--db-path", type=str, default="db/runs.sqlite", 
+                       help="Path to the database file (default: db/runs.sqlite)")
+    parser.add_argument("--worker-count", type=int, default=4,
+                       help="Number of workers used for processing (default: 4)")
+    
+    args = parser.parse_args()
+    check_construction_entities(db_path=args.db_path, worker_count=args.worker_count)
+
 if __name__ == "__main__":
-    check_construction_entities()
+    main()

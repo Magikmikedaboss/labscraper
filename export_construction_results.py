@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Export construction science results from construction_test_final.sqlite
+Export construction science results from db/runs.sqlite
 """
 
 import sqlite3
@@ -155,25 +155,30 @@ def export_event_entities():
     return relationships
 
 def export_sources():
-    """Export source information"""
+    """Export source information for construction-related sources only"""
     print("🏗️  Exporting source information...")
     
     with sqlite3.connect(DB_PATH) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
         
-        # Get source information
+        # Get source information for sources that have construction events
         sources = cur.execute("""
-            SELECT 
-                source_id,
-                pdf_file,
-                title,
-                authors,
-                year,
-                doi,
-                imported_at
-            FROM sources
-            ORDER BY imported_at DESC
+            SELECT DISTINCT
+                s.source_id,
+                s.pdf_file,
+                s.title,
+                s.authors,
+                s.year,
+                s.doi,
+                s.imported_at
+            FROM sources s
+            WHERE s.source_id IN (
+                SELECT DISTINCT re.source_id 
+                FROM research_events re 
+                WHERE re.research_domain = 'construction'
+            )
+            ORDER BY s.imported_at DESC
         """).fetchall()
     
     # Export sources
@@ -299,7 +304,13 @@ def main():
     print("\n🎯 Top 5 Events by Confidence:")
     for i, event in enumerate(meta["top_events"][:5], 1):
         print(f"   {i}. Event {event['event_id']} - {event['confidence']} confidence")
-        print(f"      Outcome: {event['outcome'][:80]}...")
+        outcome = event['outcome'] or ""
+        if outcome and len(outcome) > 80:
+            print(f"      Outcome: {outcome[:80]}...")
+        elif outcome:
+            print(f"      Outcome: {outcome}")
+        else:
+            print(f"      Outcome: <empty>")
     
     print("\n✅ All exports completed successfully!")
     print(f"📁 Output directory: {OUTPUT_DIR.absolute()}")

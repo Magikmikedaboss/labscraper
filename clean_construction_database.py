@@ -24,11 +24,11 @@ def clean_construction_database():
         'neural_cell', 'cell_line', 'organism'
     ]
     
-    # Construction entity types that should be kept
-    construction_entity_types = [
-        'material', 'environment', 'process', 'structure', 
-        'component', 'system', 'property'
-    ]
+    # Construction entity types that should be kept (unused variable - kept for future validation)
+    # construction_entity_types = [
+    #     'material', 'environment', 'process', 'structure', 
+    #     'component', 'system', 'property'
+    # ]
     
     try:
         conn = None
@@ -59,12 +59,16 @@ def clean_construction_database():
         
         biomedical_entities = cursor.fetchall()
         print(f"\n❌ Found {len(biomedical_entities)} biomedical entities in construction events:")
-        for entity_id, entity_name, entity_type in biomedical_entities:
+        for _, entity_name, entity_type in biomedical_entities:
             print(f"   - {entity_name} ({entity_type})")
+        
+        # Initialize counters to prevent NameError if no biomedical entities found
+        removed_relationships = 0
+        removed_entities = 0
         
         if biomedical_entities:
             # Remove event-entity relationships for biomedical entities in construction events
-            print(f"\n🧹 Removing biomedical entity relationships...")
+            print("\n🧹 Removing biomedical entity relationships...")
             cursor.execute('''
                 DELETE FROM event_entities 
                 WHERE entity_id IN ({})
@@ -75,7 +79,7 @@ def clean_construction_database():
             print(f"   Removed {removed_relationships} event-entity relationships")
             
             # Remove biomedical entities that are no longer referenced
-            print(f"\n🗑️  Removing orphaned biomedical entities...")
+            print("\n🗑️  Removing orphaned biomedical entities...")
             cursor.execute('''
                 DELETE FROM entities 
                 WHERE entity_id IN ({})
@@ -109,13 +113,14 @@ def clean_construction_database():
             print(f"\n⚠️  WARNING: {remaining_contamination} biomedical entities still found")
         
         # Summary
-        print(f"\n📋 CLEANING SUMMARY:")
+        print("\n📋 CLEANING SUMMARY:")
         print(f"   Construction events: {construction_events}")
         print(f"   Biomedical entities removed: {len(biomedical_entities)}")
         print(f"   Relationships removed: {removed_relationships}")
         print(f"   Entities removed: {removed_entities}")
         
         conn.commit()
+        print("\n✅ Database cleaning complete!")
         
     except Exception as e:
         print(f"❌ Error during cleaning: {e}")
@@ -124,8 +129,6 @@ def clean_construction_database():
     finally:
         if conn:
             conn.close()
-    
-    print("\n✅ Database cleaning complete!")
 
 if __name__ == "__main__":
     clean_construction_database()

@@ -63,8 +63,11 @@ LIMIT 5
 ## Usage
 Run the fixed query with:
 ```bash
-cd peptide-scraper
+# From the project root, run:
 python fixed_query.py
+
+# Or, if you're in a different folder:
+cd peptide-scraper && python fixed_query.py
 ```
 
 This will successfully check domain persistence and display recent events without the "no such column" error.
