@@ -17,14 +17,14 @@ def check_construction_entities():
             total_entities = con.execute('SELECT COUNT(*) FROM entities').fetchone()[0]
             total_sources = con.execute('SELECT COUNT(*) FROM sources').fetchone()[0]
             
-            print(f"📊 Database Summary:")
+            print("📊 Database Summary:")
             print(f"   Total Events: {total_events}")
             print(f"   Total Entities: {total_entities}")
             print(f"   Total Sources: {total_sources}")
             print()
             
             # Check entities
-            print(f"🏗️  Construction-Related Entities:")
+            print("🏗️  Construction-Related Entities:")
             entities = con.execute('SELECT entity_name, entity_type FROM entities').fetchall()
             
             construction_keywords = ['concrete', 'steel', 'wood', 'glass', 'brick', 'cement', 
@@ -50,25 +50,25 @@ def check_construction_entities():
                 print(f"     - {name} ({etype})")
             
             # Check events by domain
-            print(f"\n📋 Event Analysis:")
+            print("\n📋 Event Analysis:")
             domain_events = con.execute('SELECT research_domain, COUNT(*) FROM research_events GROUP BY research_domain').fetchall()
             for domain, count in domain_events:
                 print(f"   Domain '{domain}': {count} events")
             
             # Check biological systems
-            print(f"\n🔬 Biological Systems:")
+            print("\n🔬 Biological Systems:")
             bio_systems = con.execute('SELECT biological_system, COUNT(*) FROM research_events GROUP BY biological_system').fetchall()
             for bio_sys, count in bio_systems:
                 print(f"   {bio_sys}: {count} events")
             
-            print(f"\n✅ Analysis complete!")
+            print("\n✅ Analysis complete!")
             if total_events > 0 and len(construction_entities) > 0:
                 print(f"   - Successfully processed construction science documents")
                 print(f"   - Domain-specific filtering working correctly")
             else:
-                print(f"   ⚠️  Warning: No events or construction entities found")            
-    except Exception as e:
-        print(f"❌ Error checking entities: {e}")
+                print("   ⚠️  Warning: No events or construction entities found")
+    except sqlite3.Error as e:
+        print(f"❌ Database error checking entities: {e}")
 
 if __name__ == "__main__":
     check_construction_entities()

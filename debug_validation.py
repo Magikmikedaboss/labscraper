@@ -5,7 +5,6 @@ Debug script to check entity validation
 
 import sys
 import os
-sys.path.append('utils')
 
 from utils.enhanced_entity_extractor import EnhancedEntityExtractor
 

@@ -1,4 +1,5 @@
 import sqlite3
+import sys
 
 from pathlib import Path
 
@@ -7,7 +8,7 @@ DB_PATH = Path('runs/test_construction_fix.sqlite')
 def main():
     if not DB_PATH.exists():
         print(f"❌ Database file not found: {DB_PATH}")
-        return
+        sys.exit(1)
 
     # Use context manager for database connection
     with sqlite3.connect(DB_PATH) as con:

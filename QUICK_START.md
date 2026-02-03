@@ -24,29 +24,33 @@ Place your PDF files in the appropriate input directory:
 #### Single Domain Processing
 ```bash
 # Basic usage
-python utils/run_engine.py --domain construction_science --input-dir input/pdfs
+python utils/run_engine.py --domain construction_science --input-dir input/pdfs/construction_science
 
 # With custom output database
-python utils/run_engine.py --domain construction_science --input-dir input/pdfs --output-db custom.db
+python utils/run_engine.py --domain construction_science --input-dir input/pdfs/construction_science --output-db custom.db
 ```
 
 #### Parallel Processing (Recommended for large datasets)
 ```bash
 # 4 parallel workers (recommended)
-python utils/scrape_pdfs_parallel.py --domain construction_science --input-dir input/pdfs --workers 4
+python utils/scrape_pdfs_parallel.py --domain construction_science --input-dir input/pdfs/construction_science --workers 4
 
 # 8 parallel workers (for powerful systems)
-python utils/scrape_pdfs_parallel.py --domain construction_science --input-dir input/pdfs --workers 8
+python utils/scrape_pdfs_parallel.py --domain construction_science --input-dir input/pdfs/construction_science --workers 8
 ```
+
+**Note**: Use `input/pdfs` (root) only for multi-domain ingestion. For single-domain runs, use `input/pdfs/{domain_name}`.
 
 ### 4. Export Results
 ```bash
-# Basic export
+# Basic export (ensure --db-path matches --output-db from scraping)
 python utils/export_csv_v5_domain_aware.py --db-path db/runs.sqlite --domain construction_science
 
 # Dual-lens export (advanced analysis)
 python utils/export_dual_lens.py --db-path db/runs.sqlite --domain construction_science
 ```
+
+**Important**: If you used `--output-db custom.db` during scraping, use `--db-path custom.db` for exports.
 
 ## Supported Domains
 - `construction_science` - Building materials, structural engineering, construction methods

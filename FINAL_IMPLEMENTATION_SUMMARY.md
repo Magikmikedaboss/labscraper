@@ -184,7 +184,7 @@ The construction science domain serves as a complete template for implementing a
 
 The system is ready for production use with comprehensive documentation and testing. Future domain implementations can follow the established patterns:
 
-1. Create domain configuration in `seeds/domains/`
+1. Create domain configuration in `config/domains/`
 2. Add overlay aliases in `seeds/overlays/`
 3. Implement specialized lenses in `lenses/`
 4. Configure seed files in `seeds/base/`

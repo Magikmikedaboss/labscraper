@@ -84,12 +84,7 @@ def test_construction_science():
             print(f"   PDFs Processed: {meta.get('pdfs_processed', 'N/A')}")
             print(f"   Events Extracted: {meta.get('events_extracted', 'N/A')}")
             print(f"   Entities Identified: {meta.get('entities_identified', 'N/A')}")
-            print(f"   Run Date: {meta.get('run_date', 'N/A')}")        
-               print(f"   Domain: {meta.get('domain_name', 'N/A')}")
-               print(f"   PDFs Processed: {meta.get('counts', {}).get('total_pdfs', 'N/A')}")
-               print(f"   Events Extracted: {meta.get('counts', {}).get('total_events', 'N/A')}")
-               print(f"   Entities Identified: {meta.get('counts', {}).get('total_entities', 'N/A')}")
-               print(f"   Run Date: {meta.get('run_date', meta.get('timestamp', 'N/A'))}")
+            print(f"   Run Date: {meta.get('run_date', 'N/A')}")
         print(f"\n✅ Construction Science Testing Complete!")
 
 if __name__ == "__main__":

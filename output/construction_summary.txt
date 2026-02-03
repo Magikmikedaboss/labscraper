@@ -60,5 +60,4 @@ Domain: construction_science
   Total events: 3948
   Total unique entities: 250
   Total sources (PDFs): 81
-  Export date: The current date is: Mon 02/02/2026 
-Enter the new date: (mm-dd-yy)
+  Export date: 2026-02-02T12:09:47.932840

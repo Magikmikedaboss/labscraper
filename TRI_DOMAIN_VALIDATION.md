@@ -60,7 +60,7 @@
 | 18 | LC-MS | assay | 100 | primary |
 
 **Stats:**
-- Total events: 5,045 (final)
+- Total events: 5,045 (current)
 - Primary entities: 370
 - Confidence high: 1.8% (89 events)
 - **Overlay aliases: 0** (no neuroscience terms matched)
@@ -238,7 +238,7 @@
 - Heavy stem cell model usage (neural stem cells, brain organoids)
 
 **Expected at 100% (82/82 PDFs):**
-- ~8,000-9,000 events
+- ~8,000-9,000 events (interim; corpus 66% complete)
 - ~500+ primary entities
 - Even stronger neural model signal
 

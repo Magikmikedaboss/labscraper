@@ -36,7 +36,7 @@ def test_construction_science_comprehensive():
             ORDER BY count DESC
         """).fetchall()
         
-        print(f"\n🏗️  Top Entity Types:")
+        print("\n🏗️  Top Entity Types:")
         for row in entity_counts[:10]:
             print(f"   {row['entity_type']}: {row['count']}")
         
@@ -55,7 +55,7 @@ def test_construction_science_comprehensive():
             GROUP BY confidence
         """).fetchall()
         
-        print(f"\n🎯 Confidence Distribution:")
+        print("\n🎯 Confidence Distribution:")
         for row in confidence_counts:
             print(f"   {row['confidence']}: {row['count']}")
         
@@ -69,7 +69,7 @@ def test_construction_science_comprehensive():
             LIMIT 10
         """).fetchall()
         
-        print(f"\n🏆 Top 10 Entities by Event Count:")
+        print("\n🏆 Top 10 Entities by Event Count:")
         for i, row in enumerate(top_entities, 1):
             print(f"   {i}. {row['entity_name']} ({row['entity_type']}): {row['event_count']} events")
         
@@ -84,7 +84,7 @@ def test_construction_science_comprehensive():
             LIMIT 10
         """).fetchall()
         
-        print(f"\n🏗️  Top Construction-Specific Entities:")
+        print("\n🏗️  Top Construction-Specific Entities:")
         for i, row in enumerate(construction_entities, 1):
             print(f"   {i}. {row['entity_name']} ({row['entity_type']}): {row['event_count']} events")
         
@@ -97,12 +97,12 @@ def test_construction_science_comprehensive():
             except json.JSONDecodeError as e:
                 print(f"❌ Error decoding JSON in {meta_path}: {e}")
                 meta = {}
-            print(f"\n📋 Run Metadata:")
-            print(f"   Domain: {meta.get('domain', 'N/A')}")
-            print(f"   PDFs Processed: {meta.get('pdfs_processed', 'N/A')}")
-            print(f"   Events Extracted: {meta.get('events_extracted', 'N/A')}")
-            print(f"   Entities Identified: {meta.get('entities_identified', 'N/A')}")
-            print(f"   Run Date: {meta.get('run_date', 'N/A')}")
+        print("\n📋 Run Metadata:")
+        print(f"   Domain: {meta.get('domain', 'N/A')}")
+        print(f"   PDFs Processed: {meta.get('pdfs_processed', 'N/A')}")
+        print(f"   Events Extracted: {meta.get('events_extracted', 'N/A')}")
+        print(f"   Entities Identified: {meta.get('entities_identified', 'N/A')}")
+        print(f"   Run Date: {meta.get('run_date', 'N/A')}")
         
         # Check export files
         export_files = [
@@ -110,7 +110,7 @@ def test_construction_science_comprehensive():
             "output/candidates_primary_construction_science.csv"
         ]
         
-        print(f"\n📁 Export Files:")
+        print("\n📁 Export Files:")
         for file_path in export_files:
             file_obj = Path(file_path)
             if file_obj.exists():
@@ -118,8 +118,8 @@ def test_construction_science_comprehensive():
             else:
                 print(f"   ❌ {file_path}")
         
-        print(f"\n✅ Construction Science Testing Complete!")
-        print(f"\n🎯 SYSTEM STATUS: READY FOR CONSTRUCTION SCIENCE RESEARCH INTELLIGENCE")
+        print("\n✅ Construction Science Testing Complete!")
+        print("\n🎯 SYSTEM STATUS: READY FOR CONSTRUCTION SCIENCE RESEARCH INTELLIGENCE")
 
 if __name__ == "__main__":
     test_construction_science_comprehensive()

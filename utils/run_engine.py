@@ -370,7 +370,7 @@ def extract_entities(sentence: str, domain: str = "methods_tooling") -> list[dic
     
     # Domain-specific entity extraction
     if domain == "construction_science":
-        # Construction science entities
+        # Construction science entities ONLY
         ents.extend(extract_construction_entities(sentence, extracted_names))
     else:
         # Default to biomedical entities for other domains
@@ -952,6 +952,136 @@ def main(domain: str = None, input_dir: Path = None, db_path: Path = None):
     
     # Use context manager for database connection
     with sqlite3.connect(db_path) as con:
+        # Initialize schema if tables don't exist
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS sources (
+                source_id TEXT PRIMARY KEY,
+                pdf_file TEXT NOT NULL,
+                title TEXT,
+                authors TEXT,
+                year INTEGER,
+                doi TEXT,
+                imported_at TEXT NOT NULL
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS documents (
+                doc_id TEXT PRIMARY KEY,
+                source_id TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                file_type TEXT NOT NULL,
+                sha256 TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (source_id) REFERENCES sources (source_id)
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS chunks (
+                chunk_id TEXT PRIMARY KEY,
+                doc_id TEXT NOT NULL,
+                source_id TEXT NOT NULL,
+                page_number INTEGER NOT NULL,
+                section_guess TEXT,
+                chunk_text TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (doc_id) REFERENCES documents (doc_id),
+                FOREIGN KEY (source_id) REFERENCES sources (source_id)
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS research_events (
+                event_id TEXT PRIMARY KEY,
+                research_domain TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                study_stage TEXT,
+                biological_system TEXT,
+                application_area TEXT,
+                outcome TEXT,
+                failure_reason TEXT,
+                decision_taken TEXT,
+                decision_driver TEXT,
+                evidence_snippet TEXT,
+                evidence_strength TEXT,
+                confidence TEXT,
+                source_id TEXT NOT NULL,
+                doc_id TEXT NOT NULL,
+                chunk_id TEXT NOT NULL,
+                page_number INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (source_id) REFERENCES sources (source_id),
+                FOREIGN KEY (doc_id) REFERENCES documents (doc_id),
+                FOREIGN KEY (chunk_id) REFERENCES chunks (chunk_id)
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS entities (
+                entity_id TEXT PRIMARY KEY,
+                entity_type TEXT NOT NULL,
+                entity_name TEXT NOT NULL,
+                entity_variant TEXT,
+                organism TEXT,
+                created_at TEXT NOT NULL
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS event_entities (
+                event_id TEXT NOT NULL,
+                entity_id TEXT NOT NULL,
+                role TEXT,
+                PRIMARY KEY (event_id, entity_id),
+                FOREIGN KEY (event_id) REFERENCES research_events (event_id),
+                FOREIGN KEY (entity_id) REFERENCES entities (entity_id)
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS entity_relationships (
+                relationship_id TEXT PRIMARY KEY,
+                entity_id_1 TEXT NOT NULL,
+                entity_id_2 TEXT NOT NULL,
+                relationship_type TEXT NOT NULL,
+                event_id TEXT,
+                confidence TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (entity_id_1) REFERENCES entities (entity_id),
+                FOREIGN KEY (entity_id_2) REFERENCES entities (entity_id),
+                FOREIGN KEY (event_id) REFERENCES research_events (event_id)
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS tags (
+                tag TEXT PRIMARY KEY
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS event_tags (
+                event_id TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                PRIMARY KEY (event_id, tag),
+                FOREIGN KEY (event_id) REFERENCES research_events (event_id),
+                FOREIGN KEY (tag) REFERENCES tags (tag)
+            )
+        """)
+        
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS quantitative_measurements (
+                measurement_id TEXT PRIMARY KEY,
+                event_id TEXT NOT NULL,
+                measurement_type TEXT NOT NULL,
+                value REAL NOT NULL,
+                unit TEXT NOT NULL,
+                context TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (event_id) REFERENCES research_events (event_id)
+            )
+        """)
         inserted_events = 0
         total_measurements = 0
         total_relationships = 0

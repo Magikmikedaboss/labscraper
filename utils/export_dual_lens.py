@@ -36,11 +36,12 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     overlay_ids = scorer.get_overlay_ids()
     print(f"\n📋 Overlays: {', '.join(overlay_ids)}")
     
-    # Connect to database and perform all DB operations in the context
-    with sqlite3.connect(db_path) as con:
-        con.row_factory = sqlite3.Row
-        cur = con.cursor()
+    # Connect to database and perform all DB operations
+    con = sqlite3.connect(db_path)
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
 
+    try:
         # Step 1: Score all events
         print("\n📊 Step 1: Scoring events...")
         events = cur.execute("SELECT * FROM research_events").fetchall()
@@ -197,6 +198,9 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
                 }
 
         print(f"   ✅ Calculated scores for {len(entities)} entities")
+    
+    finally:
+        con.close()
     
     print("\n📝 Step 3: Exporting entities CSV...")
     

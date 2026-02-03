@@ -10,25 +10,24 @@ def check_database():
         return
     
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        # Check tables
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row[0] for row in cursor.fetchall()]
-        print(f"Tables in database: {tables}")
-        
-        # Check if sources table exists
-        if 'sources' in tables:
-            cursor.execute("SELECT COUNT(*) FROM sources")
-            count = cursor.fetchone()[0]
-            print(f"Sources table has {count} records")
-        else:
-            print("Sources table does not exist")
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
             
-        conn.close()
-        print("Database check completed successfully")
-        
+            # Check tables
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cursor.fetchall()]
+            print(f"Tables in database: {tables}")
+            
+            # Check if sources table exists
+            if 'sources' in tables:
+                cursor.execute("SELECT COUNT(*) FROM sources")
+                count = cursor.fetchone()[0]
+                print(f"Sources table has {count} records")
+            else:
+                print("Sources table does not exist")
+            
+            print("Database check completed successfully")
+            
     except Exception as e:
         print(f"Error checking database: {e}")
 

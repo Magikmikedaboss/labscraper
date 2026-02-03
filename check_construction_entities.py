@@ -18,14 +18,14 @@ def check_construction_entities():
             total_entities = con.execute('SELECT COUNT(*) FROM entities').fetchone()[0]
             total_sources = con.execute('SELECT COUNT(*) FROM sources').fetchone()[0]
             
-            print(f"📊 Database Summary:")
+            print("📊 Database Summary:")
             print(f"   Total Events: {total_events}")
             print(f"   Total Entities: {total_entities}")
             print(f"   Total Sources: {total_sources}")
             print()
             
             # Check entities
-            print(f"🏗️  Construction-Related Entities:")
+            print("🏗️  Construction-Related Entities:")
             entities = con.execute('SELECT entity_name, entity_type FROM entities').fetchall()
             
             construction_keywords = ['concrete', 'steel', 'wood', 'glass', 'brick', 'cement', 
@@ -51,13 +51,13 @@ def check_construction_entities():
                 print(f"     - {name} ({etype})")
             
             # Check events by domain
-            print(f"\n📋 Event Analysis:")
+            print("\n📋 Event Analysis:")
             domain_events = con.execute('SELECT research_domain, COUNT(*) FROM research_events GROUP BY research_domain').fetchall()
             for domain, count in domain_events:
                 print(f"   Domain '{domain}': {count} events")
             
             # Check biological systems
-            print(f"\n🔬 Biological Systems:")
+            print("\n🔬 Biological Systems:")
             bio_systems = con.execute('SELECT biological_system, COUNT(*) FROM research_events GROUP BY biological_system').fetchall()
             for bio_sys, count in bio_systems:
                 print(f"   {bio_sys}: {count} events")
@@ -73,7 +73,7 @@ def check_construction_entities():
             
             total_pdfs, success_count, failure_count = pdf_stats if pdf_stats else (0, 0, 0)
             
-            print(f"\n✅ Analysis complete!")
+            print("\n✅ Analysis complete!")
             print(f"   - Successfully processed {total_pdfs} PDFs with {worker_count} workers")
             print(f"   - {success_count} PDFs processed successfully, {failure_count} failed")
             print(f"   - {total_events} events extracted from construction science documents")

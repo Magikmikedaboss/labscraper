@@ -69,7 +69,8 @@ def analyze_construction_results():
         ''')
         samples = cursor.fetchall()
         for snippet, name, entity_type in samples:
-            print(f"  {name} ({entity_type}): {snippet[:120]}...")
+            snippet_text = snippet or ""
+            print(f"  {name} ({entity_type}): {snippet_text[:120]}...")
         print()
         
         # Get event types distribution
