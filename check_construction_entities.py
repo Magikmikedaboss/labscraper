@@ -7,7 +7,7 @@ import sqlite3
 
 def check_construction_entities():
     """Check the entities extracted from construction science PDFs"""
-    db_path = 'runs/construction_science.sqlite'
+    db_path = 'db/runs.sqlite'
     
     worker_count = 4  # Update this if your pipeline uses a different number of workers
     try:
@@ -66,8 +66,8 @@ def check_construction_entities():
             pdf_stats = con.execute('''
                 SELECT 
                     COUNT(*) as total_pdfs,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as success_count,
-                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failure_count
+                    SUM(CASE WHEN imported_at IS NOT NULL THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN imported_at IS NULL THEN 1 ELSE 0 END) as failure_count
                 FROM sources
             ''').fetchone()
             

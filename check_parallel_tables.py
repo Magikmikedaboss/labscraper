@@ -8,6 +8,10 @@ from pathlib import Path
 
 def check_parallel_tables():
     db_path = Path('runs/construction_parallel_test.sqlite')
+    if not db_path.exists():
+        print(f"❌ Database file not found: {db_path}")
+        return
+    
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         tables = cur.execute('SELECT name FROM sqlite_master WHERE type="table"').fetchall()

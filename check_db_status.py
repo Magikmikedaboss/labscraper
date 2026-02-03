@@ -28,7 +28,7 @@ def check_database():
             
             print("Database check completed successfully")
             
-    except Exception as e:
+    except (sqlite3.Error, OSError) as e:
         print(f"Error checking database: {e}")
 
 if __name__ == "__main__":

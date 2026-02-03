@@ -19,12 +19,19 @@ def check_exported_files():
     
     for file_path in files_to_check:
         if os.path.exists(file_path):
-            df = pd.read_csv(file_path)
-            print(f'✅ {file_path}: {len(df)} rows')
-            if 'entity_type' in df.columns:
-                print(f'   Entity types: {df["entity_type"].unique()}')
-            elif 'event_type' in df.columns:
-                print(f'   Event types: {df["event_type"].unique()}')
+            try:
+                df = pd.read_csv(file_path)
+                print(f'✅ {file_path}: {len(df)} rows')
+                if 'entity_type' in df.columns:
+                    print(f'   Entity types: {df["entity_type"].unique()}')
+                elif 'event_type' in df.columns:
+                    print(f'   Event types: {df["event_type"].unique()}')
+            except pd.errors.ParserError as e:
+                print(f'❌ {file_path}: CSV parsing error - {e}')
+            except pd.errors.EmptyDataError as e:
+                print(f'❌ {file_path}: Empty CSV file - {e}')
+            except Exception as e:
+                print(f'❌ {file_path}: Unexpected error - {e}')
         else:
             print(f'❌ {file_path}: Not found')
 

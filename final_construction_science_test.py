@@ -89,6 +89,7 @@ def test_construction_science_comprehensive():
             print(f"   {i}. {row['entity_name']} ({row['entity_type']}): {row['event_count']} events")
         
         # Check run metadata
+        meta = {}
         meta_path = Path("output/run_meta_construction_science.json")
         if meta_path.exists():
             try:
@@ -96,7 +97,6 @@ def test_construction_science_comprehensive():
                     meta = json.load(f)
             except json.JSONDecodeError as e:
                 print(f"❌ Error decoding JSON in {meta_path}: {e}")
-                meta = {}
         print("\n📋 Run Metadata:")
         print(f"   Domain: {meta.get('domain', 'N/A')}")
         print(f"   PDFs Processed: {meta.get('pdfs_processed', 'N/A')}")

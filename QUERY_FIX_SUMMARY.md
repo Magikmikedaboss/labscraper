@@ -2,7 +2,7 @@
 
 ## Problem
 The original SQLite query was failing with the error:
-```
+```text
 sqlite3.OperationalError: no such column: event_data
 ```
 
@@ -50,6 +50,11 @@ LIMIT 5
 1. **Removed `event_data`**: This column doesn't exist
 2. **Changed `id` to `event_id`**: The primary key is `event_id`, not `id`
 3. **Added specific data columns**: Use the actual columns like `outcome`, `failure_reason`, `decision_taken` instead of a generic `event_data`
+
+## Best Practices Applied
+- **Context manager usage**: Use `with sqlite3.connect(db_path) as conn:` instead of manual connection management to ensure proper cleanup
+- **Specific exception handling**: Catch `sqlite3.Error` instead of broad `Exception` to handle database errors explicitly, allowing other exceptions to propagate
+- **Defensive programming**: Check for column existence before querying
 
 ## Files Created
 - `fixed_query.py`: Complete working script with error handling and table structure info

@@ -10,7 +10,7 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 
-DB_PATH = Path("runs/construction_test_final.sqlite")
+DB_PATH = Path("db/runs.sqlite")
 OUTPUT_DIR = Path("output")
 
 def export_events():
@@ -250,7 +250,7 @@ def write_run_meta(events, entities, relationships, sources):
             "event_id": event['event_id'],
             "type": event['event_type'],
             "confidence": event['confidence'],
-            "outcome": event['outcome'][:100] + "..." if len(event['outcome']) > 100 else event['outcome']
+            "outcome": event['outcome'][:100] + "..." if event['outcome'] and len(event['outcome']) > 100 else (event['outcome'] or "")
         }
         for event in sorted(events, key=lambda x: x['confidence'] or 'low', reverse=True)[:10]
     ]
@@ -284,27 +284,27 @@ def main():
     print(f"   Relationships: {len(relationships)}")
     print(f"   Sources: {len(sources)}")
     
-    print(f"\n🏗️  Entity Type Breakdown:")
+    print("\n🏗️  Entity Type Breakdown:")
     for entity_type, count in meta["entity_type_breakdown"].items():
         print(f"   {entity_type}: {count}")
     
-    print(f"\n📈 Top 5 Entities by Event Count:")
+    print("\n📈 Top 5 Entities by Event Count:")
     for i, entity in enumerate(meta["top_entities"][:5], 1):
         print(f"   {i}. {entity['name']} ({entity['type']}) - {entity['event_count']} events, {entity['paper_count']} papers")
     
-    print(f"\n🎯 Top 5 Events by Confidence:")
+    print("\n🎯 Top 5 Events by Confidence:")
     for i, event in enumerate(meta["top_events"][:5], 1):
         print(f"   {i}. Event {event['event_id']} - {event['confidence']} confidence")
         print(f"      Outcome: {event['outcome'][:80]}...")
     
-    print(f"\n✅ All exports completed successfully!")
+    print("\n✅ All exports completed successfully!")
     print(f"📁 Output directory: {OUTPUT_DIR.absolute()}")
-    print(f"📋 Files created:")
-    print(f"   - events_export_construction_science.csv")
-    print(f"   - construction_entities.csv")
-    print(f"   - construction_event_entities.csv")
-    print(f"   - construction_sources.csv")
-    print(f"   - run_meta_construction_science.json")
+    print("📋 Files created:")
+    print("   - events_export_construction_science.csv")
+    print("   - construction_entities.csv")
+    print("   - construction_event_entities.csv")
+    print("   - construction_sources.csv")
+    print("   - run_meta_construction_science.json")
 
 if __name__ == "__main__":
     main()

@@ -8,8 +8,7 @@ import sys
 from pathlib import Path
 
 # Import our domain enforcement system
-sys.path.append('utils')
-from domain_enforcement import ALLOWED_ENTITY_TYPES_BY_DOMAIN
+from utils.domain_enforcement import ALLOWED_ENTITY_TYPES_BY_DOMAIN
 
 def clean_construction_database(db_path):
     """Clean a contaminated construction science database."""
@@ -113,10 +112,10 @@ def clean_construction_database(db_path):
         for bio_sys, count in remaining_bio_systems:
             print(f"  {bio_sys}: {count} events")
         
-        print(f"\n🎉 CLEANUP COMPLETE!")
+        print("\n🎉 CLEANUP COMPLETE!")
         print(f"   Removed {removed_count} contaminated entities")
         print(f"   Removed {removed_events} events with biological systems")
-        print(f"   Database is now construction-science pure!")
+        print("   Database is now construction-science pure!")
 
 if __name__ == "__main__":
     # Clean the test database

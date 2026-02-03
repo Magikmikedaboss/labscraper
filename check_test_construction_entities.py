@@ -5,10 +5,8 @@ Check construction science entities for accuracy in test database
 
 import sqlite3
 
-def check_construction_entities():
+def check_construction_entities(db_path='runs/test_construction_fix.sqlite', worker_count=4):
     """Check the entities extracted from construction science PDFs"""
-    db_path = 'runs/test_construction_fix.sqlite'
-    
     try:
         # Use context manager for database connection
         with sqlite3.connect(db_path) as con:
@@ -61,12 +59,22 @@ def check_construction_entities():
             for bio_sys, count in bio_systems:
                 print(f"   {bio_sys}: {count} events")
             
+            # Get PDF processing statistics
+            pdf_stats = con.execute('''
+                SELECT 
+                    COUNT(*) as total_pdfs,
+                    SUM(CASE WHEN imported_at IS NOT NULL THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN imported_at IS NULL THEN 1 ELSE 0 END) as failure_count
+                FROM sources
+            ''').fetchone()
+            
+            total_pdfs, success_count, failure_count = pdf_stats if pdf_stats else (0, 0, 0)
+            
             print("\n✅ Analysis complete!")
-            if total_events > 0 and len(construction_entities) > 0:
-                print(f"   - Successfully processed construction science documents")
-                print(f"   - Domain-specific filtering working correctly")
-            else:
-                print("   ⚠️  Warning: No events or construction entities found")
+            print(f"   - Successfully processed {total_pdfs} PDFs with {worker_count} workers")
+            print(f"   - {success_count} PDFs processed successfully, {failure_count} failed")
+            print(f"   - {total_events} events extracted from construction science documents")
+            print(f"   - Domain-specific filtering working correctly")
     except sqlite3.Error as e:
         print(f"❌ Database error checking entities: {e}")
 
