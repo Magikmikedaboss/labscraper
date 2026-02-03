@@ -1,205 +1,310 @@
 #!/usr/bin/env python3
 """
-Export construction science results to CSV files for analysis.
+Export construction science results from construction_test_final.sqlite
 """
 
 import sqlite3
 import csv
+import json
 from pathlib import Path
-import os
+from collections import defaultdict
+from datetime import datetime
 
-def export_construction_results():
-    """Export construction science results to CSV files"""
-    db_path = Path("runs/construction_clean.sqlite")
+DB_PATH = Path("runs/construction_test_final.sqlite")
+OUTPUT_DIR = Path("output")
+
+def export_events():
+    """Export research events from construction database"""
+    print("🏗️  Exporting construction science events...")
     
-    if not db_path.exists():
-        print(f"❌ Database not found: {db_path}")
-        return
-    
-    print("📊 EXPORTING CONSTRUCTION SCIENCE RESULTS")
-    print("=" * 60)
-    print(f"📁 Database: {db_path.name}")
-    print()
-    
-    # Create output directory
-    output_dir = Path("output")
-    output_dir.mkdir(exist_ok=True)
-    
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    
-    try:
-        # Export entities
-        print("📝 Exporting entities...")
-        entities_file = output_dir / "construction_entities.csv"
-        with open(entities_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['entity_id', 'entity_type', 'entity_name', 'entity_variant', 'organism', 'created_at'])
-            
-            cursor.execute('''
-            SELECT e.entity_id, e.entity_type, e.entity_name, e.entity_variant, e.organism, e.created_at
-            FROM entities e
-            JOIN event_entities ee ON e.entity_id = ee.entity_id
-            JOIN research_events re ON ee.event_id = re.event_id
-            WHERE re.research_domain = 'construction_science'
-            ORDER BY e.entity_type, e.entity_name
-            ''')
-            
-            entities = cursor.fetchall()
-            writer.writerows(entities)
-            print(f"   ✅ {len(entities)} entities exported to {entities_file.name}")
+    with sqlite3.connect(DB_PATH) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
         
-        # Export events
-        print("📝 Exporting events...")
-        events_file = output_dir / "construction_events.csv"
-        with open(events_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['event_id', 'research_domain', 'event_type', 'study_stage', 'biological_system', 
-                           'application_area', 'outcome', 'failure_reason', 'decision_taken', 'decision_driver',
-                           'evidence_snippet', 'evidence_strength', 'confidence', 'source_id', 'doc_id', 
-                           'chunk_id', 'page_number', 'created_at'])
-            
-            cursor.execute('''
-            SELECT re.event_id, re.research_domain, re.event_type, re.study_stage, re.biological_system,
-                   re.application_area, re.outcome, re.failure_reason, re.decision_taken, re.decision_driver,
-                   re.evidence_snippet, re.evidence_strength, re.confidence, re.source_id, re.doc_id,
-                   re.chunk_id, re.page_number, re.created_at
+        # Get all events
+        events = cur.execute("""
+            SELECT 
+                re.event_id,
+                re.research_domain,
+                re.event_type,
+                re.study_stage,
+                re.outcome,
+                re.decision_driver,
+                re.evidence_snippet,
+                re.confidence,
+                re.source_id,
+                re.created_at,
+                GROUP_CONCAT(e.entity_type || ':' || e.entity_name, '; ') as entities
             FROM research_events re
-            WHERE re.research_domain = 'construction_science'
-            ORDER BY re.created_at
-            ''')
-            
-            events = cursor.fetchall()
-            writer.writerows(events)
-            print(f"   ✅ {len(events)} events exported to {events_file.name}")
+            LEFT JOIN event_entities ee ON re.event_id = ee.event_id
+            LEFT JOIN entities e ON ee.entity_id = e.entity_id
+            GROUP BY re.event_id
+            ORDER BY re.created_at DESC
+        """).fetchall()
+    
+    # Export events
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    events_path = OUTPUT_DIR / "events_export_construction_science.csv"
+    
+    with open(events_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            'event_id', 'domain', 'event_type', 'stage', 'outcome',
+            'decision_driver', 'evidence_snippet', 'confidence',
+            'entities', 'source_id', 'created_at'
+        ])
         
-        # Export event-entities relationships
-        print("📝 Exporting event-entity relationships...")
-        relationships_file = output_dir / "construction_event_entities.csv"
-        with open(relationships_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['event_id', 'entity_id', 'role'])
-            
-            cursor.execute('''
-            SELECT ee.event_id, ee.entity_id, ee.role
-            FROM event_entities ee
-            JOIN research_events re ON ee.event_id = re.event_id
-            WHERE re.research_domain = 'construction_science'
-            ORDER BY ee.event_id, ee.entity_id
-            ''')
-            
-            relationships = cursor.fetchall()
-            writer.writerows(relationships)
-            print(f"   ✅ {len(relationships)} relationships exported to {relationships_file.name}")
+        for event in events:
+            writer.writerow([
+                event['event_id'], event['research_domain'], event['event_type'], 
+                event['study_stage'], event['outcome'], event['decision_driver'],
+                event['evidence_snippet'], event['confidence'], event['entities'],
+                event['source_id'], event['created_at']
+            ])
+    
+    print(f"✅ Exported {len(events)} events to {events_path}")
+    return events
+
+def export_entities():
+    """Export entities from construction database"""
+    print("🏗️  Exporting construction science entities...")
+    
+    with sqlite3.connect(DB_PATH) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
         
-        # Export sources
-        print("📝 Exporting sources...")
-        sources_file = output_dir / "construction_sources.csv"
-        with open(sources_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['source_id', 'pdf_file', 'title', 'authors', 'year', 'doi', 'imported_at'])
-            
-            cursor.execute('''
-            SELECT DISTINCT s.source_id, s.pdf_file, s.title, s.authors, s.year, s.doi, s.imported_at
-            FROM sources s
-            JOIN research_events re ON s.source_id = re.source_id
-            WHERE re.research_domain = 'construction_science'
-            ORDER BY s.source_id
-            ''')
-            
-            sources = cursor.fetchall()
-            writer.writerows(sources)
-            print(f"   ✅ {len(sources)} sources exported to {sources_file.name}")
-        
-        # Export summary statistics
-        print("📝 Exporting summary statistics...")
-        summary_file = output_dir / "construction_summary.txt"
-        with open(summary_file, 'w', encoding='utf-8') as f:
-            # Entity types summary
-            cursor.execute('''
-            SELECT e.entity_type, COUNT(*) as count
+        # Get entity statistics
+        entities = cur.execute("""
+            SELECT 
+                e.entity_type,
+                e.entity_name,
+                COUNT(DISTINCT ee.event_id) as event_count,
+                COUNT(DISTINCT re.source_id) as paper_count,
+                MIN(re.created_at) as first_seen,
+                MAX(re.created_at) as last_seen
             FROM entities e
             JOIN event_entities ee ON e.entity_id = ee.entity_id
             JOIN research_events re ON ee.event_id = re.event_id
-            WHERE re.research_domain = 'construction_science'
-            GROUP BY e.entity_type
-            ORDER BY count DESC
-            ''')
-            entity_stats = cursor.fetchall()
-            
-            f.write("🏗️ CONSTRUCTION SCIENCE SUMMARY\n")
-            f.write("=" * 50 + "\n\n")
-            f.write(f"Database: {db_path.name}\n")
-            f.write(f"Domain: construction_science\n\n")
-            
-            f.write("📊 Entity Types:\n")
-            for entity_type, count in entity_stats:
-                f.write(f"  {entity_type}: {count}\n")
-            f.write("\n")
-            
-            # Top entities
-            cursor.execute('''
-            SELECT e.entity_name, e.entity_type, COUNT(*) as frequency
-            FROM entities e
-            JOIN event_entities ee ON e.entity_id = ee.entity_id
-            JOIN research_events re ON ee.event_id = re.event_id
-            WHERE re.research_domain = 'construction_science'
-            GROUP BY e.entity_name, e.entity_type
-            ORDER BY frequency DESC
-            LIMIT 20
-            ''')
-            top_entities = cursor.fetchall()
-            
-            f.write("🏆 Top 20 Entities:\n")
-            for name, entity_type, freq in top_entities:
-                f.write(f"  {name} ({entity_type}): {freq}\n")
-            f.write("\n")
-            
-            # Event types
-            cursor.execute('''
-            SELECT re.event_type, COUNT(*) as count
+            GROUP BY e.entity_type, e.entity_name
+            ORDER BY event_count DESC, e.entity_type
+        """).fetchall()
+    
+    # Export entities
+    entities_path = OUTPUT_DIR / "construction_entities.csv"
+    
+    with open(entities_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            'entity_type', 'entity_name', 'event_count', 'paper_count',
+            'first_seen', 'last_seen'
+        ])
+        
+        for entity in entities:
+            writer.writerow([
+                entity['entity_type'], entity['entity_name'], 
+                entity['event_count'], entity['paper_count'],
+                entity['first_seen'], entity['last_seen']
+            ])
+    
+    print(f"✅ Exported {len(entities)} entities to {entities_path}")
+    return entities
+
+def export_event_entities():
+    """Export event-entity relationships"""
+    print("🏗️  Exporting event-entity relationships...")
+    
+    with sqlite3.connect(DB_PATH) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        
+        # Get event-entity relationships
+        relationships = cur.execute("""
+            SELECT 
+                re.event_id,
+                re.research_domain,
+                re.event_type,
+                e.entity_type,
+                e.entity_name,
+                e.entity_variant
             FROM research_events re
-            WHERE re.research_domain = 'construction_science'
-            GROUP BY re.event_type
-            ORDER BY count DESC
-            ''')
-            event_stats = cursor.fetchall()
-            
-            f.write("📈 Event Types:\n")
-            for event_type, count in event_stats:
-                f.write(f"  {event_type}: {count}\n")
-            f.write("\n")
-            
-            # Summary stats
-            cursor.execute('SELECT COUNT(*) FROM research_events WHERE research_domain = "construction_science"')
-            total_events = cursor.fetchone()[0]
-            cursor.execute('SELECT COUNT(DISTINCT e.entity_id) FROM entities e JOIN event_entities ee ON e.entity_id = ee.entity_id JOIN research_events re ON ee.event_id = re.event_id WHERE re.research_domain = "construction_science"')
-            total_entities = cursor.fetchone()[0]
-            cursor.execute('SELECT COUNT(DISTINCT re.source_id) FROM research_events re WHERE re.research_domain = "construction_science"')
-            total_sources = cursor.fetchone()[0]
-            
-            f.write("📊 Summary Statistics:\n")
-            f.write(f"  Total events: {total_events}\n")
-            f.write(f"  Total unique entities: {total_entities}\n")
-            f.write(f"  Total sources (PDFs): {total_sources}\n")
-            f.write(f"  Export date: {os.popen('date').read().strip()}\n")
+            JOIN event_entities ee ON re.event_id = ee.event_id
+            JOIN entities e ON ee.entity_id = e.entity_id
+            ORDER BY re.event_id, e.entity_type, e.entity_name
+        """).fetchall()
+    
+    # Export relationships
+    relationships_path = OUTPUT_DIR / "construction_event_entities.csv"
+    
+    with open(relationships_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            'event_id', 'domain', 'event_type', 'entity_type', 
+            'entity_name', 'entity_variant'
+        ])
         
-        print(f"   ✅ Summary exported to {summary_file.name}")
-        print()
-        print("🎉 EXPORT COMPLETE!")
-        print(f"📁 All files saved to: {output_dir.resolve()}")
-        print()
-        print("📋 Exported files:")
-        print(f"   - {entities_file.name} ({len(entities)} entities)")
-        print(f"   - {events_file.name} ({len(events)} events)")
-        print(f"   - {relationships_file.name} ({len(relationships)} relationships)")
-        print(f"   - {sources_file.name} ({len(sources)} sources)")
-        print(f"   - {summary_file.name} (summary statistics)")
+        for rel in relationships:
+            writer.writerow([
+                rel['event_id'], rel['research_domain'], rel['event_type'],
+                rel['entity_type'], rel['entity_name'], rel['entity_variant']
+            ])
+    
+    print(f"✅ Exported {len(relationships)} relationships to {relationships_path}")
+    return relationships
+
+def export_sources():
+    """Export source information"""
+    print("🏗️  Exporting source information...")
+    
+    with sqlite3.connect(DB_PATH) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
         
-    except Exception as e:
-        print(f"❌ Error during export: {e}")
-    finally:
-        conn.close()
+        # Get source information
+        sources = cur.execute("""
+            SELECT 
+                source_id,
+                pdf_file,
+                title,
+                authors,
+                year,
+                doi,
+                imported_at
+            FROM sources
+            ORDER BY imported_at DESC
+        """).fetchall()
+    
+    # Export sources
+    sources_path = OUTPUT_DIR / "construction_sources.csv"
+    
+    with open(sources_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            'source_id', 'pdf_file', 'title', 'authors',
+            'year', 'doi', 'imported_at'
+        ])
+        
+        for source in sources:
+            writer.writerow([
+                source['source_id'], source['pdf_file'], source['title'],
+                source['authors'], source['year'], source['doi'],
+                source['imported_at']
+            ])
+    
+    print(f"✅ Exported {len(sources)} sources to {sources_path}")
+    return sources
+
+def write_run_meta(events, entities, relationships, sources):
+    """Write run metadata for reproducibility"""
+    print("🏗️  Writing run metadata...")
+    
+    meta = {
+        "run_id": datetime.now().strftime("%Y%m%d_%H%M%S"),
+        "engine_version": "construction_science_export_v1",
+        "timestamp": datetime.now().isoformat(),
+        "database": str(DB_PATH.as_posix()),
+        "domain": "construction_science",
+        "counts": {
+            "total_events": len(events),
+            "total_entities": len(entities),
+            "total_relationships": len(relationships),
+            "total_sources": len(sources),
+            "entity_types": {}
+        },
+        "entity_type_breakdown": {},
+        "date_range": {
+            "earliest_event": None,
+            "latest_event": None
+        }
+    }
+    
+    # Count entity types
+    entity_type_counts = defaultdict(int)
+    for entity in entities:
+        entity_type_counts[entity['entity_type']] += 1
+    
+    meta["counts"]["entity_types"] = dict(entity_type_counts)
+    
+    # Entity type breakdown
+    for entity_type, count in entity_type_counts.items():
+        meta["entity_type_breakdown"][entity_type] = count
+    
+    # Date range
+    if events:
+        meta["date_range"]["earliest_event"] = min(e['created_at'] for e in events)
+        meta["date_range"]["latest_event"] = max(e['created_at'] for e in events)
+    
+    # Top entities by event count
+    meta["top_entities"] = [
+        {
+            "name": entity['entity_name'],
+            "type": entity['entity_type'],
+            "event_count": entity['event_count'],
+            "paper_count": entity['paper_count']
+        }
+        for entity in sorted(entities, key=lambda x: x['event_count'], reverse=True)[:20]
+    ]
+    
+    # Top events by confidence
+    meta["top_events"] = [
+        {
+            "event_id": event['event_id'],
+            "type": event['event_type'],
+            "confidence": event['confidence'],
+            "outcome": event['outcome'][:100] + "..." if len(event['outcome']) > 100 else event['outcome']
+        }
+        for event in sorted(events, key=lambda x: x['confidence'] or 'low', reverse=True)[:10]
+    ]
+    
+    meta_path = OUTPUT_DIR / "run_meta_construction_science.json"
+    with open(meta_path, 'w', encoding='utf-8') as f:
+        json.dump(meta, f, indent=2)
+    
+    print(f"✅ Wrote run metadata: {meta_path}")
+    return meta
+
+def main():
+    """Main export function"""
+    print("=" * 70)
+    print("🏗️  CONSTRUCTION SCIENCE RESULTS EXPORT")
+    print("=" * 70)
+    
+    # Export all data
+    events = export_events()
+    entities = export_entities()
+    relationships = export_event_entities()
+    sources = export_sources()
+    
+    # Write metadata
+    meta = write_run_meta(events, entities, relationships, sources)
+    
+    # Summary
+    print("\n📊 EXPORT SUMMARY:")
+    print(f"   Events: {len(events)}")
+    print(f"   Entities: {len(entities)}")
+    print(f"   Relationships: {len(relationships)}")
+    print(f"   Sources: {len(sources)}")
+    
+    print(f"\n🏗️  Entity Type Breakdown:")
+    for entity_type, count in meta["entity_type_breakdown"].items():
+        print(f"   {entity_type}: {count}")
+    
+    print(f"\n📈 Top 5 Entities by Event Count:")
+    for i, entity in enumerate(meta["top_entities"][:5], 1):
+        print(f"   {i}. {entity['name']} ({entity['type']}) - {entity['event_count']} events, {entity['paper_count']} papers")
+    
+    print(f"\n🎯 Top 5 Events by Confidence:")
+    for i, event in enumerate(meta["top_events"][:5], 1):
+        print(f"   {i}. Event {event['event_id']} - {event['confidence']} confidence")
+        print(f"      Outcome: {event['outcome'][:80]}...")
+    
+    print(f"\n✅ All exports completed successfully!")
+    print(f"📁 Output directory: {OUTPUT_DIR.absolute()}")
+    print(f"📋 Files created:")
+    print(f"   - events_export_construction_science.csv")
+    print(f"   - construction_entities.csv")
+    print(f"   - construction_event_entities.csv")
+    print(f"   - construction_sources.csv")
+    print(f"   - run_meta_construction_science.json")
 
 if __name__ == "__main__":
-    export_construction_results()
+    main()
