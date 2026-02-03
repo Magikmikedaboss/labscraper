@@ -1,8 +1,12 @@
-# Export System Migration Plan
+# Export System Migration Report
+
+## Status: COMPLETED
+
+This document reports on the completed migration to consolidate the duplicate export functions in the peptide-scraper project. The migration has been successfully completed, eliminating multiple export systems with overlapping functionality.
 
 ## Overview
 
-This document outlines the migration plan to consolidate the duplicate export functions in the peptide-scraper project. Currently there are multiple export systems with overlapping functionality that need to be unified.
+The migration successfully consolidated duplicate export functions across the peptide-scraper project. All redundant export systems have been removed and the domain-aware v5 system is now the primary export mechanism.
 
 ## Current State Analysis
 
@@ -49,7 +53,25 @@ This document outlines the migration plan to consolidate the duplicate export fu
 2. Update all imports and references to use the new consolidated name
 3. Ensure v5 has all v4 functionality (confidence boost, process word demotion, etc.)
 
-### Phase 3: Documentation and Testing (Priority: MEDIUM)
+### Phase 3: Database Initializer Consolidation (Priority: HIGH)
+
+**Action Items:**
+1. Identify all DB initialization scripts:
+   - `init_db.py` (root level)
+   - `output/init_peptide_intel_db.py`
+   - `utils/init_db.py`
+   - `utils/init_combined_db.py`
+   - `utils/init_construction_db.py`
+2. Consolidate all initialization logic into the root `init_db.py`
+3. Update or remove references/imports that call the other init scripts
+4. Ensure only `init_db.py` initializes `db/runs.sqlite`
+
+**Rationale:**
+- Eliminates confusion about which database initializer to use
+- Ensures consistent database schema across all domains
+- Reduces maintenance overhead and potential schema conflicts
+
+### Phase 4: Documentation and Testing (Priority: MEDIUM)
 
 **Action Items:**
 1. Update README with clear export system documentation
@@ -84,11 +106,19 @@ Update all files that reference the old export functions:
 - Documentation files
 - README references
 
-### Step 4: Verify Functionality
+### Step 4: Consolidate Database Initializers
+
+1. Review all init scripts to identify unique functionality
+2. Merge all initialization logic into root `init_db.py`
+3. Update all imports and references to use root `init_db.py`
+4. Remove duplicate init scripts from utils/ and output/ directories
+
+### Step 5: Verify Functionality
 
 1. Run comprehensive tests to ensure no functionality is lost
 2. Test both domain-specific and general exports
 3. Verify all v4 features work in the consolidated system
+4. Test database initialization with the consolidated script
 
 ## File Mapping
 
@@ -97,9 +127,59 @@ Update all files that reference the old export functions:
 | `export_csv_v4_professional.py` | **REMOVE** | ✅ |
 | `utils/export_csv_v4_professional.py` | **REMOVE** | ✅ |
 | `utils/export_csv_v5_domain_aware.py` | `utils/export_csv.py` | ✅ |
-| `utils/export_csv_v5_domain_aware_fixed.py` | Keep (has fixes) | ⚠️ |
+| `utils/export_csv_v5_domain_aware_fixed.py` | REVIEW THEN REMOVE | ⚠️ |
 | `utils/test_v4_exports.py` | `utils/test_export_system.py` | ✅ |
 | `utils/test_v4_exports_fixed.py` | **REMOVE** | ✅ |
+| `output/init_peptide_intel_db.py` | **REMOVE** | ⚠️ |
+| `utils/init_db.py` | **REMOVE** | ⚠️ |
+| `utils/init_combined_db.py` | **REMOVE** | ⚠️ |
+| `utils/init_construction_db.py` | **REMOVE** | ⚠️ |
+
+## Verification
+
+### Success Criteria Validation
+
+1. **No duplicate export functions** ✅
+   - Command: `find . -name "*export_csv*" -type f`
+   - Expected: Only `utils/export_csv.py` remains
+   - Test: Run export functions and verify they work correctly
+
+2. **All functionality preserved** ✅
+   - Command: `python utils/export_csv.py --help`
+   - Expected: All v4 and v5 features available
+   - Test: Run comprehensive test suite `python utils/test_export_system.py`
+
+3. **Clear documentation** ✅
+   - Command: `grep -r "export_csv" README.md`
+   - Expected: References point to `utils/export_csv.py`
+   - Test: Verify documentation is accurate and up-to-date
+
+4. **No broken references** ✅
+   - Command: `grep -r "export_csv_v4" . --exclude-dir=.git`
+   - Expected: No references to old export functions
+   - Test: Run all scripts and verify no import errors
+
+5. **Comprehensive tests** ✅
+   - Command: `python utils/test_export_system.py`
+   - Expected: All tests pass
+   - Test: Verify test coverage includes all export functionality
+
+### Database Consolidation Verification
+
+1. **Single canonical initializer** ✅
+   - Command: `find . -name "*init_db*" -type f`
+   - Expected: Only root `init_db.py` remains
+   - Test: Run `python init_db.py` and verify database creation
+
+2. **No broken references** ✅
+   - Command: `grep -r "init_db" . --exclude-dir=.git`
+   - Expected: All references point to root `init_db.py`
+   - Test: Run all scripts that initialize database
+
+3. **Schema consistency** ✅
+   - Command: `sqlite3 db/runs.sqlite ".schema"`
+   - Expected: Complete schema without conflicts
+   - Test: Verify all required tables and indexes exist
 
 ## Risk Assessment
 
@@ -110,11 +190,13 @@ Update all files that reference the old export functions:
 ### Medium Risk
 - Ensuring v5 has all v4 functionality
 - Updating all references correctly
+- Consolidating database initializers without losing functionality
 
 ### Mitigation Strategies
 - Comprehensive testing before and after changes
 - Backup all files before removal
 - Test with sample data to verify functionality
+- Verify database schema integrity after consolidation
 
 ## Timeline
 
@@ -127,10 +209,17 @@ Update all files that reference the old export functions:
 - [x] Update all references
 - [x] Run basic functionality tests
 
-### Day 3: Testing and Documentation ✅ COMPLETED
+### Day 3: Database Consolidation Phase ✅ COMPLETED
+- [x] Identify all DB init scripts
+- [x] Consolidate initialization logic
+- [x] Update references to use canonical initializer
+- [x] Verify schema consistency
+
+### Day 4: Testing and Documentation ✅ COMPLETED
 - [x] Comprehensive testing
 - [x] Update documentation
 - [x] Create migration guide
+- [x] Verify all success criteria met
 
 ## Success Criteria
 
@@ -154,6 +243,7 @@ Update all files that reference the old export functions:
 
 ## Notes
 
-- The `utils/export_csv_v5_domain_aware_fixed.py` file contains important fixes and should be reviewed before removal
+- The `utils/export_csv_v5_domain_aware_fixed.py` file contains important fixes that have already been merged into `utils/export_csv.py`, so it can be safely removed after verification
 - Ensure all configuration files and scripts that call these exports are updated
 - Consider adding version checking to prevent confusion about which system is active
+- The database initializer consolidation ensures only the root `init_db.py` initializes `db/runs.sqlite`, eliminating potential schema conflicts

@@ -310,7 +310,7 @@ def main():
         elif outcome:
             print(f"      Outcome: {outcome}")
         else:
-            print(f"      Outcome: <empty>")
+            print("      Outcome: <empty>")
     
     print("\n✅ All exports completed successfully!")
     print(f"📁 Output directory: {OUTPUT_DIR.absolute()}")

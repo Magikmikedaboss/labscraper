@@ -169,9 +169,9 @@ def load_seed_file(filepath: Path) -> set:
 
 def get_seeds():
     SEEDS_DIR = Path("seeds")
-    compound = load_seed_file(SEEDS_DIR / "compounds.txt")
-    target = load_seed_file(SEEDS_DIR / "targets.txt")
-    model = load_seed_file(SEEDS_DIR / "models.txt")
+    compound = load_seed_file(SEEDS_DIR / "base/life_sciences/compounds.txt")
+    target = load_seed_file(SEEDS_DIR / "base/life_sciences/targets.txt")
+    model = load_seed_file(SEEDS_DIR / "base/life_sciences/models.txt")
     stopword = load_seed_file(SEEDS_DIR / "stopwords.txt")
     print(f"📋 Loaded seeds:")
     print(f"   Compounds: {len(compound)}")
@@ -262,15 +262,15 @@ SEEDS_DIR = Path("seeds")
 
 @functools.lru_cache(maxsize=1)
 def _get_compound_seeds():
-    return load_seed_file(SEEDS_DIR / "compounds.txt")
+    return load_seed_file(SEEDS_DIR / "base/life_sciences/compounds.txt")
 
 @functools.lru_cache(maxsize=1)
 def _get_target_seeds():
-    return load_seed_file(SEEDS_DIR / "targets.txt")
+    return load_seed_file(SEEDS_DIR / "base/life_sciences/targets.txt")
 
 @functools.lru_cache(maxsize=1)
 def _get_model_seeds():
-    return load_seed_file(SEEDS_DIR / "models.txt")
+    return load_seed_file(SEEDS_DIR / "base/life_sciences/models.txt")
 
 @functools.lru_cache(maxsize=1)
 def _get_stopword_seeds():

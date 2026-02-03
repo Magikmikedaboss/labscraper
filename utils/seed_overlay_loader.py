@@ -136,6 +136,7 @@ def load_overlay(domain_id: str, overlays_dir: str = "seeds/overlays") -> Option
         "stem_cells_regen": "stem_cells_overlay_v1.json",
         "neuroscience_cognition": "neuroscience_overlay_v1.json",
         "biohacking_longevity": "longevity_overlay_v1.json",
+        "construction_science": "construction_science_aliases.json",
     }
     
     fname = mapping.get(domain_id)

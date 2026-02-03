@@ -55,6 +55,7 @@ def clean_construction_database():
             JOIN research_events re ON ee.event_id = re.event_id
             WHERE re.research_domain = "construction" 
             AND e.entity_type IN ({})
+
         '''.format(','.join(['?'] * len(biomedical_entity_types))), biomedical_entity_types)
         
         biomedical_entities = cursor.fetchall()
@@ -68,25 +69,43 @@ def clean_construction_database():
         
         if biomedical_entities:
             # Remove event-entity relationships for biomedical entities in construction events
+            # Fix SQLite parameter limit by processing in chunks of 900
             print("\n🧹 Removing biomedical entity relationships...")
-            cursor.execute('''
-                DELETE FROM event_entities 
-                WHERE entity_id IN ({})
-                AND event_id IN (SELECT event_id FROM research_events WHERE research_domain = "construction")
-            '''.format(','.join(['?'] * len([e[0] for e in biomedical_entities]))), [e[0] for e in biomedical_entities])
+            entity_ids = [e[0] for e in biomedical_entities]
+            chunk_size = 900
             
-            removed_relationships = cursor.rowcount
+            for i in range(0, len(entity_ids), chunk_size):
+                chunk = entity_ids[i:i + chunk_size]
+                placeholders = ','.join(['?'] * len(chunk))
+                
+                # Delete relationships for this chunk
+                cursor.execute(f'''
+                    DELETE FROM event_entities 
+                    WHERE entity_id IN ({placeholders})
+                    AND event_id IN (SELECT event_id FROM research_events WHERE research_domain = "construction")
+                ''', chunk)
+                
+                removed_relationships += cursor.rowcount
+            
             print(f"   Removed {removed_relationships} event-entity relationships")
             
             # Remove biomedical entities that are no longer referenced
+            # Use the same chunking approach
             print("\n🗑️  Removing orphaned biomedical entities...")
-            cursor.execute('''
-                DELETE FROM entities 
-                WHERE entity_id IN ({})
-                AND entity_id NOT IN (SELECT DISTINCT entity_id FROM event_entities)
-            '''.format(','.join(['?'] * len([e[0] for e in biomedical_entities]))), [e[0] for e in biomedical_entities])
             
-            removed_entities = cursor.rowcount
+            for i in range(0, len(entity_ids), chunk_size):
+                chunk = entity_ids[i:i + chunk_size]
+                placeholders = ','.join(['?'] * len(chunk))
+                
+                # Delete entities for this chunk
+                cursor.execute(f'''
+                    DELETE FROM entities 
+                    WHERE entity_id IN ({placeholders})
+                    AND entity_id NOT IN (SELECT DISTINCT entity_id FROM event_entities)
+                ''', chunk)
+                
+                removed_entities += cursor.rowcount
+            
             print(f"   Removed {removed_entities} orphaned entities")
         
         # Verify cleaning
@@ -103,6 +122,7 @@ def clean_construction_database():
             JOIN research_events re ON ee.event_id = re.event_id
             WHERE re.research_domain = "construction" 
             AND e.entity_type IN ({})
+
         '''.format(','.join(['?'] * len(biomedical_entity_types))), biomedical_entity_types)
         
         remaining_contamination = cursor.fetchone()[0]

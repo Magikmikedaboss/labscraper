@@ -47,7 +47,7 @@ def check_files():
     
     required_files = {
         'utils/schema.sql': 'Database schema',
-        'utils/init_db.py': 'Database initialization',
+        'init_db.py': 'Database initialization',
         'utils/scrape_pdfs.py': 'Main scraper',
         'utils/export_csv.py': 'CSV export tool',
         'README.md': 'Documentation',
@@ -114,7 +114,7 @@ def check_database():
         print(f"  No database found. Expected one of:")
         for path in db_paths:
             print(f"    - {path}")
-        print(f"  Run: python utils/init_db.py or python -m utils.init_db")
+        print(f"  Run: python init_db.py or python -m init_db")
         return True
     
     print(f"  Found database: {db_path.name}")
@@ -137,7 +137,7 @@ def check_database():
                 missing = [t for t in expected_tables if t not in table_names]
                 if missing:
                     print(f"  Database exists but missing tables: {', '.join(missing)}")
-                    print(f"     Run: python utils/init_db.py or python -m utils.init_db")
+                    print(f"     Run: python init_db.py or python -m init_db")
                     return False
                 
                 # Check record counts

@@ -1,22 +1,157 @@
 {
-  "run_id": "20260203_091548",
+  "run_id": "20260203_114103",
   "engine_version": "construction_science_export_v1",
-  "timestamp": "2026-02-03T09:15:48.859933",
+  "timestamp": "2026-02-03T11:41:03.636658",
   "database": "db/runs.sqlite",
   "domain": "construction_science",
   "counts": {
     "total_events": 1033,
-    "total_entities": 0,
-    "total_relationships": 0,
+    "total_entities": 57,
+    "total_relationships": 646,
     "total_sources": 27,
-    "entity_types": {}
+    "entity_types": {
+      "environment": 8,
+      "material": 12,
+      "failure_mode": 11,
+      "test_method": 8,
+      "hazard": 6,
+      "system": 12
+    }
   },
-  "entity_type_breakdown": {},
+  "entity_type_breakdown": {
+    "environment": 8,
+    "material": 12,
+    "failure_mode": 11,
+    "test_method": 8,
+    "hazard": 6,
+    "system": 12
+  },
   "date_range": {
     "earliest_event": "2026-02-02T15:53:28Z",
     "latest_event": "2026-02-02T16:02:31Z"
   },
-  "top_entities": [],
+  "top_entities": [
+    {
+      "name": "CORROSION",
+      "type": "environment",
+      "event_count": 73,
+      "paper_count": 9
+    },
+    {
+      "name": "TEMPERATURE",
+      "type": "environment",
+      "event_count": 57,
+      "paper_count": 12
+    },
+    {
+      "name": "MOISTURE",
+      "type": "environment",
+      "event_count": 55,
+      "paper_count": 8
+    },
+    {
+      "name": "STEEL",
+      "type": "material",
+      "event_count": 52,
+      "paper_count": 10
+    },
+    {
+      "name": "FAILURE",
+      "type": "failure_mode",
+      "event_count": 47,
+      "paper_count": 5
+    },
+    {
+      "name": "CONCRETE",
+      "type": "material",
+      "event_count": 44,
+      "paper_count": 11
+    },
+    {
+      "name": "THERMAL",
+      "type": "test_method",
+      "event_count": 32,
+      "paper_count": 11
+    },
+    {
+      "name": "IMPACT",
+      "type": "hazard",
+      "event_count": 27,
+      "paper_count": 6
+    },
+    {
+      "name": "WOOD",
+      "type": "material",
+      "event_count": 23,
+      "paper_count": 5
+    },
+    {
+      "name": "STRESS",
+      "type": "test_method",
+      "event_count": 20,
+      "paper_count": 6
+    },
+    {
+      "name": "DEGRADATION",
+      "type": "failure_mode",
+      "event_count": 19,
+      "paper_count": 5
+    },
+    {
+      "name": "TIMBER",
+      "type": "material",
+      "event_count": 18,
+      "paper_count": 3
+    },
+    {
+      "name": "IRON",
+      "type": "material",
+      "event_count": 15,
+      "paper_count": 8
+    },
+    {
+      "name": "RUST",
+      "type": "environment",
+      "event_count": 12,
+      "paper_count": 3
+    },
+    {
+      "name": "GLASS",
+      "type": "material",
+      "event_count": 12,
+      "paper_count": 1
+    },
+    {
+      "name": "HUMIDITY",
+      "type": "environment",
+      "event_count": 10,
+      "paper_count": 5
+    },
+    {
+      "name": "WALL",
+      "type": "system",
+      "event_count": 10,
+      "paper_count": 5
+    },
+    {
+      "name": "ELECTRICAL",
+      "type": "system",
+      "event_count": 9,
+      "paper_count": 5
+    },
+    {
+      "name": "CRACKING",
+      "type": "failure_mode",
+      "event_count": 8,
+      "paper_count": 4
+    },
+    {
+      "name": "STRAIN",
+      "type": "test_method",
+      "event_count": 8,
+      "paper_count": 4
+    }
+  ],
   "top_events": [
     {
       "event_id": "936edccc13b4a71e",
