@@ -116,13 +116,24 @@ def test_construction_scrape():
         print()
         
         with sqlite3.connect(db_path) as con:
+            # Check what tables exist
+            tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+            print(f"Tables in database: {[t[0] for t in tables]}")
+            
+            # Check entities table schema
+            schema = con.execute("PRAGMA table_info(entities)").fetchall()
+            print(f"Entities table schema: {[col[1] for col in schema]}")
+            
+            # Check research_events table schema
+            events_schema = con.execute("PRAGMA table_info(research_events)").fetchall()
+            print(f"Research_events table schema: {[col[1] for col in events_schema]}")
+            
             # Get entity types and counts
             entity_stats = con.execute("""
-                SELECT e.entity_type, COUNT(*) as count, GROUP_CONCAT(DISTINCT e.entity_name, ', ') as examples
+                SELECT e.entity_type, COUNT(*) as count, GROUP_CONCAT(e.entity_name, ', ') as examples
                 FROM entities e
                 JOIN event_entities ee ON e.entity_id = ee.entity_id
-                JOIN research_events re ON ee.event_id = re.event_id
-                WHERE re.research_domain = 'construction_science'
+                JOIN research_events ev ON ee.event_id = ev.event_id
                 GROUP BY e.entity_type
                 ORDER BY count DESC
             """).fetchall()
