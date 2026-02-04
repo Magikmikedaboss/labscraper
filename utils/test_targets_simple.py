@@ -1,8 +1,8 @@
 import sqlite3
 
 def main():
-    # Use context manager for database connection
-    with sqlite3.connect("output/peptide_intel.sqlite") as con:
+        # Use context manager for database connection
+    with sqlite3.connect("db/runs.sqlite") as con:
         cursor = con.cursor()
 
         # Check all entities

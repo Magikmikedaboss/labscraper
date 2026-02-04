@@ -17,7 +17,7 @@ def check_database(db_path):
 
 if __name__ == "__main__":
     databases = [
-        "runs/peptide_intel.sqlite",
+        "db/runs.sqlite",
         "runs/all_pdfs_combined.sqlite",
         "runs/construction_science_test.sqlite"
     ]

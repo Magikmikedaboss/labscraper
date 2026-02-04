@@ -6,7 +6,7 @@ print("=" * 70)
 print("NEURAL CELL EXTRACTION - VERIFICATION RESULTS")
 print("=" * 70)
 
-db_path = Path('output/peptide_intel.sqlite')
+db_path = Path('db/runs.sqlite')
 if not db_path.exists():
     print(f"\u274c Database not found: {db_path}")
     exit(1)
