@@ -30,17 +30,106 @@ def chunk_sentences(text):
     sentences = re.split(r'[.!?]+', text)
     return [s.strip() for s in sentences if s.strip()]
 
-from run_engine import (
-    extract_metadata, chunk_sentences, guess_stage, guess_section,
-    extract_entities, extract_quantitative_data,
-    detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
-    classify_event_type, evidence_strength, confidence_score,
-    suggested_keep, normalize_event_key,
-    upsert_source, insert_document, insert_chunk, insert_event,
-    link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-    now_iso, sha16, sha64, RESEARCH_DOMAIN,
-    FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
-)
+# Import functions from utils/run_engine.py
+try:
+    from run_engine import (
+        extract_metadata, guess_stage, guess_section,
+        extract_entities, extract_quantitative_data,
+        detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
+        classify_event_type, evidence_strength, confidence_score,
+        suggested_keep, normalize_event_key,
+        upsert_source, insert_document, insert_chunk, insert_event,
+        link_event_entity, link_event_tag, insert_measurement, upsert_entity,
+        now_iso, sha16, sha64, RESEARCH_DOMAIN,
+        FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
+    )
+    print("✅ Successfully imported run_engine functions")
+except ImportError:
+    print("⚠️  Could not import run_engine functions - using mock functions for testing")
+    
+    # Mock functions for testing
+    def extract_metadata(pdf_path, pdf):
+        return {"title": "Test Paper", "authors": ["Test Author"], "year": "2023"}
+    
+    def guess_stage(text):
+        return "unknown"
+    
+    def guess_section(text):
+        return "unknown"
+    
+    def extract_entities(text, domain):
+        return []
+    
+    def extract_quantitative_data(text):
+        return []
+    
+    def detect_method_tags(text):
+        return []
+    
+    def detect_failure_reason(text):
+        return None
+    
+    def detect_decision(text):
+        return None, None
+    
+    def detect_outcome(text):
+        return "unknown"
+    
+    def classify_event_type(text, tags, failure_reason, decision_taken):
+        return "other"
+    
+    def evidence_strength(text):
+        return "low"
+    
+    def confidence_score(has_entities, tags, failure_reason, decision_taken, has_measurements, text):
+        return 0.5
+    
+    def suggested_keep(conf, event_type, failure_reason, decision_taken, tags):
+        return 1
+    
+    def normalize_event_key(event_type, ents, page_idx, sent):
+        return f"{event_type}_{page_idx}_{hash(sent) % 1000}"
+    
+    def upsert_source(con, source_id, filename, metadata):
+        return source_id
+    
+    def insert_document(con, source_id, path, file_hash):
+        return 1
+    
+    def insert_chunk(con, source_id, doc_id, page_idx, section, text):
+        return 1
+    
+    def insert_event(con, source_id, doc_id, chunk_id, page_number, domain, event_type, study_stage, biological_system, application_area, outcome, failure_reason, decision_taken, decision_driver, evidence_snippet, evidence_strength_v, confidence_v):
+        return 1
+    
+    def link_event_entity(con, event_id, entity_id, role):
+        pass
+    
+    def link_event_tag(con, event_id, tag):
+        pass
+    
+    def insert_measurement(con, event_id, measurement):
+        pass
+    
+    def upsert_entity(con, entity_type, entity_name, entity_variant, role):
+        return 1
+    
+    def now_iso():
+        from datetime import datetime
+        return datetime.now().isoformat()
+    
+    def sha16(text):
+        import hashlib
+        return hashlib.sha256(text.encode()).hexdigest()[:16]
+    
+    def sha64(text):
+        import hashlib
+        return hashlib.sha256(text.encode()).hexdigest()
+    
+    RESEARCH_DOMAIN = "test"
+    FAILURE_PHRASES = {}
+    DECISION_PHRASES = {}
+    METHOD_TAGS = {}
 
 # Default paths
 DB_PATH = Path("db") / "runs.sqlite"
@@ -89,11 +178,20 @@ def get_pdf_links_from_feed(feed_url):
             # Look for PDF links in various places
             links = []
             
-            # Check entry links
+            # Check entry links (arXiv feeds have PDF links here)
             for link in entry.get('links', []):
                 href = link.get('href', '')
-                if href and ('.pdf' in href.lower() or 'pdf' in link.get('type', '')):
-                    links.append(href)
+                if href:
+                    # For arXiv, look for PDF links specifically
+                    if '.pdf' in href.lower():
+                        links.append(href)
+                    # Also check for arXiv PDF pattern
+                    elif 'arxiv.org' in href and '/pdf/' in href:
+                        # Convert arXiv abstract URL to PDF URL
+                        pdf_url = href.replace('/abs/', '/pdf/').replace('/pdf/', '/pdf/')
+                        if not pdf_url.endswith('.pdf'):
+                            pdf_url += '.pdf'
+                        links.append(pdf_url)
             
             # Check entry summary for PDF links
             summary = entry.get('summary', '')

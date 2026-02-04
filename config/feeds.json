@@ -1,39 +1,11 @@
 {
   "feeds": [
     {
-      "name": "Construction Science & Building Physics",
-      "url": "https://rss.example.com/construction-science",
-      "domain": "construction_science",
-      "enabled": false,
-      "description": "RSS feed for construction materials, building physics, and durability research"
-    },
-    {
-      "name": "Biohacking & Longevity Research", 
-      "url": "https://rss.example.com/biohacking-longevity",
-      "domain": "biohacking_longevity",
-      "enabled": false,
-      "description": "RSS feed for biohacking, longevity, and health optimization research"
-    },
-    {
-      "name": "Neuroscience & Cognition",
-      "url": "https://rss.example.com/neuroscience-cognition", 
-      "domain": "neuroscience_cognition",
-      "enabled": false,
-      "description": "RSS feed for neuroscience, cognition, and brain research"
-    },
-    {
-      "name": "Stem Cells & Regenerative Medicine",
-      "url": "https://rss.example.com/stem-cells-regen",
-      "domain": "stem_cells_regen", 
-      "enabled": false,
-      "description": "RSS feed for stem cell research and regenerative medicine"
-    },
-    {
-      "name": "Methods & Tooling",
-      "url": "https://rss.example.com/methods-tooling",
+      "name": "Test RSS Feed",
+      "url": "https://feeds.feedburner.com/oreilly/radar/atom",
       "domain": "methods_tooling",
-      "enabled": false, 
-      "description": "RSS feed for research methods, assays, and laboratory techniques"
+      "enabled": true,
+      "description": "Test RSS feed with actual content for testing"
     }
   ]
 }

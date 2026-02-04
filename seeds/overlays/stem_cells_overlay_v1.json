@@ -2,26 +2,31 @@
   "overlay_id": "stem_cells_v1",
   "domain": "stem_cells_regen",
   "notes": "Prefer unambiguous terms. Avoid short abbreviations unless paired with a full form.",
+  "aliases": {
+    "mesenchymal stem cell": ["MSC", "MSCs", "mesenchymal stromal cell", "mesenchymal stromal cells"],
+    "induced pluripotent stem cell": ["iPSC", "iPSCs", "induced pluripotent stem cells"],
+    "embryonic stem cell": ["ESC", "ESCs", "embryonic stem cells"],
+    "neural stem cell": ["NSC", "NSCs", "neural stem cells"],
+    "organoid": ["Organoid", "Organoids", "organoids"]
+  },
   "entities": {
-    "cell_types": {
-      "astrocyte": ["astrocytes"]
-    },
-    "models_and_systems": {
-      "organoid": ["organoids"]
-    },
+    "cell_types": [
       "neural stem cell",
       "hematopoietic stem cell",
       "satellite cell",
-      "progenitor cell"
+      "progenitor cell",
+      "astrocyte"
     ],
-    "aliases": {
-      "mesenchymal stem cell": ["MSC", "MSCs", "mesenchymal stromal cell", "mesenchymal stromal cells"],
-      "induced pluripotent stem cell": ["iPSC", "iPSCs", "induced pluripotent stem cells"],
-      "embryonic stem cell": ["ESC", "ESCs", "embryonic stem cells"],
-      "neural stem cell": ["NSC", "NSCs", "neural stem cells"],
-      "hematopoietic stem cell": ["HSC", "HSCs", "hematopoietic stem cells"],
-      "organoid": ["Organoid", "Organoids", "organoids"]
-    },
+    "models_and_systems": [
+      "organoid",
+      "spheroid",
+      "3D culture",
+      "co-culture",
+      "xenograft",
+      "patient-derived organoid",
+      "disease model",
+      "in vivo"
+    ],
     "processes": [
       "differentiation",
       "lineage commitment",
@@ -34,16 +39,6 @@
       "engraftment",
       "cell homing",
       "immune evasion"
-    ],
-    "models_and_systems": [
-      "organoid",
-      "spheroid",
-      "3D culture",
-      "co-culture",
-      "xenograft",
-      "patient-derived organoid",
-      "disease model",
-      "in vivo"
     ],
     "markers": [
       "SOX2",
