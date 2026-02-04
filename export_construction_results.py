@@ -10,7 +10,7 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 
-DB_PATH = Path("db/runs.sqlite")
+DB_PATH = Path("runs/construction_test_final.sqlite")
 OUTPUT_DIR = Path("output")
 DOMAIN_ID = "construction_science"
 
