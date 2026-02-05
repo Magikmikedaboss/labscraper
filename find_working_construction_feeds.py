@@ -13,11 +13,6 @@ def test_rss_feed(url, name):
     print(f"URL: {url}")
     
     try:
-        # Try with headers to avoid blocking
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        
         # First try direct feedparser
         feed = feedparser.parse(url)
         
@@ -73,6 +68,9 @@ def main():
     # Save working feeds
     if working_feeds:
         config = {"feeds": working_feeds}
+        # Ensure config directory exists
+        import os
+        os.makedirs("config", exist_ok=True)
         with open("config/feeds.json", "w") as f:
             json.dump(config, f, indent=2)
         print(f"\n✅ Updated config with {len(working_feeds)} working feeds")

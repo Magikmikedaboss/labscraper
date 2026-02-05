@@ -29,12 +29,12 @@ def test_feed(url, name):
                 pdf_matches = re.findall(r'https?://[^\s<>"\']*.pdf', content_value, re.IGNORECASE)
                 pdf_links.extend(pdf_matches)
             
-                if pdf_links:
-                    print(f"  ✅ Found {len(pdf_links)} PDF links")
-                    for pdf_link in pdf_links[:3]:  # Show first 3
-                        print(f"    - {pdf_link}")
-                else:
-                    print("  No PDF links found")
+            if pdf_links:
+                print(f"  ✅ Found {len(pdf_links)} PDF links")
+                for pdf_link in pdf_links[:3]:  # Show first 3
+                    print(f"    - {pdf_link}")
+            else:
+                print("  No PDF links found")
         print()
     except Exception as e:
         print(f"  Error: {e}")

@@ -29,7 +29,7 @@ def chunk_sentences(text):
 
 # Import functions from utils/run_engine.py
 try:
-    from run_engine import (
+    from utils.run_engine import (
         extract_metadata, guess_stage, guess_section,
         extract_entities, extract_quantitative_data,
         detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
@@ -182,7 +182,7 @@ def extract_abstract_from_asce_page(abstract_url):
             print(f"  ✅ Extracted abstract ({len(abstract_text)} chars)")
             return abstract_text
         else:
-            print(f"  ⚠️  No abstract found on page")
+            print("  ⚠️  No abstract found on page")
             return None
             
     except requests.RequestException as e:
