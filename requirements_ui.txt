@@ -1,0 +1,30 @@
+# UI Control Panel Requirements
+# Additional requirements for the GUI control panel
+
+# GUI Framework (built-in with Python)
+# tkinter - included with Python standard library
+
+# Optional: Enhanced GUI styling
+ttkbootstrap>=1.8.0  # For modern ttk themes and styling
+
+# Optional: Progress bars and notifications
+plyer>=2.1.0  # For system notifications
+
+# Optional: File dialogs and path handling
+pathlib  # Included with Python 3.4+
+
+# Optional: Threading utilities
+concurrent.futures  # Included with Python 3.2+
+
+# Optional: JSON handling
+json  # Included with Python standard library
+
+# Optional: Logging
+logging  # Included with Python standard library
+
+# Optional: Subprocess for running scripts
+subprocess  # Included with Python standard library
+
+# Optional: System utilities
+sys  # Included with Python standard library
+os  # Included with Python standard library
