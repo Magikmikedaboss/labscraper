@@ -295,9 +295,15 @@ class PeptideScraperUI:
             
             domain_id = selected_domain.split('(')[-1].rstrip(')')
             
+            # Validate database path
+            db_path = self.db_var.get()
+            if not db_path or not db_path.strip():
+                messagebox.showwarning("Warning", "Please specify a database path")
+                return
+            
             # Run export script with selected domain
             result = subprocess.run([sys.executable, "utils/export_dual_lens.py", 
-                                   str(self.db_var.get()), domain_id], 
+                                   str(db_path), domain_id], 
                                   capture_output=True, text=True)
             
             if result.returncode == 0:
@@ -308,6 +314,8 @@ class PeptideScraperUI:
                 messagebox.showerror("Export Error", result.stderr)
                 
         except Exception as e:
+            import logging
+            logging.exception("Export error")
             logger.error(f"Export error: {e}")
             messagebox.showerror("Export Error", str(e))
     

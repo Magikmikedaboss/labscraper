@@ -920,7 +920,7 @@ def normalize_event_key(event_type: str, entities: list, page: int, snippet: str
 # ---------------------------------------------------------
 # Main
 # ---------------------------------------------------------
-def main(domain: str = None, input_dir: Path = None, db_path: Path = None, lenses: list = None):
+def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path | None = None, lenses: list | None = None):
     # Parse command line arguments only if all parameters are None
     parser = argparse.ArgumentParser(description='Scrape PDFs for research intelligence')
     parser.add_argument('--domain', default='methods_tooling', 
@@ -939,6 +939,12 @@ def main(domain: str = None, input_dir: Path = None, db_path: Path = None, lense
         research_domain = domain if domain is not None else 'methods_tooling'
         input_dir = input_dir if input_dir is not None else Path('input/pdfs')
         db_path = db_path if db_path is not None else Path('db/runs.sqlite')
+    
+    # TODO: Implement lens filtering when lens system is ready
+    # Currently lenses parameter is accepted but not used
+    if lenses is not None:
+        print(f"⚠️  Lenses parameter provided but not implemented yet: {lenses}")
+        # Future implementation would filter processing based on selected lenses
     
     if isinstance(input_dir, str):
         input_dir = Path(input_dir)
