@@ -1,11 +1,25 @@
 {
   "feeds": [
     {
-      "name": "Test RSS Feed",
-      "url": "https://feeds.feedburner.com/oreilly/radar/atom",
-      "domain": "methods_tooling",
+      "name": "arXiv Materials Science",
+      "url": "http://export.arxiv.org/rss/cs.MA",
+      "domain": "construction_science",
       "enabled": true,
-      "description": "Test RSS feed with actual content for testing"
+      "description": "arXiv materials science research with construction applications"
+    },
+    {
+      "name": "arXiv Biomaterials",
+      "url": "http://export.arxiv.org/rss/q-bio.BM",
+      "domain": "construction_science",
+      "enabled": true,
+      "description": "Biomaterials research with construction material applications"
+    },
+    {
+      "name": "O'Reilly Radar (Technology & Materials)",
+      "url": "https://feeds.feedburner.com/oreilly/radar/atom",
+      "domain": "construction_science",
+      "enabled": true,
+      "description": "Technology research with materials science applications"
     }
   ]
 }

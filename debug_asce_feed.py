@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Debug RSS feed content to understand arXiv feed structure
+Debug ASCE RSS feed to understand its structure
 """
 
 import feedparser
-import json
 
-def debug_rss_feed(feed_url):
-    """Debug RSS feed content"""
-    print(f"\n🔍 DEBUGGING RSS FEED: {feed_url}")
+def debug_asce_feed():
+    """Debug ASCE RSS feed content"""
+    print("🔍 DEBUGGING ASCE RSS FEED")
     print("=" * 60)
     
+    feed_url = "https://ascelibrary.org/action/showFeed?type=etoc&feed=rss&jc=jmcee7"
     feed = feedparser.parse(feed_url)
     
     print(f"Feed title: {feed.feed.get('title', 'N/A')}")
@@ -18,31 +18,24 @@ def debug_rss_feed(feed_url):
     
     if feed.entries:
         entry = feed.entries[0]
-        print("\n📝 First entry:")
+        print(f"\n📝 First entry:")
         print(f"  Title: {entry.get('title', 'N/A')}")
         print(f"  Published: {entry.get('published', 'N/A')}")
         
-        print("\n🔗 Links:")
+        print(f"\n🔗 Links:")
         for i, link in enumerate(entry.get('links', [])):
             print(f"  {i}: {link.get('href', 'N/A')} (type: {link.get('type', 'N/A')})")
         
-        print("\n📋 Summary (first 200 chars):")
+        print(f"\n📋 Summary (first 300 chars):")
         summary = entry.get('summary', '')
-        print(f"  {summary[:200]}...")
+        print(f"  {summary[:300]}...")
         
-        print("\n📄 Content:")
+        print(f"\n📄 Content:")
         for i, content in enumerate(entry.get('content', [])):
             content_value = content.get('value', '')
-            print(f"  {i}: {content_value[:200]}...")
+            print(f"  {i}: {content_value[:300]}...")
     
     return feed
 
 if __name__ == "__main__":
-    feeds = [
-        "http://export.arxiv.org/rss/cs.MA",
-        "http://export.arxiv.org/rss/cs.CE", 
-        "http://export.arxiv.org/rss/q-bio.BM"
-    ]
-    
-    for feed_url in feeds:
-        debug_rss_feed(feed_url)
+    debug_asce_feed()
