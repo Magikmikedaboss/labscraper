@@ -18,19 +18,19 @@ def debug_asce_feed():
     
     if feed.entries:
         entry = feed.entries[0]
-        print(f"\n📝 First entry:")
+        print("\n📝 First entry:")
         print(f"  Title: {entry.get('title', 'N/A')}")
         print(f"  Published: {entry.get('published', 'N/A')}")
         
-        print(f"\n🔗 Links:")
+        print("\n🔗 Links:")
         for i, link in enumerate(entry.get('links', [])):
             print(f"  {i}: {link.get('href', 'N/A')} (type: {link.get('type', 'N/A')})")
         
-        print(f"\n📋 Summary (first 300 chars):")
+        print("\n📋 Summary (first 300 chars):")
         summary = entry.get('summary', '')
         print(f"  {summary[:300]}...")
         
-        print(f"\n📄 Content:")
+        print("\n📄 Content:")
         for i, content in enumerate(entry.get('content', [])):
             content_value = content.get('value', '')
             print(f"  {i}: {content_value[:300]}...")

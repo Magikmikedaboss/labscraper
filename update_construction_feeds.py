@@ -38,6 +38,10 @@ def update_construction_feeds():
     # Save to config
     config = {"feeds": construction_feeds}
     
+    # Ensure config directory exists
+    import os
+    os.makedirs("config", exist_ok=True)
+    
     with open("config/feeds.json", "w") as f:
         json.dump(config, f, indent=2)
     

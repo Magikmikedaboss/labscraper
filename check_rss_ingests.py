@@ -21,11 +21,11 @@ def check_rss_ingests():
         cursor = conn.cursor()
         
         # Check for construction science events
-        cursor.execute('SELECT COUNT(*) FROM events WHERE domain="construction_science"')
+        cursor.execute('SELECT COUNT(*) FROM research_events WHERE research_domain="construction_science"')
         construction_events = cursor.fetchone()[0]
         
         # Check for all events
-        cursor.execute('SELECT COUNT(*) FROM events')
+        cursor.execute('SELECT COUNT(*) FROM research_events')
         total_events = cursor.fetchone()[0]
         
         # Check for sources
@@ -38,7 +38,14 @@ def check_rss_ingests():
         
         # Show recent events
         print('\n📝 RECENT EVENTS:')
-        cursor.execute('SELECT source_id, title, domain, COUNT(*) as event_count FROM events GROUP BY source_id ORDER BY event_count DESC LIMIT 5')
+        cursor.execute('''
+            SELECT re.source_id, s.title, re.research_domain, COUNT(*) as event_count 
+            FROM research_events re
+            JOIN sources s ON re.source_id = s.source_id
+            GROUP BY re.source_id 
+            ORDER BY event_count DESC 
+            LIMIT 5
+        ''')
         for row in cursor.fetchall():
             print(f'  Source: {row[0]} ({row[2]}) - {row[3]} events')
         
@@ -57,8 +64,10 @@ def check_rss_ingests():
         
         conn.close()
         
+    except sqlite3.Error as e:
+        print(f"❌ Database error: {e}")
     except Exception as e:
-        print(f"❌ Error accessing database: {e}")
+        print(f"❌ Unexpected error: {e}")
 
 def main():
     """Check RSS ingests"""

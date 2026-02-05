@@ -29,14 +29,14 @@ def find_construction_materials_pdfs():
             response = requests.get(url, headers=headers, timeout=10)
             
             if response.status_code == 200:
-                # Look for PDF links
-                pdf_links = re.findall(r'https?://[^\s<>"\']*.pdf', response.text, re.IGNORECASE)
+                # Look for PDF links with more robust pattern
+                pdf_links = re.findall(r'https?://[^\s<>"\']+\.(?:pdf|PDF)(?:\?[^&\s]*)?(?:&[^&\s]*)?', response.text, re.IGNORECASE)
                 if pdf_links:
                     print(f"  ✅ Found {len(pdf_links)} PDF links")
                     for pdf_link in pdf_links[:3]:  # Show first 3
                         print(f"    - {pdf_link}")
                 else:
-                    print(f"  ⚠️  No PDF links found")
+                    print("  ⚠️  No PDF links found")
             else:
                 print(f"  ❌ HTTP {response.status_code}")
         except Exception as e:

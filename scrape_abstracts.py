@@ -132,13 +132,14 @@ except ImportError:
 DB_PATH = Path("db") / "runs.sqlite"
 FEEDS_CONFIG = Path("config") / "feeds.json"
 
-def load_feeds_config():
+def load_feeds_config(feeds_config_path=None):
     """Load RSS feeds configuration from JSON file"""
-    if not FEEDS_CONFIG.exists():
-        print(f"⚠️  RSS feeds config not found: {FEEDS_CONFIG}")
+    config_path = feeds_config_path or FEEDS_CONFIG
+    if not config_path.exists():
+        print(f"⚠️  RSS feeds config not found: {config_path}")
         return {"feeds": []}
     
-    with open(FEEDS_CONFIG, 'r') as f:
+    with open(config_path, 'r') as f:
         return json.load(f)
 
 def extract_abstract_from_asce_page(abstract_url):
@@ -184,8 +185,11 @@ def extract_abstract_from_asce_page(abstract_url):
             print(f"  ⚠️  No abstract found on page")
             return None
             
+    except requests.RequestException as e:
+        print(f"  ❌ HTTP Error scraping {abstract_url}: {e}")
+        return None
     except Exception as e:
-        print(f"  ❌ Error scraping {abstract_url}: {e}")
+        print(f"  ❌ Unexpected error scraping {abstract_url}: {e}")
         return None
 
 def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
@@ -316,13 +320,13 @@ def main():
                        help='Domain for processing (default: construction_science)')
     parser.add_argument('--dry-run', action='store_true',
                        help='Show what would be processed without actually processing')
-    parser.add_argument('--scrape-only', action='store_true',
-                       help='Only process abstracts, skip PDF downloads')
+    # parser.add_argument('--scrape-only', action='store_true',
+    #                    help='Only process abstracts, skip PDF downloads')
     
     args = parser.parse_args()
     
     # Load feeds configuration
-    feeds_config = load_feeds_config()
+    feeds_config = load_feeds_config(args.feeds_config)
     
     # Ensure database directory exists
     args.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -344,7 +348,7 @@ def main():
             continue
         
         feed_url = feed_config['url']
-        domain = args.domain
+        domain = feed_config.get('domain', args.domain)
         
         print(f"📡 Processing feed: {feed_config['name']}")
         print(f"   URL: {feed_url}")

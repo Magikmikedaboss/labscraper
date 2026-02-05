@@ -29,12 +29,12 @@ def test_construction_feed(url, name):
                 pdf_matches = re.findall(r'https?://[^\s<>"\']*.pdf', content_value, re.IGNORECASE)
                 pdf_links.extend(pdf_matches)
             
-            if pdf_links:
-                print(f"  ✅ PDF links found: {len(pdf_links)}")
-                for pdf_link in pdf_links[:2]:  # Show first 2
-                    print(f"    - {pdf_link}")
-            else:
-                print(f"  ⚠️  No PDF links found")
+                if pdf_links:
+                    print(f"  ✅ Found {len(pdf_links)} PDF links")
+                    for pdf_link in pdf_links[:3]:  # Show first 3
+                        print(f"    - {pdf_link}")
+                else:
+                    print("  ⚠️  No PDF links found")
                 
             # Look for construction materials keywords
             keywords = ['concrete', 'steel', 'materials', 'construction', 'cement', 'composite', 'polymer', 'asphalt']

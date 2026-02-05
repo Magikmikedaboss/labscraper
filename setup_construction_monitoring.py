@@ -6,6 +6,7 @@ Set up construction materials monitoring system
 import json
 import requests
 import re
+import os
 
 def setup_construction_materials_monitoring():
     """Set up RSS feeds for construction materials monitoring"""
@@ -33,6 +34,9 @@ def setup_construction_materials_monitoring():
     # Save to config
     config = {"feeds": construction_feeds}
     
+    # Ensure config directory exists
+    os.makedirs("config", exist_ok=True)
+    
     with open("config/feeds.json", "w") as f:
         json.dump(config, f, indent=2)
     
@@ -51,8 +55,10 @@ def setup_construction_materials_monitoring():
                 print(f"  ✅ Feed accessible ({len(pdf_links)} PDFs found)")
             else:
                 print(f"  ❌ HTTP {response.status_code}")
+        except requests.RequestException as e:
+            print(f"  ❌ HTTP Error: {e}")
         except Exception as e:
-            print(f"  ❌ Error: {e}")
+            print(f"  ❌ Unexpected error: {e}")
     
     print("\n🏗️  CONSTRUCTION MATERIALS MONITORING SETUP COMPLETE")
     print("=" * 60)
