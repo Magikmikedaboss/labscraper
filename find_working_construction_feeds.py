@@ -12,21 +12,26 @@ def test_rss_feed(url, name):
     print(f"Testing: {name}")
     print(f"URL: {url}")
     
-    try:
-        # First try direct feedparser
-        feed = feedparser.parse(url)
-        
-        if feed.entries:
-            print(f"✅ Feed working: {len(feed.entries)} entries")
-            if feed.entries[0].get('links'):
-                print(f"   Links found: {len(feed.entries[0].links)}")
-            return True
-        else:
-            print("❌ No entries found")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    # Use proper feedparser error handling
+    feed = feedparser.parse(url)
+    
+    # Check for feedparser errors
+    if feed.bozo:
+        print(f"❌ Feed parsing error: {feed.bozo_exception}")
+        return False
+    
+    # Check for HTTP errors
+    if hasattr(feed, 'status') and feed.status != 200:
+        print(f"❌ HTTP error: {feed.status}")
+        return False
+    
+    if feed.entries:
+        print(f"✅ Feed working: {len(feed.entries)} entries")
+        if feed.entries[0].get('links'):
+            print(f"   Links found: {len(feed.entries[0].links)}")
+        return True
+    else:
+        print("❌ No entries found")
         return False
 
 def main():

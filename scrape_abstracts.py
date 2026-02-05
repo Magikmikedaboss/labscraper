@@ -18,7 +18,7 @@ import json
 # Import functions from utils/run_engine.py
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent / "utils"))
+sys.path.insert(0, str(Path(__file__).parent))
 
 # Import chunk_sentences function that's missing
 def chunk_sentences(text):

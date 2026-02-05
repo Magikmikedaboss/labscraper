@@ -187,16 +187,22 @@ def get_pdf_links_from_feed(feed_url):
                         links.append(href)
                     # Also check for arXiv PDF pattern
                     elif 'arxiv.org' in href:
-                        # Convert arXiv abstract URL to PDF URL
-                        if '/abs/' in href:
-                            pdf_url = href.replace('/abs/', '/pdf/')
-                        elif '/pdf/' in href:
-                            pdf_url = href
-                        else:
-                            pdf_url = href + '/pdf/'
+                        # Parse URL and normalize to PDF format
+                        parsed = urlparse(href)
+                        path = parsed.path
                         
-                        if not pdf_url.endswith('.pdf'):
-                            pdf_url += '.pdf'
+                        # Ensure path has /pdf/ and ends with .pdf
+                        if '/abs/' in path:
+                            path = path.replace('/abs/', '/pdf/')
+                        elif '/pdf/' not in path:
+                            path = path.rstrip('/') + '/pdf/'
+                        
+                        # Ensure path ends with .pdf
+                        if not path.endswith('.pdf'):
+                            path += '.pdf'
+                        
+                        # Reconstruct URL preserving query and fragment
+                        pdf_url = parsed._replace(path=path).geturl()
                         links.append(pdf_url)
             
             # Check entry summary for PDF links

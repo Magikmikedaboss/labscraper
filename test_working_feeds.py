@@ -8,37 +8,48 @@ import feedparser
 def test_feed(url, name):
     """Test an RSS feed"""
     print(f"Testing {name}: {url}")
-    try:
-        feed = feedparser.parse(url)
-        print(f"  Entries: {len(feed.entries)}")
-        print(f"  Title: {feed.feed.get('title', 'N/A')}")
+    
+    # Use proper feedparser error handling
+    feed = feedparser.parse(url)
+    
+    # Check for feedparser errors
+    if feed.bozo:
+        print(f"  ❌ Feed parsing error: {feed.bozo_exception}")
+        print()
+        return
+    
+    # Check for HTTP errors
+    if hasattr(feed, 'status') and feed.status != 200:
+        print(f"  ❌ HTTP error: {feed.status}")
+        print()
+        return
+    
+    print(f"  Entries: {len(feed.entries)}")
+    print(f"  Title: {feed.feed.get('title', 'N/A')}")
+    
+    if feed.entries:
+        entry = feed.entries[0]
+        print(f"  First entry: {entry.get('title', 'N/A')}")
         
-        if feed.entries:
-            entry = feed.entries[0]
-            print(f"  First entry: {entry.get('title', 'N/A')}")
-            
-            # Look for PDF links
-            pdf_links = []
-            summary = entry.get('summary', '')
-            import re
-            pdf_matches = re.findall(r'https?://[^\s<>"\']*.pdf', summary, re.IGNORECASE)
+        # Look for PDF links
+        pdf_links = []
+        summary = entry.get('summary', '')
+        import re
+        pdf_matches = re.findall(r'https?://[^\s<>"\']*.pdf', summary, re.IGNORECASE)
+        pdf_links.extend(pdf_matches)
+        
+        for content in entry.get('content', []):
+            content_value = content.get('value', '')
+            pdf_matches = re.findall(r'https?://[^\s<>"\']*.pdf', content_value, re.IGNORECASE)
             pdf_links.extend(pdf_matches)
-            
-            for content in entry.get('content', []):
-                content_value = content.get('value', '')
-                pdf_matches = re.findall(r'https?://[^\s<>"\']*.pdf', content_value, re.IGNORECASE)
-                pdf_links.extend(pdf_matches)
-            
-            if pdf_links:
-                print(f"  ✅ Found {len(pdf_links)} PDF links")
-                for pdf_link in pdf_links[:3]:  # Show first 3
-                    print(f"    - {pdf_link}")
-            else:
-                print("  No PDF links found")
-        print()
-    except Exception as e:
-        print(f"  Error: {e}")
-        print()
+        
+        if pdf_links:
+            print(f"  ✅ Found {len(pdf_links)} PDF links")
+            for pdf_link in pdf_links[:3]:  # Show first 3
+                print(f"    - {pdf_link}")
+        else:
+            print("  No PDF links found")
+    print()
 
 def main():
     """Test various RSS feeds"""
