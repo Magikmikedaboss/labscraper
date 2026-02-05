@@ -1,0 +1,43 @@
+{
+  "overlay_id": "construction_research_v1",
+  "label": "Construction Research v1",
+  "description": "Construction science research patterns and methodologies overlay",
+  "pattern_emphasis": {
+    "escalation": 1.15,
+    "stagnation": 1.20,
+    "fragmentation": 1.10,
+    "convergence": 1.05
+  },
+  "language_guardrails": {
+    "observational_only": true,
+    "forbidden_words": [
+      "works",
+      "effective",
+      "proven",
+      "safe",
+      "recommended",
+      "treats",
+      "cures",
+      "guaranteed",
+      "miracle",
+      "breakthrough",
+      "coupon",
+      "free estimate",
+      "DIY",
+      "home improvement",
+      "real estate"
+    ],
+    "allowed_phrases": [
+      "durability research",
+      "field validation",
+      "method convergence",
+      "environmental exposure",
+      "failure modes",
+      "observed patterns",
+      "reported outcomes",
+      "associated with",
+      "service life"
+    ]
+  },
+  "version": "v1"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "building_physics_v1",
+  "name": "Building Physics Lens",
+  "version": "v1",
+  "description": "Extracts building physics concepts such as heat transfer, moisture, and energy efficiency.",
+  "schema": {
+    "fields": ["concept", "metric", "context"]
+  }
+}

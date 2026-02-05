@@ -1,0 +1,53 @@
+{
+  "id": "biohacking_curiosity_v1",
+  "description": "Emphasizes protocols, experimentation language, cognitive/energy/longevity optimization topics.",
+  
+  "boost_terms": {
+    "protocol": 3,
+    "stack": 3,
+    "dosage": 2,
+    "cycle": 2,
+    "optimization": 2,
+    "self-experiment": 3,
+    "sleep": 2,
+    "energy": 2,
+    "focus": 2,
+    "cognition": 2,
+    "anti-aging": 3,
+    "longevity": 2,
+    "performance": 2,
+    "recovery": 2,
+    "metabolism": 2,
+    "supplement": 2,
+    "tracking": 1,
+    "biomarker": 1,
+    "heart rate variability": 1,
+    "glucose": 1,
+    "VO2 max": 1
+  },
+  
+  "demote_terms": {
+    "in vitro": -1,
+    "cell line": -1,
+    "rodent model": -1,
+    "pathway": -1,
+    "molecular mechanism": -1,
+    "assay": -1
+  },
+  
+  "priority_entities": {
+    "compound": 2,
+    "indication": 2,
+    "model": 1,
+    "pathway": 1,
+    "assay": 0.5
+  },
+  
+  "pattern_bias": {
+    "escalation": 1.0,
+    "fragmentation": 1.0,
+    "convergence": 1.0,
+    "abandonment": 1.0,
+    "stagnation": 1.0
+  }
+}

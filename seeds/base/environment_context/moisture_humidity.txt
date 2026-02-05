@@ -1,0 +1,22 @@
+# Moisture & Humidity - Environmental Context Seeds
+# Risk amplifiers for moisture-related degradation
+
+high humidity
+humid climate
+moisture exposure
+water ingress
+water intrusion
+rain exposure
+condensation
+capillary action
+vapor diffusion
+hydrostatic pressure
+flood exposure
+storm surge
+groundwater rise
+soil moisture
+relative humidity
+dew point
+vapor pressure
+permeability
+wetting drying cycle

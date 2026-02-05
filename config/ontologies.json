@@ -1,0 +1,27 @@
+{
+  "construction_science": {
+    "label": "Construction Science & Built Environment Physics",
+    "base_path": "seeds/base/construction_science",
+    "types": [
+      "materials",
+      "systems",
+      "test_methods",
+      "environments",
+      "failure_modes",
+      "properties",
+      "hazards",
+      "codes"
+    ]
+  },
+  "life_sciences": {
+    "label": "Life Sciences & Biomedical Research",
+    "base_path": "seeds/base/life_sciences",
+    "types": [
+      "compounds",
+      "targets",
+      "models",
+      "indications",
+      "assays"
+    ]
+  }
+}

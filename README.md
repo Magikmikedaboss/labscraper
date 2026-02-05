@@ -1,9 +1,10 @@
-# 🧬 Lab Scraper - Peptide Research Intelligence Engine
+# 🧬 Peptide Intelligence Scraper - Research Intelligence Engine
 
-A production-ready Python engine that extracts structured research intelligence from scientific PDFs, with a focus on peptide degradation and stability research.
+A production-ready Python engine that extracts structured research intelligence from scientific PDFs across multiple research domains, with advanced parallel processing and dual-lens analysis capabilities.
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Parallel Processing](https://img.shields.io/badge/Parallel-4x%20Speedup-green.svg)](https://github.com/Magikmikedaboss/labscraper)
 
 ---
 
@@ -13,8 +14,10 @@ Transforms unstructured scientific PDFs into structured, queryable research inte
 
 **Input:** PDF research papers  
 **Output:** Structured database + CSV exports with:
-- Research events (stability issues, decision points, outcomes)
-- Entities (compounds, targets, assays, pathways, models, indications)
+- Research events (stability issues, decision points, outcomes, regulatory risks)
+- Entities (compounds, targets, assays, pathways, models, indications, stem cells)
+- Quantitative measurements (IC50, EC50, half-life, stability)
+- Entity relationships (comparisons, analogs, derivatives)
 - Normalized, deduplicated, and ranked data
 
 ---
@@ -74,16 +77,36 @@ python init_db.py
 
 ### Usage
 
+#### Basic Processing
 ```bash
-# Run the scraper on PDFs in input_pdfs/
-python scrape_pdfs_phase1.py
+# Single-threaded processing
+python utils/run_engine.py --domain construction_science --input-dir input/pdfs
 
-# Export to CSV
-python export_csv_v3.py
+# Export results
+python utils/export_csv_v5_domain_aware.py --db-path db/runs.sqlite --domain construction_science
+```
 
-# View results
-ls output/
-# → candidates_primary.csv, events_export_v3.csv, peptide_intel.sqlite
+#### Parallel Processing (Recommended for large datasets)
+```bash
+# 4 parallel workers (recommended)
+python utils/scrape_pdfs_parallel.py --domain construction_science --input-dir input/pdfs --workers 4
+
+# 8 parallel workers (for powerful systems)
+python utils/scrape_pdfs_parallel.py --domain construction_science --input-dir input/pdfs --workers 8
+```
+
+#### Advanced Analysis
+```bash
+# Dual-lens analysis (advanced export)
+python utils/export_dual_lens.py --db-path db/runs.sqlite --domain construction_science
+```
+
+#### View Results
+```bash
+ls exports/
+# → candidates_export.csv, events_export.csv, measurements_export.csv, relationships_export.csv
+ls db/
+# → runs.sqlite (main database)
 ```
 
 ---
@@ -92,39 +115,50 @@ ls output/
 
 ```
 labscraper/
-├── scrape_pdfs_phase1.py      # Main scraper (production)
-├── entity_extractor.py         # Entity extraction logic
-├── entity_normalizer.py        # Variant normalization
-├── export_csv_v3.py            # CSV export with normalization
-├── init_db.py                  # Database initialization
-├── schema.sql                  # Database schema
-├── requirements.txt            # Python dependencies
+├── utils/                      # Core processing modules
+│   ├── scrape_pdfs_parallel.py # Parallel PDF processing (recommended)
+│   ├── run_engine.py           # Single-threaded processing
+│   ├── export_dual_lens.py     # Advanced dual-lens analysis
+│   ├── export_csv_v5_domain_aware.py # Domain-aware CSV export
+│   ├── entity_extractor.py     # Entity extraction logic
+│   ├── entity_normalizer.py    # Variant normalization
+│   ├── init_db.py              # Database initialization
+│   ├── schema.sql              # Database schema
+│   └── scrape_pdfs_phase1.py   # Base scraper functions
+│
+├── config/                     # Configuration files
+│   ├── domains/               # Domain-specific configurations
+│   ├── lenses/                # Overlay configurations
+│   └── feeds.json             # RSS feed configurations
 │
 ├── seeds/                      # Entity seed files
-│   ├── assays.json            # 129 assay/method terms
-│   ├── targets.txt            # 153 biological targets
-│   ├── pathways.json          # 124 pathway terms
 │   ├── compounds.txt          # 75 compound names
+│   ├── targets.txt            # 153 biological targets
 │   ├── models.txt             # 136 model systems
+│   ├── assays.json            # 129 assay/method terms
+│   ├── pathways.json          # 124 pathway terms
 │   ├── indications.json       # 88 disease indications
 │   ├── normalization.json     # Variant mapping rules
 │   └── README.md              # Seed file documentation
 │
-├── input_pdfs/                 # Place PDFs here
-│   └── *.pdf                  # Research papers to process
+├── input/                      # Input directories
+│   ├── pdfs/                  # Default PDF input
+│   └── pdfs/{domain}/         # Domain-specific PDF input
 │
-├── output/                     # Generated data
-│   ├── peptide_intel.sqlite   # Main database
-│   ├── candidates_primary.csv # Primary entities (for rankings)
-│   ├── candidates_context.csv # Context entities (for filters)
-│   ├── candidates_export_v3.csv # All entities
-│   ├── events_export_v3.csv   # All events
-│   └── README.md              # Output documentation
+├── db/                        # Database files
+│   ├── runs.sqlite           # Main processing database
+│   └── all_pdfs.sqlite       # Combined database
 │
-└── docs/                       # Documentation
-    ├── NORMALIZATION_SUCCESS.md
-    ├── CRASH_RECOVERY_SUMMARY.md
-    └── COVERAGE_IMPROVEMENT.md
+├── exports/                   # Exported data
+│   ├── candidates_export.csv # Entity-focused export
+│   ├── events_export.csv     # Event export with metadata
+│   ├── measurements_export.csv # Quantitative measurements
+│   ├── relationships_export.csv # Entity relationships
+│   └── latest/               # Latest export with metadata
+│
+├── logs/                      # Processing logs
+├── output/                    # Legacy output directory
+└── requirements.txt           # Python dependencies
 ```
 
 ---

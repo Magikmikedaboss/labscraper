@@ -1,0 +1,52 @@
+# failure modes / distress mechanisms
+cracking
+microcracking
+spalling
+delamination
+debonding
+buckling
+yielding
+fracture
+fatigue
+creep
+settlement
+differential settlement
+deflection
+excessive deflection
+corrosion
+pitting corrosion
+chloride-induced corrosion
+carbonation-induced corrosion
+sulfate attack
+alkali-silica reaction
+asr
+freeze-thaw
+freeze thaw
+frost action
+scaling
+efflorescence
+leakage
+water intrusion
+moisture damage
+mold growth
+rot
+termite damage
+fire damage
+thermal cracking
+thermal stress cracking
+shrinkage cracking
+drying shrinkage
+plastic shrinkage
+autogenous shrinkage
+shear failure
+punching shear
+bearing failure
+uplift failure
+overturning
+progressive collapse
+chloride ingress
+carbonation
+salt attack
+deicing salt damage
+UV degradation
+solar radiation damage

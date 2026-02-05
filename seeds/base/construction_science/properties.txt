@@ -1,0 +1,10 @@
+compressive strength
+thermal conductivity
+fire resistance
+acoustic insulation
+permeability
+flexural strength
+modulus of elasticity
+shrinkage
+creep
+weathering resistance

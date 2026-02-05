@@ -1,0 +1,173 @@
+======================================================================
+DUAL-LENS ANALYSIS REPORT
+======================================================================
+
+Domain: Construction Science & Built Environment Physics
+Overlays: failure_analysis_v1, materials_performance_v1, building_physics_v1, climate_resilience_v1, standards_compliance_v1
+Total Events: 561
+Total Entities: 100
+
+======================================================================
+TOP 20 ENTITIES - FAILURE_ANALYSIS_V1
+======================================================================
+
+ 1. guideline                      (test_method ) Score:  71.00 [strong         ] Events:  71
+ 2. temperature                    (environment ) Score:  64.00 [strong         ] Events:  64
+ 3. ice                            (hazard      ) Score:  60.00 [strong         ] Events:  60
+ 4. ice                            (environment ) Score:  60.00 [strong         ] Events:  60
+ 5. failure                        (failure_mode) Score:  59.00 [strong         ] Events:  59
+ 6. moisture                       (environment ) Score:  51.00 [promising      ] Events:  51
+ 7. corrosion                      (hazard      ) Score:  49.00 [promising      ] Events:  49
+ 8. corrosion                      (failure_mode) Score:  49.00 [promising      ] Events:  49
+ 9. test                           (test_method ) Score:  40.00 [exploratory    ] Events:  40
+10. thermal                        (environment ) Score:  35.00 [exploratory    ] Events:  35
+11. method                         (test_method ) Score:  31.00 [exploratory    ] Events:  31
+12. steel                          (material    ) Score:  23.00 [stalled        ] Events:  23
+13. stress                         (failure_mode) Score:  23.00 [stalled        ] Events:  23
+14. heat                           (hazard      ) Score:  23.00 [stalled        ] Events:  23
+15. environment                    (environment ) Score:  21.00 [stalled        ] Events:  21
+16. concrete                       (material    ) Score:  19.00 [stalled        ] Events:  19
+17. water                          (hazard      ) Score:  18.00 [stalled        ] Events:  18
+18. condition                      (environment ) Score:  18.00 [stalled        ] Events:  18
+19. solution                       (test_method ) Score:  17.00 [stalled        ] Events:  17
+20. structure                      (system      ) Score:  17.00 [stalled        ] Events:  17
+
+======================================================================
+TOP 20 ENTITIES - MATERIALS_PERFORMANCE_V1
+======================================================================
+
+ 1. guideline                      (test_method ) Score:  71.00 [strong         ] Events:  71
+ 2. temperature                    (environment ) Score:  64.00 [strong         ] Events:  64
+ 3. ice                            (hazard      ) Score:  60.00 [strong         ] Events:  60
+ 4. ice                            (environment ) Score:  60.00 [strong         ] Events:  60
+ 5. failure                        (failure_mode) Score:  59.00 [strong         ] Events:  59
+ 6. moisture                       (environment ) Score:  51.00 [promising      ] Events:  51
+ 7. corrosion                      (hazard      ) Score:  49.00 [promising      ] Events:  49
+ 8. corrosion                      (failure_mode) Score:  49.00 [promising      ] Events:  49
+ 9. test                           (test_method ) Score:  40.00 [exploratory    ] Events:  40
+10. thermal                        (environment ) Score:  35.00 [exploratory    ] Events:  35
+11. method                         (test_method ) Score:  31.00 [exploratory    ] Events:  31
+12. steel                          (material    ) Score:  23.00 [stalled        ] Events:  23
+13. stress                         (failure_mode) Score:  23.00 [stalled        ] Events:  23
+14. heat                           (hazard      ) Score:  23.00 [stalled        ] Events:  23
+15. environment                    (environment ) Score:  21.00 [stalled        ] Events:  21
+16. concrete                       (material    ) Score:  19.00 [stalled        ] Events:  19
+17. water                          (hazard      ) Score:  18.00 [stalled        ] Events:  18
+18. condition                      (environment ) Score:  18.00 [stalled        ] Events:  18
+19. solution                       (test_method ) Score:  17.00 [stalled        ] Events:  17
+20. structure                      (system      ) Score:  17.00 [stalled        ] Events:  17
+
+======================================================================
+TOP 20 ENTITIES - BUILDING_PHYSICS_V1
+======================================================================
+
+ 1. guideline                      (test_method ) Score:  71.00 [strong         ] Events:  71
+ 2. temperature                    (environment ) Score:  64.00 [strong         ] Events:  64
+ 3. ice                            (hazard      ) Score:  60.00 [strong         ] Events:  60
+ 4. ice                            (environment ) Score:  60.00 [strong         ] Events:  60
+ 5. failure                        (failure_mode) Score:  59.00 [strong         ] Events:  59
+ 6. moisture                       (environment ) Score:  51.00 [promising      ] Events:  51
+ 7. corrosion                      (hazard      ) Score:  49.00 [promising      ] Events:  49
+ 8. corrosion                      (failure_mode) Score:  49.00 [promising      ] Events:  49
+ 9. test                           (test_method ) Score:  40.00 [exploratory    ] Events:  40
+10. thermal                        (environment ) Score:  35.00 [exploratory    ] Events:  35
+11. method                         (test_method ) Score:  31.00 [exploratory    ] Events:  31
+12. steel                          (material    ) Score:  23.00 [stalled        ] Events:  23
+13. stress                         (failure_mode) Score:  23.00 [stalled        ] Events:  23
+14. heat                           (hazard      ) Score:  23.00 [stalled        ] Events:  23
+15. environment                    (environment ) Score:  21.00 [stalled        ] Events:  21
+16. concrete                       (material    ) Score:  19.00 [stalled        ] Events:  19
+17. water                          (hazard      ) Score:  18.00 [stalled        ] Events:  18
+18. condition                      (environment ) Score:  18.00 [stalled        ] Events:  18
+19. solution                       (test_method ) Score:  17.00 [stalled        ] Events:  17
+20. structure                      (system      ) Score:  17.00 [stalled        ] Events:  17
+
+======================================================================
+TOP 20 ENTITIES - CLIMATE_RESILIENCE_V1
+======================================================================
+
+ 1. temperature                    (environment ) Score:  97.27 [strong         ] Events:  64
+ 2. ice                            (hazard      ) Score:  91.80 [strong         ] Events:  60
+ 3. ice                            (environment ) Score:  91.80 [strong         ] Events:  60
+ 4. failure                        (failure_mode) Score:  89.31 [strong         ] Events:  59
+ 5. moisture                       (environment ) Score:  76.98 [promising      ] Events:  51
+ 6. corrosion                      (hazard      ) Score:  73.93 [promising      ] Events:  49
+ 7. corrosion                      (failure_mode) Score:  73.93 [promising      ] Events:  49
+ 8. guideline                      (test_method ) Score:  71.42 [promising      ] Events:  71
+ 9. thermal                        (environment ) Score:  54.07 [exploratory    ] Events:  35
+10. test                           (test_method ) Score:  40.85 [exploratory    ] Events:  40
+11. heat                           (hazard      ) Score:  36.00 [stalled        ] Events:  23
+12. stress                         (failure_mode) Score:  35.41 [stalled        ] Events:  23
+13. environment                    (environment ) Score:  32.05 [stalled        ] Events:  21
+14. method                         (test_method ) Score:  31.73 [stalled        ] Events:  31
+15. steel                          (material    ) Score:  28.17 [stalled        ] Events:  23
+16. water                          (hazard      ) Score:  28.11 [stalled        ] Events:  18
+17. condition                      (environment ) Score:  27.50 [stalled        ] Events:  18
+18. air                            (environment ) Score:  25.25 [stalled        ] Events:  16
+19. concrete                       (material    ) Score:  24.12 [stalled        ] Events:  19
+20. wear                           (failure_mode) Score:  23.93 [stalled        ] Events:  15
+
+======================================================================
+TOP 20 ENTITIES - STANDARDS_COMPLIANCE_V1
+======================================================================
+
+ 1. guideline                      (test_method ) Score:  71.00 [strong         ] Events:  71
+ 2. temperature                    (environment ) Score:  64.00 [strong         ] Events:  64
+ 3. ice                            (hazard      ) Score:  60.00 [strong         ] Events:  60
+ 4. ice                            (environment ) Score:  60.00 [strong         ] Events:  60
+ 5. failure                        (failure_mode) Score:  59.00 [strong         ] Events:  59
+ 6. moisture                       (environment ) Score:  51.00 [promising      ] Events:  51
+ 7. corrosion                      (hazard      ) Score:  49.00 [promising      ] Events:  49
+ 8. corrosion                      (failure_mode) Score:  49.00 [promising      ] Events:  49
+ 9. test                           (test_method ) Score:  40.00 [exploratory    ] Events:  40
+10. thermal                        (environment ) Score:  35.00 [exploratory    ] Events:  35
+11. method                         (test_method ) Score:  31.00 [exploratory    ] Events:  31
+12. steel                          (material    ) Score:  23.00 [stalled        ] Events:  23
+13. stress                         (failure_mode) Score:  23.00 [stalled        ] Events:  23
+14. heat                           (hazard      ) Score:  23.00 [stalled        ] Events:  23
+15. environment                    (environment ) Score:  21.00 [stalled        ] Events:  21
+16. concrete                       (material    ) Score:  19.00 [stalled        ] Events:  19
+17. water                          (hazard      ) Score:  18.00 [stalled        ] Events:  18
+18. condition                      (environment ) Score:  18.00 [stalled        ] Events:  18
+19. solution                       (test_method ) Score:  17.00 [stalled        ] Events:  17
+20. structure                      (system      ) Score:  17.00 [stalled        ] Events:  17
+
+======================================================================
+BUCKET DISTRIBUTION
+======================================================================
+
+failure_analysis_v1:
+  strong         :    5 (  5.0%)
+  promising      :    3 (  3.0%)
+  exploratory    :    3 (  3.0%)
+  stalled        :   12 ( 12.0%)
+  deprioritized  :   77 ( 77.0%)
+
+materials_performance_v1:
+  strong         :    5 (  5.0%)
+  promising      :    3 (  3.0%)
+  exploratory    :    3 (  3.0%)
+  stalled        :   12 ( 12.0%)
+  deprioritized  :   77 ( 77.0%)
+
+building_physics_v1:
+  strong         :    5 (  5.0%)
+  promising      :    3 (  3.0%)
+  exploratory    :    3 (  3.0%)
+  stalled        :   12 ( 12.0%)
+  deprioritized  :   77 ( 77.0%)
+
+climate_resilience_v1:
+  strong         :    4 (  4.0%)
+  promising      :    4 (  4.0%)
+  exploratory    :    2 (  2.0%)
+  stalled        :   14 ( 14.0%)
+  deprioritized  :   76 ( 76.0%)
+
+standards_compliance_v1:
+  strong         :    5 (  5.0%)
+  promising      :    3 (  3.0%)
+  exploratory    :    3 (  3.0%)
+  stalled        :   12 ( 12.0%)
+  deprioritized  :   77 ( 77.0%)
+

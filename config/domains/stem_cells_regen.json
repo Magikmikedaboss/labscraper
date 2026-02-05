@@ -1,0 +1,30 @@
+{
+  "id": "stem_cells_regen",
+  "name": "Stem Cells & Regenerative Biology",
+  "description": "Focuses on stem cell models (MSC/iPSC), differentiation, organoids, engraftment, and translational barriers. Observational patterns only.",
+  "claims_mode": "observational_only",
+  "domain_profile_version": "v1",
+  "seed_overlays": {
+    "include_files": [
+      "assays.json",
+      "pathways.json",
+      "indications.json"
+    ],
+    "prefer_types": ["model", "pathway", "assay", "indication"]
+  },
+  "exclusions": {
+    "terms": ["clinic", "miracle", "guaranteed", "stem cell spa"],
+    "doc_kinds": ["marketing"]
+  },
+  "pattern_emphasis": {
+    "convergence": 1.00,
+    "escalation": 1.25,
+    "fragmentation": 1.00,
+    "stagnation": 1.10,
+    "abandonment": 0.95
+  },
+  "language": {
+    "allowed": ["en"],
+    "output_allowed_phrases": ["research momentum", "protocol diversity", "translational friction", "appears to", "reported limitations"],
+    "forbidden": ["cure", "reverses aging", "guaranteed", "FDA approved"]  }
+}

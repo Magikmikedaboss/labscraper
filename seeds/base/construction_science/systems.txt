@@ -1,0 +1,29 @@
+# systems.txt
+foundation
+footing
+slab
+slab-on-grade
+beam
+girder
+column
+wall
+shear wall
+roof
+roof deck
+truss
+joist
+diaphragm
+connection
+weld
+bolt
+anchor
+retaining wall
+basement
+façade
+cladding
+window
+flashing
+waterproofing
+offsite construction
+panelized construction
+onsite construction

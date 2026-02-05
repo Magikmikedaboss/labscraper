@@ -1,20 +1,19 @@
-from pathlib import Path
+#!/usr/bin/env python3
 import sqlite3
+import os
 
-DB_PATH = Path("output") / "peptide_intel.sqlite"
-SCHEMA_PATH = Path("schema.sql")
+# Create database and initialize schema
+db_path = 'db/runs.sqlite'
+os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
-def main():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+with sqlite3.connect(db_path) as conn:
+    with open('output/peptide_intel_schema.sql', 'r') as f:
+        schema_sql = f.read()
+    conn.executescript(schema_sql)
+    print('Database schema initialized successfully')
 
-    con = sqlite3.connect(DB_PATH)
-    try:
-        con.executescript(schema)
-        con.commit()
-        print(f"✅ Database initialized at: {DB_PATH.resolve()}")
-    finally:
-        con.close()
-
-if __name__ == "__main__":
-    main()
+    # Verify tables were created
+    cursor = conn.cursor()
+    cursor.execute('SELECT name FROM sqlite_master WHERE type="table"')
+    tables = cursor.fetchall()
+    print('Tables created:', [t[0] for t in tables])

@@ -1,0 +1,24 @@
+# Wind & Seismic - Environmental Context Seeds
+# Risk amplifiers for dynamic loading and structural stress
+
+high wind
+wind load
+hurricane
+cyclonic
+seismic zone
+earthquake
+seismic loading
+lateral loading
+torsional loading
+dynamic excitation
+vibration
+resonance
+fatigue loading
+cyclic stress
+impact loading
+blast loading
+overturning moment
+uplift force
+drift
+deflection
+lateral displacement

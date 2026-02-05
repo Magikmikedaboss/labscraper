@@ -1,0 +1,68 @@
+# materials.txt
+concrete
+reinforced concrete
+rebar
+steel
+structural steel
+prestressed concrete
+masonry
+brick
+cmu
+grout
+timber
+glulam
+LVL
+plywood
+osb
+frp
+carbon fiber
+epoxy
+sealant
+bitumen
+asphalt
+gypsum
+insulation
+vapor barrier
+stone
+mortar joint
+
+# Polymers / composites
+fiber-reinforced polymer
+GFRP
+CFRP
+polyurethane
+polymer composite
+adhesive anchor
+
+# Insulation / envelope materials
+mineral wool
+glass wool
+fiberglass
+cellulose insulation
+spray foam
+XPS
+EPS
+polyisocyanurate
+aerogel
+air barrier
+weather resistive barrier
+WRB
+membrane
+
+# Glazing / facade
+glass
+double glazing
+triple glazing
+low-e
+low emissivity
+curtain wall
+cladding
+EIFS
+
+# Advanced / functional
+phase change material
+PCM
+self-healing concrete
+bio-based binder
+carbonated concrete
+recycled aggregate

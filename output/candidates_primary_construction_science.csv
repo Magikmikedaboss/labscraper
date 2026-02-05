@@ -1,0 +1,4 @@
+entity_type,entity_name,entity_variant,role,event_count,paper_count,original_variants,domain_id,domain_name,overlay_id,first_seen,last_seen
+peptide,GALVANNEALED,,primary,2,1,GALVANNEALED,construction_science,Construction Science & Built Environment Physics,construction_science_v1,2026-02-02T00:09:18Z,2026-02-02T00:09:28Z
+peptide,INDIRECT,,primary,1,1,INDIRECT,construction_science,Construction Science & Built Environment Physics,construction_science_v1,2026-02-02T00:07:03Z,2026-02-02T00:07:03Z
+peptide,RESIDENTIAL,,primary,1,1,RESIDENTIAL,construction_science,Construction Science & Built Environment Physics,construction_science_v1,2026-02-02T00:08:33Z,2026-02-02T00:08:33Z

@@ -1,0 +1,9 @@
+{
+  "id": "standards_compliance_v1",
+  "name": "Standards Compliance Lens",
+  "version": "v1",
+  "description": "Extracts references to building codes, standards, and compliance language in construction science.",
+  "schema": {
+    "fields": ["code_standard", "requirement", "compliance"]
+  }
+}

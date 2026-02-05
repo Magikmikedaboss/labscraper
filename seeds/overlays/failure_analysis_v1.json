@@ -1,0 +1,9 @@
+{
+  "id": "failure_analysis_v1",
+  "name": "Failure Analysis Lens",
+  "version": "v1",
+  "description": "Extracts and classifies failure modes, mechanisms, and distress signals in construction science documents.",
+  "schema": {
+    "fields": ["failure_mode", "mechanism", "signal_strength"]
+  }
+}

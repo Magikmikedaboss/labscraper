@@ -1,0 +1,105 @@
+{
+  "overlay_id": "longevity_v1",
+  "domain": "biohacking_longevity",
+  "description": "Longevity-focused overlay emphasizing aging mechanisms, biological age measurement, and intervention realism",
+  "notes": "Recognizes true longevity science when measurement + mechanism language is present. Does not suppress disease or neuroscience terms.",
+  
+  "entities": {
+    "aging_mechanisms": [
+      "cellular senescence",
+      "senescent cells",
+      "autophagy",
+      "proteostasis",
+      "mitochondrial dysfunction",
+      "genomic instability",
+      "telomere attrition",
+      "epigenetic alterations",
+      "inflammaging"
+    ],
+    
+    "nutrient_sensing": [
+      "mTOR signaling",
+      "mTOR inhibition",
+      "rapamycin treatment",
+      "AMPK activation",
+      "IGF-1 signaling",
+      "insulin signaling",
+      "FOXO transcription factor",
+      "sirtuin activity"
+    ],
+    
+    "aging_measurements": [
+      "epigenetic clock",
+      "DNA methylation age",
+      "biological age",
+      "aging biomarker",
+      "healthspan measurement",
+      "lifespan measurement",
+      "longitudinal aging study",
+      "proteomic aging",
+      "transcriptomic aging",
+      "metabolomic aging"
+    ],
+    
+    "interventions": [
+      "caloric restriction",
+      "time-restricted feeding",
+      "fasting mimicking diet",
+      "exercise intervention",
+      "rapamycin",
+      "metformin",
+      "senolytic",
+      "senomorphic"
+    ],
+    
+    "longevity_models": [
+      "mouse lifespan",
+      "murine model",
+      "C. elegans longevity",
+      "Drosophila aging",
+      "zebrafish aging",
+      "non-human primate aging",
+      "human cohort study"
+    ],
+    
+    "aliases": {
+      "mTOR signaling": ["mTOR", "MTOR", "mammalian target of rapamycin", "mechanistic target of rapamycin"],
+      "rapamycin": ["Rapamycin", "rapamycin (sirolimus)", "sirolimus", "Sirolimus"],
+      "metformin": ["Metformin"],
+      "AMPK": ["AMPK activation", "AMP-activated protein kinase"],
+      "IGF-1": ["IGF-1 signaling", "insulin-like growth factor 1"],
+      "FOXO": ["FOXO transcription factor", "forkhead box O"],
+      "sirtuin": ["sirtuin activity", "SIRT1", "sirtuins"],
+      "autophagy": ["Autophagy", "autophagic"],
+      "senescence": ["cellular senescence", "senescent cells"],
+      "epigenetic clock": ["DNA methylation age", "epigenetic age", "biological age clock"],
+      "healthspan": ["healthspan measurement", "health span"],
+      "lifespan": ["lifespan measurement", "life span", "longevity"],
+      "caloric restriction": ["CR", "dietary restriction", "calorie restriction"],
+      "senolytic": ["senolytics", "senolytic drug"],
+      "C. elegans": ["C elegans", "Caenorhabditis elegans", "worm model"],
+      "Drosophila": ["fruit fly", "Drosophila melanogaster"]
+    },
+    
+    "translation_barriers": [
+      "failed replication",
+      "no lifespan extension",
+      "tradeoff",
+      "adverse effects",
+      "toxicity",
+      "species differences",
+      "translation to humans",
+      "confounding factors"
+    ]
+  },
+  
+  "exclusions": {
+    "terms": [
+      "anti-aging cream",
+      "fountain of youth",
+      "immortality",
+      "reverse aging guaranteed",
+      "age reversal supplement"
+    ]
+  }
+}

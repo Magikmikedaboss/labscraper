@@ -1,0 +1,36 @@
+# environments.txt
+coastal
+marine environment
+chloride exposure
+freeze-thaw
+freeze thaw
+frost action
+frost damage
+high humidity
+relative humidity
+RH
+arid climate
+high temperature
+thermal cycling
+thermal gradient
+sulfate soil
+flood zone
+high wind
+wind-driven rain
+seismic zone
+deicing salts
+de-icing salts
+salt spray
+industrial atmosphere
+UV exposure
+solar radiation
+coastal exposure
+service life
+design life
+warranty period
+deterioration
+degradation over time
+wetting/drying cycles
+humidity cycling
+temperature cycling
+moisture cycling

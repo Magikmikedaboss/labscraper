@@ -1,0 +1,54 @@
+# tests and inspection methods
+astm c39
+astm c31
+astm c143
+astm c150
+astm c494
+astm e119
+astm e330
+asce 41
+aci 318
+asce 7
+ul 263
+rebound hammer
+schmidt hammer
+ultrasonic pulse velocity
+upv
+ground penetrating radar
+gpr
+infrared thermography
+core sample
+core sampling
+pull-out test
+half-cell potential
+carbonation depth
+chloride content
+compressive strength test
+tensile test
+flexural test
+load test
+visual inspection
+borescope
+dye penetrant
+magnetic particle inspection
+capillary absorption
+sorption isotherm
+condensation risk
+hygrothermal modeling
+WUFI
+
+# Fire / acoustic
+fire resistance test
+fire rating
+smoke development
+acoustic absorption
+sound transmission class
+STC
+reverberation time
+
+# Standards language
+ASTM
+ISO standard
+EN standard
+ACI
+ASHRAE

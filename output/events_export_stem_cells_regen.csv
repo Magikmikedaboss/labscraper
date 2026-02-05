@@ -1,0 +1,1 @@
+event_id,domain,event_type,stage,outcome,decision_driver,evidence_snippet,confidence_original,confidence_boosted,primary_entity_count,context_entity_count,entities_primary,entities_context,entities_all,domain_id,domain_name,overlay_id,paper_id,created_at

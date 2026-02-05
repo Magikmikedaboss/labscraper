@@ -1,6 +1,24 @@
 {
-  "version": "1.0",
-  "description": "Entity normalization map - collapses variants into canonical forms",
+  "version": "1.1",
+  "description": "Entity normalization map - collapses variants into canonical forms with type precedence rules",
+  
+  "entity_type_precedence": {
+    "description": "When same entity appears as multiple types, use this precedence order (highest priority first)",
+    "rules": {
+      "microglia": "neural_cell",
+      "astrocytes": "neural_cell",
+      "astrocyte": "neural_cell",
+      "neurons": "neural_cell",
+      "neuron": "neural_cell",
+      "msc": "stem_cell",
+      "ipsc": "stem_cell",
+      "esc": "stem_cell",
+      "mesenchymal": "stem_cell",
+      "in vivo": "study_context",
+      "in vitro": "study_context",
+      "ex vivo": "study_context"
+    }
+  },
   
   "assay": {
     "LC-MS": [
@@ -90,13 +108,40 @@
     ]
   },
 
-  "model": {
-    "IN VIVO": [
+  "study_context": {
+    "in vivo": [
       "in vivo"
     ],
-    "IN VITRO": [
+    "in vitro": [
       "in vitro"
     ],
+    "ex vivo": [
+      "ex vivo"
+    ]
+  },
+
+  "neural_cell": {
+    "microglia": [
+      "microglia",
+      "microglial cells"
+    ],
+    "astrocytes": [
+      "astrocytes",
+      "astrocyte",
+      "astrocytic cells"
+    ],
+    "neurons": [
+      "neurons",
+      "neuron",
+      "neuronal cells"
+    ],
+    "oligodendrocytes": [
+      "oligodendrocytes",
+      "oligodendrocyte"
+    ]
+  },
+
+  "model": {
     "CELL CULTURE": [
       "cell culture",
       "cultured cells",
@@ -270,8 +315,6 @@
   },
 
   "context_only_entities": [
-    "IN VIVO",
-    "IN VITRO",
     "CELL CULTURE",
     "HUMAN",
     "RAT",
@@ -282,5 +325,11 @@
     "TISSUE",
     "BLOOD",
     "LYSATE"
+  ],
+  
+  "study_context_entities": [
+    "in vivo",
+    "in vitro",
+    "ex vivo"
   ]
 }

@@ -1,0 +1,511 @@
+entity_name,entity_type,entity_variant,event_count,science_research_v1_score,science_research_v1_bucket,biohacking_curiosity_v1_score,biohacking_curiosity_v1_bucket
+serum,model,biofluid,264,599.55,strong,150.02,stalled
+nad+,compound,drug,5,7.30,promising,16.60,strong
+metformin,compound,drug,34,43.45,promising,86.37,strong
+glucagon,compound,drug,5,6.80,promising,12.40,strong
+spermidine,compound,drug,4,5.90,exploratory,11.80,strong
+human,model,organism,365,799.69,strong,199.73,stalled
+cardiovascular disease,indication,disease,4,8.00,strong,8.00,strong
+cancer,indication,disease,181,407.56,strong,406.86,strong
+humans,model,organism,50,120.26,strong,29.69,stalled
+mouse,model,organism,111,258.46,strong,128.90,exploratory
+mice,model,organism,249,567.09,strong,283.28,exploratory
+ampk,target,protein,17,19.28,exploratory,19.46,exploratory
+mitochondrial,model,unknown,67,142.37,strong,71.29,exploratory
+senescence,pathway,pathway,14,35.31,strong,17.44,promising
+rapamycin,compound,drug,56,68.25,promising,134.99,strong
+nmn,compound,drug,1,1.50,deprioritized,3.00,stalled
+sirt6,target,protein,7,11.36,strong,10.64,promising
+mitochondria,model,unknown,46,114.58,strong,57.51,promising
+mtor,target,protein,63,75.64,promising,74.84,exploratory
+sirt1,target,protein,6,7.13,exploratory,7.13,exploratory
+mtor,pathway,pathway,63,150.34,strong,74.84,exploratory
+dna repair,pathway,pathway,5,11.20,strong,5.20,exploratory
+quercetin,compound,drug,9,12.26,promising,25.74,strong
+resveratrol,compound,drug,3,3.80,stalled,7.60,promising
+in vitro,model,unknown,191,439.03,strong,108.55,stalled
+secretion,pathway,pathway,22,54.18,strong,26.73,promising
+obesity,indication,disease,18,46.29,strong,46.34,strong
+pancreatic islets,model,unknown,2,5.00,exploratory,3.00,stalled
+receptor,target,protein,128,147.61,exploratory,146.77,exploratory
+tnf,target,protein,48,59.71,promising,59.15,promising
+apoptosis,pathway,pathway,46,100.87,strong,50.12,exploratory
+inflammation,indication,disease,60,148.99,strong,147.94,strong
+neurodegeneration,indication,disease,23,50.87,strong,50.39,strong
+diabetes,indication,disease,31,80.86,strong,80.76,strong
+stroke,indication,disease,69,161.35,strong,160.77,strong
+bdnf,target,protein,12,15.83,promising,14.91,promising
+osteoarthritis,indication,disease,7,15.43,strong,15.14,strong
+parkinson,indication,disease,39,95.07,strong,94.38,strong
+pain,indication,disease,9,18.56,strong,18.78,strong
+dulaglutide,compound,drug,2,3.00,stalled,5.00,exploratory
+semaglutide,compound,drug,1,1.00,deprioritized,2.50,stalled
+exenatide,compound,drug,1,1.00,deprioritized,2.50,stalled
+liraglutide,compound,drug,2,3.00,stalled,7.00,promising
+everolimus,compound,drug,7,13.71,strong,28.29,strong
+alzheimer,indication,disease,121,314.75,strong,313.56,strong
+visceralfat,peptide,,1,2.10,stalled,2.10,stalled
+blood,model,biofluid,89,207.32,strong,51.85,stalled
+hypertension,indication,disease,4,10.90,strong,10.65,strong
+schizophrenia,indication,disease,9,32.48,strong,30.03,strong
+fisetin,compound,drug,1,1.00,deprioritized,2.00,stalled
+skeletal muscle,model,unknown,20,56.85,strong,27.90,promising
+neurons,neural_cell,cell_type,160,187.30,exploratory,186.68,exploratory
+oxidative stress,pathway,pathway,15,30.67,strong,14.70,exploratory
+myocardial infarction,indication,disease,2,5.00,exploratory,5.00,exploratory
+rats,model,organism,23,55.75,strong,28.11,promising
+primates,model,unknown,7,18.29,strong,9.15,promising
+autophagy,pathway,pathway,71,164.81,strong,82.03,exploratory
+andrisingfast,peptide,,1,-2.30,deprioritized,2.20,stalled
+csf,model,biofluid,56,136.11,strong,68.01,promising
+glp-1r,target,protein,1,1.00,deprioritized,1.00,deprioritized
+reduction,pathway,pathway,44,111.61,strong,55.76,promising
+efficacy,assay,metric,92,206.95,strong,52.22,stalled
+influenza,indication,disease,3,5.80,exploratory,6.80,promising
+p21,target,protein,2,2.00,stalled,2.00,stalled
+il-6,target,protein,21,25.98,promising,25.55,promising
+cho,model,unknown,17,36.24,strong,17.91,exploratory
+plasma,model,biofluid,277,675.83,strong,168.93,stalled
+colitis,indication,disease,2,5.00,exploratory,4.00,exploratory
+mass spectrometry,assay,assay,20,59.54,strong,14.49,stalled
+chromatography,assay,assay,11,29.80,strong,7.59,stalled
+gas chromatography,assay,assay,3,7.50,promising,2.83,stalled
+gc-ms,assay,assay,1,2.50,stalled,1.00,deprioritized
+internal standard,assay,assay,1,2.50,stalled,1.00,deprioritized
+recovery,assay,assay,5,12.11,strong,5.28,exploratory
+insulin signaling,pathway,pathway,2,4.00,exploratory,2.00,stalled
+retention time,assay,assay,1,2.50,stalled,0.50,deprioritized
+proliferation,pathway,pathway,61,136.91,strong,68.20,exploratory
+ipsc,stem_cell,,238,271.09,exploratory,270.92,exploratory
+pluripotent,stem_cell,,127,151.40,exploratory,150.70,exploratory
+reprogramming,stem_cell,,51,63.28,promising,62.53,promising
+depression,indication,disease,18,41.24,strong,41.30,strong
+osteoporosis,indication,disease,1,-3.00,deprioritized,2.00,stalled
+infection,indication,disease,38,88.47,strong,88.31,strong
+purification,assay,assay,5,10.00,strong,2.90,stalled
+viral infection,indication,disease,1,2.00,stalled,2.00,stalled
+tissue,model,unknown,149,338.84,strong,84.48,stalled
+cell cycle,pathway,pathway,5,10.60,strong,7.00,promising
+cell death,pathway,pathway,168,370.09,strong,184.76,exploratory
+knockout,model,unknown,16,35.93,strong,17.90,exploratory
+foxo3,target,protein,4,5.55,exploratory,5.80,exploratory
+il6,target,protein,6,6.84,exploratory,7.51,promising
+autoimmune,indication,disease,24,59.82,strong,59.94,strong
+asthma,indication,disease,3,6.00,promising,7.33,promising
+furin,target,protein,3,2.00,stalled,3.67,stalled
+dementia,indication,disease,47,133.67,strong,132.94,strong
+rat,model,organism,31,77.84,strong,38.69,promising
+tumor,model,unknown,108,250.03,strong,124.62,exploratory
+flow cytometry,assay,assay,26,59.27,strong,14.27,stalled
+bovine serum albumin,model,unknown,9,20.16,strong,10.30,exploratory
+in vivo,model,unknown,665,1478.69,strong,368.80,stalled
+pi3k,target,protein,13,19.08,promising,15.85,promising
+akt,target,protein,15,20.63,promising,18.43,promising
+pi3k/akt,pathway,pathway,6,20.10,strong,7.55,promising
+protein synthesis,pathway,pathway,11,25.57,strong,12.10,exploratory
+transcription,pathway,pathway,58,133.71,strong,66.61,exploratory
+tgf-β,pathway,pathway,16,37.61,strong,18.90,exploratory
+validation,assay,assay,52,140.98,strong,35.21,stalled
+elisa,assay,assay,16,40.62,strong,8.90,stalled
+western blot,assay,assay,11,27.89,strong,5.84,stalled
+spr,assay,assay,1,2.37,stalled,-2.53,deprioritized
+high-throughput screening,assay,assay,7,18.74,strong,4.40,stalled
+hts,assay,assay,2,5.16,exploratory,-0.96,deprioritized
+reporter assay,assay,assay,3,7.65,promising,-0.13,deprioritized
+ic50,assay,metric,2,5.16,exploratory,-0.46,deprioritized
+dose-response,assay,metric,3,7.10,promising,0.40,deprioritized
+translation,pathway,pathway,46,115.30,strong,57.44,promising
+msc,stem_cell,,267,300.47,exploratory,299.88,exploratory
+stem cell,stem_cell,,269,299.75,exploratory,299.08,exploratory
+curcumin,compound,drug,2,3.00,stalled,3.50,stalled
+pigs,model,unknown,1,2.90,stalled,0.20,deprioritized
+dogs,model,unknown,2,5.80,exploratory,2.90,stalled
+peptidase,target,protein,4,5.90,exploratory,5.90,exploratory
+differentiation,stem_cell,,245,273.08,exploratory,272.60,exploratory
+phosphorylation,pathway,pathway,24,54.48,strong,27.37,exploratory
+erk1,target,protein,4,7.02,promising,5.02,exploratory
+mek,pathway,pathway,3,11.40,strong,5.28,exploratory
+lung cancer,indication,disease,3,6.00,promising,6.00,promising
+ubiquitin,target,protein,4,6.00,promising,3.50,stalled
+proteasome,pathway,pathway,3,10.60,strong,4.47,exploratory
+proteolysis,pathway,pathway,2,5.00,exploratory,1.50,deprioritized
+signal transduction,pathway,pathway,7,15.57,strong,6.71,exploratory
+pancreatic cancer,indication,disease,12,35.17,strong,34.50,strong
+heart failure,indication,disease,6,16.93,strong,15.60,strong
+copd,indication,disease,2,6.40,promising,6.40,promising
+kidney disease,indication,disease,4,9.84,strong,9.59,strong
+chronic kidney disease,indication,disease,3,9.60,strong,9.60,strong
+sepsis,indication,disease,2,6.40,promising,6.40,promising
+ace,target,protein,8,14.90,strong,14.40,strong
+extract,model,unknown,12,29.47,strong,14.32,exploratory
+potency,assay,metric,17,34.18,strong,8.97,stalled
+sulforaphane,compound,drug,1,1.50,deprioritized,2.00,stalled
+wnt,pathway,pathway,48,112.27,strong,55.36,exploratory
+type 2 diabetes,indication,disease,2,4.00,exploratory,4.00,exploratory
+adipocytes,model,unknown,5,12.12,strong,6.46,promising
+synthase,target,protein,10,13.37,promising,11.87,exploratory
+kinase,target,protein,35,42.33,promising,41.16,exploratory
+affinity,assay,metric,15,42.60,strong,10.50,stalled
+oxidation,pathway,pathway,10,23.00,strong,11.70,exploratory
+sampleheating,peptide,,1,1.60,deprioritized,1.60,deprioritized
+bsa,model,unknown,13,29.76,strong,15.49,exploratory
+b cells,model,unknown,13,31.83,strong,15.76,promising
+rpmi,model,unknown,3,8.27,strong,2.80,stalled
+jurkat,model,unknown,2,4.87,exploratory,0.93,deprioritized
+u937,model,cell_line,2,4.87,exploratory,0.93,deprioritized
+anemia,indication,disease,3,6.67,promising,6.00,promising
+monocytes,model,unknown,8,18.69,strong,9.16,exploratory
+primate,model,unknown,7,20.04,strong,9.52,promising
+pbmc,model,unknown,1,2.00,stalled,1.00,deprioritized
+hsp90,target,protein,4,4.75,exploratory,4.25,exploratory
+tlr9,target,protein,2,3.30,stalled,3.30,stalled
+mem,model,unknown,8,20.29,strong,10.08,promising
+endocytosis,pathway,pathway,9,25.53,strong,13.04,promising
+accuracy,assay,assay,5,13.70,strong,3.52,stalled
+quality control,assay,assay,10,24.30,strong,6.20,stalled
+reproducibility,assay,assay,37,89.49,strong,22.55,stalled
+hiv,indication,disease,4,10.10,strong,9.85,strong
+phosphatase,target,protein,7,9.44,promising,8.87,promising
+precision,assay,assay,7,21.74,strong,5.76,exploratory
+t cells,model,unknown,53,119.96,strong,60.05,exploratory
+immune response,pathway,pathway,9,19.33,strong,9.44,exploratory
+lupus,indication,disease,13,37.55,strong,36.71,strong
+arthritis,indication,disease,5,14.60,strong,12.80,strong
+necrosis,pathway,pathway,17,41.03,strong,20.34,exploratory
+alleviate,peptide,,1,1.50,deprioritized,1.00,deprioritized
+tgf-beta,pathway,pathway,2,5.00,exploratory,2.50,stalled
+bioavailability,assay,metric,2,6.47,promising,1.87,deprioritized
+urine,model,biofluid,5,12.60,strong,6.50,promising
+oxidative phosphorylation,pathway,pathway,3,7.50,promising,4.00,exploratory
+selectivity,assay,metric,9,17.10,strong,4.27,stalled
+therapeutic index,assay,metric,1,2.50,stalled,0.50,deprioritized
+renin,target,protein,2,3.00,stalled,4.00,exploratory
+xenografts,model,unknown,9,23.61,strong,11.36,promising
+breast cancer,indication,disease,21,46.31,strong,46.03,strong
+hplc,assay,assay,2,5.00,exploratory,1.00,deprioritized
+inflammatory response,pathway,pathway,2,4.00,exploratory,2.00,stalled
+tlr4,target,protein,18,21.42,exploratory,20.08,exploratory
+hydrolysis,pathway,pathway,3,6.00,promising,3.00,stalled
+nf-κb,target,protein,13,15.63,promising,13.33,exploratory
+nf-κb,pathway,pathway,13,29.19,strong,13.33,exploratory
+tnf-α,target,protein,30,37.26,promising,36.56,promising
+bacterial infection,indication,disease,4,9.20,strong,9.20,strong
+macrophages,model,unknown,31,69.01,strong,34.10,exploratory
+phagocytosis,pathway,pathway,11,27.49,strong,13.02,exploratory
+p62,target,protein,3,4.00,exploratory,3.67,stalled
+lc3,target,protein,3,3.00,stalled,3.67,stalled
+jnk,target,protein,2,2.00,stalled,2.00,stalled
+erk,target,protein,4,6.48,promising,5.48,exploratory
+derivatives,peptide,,1,1.00,deprioritized,1.00,deprioritized
+prostate cancer,indication,disease,2,4.00,exploratory,3.50,stalled
+identity,peptide,,1,2.00,stalled,2.00,stalled
+transporter,target,protein,10,13.93,promising,13.62,promising
+transgenic,model,unknown,29,69.45,strong,34.40,exploratory
+white adipose tissue,model,unknown,3,8.61,strong,4.30,exploratory
+brown adipose tissue,model,unknown,1,2.47,stalled,1.73,deprioritized
+mesenchymal,stem_cell,,105,122.85,exploratory,122.60,exploratory
+liquid chromatography,assay,assay,3,7.50,promising,2.17,stalled
+tandem mass spectrometry,assay,assay,2,5.80,exploratory,1.20,deprioritized
+type 1 diabetes,indication,disease,3,12.13,strong,10.80,strong
+insr,target,protein,1,1.50,deprioritized,1.50,deprioritized
+microscopy,assay,assay,49,115.37,strong,28.81,stalled
+centrifugation,assay,assay,2,4.00,exploratory,1.50,deprioritized
+acetylation,pathway,pathway,2,5.00,exploratory,2.00,stalled
+cytoplasmic,model,unknown,11,29.24,strong,14.21,promising
+lysosome,pathway,pathway,4,16.00,strong,8.00,strong
+ubiquitin ligase,target,protein,1,1.50,deprioritized,0.00,deprioritized
+ligase,target,protein,1,1.50,deprioritized,0.00,deprioritized
+sqstm1,target,protein,2,3.00,stalled,3.00,stalled
+methylation,pathway,pathway,24,63.48,strong,31.76,promising
+mtorc1,pathway,pathway,17,42.25,strong,20.98,promising
+nafld,indication,disease,4,8.60,strong,9.60,strong
+neuronal,neural_cell,cell_type,98,109.73,exploratory,108.95,exploratory
+clearance,assay,metric,17,41.43,strong,10.08,stalled
+foxo1,target,protein,3,3.90,stalled,4.57,exploratory
+hepatocytes,model,unknown,8,20.95,strong,9.85,promising
+er stress,pathway,pathway,1,2.00,stalled,1.00,deprioritized
+metabolic syndrome,indication,disease,3,7.97,promising,8.30,strong
+caspase,target,protein,21,26.92,promising,26.49,promising
+phenformin,compound,drug,1,1.00,deprioritized,2.00,stalled
+lmna,target,protein,1,1.19,deprioritized,0.19,deprioritized
+zebrafish,model,unknown,10,23.74,strong,10.82,exploratory
+cell culture,model,unknown,34,81.25,strong,38.92,exploratory
+mtorc2,pathway,pathway,7,18.86,strong,7.50,exploratory
+tuberculosis,indication,disease,1,2.38,stalled,1.38,deprioritized
+sirolimus,compound,drug,4,6.75,promising,12.00,strong
+drosophila,model,unknown,10,23.60,strong,11.40,exploratory
+epicenter,peptide,,1,1.00,deprioritized,1.00,deprioritized
+notch,pathway,pathway,9,25.03,strong,11.96,promising
+endothelial cells,model,unknown,10,24.11,strong,11.81,exploratory
+quantification,assay,assay,21,45.77,strong,11.64,stalled
+reductase,target,protein,1,1.50,deprioritized,0.00,deprioritized
+pka,pathway,pathway,3,7.00,promising,3.00,stalled
+immunofluorescence,assay,assay,54,124.46,strong,31.16,stalled
+myc,target,protein,27,27.44,exploratory,26.96,exploratory
+cytoplasm,model,unknown,10,25.33,strong,12.67,promising
+dmem,model,unknown,16,36.79,strong,19.93,promising
+yprafgal,peptide,,1,1.00,deprioritized,1.00,deprioritized
+nfkb,target,protein,4,6.07,promising,4.32,exploratory
+qpcr,assay,assay,10,23.69,strong,5.62,stalled
+dashedlines,peptide,,1,1.00,deprioritized,1.00,deprioritized
+ms/ms,assay,assay,2,6.00,promising,2.25,stalled
+ubiquitination,pathway,pathway,1,2.00,stalled,1.00,deprioritized
+p53,target,protein,8,9.77,promising,8.52,exploratory
+p53,pathway,pathway,8,18.41,strong,8.52,exploratory
+glycolysis,pathway,pathway,4,9.50,strong,4.50,exploratory
+emt,pathway,pathway,3,6.00,promising,3.67,stalled
+a549,model,cell_line,3,6.00,promising,3.00,stalled
+leukemia,indication,disease,24,58.38,strong,58.75,strong
+hepg2,model,cell_line,4,7.54,promising,4.15,exploratory
+mcf-7,model,cell_line,4,9.23,strong,4.37,exploratory
+hepatitis,indication,disease,2,2.98,stalled,4.48,exploratory
+glioblastoma,indication,disease,1,2.67,stalled,2.67,stalled
+leftpanels,peptide,,1,1.00,deprioritized,1.00,deprioritized
+nlrp3,target,protein,12,15.25,promising,13.25,exploratory
+photoreceptor,neural_cell,cell_type,3,4.40,exploratory,3.40,stalled
+sod1,target,protein,3,4.28,exploratory,4.28,exploratory
+lipid metabolism,pathway,pathway,4,9.50,strong,6.00,promising
+synthetase,target,protein,4,5.62,exploratory,4.62,exploratory
+igf1r,target,protein,1,1.30,deprioritized,1.30,deprioritized
+akt1,target,protein,1,1.30,deprioritized,1.30,deprioritized
+ras,pathway,pathway,5,14.93,strong,7.17,promising
+pkc,pathway,pathway,3,8.20,strong,3.60,stalled
+dna damage response,pathway,pathway,1,2.60,stalled,1.30,deprioritized
+atf6,target,protein,1,1.00,deprioritized,1.00,deprioritized
+ire1,target,protein,2,2.00,stalled,2.00,stalled
+perk,target,protein,2,3.00,stalled,1.50,deprioritized
+upr,pathway,pathway,3,7.00,promising,2.67,stalled
+neural progenitor,neural_cell,cell_type,3,3.85,stalled,3.85,stalled
+neural progenitor cell,neural_cell,cell_type,1,1.00,deprioritized,1.00,deprioritized
+mapk,target,protein,7,10.48,promising,7.90,exploratory
+nsc,model,unknown,1,2.50,stalled,0.00,deprioritized
+unfolded protein response,pathway,pathway,1,2.50,stalled,0.00,deprioritized
+fetal bovine serum,model,unknown,12,29.05,strong,15.48,promising
+hek293,model,cell_line,7,12.60,strong,6.44,exploratory
+airyscan,peptide,,1,0.60,deprioritized,0.60,deprioritized
+migration,pathway,pathway,31,70.19,strong,34.50,exploratory
+cat,target,protein,9,10.48,exploratory,11.04,promising
+in situ,model,unknown,11,25.65,strong,11.96,exploratory
+spe,assay,assay,3,9.00,strong,2.25,stalled
+transferase,target,protein,5,6.00,promising,6.00,promising
+cardiomyocytes,model,unknown,23,54.04,strong,27.28,exploratory
+trafficking,pathway,pathway,11,25.58,strong,11.79,exploratory
+exocytosis,pathway,pathway,6,15.43,strong,8.13,promising
+calcium signaling,pathway,pathway,2,5.00,exploratory,2.00,stalled
+nf-kb,pathway,pathway,7,19.97,strong,7.77,exploratory
+sw480,model,cell_line,1,2.00,stalled,0.00,deprioritized
+pc3,model,cell_line,1,2.00,stalled,0.00,deprioritized
+interneuron,neural_cell,cell_type,4,4.70,exploratory,4.95,exploratory
+hippocampal neurons,model,unknown,4,9.60,strong,5.05,exploratory
+rabbit,model,unknown,12,29.52,strong,14.59,promising
+nude mice,model,unknown,3,7.84,promising,3.17,stalled
+invasion,pathway,pathway,5,15.30,strong,6.00,promising
+rna-seq,assay,assay,4,12.06,strong,3.26,stalled
+astrocytes,neural_cell,unknown,392,459.45,exploratory,458.71,exploratory
+oligodendrocytes,model,unknown,2,4.00,exploratory,3.00,stalled
+oligodendrocytes,neural_cell,cell_type,2,2.00,stalled,3.00,stalled
+astrocyte,neural_cell,cell_type,150,172.30,exploratory,171.48,exploratory
+neuron,neural_cell,cell_type,60,67.77,exploratory,67.37,exploratory
+astrocytic,neural_cell,cell_type,20,20.30,exploratory,20.10,exploratory
+tnfa,target,protein,4,5.50,exploratory,3.75,stalled
+microglia,neural_cell,unknown,478,546.77,exploratory,545.83,exploratory
+il10,target,protein,2,2.00,stalled,2.00,stalled
+angiogenesis,pathway,pathway,8,20.62,strong,9.81,promising
+microglial,neural_cell,cell_type,77,89.84,exploratory,89.64,exploratory
+nrf2,target,protein,7,8.55,promising,7.55,exploratory
+multiple sclerosis,indication,disease,13,31.15,strong,30.46,strong
+oxidase,target,protein,5,7.55,promising,7.15,promising
+p38,target,protein,2,3.40,stalled,2.90,stalled
+p38,pathway,pathway,2,5.80,exploratory,2.90,stalled
+cgmp,pathway,pathway,13,34.18,strong,16.82,promising
+bace1,target,protein,2,3.17,stalled,2.67,stalled
+app,target,protein,12,14.71,promising,14.12,exploratory
+alicapistat,peptide,,1,2.00,stalled,1.50,deprioritized
+cysteine protease,target,protein,2,4.00,exploratory,3.00,stalled
+calpain,target,protein,1,2.00,stalled,1.50,deprioritized
+aggregation,pathway,pathway,13,33.74,strong,16.72,promising
+alzheimer's disease,indication,disease,4,9.75,strong,8.50,strong
+jak-stat,pathway,pathway,2,6.70,promising,2.35,stalled
+npc,neural_cell,cell_type,1,1.00,deprioritized,1.00,deprioritized
+fibroblasts,model,unknown,26,59.43,strong,29.58,exploratory
+hipsc,model,unknown,33,75.53,strong,38.23,exploratory
+motor neuron,neural_cell,cell_type,3,4.90,exploratory,3.07,stalled
+fbs,model,unknown,5,11.43,strong,6.51,promising
+casp1,target,protein,2,2.70,stalled,2.70,stalled
+whitetriangles,peptide,,1,1.00,deprioritized,1.00,deprioritized
+cortical neurons,model,unknown,3,7.50,promising,3.00,stalled
+sec,assay,assay,3,6.67,promising,1.50,deprioritized
+matrix metalloproteinase,target,protein,1,1.00,deprioritized,1.00,deprioritized
+hela,model,unknown,1,1.60,deprioritized,0.80,deprioritized
+autoimmune disease,indication,disease,1,2.50,stalled,1.00,deprioritized
+second messenger,pathway,pathway,1,2.00,stalled,1.00,deprioritized
+optimization,assay,assay,12,28.12,strong,10.13,exploratory
+myocytes,model,unknown,2,2.50,stalled,2.00,stalled
+dynamic range,assay,assay,2,4.00,exploratory,1.00,deprioritized
+anxiety,indication,disease,7,14.43,strong,14.29,strong
+chronic inflammation,indication,disease,3,11.10,strong,10.60,strong
+migraine,indication,disease,10,25.14,strong,25.34,strong
+ferroptosis,pathway,pathway,19,37.70,strong,18.25,exploratory
+ex vivo,model,unknown,7,16.11,strong,8.56,promising
+purkinje cell,neural_cell,cell_type,2,2.60,stalled,2.60,stalled
+parkinson's disease,indication,disease,9,24.22,strong,24.00,strong
+il-1β,target,protein,18,20.62,exploratory,19.34,exploratory
+malaria,indication,disease,4,11.04,strong,11.54,strong
+cox-2,target,protein,5,7.40,promising,5.20,exploratory
+stat3,pathway,pathway,24,54.64,strong,26.80,exploratory
+splenocytes,model,unknown,2,5.80,exploratory,1.90,deprioritized
+transwell,model,unknown,2,5.13,exploratory,1.07,deprioritized
+migration assay,assay,assay,1,2.00,stalled,-0.50,deprioritized
+gabaergic neuron,neural_cell,cell_type,1,1.00,deprioritized,1.00,deprioritized
+bipolar disorder,indication,disease,2,5.00,exploratory,4.00,exploratory
+pparγ,target,protein,2,3.00,stalled,2.00,stalled
+relativerisk,peptide,,1,1.00,deprioritized,1.00,deprioritized
+nrf-2,target,protein,1,1.00,deprioritized,1.00,deprioritized
+dexamethasone,compound,drug,3,3.47,stalled,8.27,strong
+rituximab,compound,drug,3,2.00,stalled,6.00,promising
+organoid,model,,452,971.67,strong,485.42,exploratory
+hsp70,target,protein,4,6.17,promising,4.67,exploratory
+gpcr,target,protein,1,1.00,deprioritized,1.00,deprioritized
+hippocampal neuron,neural_cell,cell_type,1,1.50,deprioritized,0.00,deprioritized
+covid-19,indication,disease,4,12.80,strong,13.30,strong
+cerebrospinal fluid,model,unknown,14,38.36,strong,18.82,promising
+biopsy,model,unknown,1,3.05,stalled,1.52,deprioritized
+oligodendrocyte,neural_cell,cell_type,3,3.95,stalled,3.95,stalled
+cyclin,pathway,pathway,8,18.76,strong,9.82,promising
+cdk,pathway,pathway,1,2.00,stalled,1.00,deprioritized
+acc,target,protein,4,4.00,exploratory,4.50,exploratory
+neurodegenerative disease,indication,disease,22,56.82,strong,53.04,strong
+pyroptosis,pathway,pathway,12,29.86,strong,13.81,exploratory
+camp,pathway,pathway,5,10.60,strong,5.20,exploratory
+ion channel,target,protein,2,2.10,stalled,3.60,stalled
+co-culture,model,unknown,25,59.01,strong,29.10,exploratory
+half-life,assay,metric,3,7.50,promising,1.50,deprioritized
+spectroscopy,assay,assay,2,6.20,promising,1.30,deprioritized
+filtration,assay,assay,1,2.00,stalled,0.50,deprioritized
+culture medium,model,unknown,10,24.18,strong,12.19,promising
+conditioned medium,model,unknown,9,23.18,strong,11.20,promising
+beta-catenin,pathway,pathway,1,4.00,exploratory,2.00,stalled
+il1b,target,protein,3,3.42,stalled,4.09,exploratory
+ifng,target,protein,3,3.00,stalled,3.67,stalled
+normal tissue,model,unknown,2,5.88,exploratory,2.44,stalled
+concentration-response,assay,metric,1,-0.80,deprioritized,0.80,deprioritized
+medscape,peptide,,1,1.60,deprioritized,1.60,deprioritized
+β-catenin,pathway,pathway,7,20.22,strong,9.83,promising
+confocal microscopy,assay,assay,6,14.00,strong,3.00,stalled
+neurobasal,model,unknown,3,7.20,promising,4.93,exploratory
+proteinase,target,protein,2,2.70,stalled,2.70,stalled
+bone marrow,model,unknown,25,57.44,strong,29.12,exploratory
+microfluidic,model,unknown,7,18.55,strong,8.63,promising
+paraffin-embedded,model,unknown,1,2.00,stalled,1.00,deprioritized
+piercetm,peptide,,1,1.00,deprioritized,1.00,deprioritized
+qimaging,peptide,,1,1.00,deprioritized,1.00,deprioritized
+cyanagen,peptide,,1,1.00,deprioritized,1.00,deprioritized
+scid,model,unknown,11,26.11,strong,12.28,exploratory
+pyramidal neuron,neural_cell,cell_type,1,1.00,deprioritized,1.00,deprioritized
+inthemiddle,peptide,,1,1.00,deprioritized,1.00,deprioritized
+bcl2,target,protein,1,1.00,deprioritized,1.00,deprioritized
+mmp2,target,protein,1,1.75,deprioritized,0.25,deprioritized
+mmp9,target,protein,2,3.50,stalled,2.00,stalled
+thrombin,target,protein,1,1.75,deprioritized,0.25,deprioritized
+robustness,assay,assay,1,2.50,stalled,0.50,deprioritized
+trypsin,target,protein,3,3.42,stalled,4.42,exploratory
+mtt assay,assay,assay,1,2.00,stalled,-0.50,deprioritized
+applichem,peptide,,1,1.50,deprioritized,0.00,deprioritized
+culture media,model,unknown,12,30.72,strong,15.03,promising
+scratch assay,assay,assay,1,2.00,stalled,-0.50,deprioritized
+internet,peptide,,1,1.00,deprioritized,1.00,deprioritized
+signal-to-noise ratio,assay,assay,5,10.00,strong,2.50,stalled
+calibration,assay,assay,1,2.00,stalled,0.50,deprioritized
+adam17,target,protein,1,1.00,deprioritized,1.00,deprioritized
+auc,assay,metric,2,5.00,exploratory,2.00,stalled
+pipeline,peptide,,1,1.00,deprioritized,1.00,deprioritized
+radioligand binding,assay,assay,2,4.60,exploratory,0.40,deprioritized
+chip-seq,assay,assay,6,14.00,strong,3.17,stalled
+membrane fusion,pathway,pathway,1,3.20,stalled,1.60,deprioritized
+protein degradation,pathway,pathway,2,5.00,exploratory,2.00,stalled
+ddaytimesleep,peptide,,1,1.00,deprioritized,1.50,deprioritized
+gehealthcare,peptide,,2,2.00,stalled,2.00,stalled
+perkinelmer,peptide,,1,1.00,deprioritized,1.00,deprioritized
+neurotransmitter signaling,pathway,pathway,1,2.00,stalled,1.00,deprioritized
+vesicle transport,pathway,pathway,1,2.50,stalled,1.00,deprioritized
+hedgehog,pathway,pathway,2,5.00,exploratory,1.50,deprioritized
+metastasis,pathway,pathway,2,4.00,exploratory,2.00,stalled
+nk cells,model,unknown,8,18.43,strong,9.53,exploratory
+temsirolimus,compound,drug,1,1.80,deprioritized,1.60,deprioritized
+sox2,target,protein,44,52.90,promising,52.47,exploratory
+ovarian cancer,indication,disease,1,3.20,stalled,3.20,stalled
+hydrogel,model,unknown,10,24.00,strong,12.00,promising
+f12,model,cell_line,4,8.80,strong,5.90,exploratory
+lysate,model,unknown,1,1.10,deprioritized,0.55,deprioritized
+dia,assay,assay,1,2.50,stalled,-0.50,deprioritized
+lc-ms,assay,assay,4,11.07,strong,2.77,stalled
+organoids,model,3d_model,180,393.40,strong,196.25,exploratory
+3d culture,model,cell_line,4,10.70,strong,4.10,exploratory
+matrigel,peptide,,1,1.50,deprioritized,1.00,deprioritized
+wound healing,indication,disease,14,34.41,strong,33.91,strong
+fibrosis,indication,disease,4,10.88,strong,9.88,strong
+rheumatoid arthritis,indication,disease,2,6.20,promising,5.20,exploratory
+nsg,model,unknown,18,46.11,strong,22.78,promising
+hsc,model,unknown,14,31.99,strong,16.07,exploratory
+dehydrogenase,target,protein,1,1.50,deprioritized,1.00,deprioritized
+quantitation,assay,assay,2,5.20,exploratory,1.30,deprioritized
+xenograft,model,unknown,6,14.29,strong,7.39,promising
+cryopreserved,model,unknown,3,7.95,promising,3.97,stalled
+nod-scid,model,unknown,3,8.50,strong,3.50,stalled
+mmp3,target,protein,14,14.64,exploratory,13.79,exploratory
+asterisks,peptide,,1,1.00,deprioritized,1.00,deprioritized
+iiandiii,peptide,,1,1.00,deprioritized,1.00,deprioritized
+neuropathic pain,indication,disease,1,2.00,stalled,2.00,stalled
+growth medium,model,unknown,13,31.92,strong,16.23,promising
+nanog,target,protein,42,50.30,exploratory,50.13,exploratory
+differentiated,peptide,,1,1.60,deprioritized,1.60,deprioritized
+serum-free medium,model,unknown,6,16.80,strong,8.73,promising
+basal medium,model,unknown,2,5.92,exploratory,3.96,stalled
+defined medium,model,unknown,2,4.93,exploratory,3.47,stalled
+triangles,peptide,,1,1.45,deprioritized,1.45,deprioritized
+spheroids,model,3d_model,13,30.76,strong,14.92,exploratory
+caco-2,model,cell_line,3,9.10,strong,3.72,stalled
+cell-based assay,assay,assay,1,3.00,stalled,-1.25,deprioritized
+octreotide,compound,drug,1,1.33,deprioritized,2.67,stalled
+thrombosis,indication,disease,2,5.20,exploratory,6.20,promising
+oct4,target,protein,42,49.85,exploratory,49.40,exploratory
+egfr,target,protein,1,1.70,deprioritized,1.70,deprioritized
+esc,stem_cell,unknown,19,24.49,promising,24.12,promising
+hesc,model,unknown,23,52.91,strong,26.02,exploratory
+epithelial-mesenchymal transition,pathway,pathway,2,5.80,exploratory,1.90,deprioritized
+colon cancer,indication,disease,1,2.00,stalled,2.00,stalled
+kd,assay,metric,12,31.93,strong,7.67,stalled
+klf4,target,protein,19,19.47,exploratory,19.00,exploratory
+stat5,pathway,pathway,1,3.63,stalled,0.57,deprioritized
+luteolin,compound,drug,3,4.67,exploratory,13.50,strong
+tumor tissue,model,unknown,3,7.20,promising,3.60,stalled
+stem-cell,stem_cell,,1,1.50,deprioritized,1.00,deprioritized
+hemophilia,indication,disease,3,9.40,strong,8.40,strong
+bone loss,indication,disease,2,4.00,exploratory,5.00,exploratory
+cox2,target,protein,1,1.00,deprioritized,1.00,deprioritized
+atherosclerosis,indication,disease,2,4.80,exploratory,5.80,exploratory
+hct116,model,cell_line,1,2.00,stalled,1.00,deprioritized
+mda-mb-231,model,cell_line,8,18.23,strong,9.30,exploratory
+quadrupole,assay,assay,1,2.50,stalled,1.00,deprioritized
+ld50,assay,metric,1,2.00,stalled,1.00,deprioritized
+microsome,model,unknown,1,2.50,stalled,1.50,deprioritized
+lc-ms/ms,assay,assay,1,2.50,stalled,1.00,deprioritized
+cmax,assay,metric,1,2.50,stalled,1.00,deprioritized
+hk2,target,protein,1,1.00,deprioritized,1.00,deprioritized
+ulcerative colitis,indication,disease,1,2.00,stalled,2.00,stalled
+sakigake,peptide,,1,1.00,deprioritized,1.50,deprioritized
+ibd,indication,disease,1,2.00,stalled,2.50,stalled
+psoriasis,indication,disease,6,11.17,strong,12.00,strong
+atopic dermatitis,indication,disease,5,10.00,strong,10.00,strong
+keratinocytes,model,unknown,2,4.60,exploratory,2.30,stalled
+spheroid,model,3d_model,3,7.98,promising,3.24,stalled
+precipitation,assay,assay,2,4.00,exploratory,1.00,deprioritized
+eczema,indication,disease,1,2.00,stalled,2.00,stalled
+scarring,peptide,,1,1.00,deprioritized,1.00,deprioritized
+hmsc,model,unknown,1,3.00,stalled,2.00,stalled
+organ-on-chip,model,unknown,1,2.90,stalled,1.20,deprioritized
+liver fibrosis,indication,disease,1,2.90,stalled,1.40,deprioritized
+igf-1r,target,protein,1,1.40,deprioritized,1.40,deprioritized
+nmr,assay,assay,1,3.70,stalled,0.80,deprioritized
+femaleescs,peptide,,1,1.00,deprioritized,1.00,deprioritized
+dnmtgenes,peptide,,1,1.00,deprioritized,1.00,deprioritized

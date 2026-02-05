@@ -1,0 +1,11 @@
+{
+  "feeds": [
+    {
+      "name": "Test RSS Feed",
+      "url": "https://feeds.feedburner.com/oreilly/radar/atom",
+      "domain": "methods_tooling",
+      "enabled": true,
+      "description": "Test RSS feed with actual content for testing"
+    }
+  ]
+}

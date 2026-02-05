@@ -42,6 +42,8 @@ Thumbs.db
 
 # Database (keep structure, ignore data)
 output/*.sqlite
+output/*.sqlite-shm
+output/*.sqlite-wal
 output/*.db
 
 # Large files

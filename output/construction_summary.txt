@@ -1,0 +1,63 @@
+🏗️ CONSTRUCTION SCIENCE SUMMARY
+==================================================
+
+Database: construction_clean.sqlite
+Domain: construction_science
+
+📊 Entity Types:
+  systems: 872
+  failure_modes: 750
+  materials: 682
+  pathway: 620
+  indication: 353
+  test_methods: 251
+  environment: 156
+  hazards: 115
+  failure_mode: 62
+  peptide: 57
+  environments: 52
+  test_method: 45
+  material: 45
+  system: 30
+  hazard: 14
+  assay: 10
+  codes: 5
+
+🏆 Top 20 Entities:
+  ROT (failure_modes): 499
+  ANCHOR (systems): 476
+  INSULATION (materials): 444
+  COLUMN (systems): 299
+  ACI (test_methods): 210
+  differentiation (pathway): 152
+  CONCRETE (materials): 151
+  DEFLECTION (failure_modes): 91
+  Heart failure (indication): 88
+  Cancer (indication): 58
+  Raf (pathway): 57
+  FOUNDATION (systems): 56
+  Stroke (indication): 56
+  CORROSION (environment): 53
+  DETERIORATION (environments): 52
+  Ras (pathway): 51
+  CORROSION (failure_modes): 49
+  CORROSION (hazards): 49
+  MOISTURE (environment): 49
+  FAILURE (failure_mode): 42
+
+📈 Event Types:
+  decision_point: 1309
+  manufacturing_constraint: 995
+  method_evaluation: 696
+  regulatory_risk: 469
+  efficacy_result: 307
+  toxicity_flag: 96
+  stability_issue: 42
+  other: 28
+  cost_tradeoff: 6
+
+📊 Summary Statistics:
+  Total events: 3948
+  Total unique entities: 250
+  Total sources (PDFs): 81
+  Export date: 2026-02-02T12:09:47.932840
