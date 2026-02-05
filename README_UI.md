@@ -34,14 +34,18 @@ The UI Control Panel provides a graphical interface for managing and running the
 - Existing Peptide Scraper installation
 
 ### Dependencies
-The UI uses only Python standard library modules:
+The UI works with Python's standard library modules:
 - `tkinter` - GUI framework (included with Python)
 - `json` - Configuration file handling
 - `os`, `sys`, `subprocess` - System operations
 - `threading` - Background processing
 - `logging` - Application logging
 
-No additional packages required!
+Optional external packages (listed in requirements_ui.txt):
+- `ttkbootstrap>=1.8.0` - For theming and bootstrap-styled widgets (enhancement)
+- `plyer>=2.1.0` - For cross-platform notifications (enhancement)
+
+Note: The UI will function with just the standard library, but these packages provide optional visual and notification improvements.
 
 ## Usage
 

@@ -920,7 +920,7 @@ def normalize_event_key(event_type: str, entities: list, page: int, snippet: str
 # ---------------------------------------------------------
 # Main
 # ---------------------------------------------------------
-def main(domain: str = None, input_dir: Path = None, db_path: Path = None):
+def main(domain: str = None, input_dir: Path = None, db_path: Path = None, lenses: list = None):
     # Parse command line arguments only if all parameters are None
     parser = argparse.ArgumentParser(description='Scrape PDFs for research intelligence')
     parser.add_argument('--domain', default='methods_tooling', 
@@ -939,6 +939,11 @@ def main(domain: str = None, input_dir: Path = None, db_path: Path = None):
         research_domain = domain if domain is not None else 'methods_tooling'
         input_dir = input_dir if input_dir is not None else Path('input/pdfs')
         db_path = db_path if db_path is not None else Path('db/runs.sqlite')
+    
+    if isinstance(input_dir, str):
+        input_dir = Path(input_dir)
+    if isinstance(db_path, str):
+        db_path = Path(db_path)
     
     if not input_dir.exists():
         raise SystemExit(f"Missing folder: {input_dir.resolve()}")

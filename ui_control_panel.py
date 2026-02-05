@@ -253,7 +253,7 @@ class PeptideScraperUI:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # Run scraper in background thread
-        thread = threading.Thread(target=self._run_scraper_thread, args=(domain_id, input_dir, db_path))
+        thread = threading.Thread(target=self._run_scraper_thread, args=(domain_id, input_dir, db_path, selected_lenses))
         thread.daemon = True
         thread.start()
         
@@ -261,14 +261,14 @@ class PeptideScraperUI:
         self.status_var.set("Running scraper...")
         self.run_button.config(state='disabled')
     
-    def _run_scraper_thread(self, domain_id, input_dir, db_path):
+    def _run_scraper_thread(self, domain_id, input_dir, db_path, selected_lenses):
         """Run scraper in background thread"""
         try:
             # Import and run the scraper
             from utils.run_engine import main as run_scraper_main
             
-            # Run the scraper
-            run_scraper_main(domain=domain_id, input_dir=Path(input_dir), db_path=Path(db_path))
+            # Run the scraper with selected lenses
+            run_scraper_main(domain=domain_id, input_dir=Path(input_dir), db_path=Path(db_path), lenses=selected_lenses)
             
             # Update UI on completion
             self.root.after(0, self._scraper_complete, "Scraper completed successfully")
@@ -287,14 +287,22 @@ class PeptideScraperUI:
     def export_results(self):
         """Export results using the export script"""
         try:
-            # Run export script
+            # Get selected domain
+            selected_domain = self.domain_var.get()
+            if not selected_domain:
+                messagebox.showwarning("Warning", "Please select a domain")
+                return
+            
+            domain_id = selected_domain.split('(')[-1].rstrip(')')
+            
+            # Run export script with selected domain
             result = subprocess.run([sys.executable, "utils/export_dual_lens.py", 
-                                   str(self.db_var.get()), "biohacking_longevity"], 
+                                   str(self.db_var.get()), domain_id], 
                                   capture_output=True, text=True)
             
             if result.returncode == 0:
-                self.output_text.insert(tk.END, f"Export completed:\n{result.stdout}\n")
-                messagebox.showinfo("Export Complete", "Results exported successfully")
+                self.output_text.insert(tk.END, f"Export completed for {domain_id}:\n{result.stdout}\n")
+                messagebox.showinfo("Export Complete", f"Results exported successfully for {domain_id}")
             else:
                 self.output_text.insert(tk.END, f"Export error:\n{result.stderr}\n")
                 messagebox.showerror("Export Error", result.stderr)
