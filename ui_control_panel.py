@@ -156,25 +156,39 @@ class PeptideScraperUI:
             messagebox.showerror("Configuration Error", f"Failed to load configurations: {e}")
     
     def load_domains(self):
-        """Load available domains from seeds/domains"""
-        domains_dir = self.seeds_dir / "domains"
-        if domains_dir.exists():
-            for domain_file in domains_dir.glob("*.json"):
+        """Load available domains from config/domains and seeds/domains"""
+        # First try config/domains (canonical location)
+        config_domains_dir = self.config_dir / "domains"
+        if config_domains_dir.exists():
+            for domain_file in config_domains_dir.glob("*.json"):
                 try:
                     with open(domain_file, 'r') as f:
                         domain_config = json.load(f)
                         self.domains[domain_config['id']] = domain_config
                 except Exception as e:
-                    logger.warning(f"Failed to load domain {domain_file}: {e}")
+                    logger.exception(f"Failed to load domain from config/domains {domain_file}: {e}")
+        
+        # Then try seeds/domains (legacy location) for backward compatibility
+        seeds_domains_dir = self.seeds_dir / "domains"
+        if seeds_domains_dir.exists():
+            for domain_file in seeds_domains_dir.glob("*.json"):
+                try:
+                    with open(domain_file, 'r') as f:
+                        domain_config = json.load(f)
+                        # Only add if not already loaded from config/domains to avoid conflicts
+                        if domain_config['id'] not in self.domains:
+                            self.domains[domain_config['id']] = domain_config
+                except Exception as e:
+                    logger.exception(f"Failed to load domain from seeds/domains {domain_file}: {e}")
     
     def load_lenses(self):
         """Load available lenses from lenses directory"""
         if self.lenses_dir.exists():
-            for lens_file in self.lenses_dir.glob("*_v1.py"):
-                lens_name = lens_file.stem
+            for _lens_file in self.lenses_dir.glob("*_v1.py"):
+                lens_name = _lens_file.stem
                 self.lenses[lens_name] = {
                     'name': lens_name.replace('_', ' ').title(),
-                    'file': lens_file
+                    'file': _lens_file
                 }
     
     def load_feeds(self):
@@ -274,7 +288,7 @@ class PeptideScraperUI:
             self.root.after(0, self._scraper_complete, "Scraper completed successfully")
             
         except Exception as e:
-            logger.error(f"Scraper error: {e}")
+            logger.exception(f"Scraper error: {e}")
             self.root.after(0, self._scraper_complete, f"Scraper failed: {e}")
     
     def _scraper_complete(self, message):
@@ -314,9 +328,7 @@ class PeptideScraperUI:
                 messagebox.showerror("Export Error", result.stderr)
                 
         except Exception as e:
-            import logging
-            logging.exception("Export error")
-            logger.error(f"Export error: {e}")
+            logger.exception("Export error")
             messagebox.showerror("Export Error", str(e))
     
     def run_rss_ingest(self):
@@ -336,7 +348,7 @@ class PeptideScraperUI:
                 messagebox.showerror("RSS Ingest Error", result.stderr)
                 
         except Exception as e:
-            logger.error(f"RSS ingest error: {e}")
+            logger.exception("RSS ingest error")
             messagebox.showerror("RSS Ingest Error", str(e))
     
     def check_status(self):

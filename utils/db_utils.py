@@ -1,0 +1,172 @@
+"""Shared utilities for database inspection"""
+import sqlite3
+from pathlib import Path
+from typing import List, Dict, Optional
+
+def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
+    """Connect to database with standard settings"""
+    if not Path(db_path).exists():
+        raise FileNotFoundError(f"Database not found: {db_path}")
+    
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def get_tables(conn: sqlite3.Connection) -> List[str]:
+    """Get list of all tables"""
+    cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    return [row[0] for row in cursor.fetchall()]
+
+def get_table_stats(conn: sqlite3.Connection, table: str) -> Dict:
+    """Get row count and columns for a table"""
+    cursor = conn.execute(f"SELECT COUNT(*) FROM {table}")
+    count = cursor.fetchone()[0]
+    
+    cursor = conn.execute(f"PRAGMA table_info({table})")
+    columns = [row[1] for row in cursor.fetchall()]
+    
+    return {'count': count, 'columns': columns}
+
+def inspect_database(db_path: str = 'db/runs.sqlite', detailed: bool = False):
+    """
+    Inspect database contents
+    
+    Args:
+        db_path: Path to SQLite database
+        detailed: If True, show detailed stats for each table
+    """
+    print(f"\n{'='*60}")
+    print(f"DATABASE INSPECTION: {db_path}")
+    print(f"{'='*60}\n")
+    
+    try:
+        conn = connect_db(db_path)
+        tables = get_tables(conn)
+        
+        print(f"📊 Tables found: {len(tables)}")
+        print()
+        
+        for table in tables:
+            stats = get_table_stats(conn, table)
+            print(f"📋 {table}")
+            print(f"   Rows: {stats['count']:,}")
+            
+            if detailed:
+                print(f"   Columns: {', '.join(stats['columns'])}")
+            print()
+        
+        conn.close()
+        
+    except FileNotFoundError as e:
+        print(f"❌ {e}")
+    except sqlite3.Error as e:
+        print(f"❌ Database error: {e}")
+
+def show_recent_events(conn: sqlite3.Connection, limit: int = 5):
+    """Show recent research events"""
+    print(f"\n📰 RECENT EVENTS (last {limit}):")
+    print("-" * 60)
+    
+    query = """
+        SELECT event_type, research_domain, confidence, created_at
+        FROM research_events
+        ORDER BY created_at DESC
+        LIMIT ?
+    """
+    cursor = conn.execute(query, (limit,))
+    
+    for row in cursor:
+        confidence = row[2] if row[2] is not None else "unknown"
+        print(f"  • {row[0]} | {row[1]} | confidence: {confidence}")
+        print(f"    {row[3]}")
+        print()
+
+def show_top_sources(conn: sqlite3.Connection, limit: int = 5):
+    """Show sources with most events"""
+    print(f"\n📚 TOP SOURCES (by event count):")
+    print("-" * 60)
+    
+    query = """
+        SELECT s.source_id, s.title, COUNT(re.event_id) as event_count
+        FROM sources s
+        LEFT JOIN research_events re ON s.source_id = re.source_id
+        GROUP BY s.source_id
+        ORDER BY event_count DESC
+        LIMIT ?
+    """
+    cursor = conn.execute(query, (limit,))
+    
+    for row in cursor:
+        print(f"  {row[1]}")
+        print(f"    Events: {row[2]}")
+        print()
+
+def show_pdf_cache():
+    """Show PDF cache contents"""
+    cache_dir = Path('input/rss_cache')
+    
+    print(f"\n📁 PDF CACHE:")
+    print("-" * 60)
+    
+    if not cache_dir.exists():
+        print("  ⚠️  Cache directory not found")
+        return
+    
+    pdfs = list(cache_dir.glob('*.pdf'))
+    print(f"  PDFs: {len(pdfs)}")
+    
+    if pdfs:
+        total_size = sum(p.stat().st_size for p in pdfs)
+        print(f"  Total size: {total_size / 1024 / 1024:.2f} MB")
+        print(f"\n  Recent files:")
+        for pdf in sorted(pdfs, key=lambda p: p.stat().st_mtime, reverse=True)[:5]:
+            size_kb = pdf.stat().st_size / 1024
+            print(f"    • {pdf.name} ({size_kb:.1f} KB)")
+
+def get_entity_distribution(conn: sqlite3.Connection):
+    """Show entity distribution across types"""
+    print(f"\n🏗️  ENTITY DISTRIBUTION:")
+    print("-" * 60)
+    
+    query = """
+        SELECT entity_type, COUNT(*) as count
+        FROM entities
+        GROUP BY entity_type
+        ORDER BY count DESC
+    """
+    cursor = conn.execute(query)
+    
+    for row in cursor:
+        print(f"  {row[0]}: {row[1]} entities")
+
+def get_event_type_distribution(conn: sqlite3.Connection):
+    """Show event type distribution"""
+    print(f"\n📈 EVENT TYPE DISTRIBUTION:")
+    print("-" * 60)
+    
+    query = """
+        SELECT event_type, COUNT(*) as count
+        FROM research_events
+        GROUP BY event_type
+        ORDER BY count DESC
+    """
+    cursor = conn.execute(query)
+    
+    for row in cursor:
+        print(f"  {row[0]}: {row[1]} events")
+
+def get_domain_distribution(conn: sqlite3.Connection):
+    """Show research domain distribution"""
+    print(f"\n🔬 DOMAIN DISTRIBUTION:")
+    print("-" * 60)
+    
+    query = """
+        SELECT research_domain, COUNT(*) as count
+        FROM research_events
+        GROUP BY research_domain
+        ORDER BY count DESC
+    """
+    cursor = conn.execute(query)
+    
+    for row in cursor:
+        print(f"  {row[0]}: {row[1]} events")
