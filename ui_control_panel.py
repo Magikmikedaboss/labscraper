@@ -190,11 +190,11 @@ class PeptideScraperUI:
     def load_lenses(self):
         """Load available lenses from lenses directory"""
         if self.lenses_dir.exists():
-            for _lens_file in self.lenses_dir.glob("*_v1.py"):
-                lens_name = _lens_file.stem
+            for lens_file in self.lenses_dir.glob("*_v1.py"):
+                lens_name = lens_file.stem
                 self.lenses[lens_name] = {
                     'name': lens_name.replace('_', ' ').title(),
-                    'file': _lens_file
+                    'file': lens_file
                 }
     
     def load_feeds(self):
@@ -255,9 +255,24 @@ class PeptideScraperUI:
         )
         if filename:
             try:
-                validated = validate_database(filename)
-                self.db_var.set(str(validated))
-                self.log_message(f"✓ Database file: {validated}")
+                # Check if file exists first
+                if os.path.exists(filename):
+                    # File exists, validate it
+                    validated = validate_database(filename)
+                    self.db_var.set(str(validated))
+                    self.log_message(f"✓ Database file: {validated}")
+                else:
+                    # File doesn't exist, validate extension and create parent directory
+                    db_path = Path(filename)
+                    if db_path.suffix.lower() not in ['.db', '.sqlite', '.sqlite3']:
+                        raise ValidationError(f"Invalid database extension: {db_path.suffix}")
+                    
+                    # Ensure parent directory exists
+                    db_path.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    self.db_var.set(str(db_path))
+                    self.log_message(f"✓ New database file: {db_path}")
+                    
             except ValidationError as e:
                 messagebox.showerror("Invalid Database", str(e))
     
@@ -309,7 +324,7 @@ class PeptideScraperUI:
             self.root.after(0, self._scraper_complete, "Scraper completed successfully")
             
         except Exception as e:
-            logger.exception(f"Scraper error: {e}")
+            logger.exception("Scraper error")
             self.root.after(0, self._scraper_complete, f"Scraper failed: {e}")
     
     def _scraper_complete(self, message):

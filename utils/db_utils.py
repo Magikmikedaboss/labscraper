@@ -53,7 +53,7 @@ def inspect_database(db_path: str = 'db/runs.sqlite', detailed: bool = False):
         conn = connect_db(db_path)
         tables = get_tables(conn)
         
-        print(f"📊 Tables found: {len(tables)}")
+        print("📊 Tables found:", len(tables))
         print()
         
         for table in tables:
@@ -88,8 +88,8 @@ def show_recent_events(conn: sqlite3.Connection, limit: int = 5):
         
         for row in cursor:
             confidence = row[2] if row[2] is not None else "unknown"
-            print(f"  • {row[0]} | {row[1]} | confidence: {confidence}")
-            print(f"    {row[3]}")
+            print("  •", row[0], "|", row[1], "| confidence:", confidence)
+            print("    ", row[3])
             print()
     except sqlite3.OperationalError as e:
         print(f"  ⚠️  Database table not found: {e}")
@@ -111,17 +111,17 @@ def show_top_sources(conn: sqlite3.Connection, limit: int = 5):
         cursor = conn.execute(query, (limit,))
         
         for row in cursor:
-            print(f"  {row[1]}")
-            print(f"    Events: {row[2]}")
+            print("  ", row[1])
+            print("    Events:", row[2])
             print()
     except sqlite3.OperationalError as e:
         print(f"  ⚠️  Database table not found: {e}")
 
-def show_pdf_cache():
+def show_pdf_cache(cache_dir: str = 'input/rss_cache'):
     """Show PDF cache contents"""
-    cache_dir = Path('input/rss_cache')
+    cache_dir = Path(cache_dir)
     
-    print(f"\n📁 PDF CACHE:")
+    print("\n📁 PDF CACHE:")
     print("-" * 60)
     
     if not cache_dir.exists():
@@ -129,19 +129,19 @@ def show_pdf_cache():
         return
     
     pdfs = list(cache_dir.glob('*.pdf'))
-    print(f"  PDFs: {len(pdfs)}")
+    print("  PDFs:", len(pdfs))
     
     if pdfs:
         total_size = sum(p.stat().st_size for p in pdfs)
-        print(f"  Total size: {total_size / 1024 / 1024:.2f} MB")
-        print(f"\n  Recent files:")
+        print("  Total size:", total_size / 1024 / 1024, "MB")
+        print("\n  Recent files:")
         for pdf in sorted(pdfs, key=lambda p: p.stat().st_mtime, reverse=True)[:5]:
             size_kb = pdf.stat().st_size / 1024
-            print(f"    • {pdf.name} ({size_kb:.1f} KB)")
+            print("    •", pdf.name, "(", size_kb, "KB)")
 
 def get_entity_distribution(conn: sqlite3.Connection):
     """Show entity distribution across types"""
-    print(f"\n🏗️  ENTITY DISTRIBUTION:")
+    print("\n🏗️  ENTITY DISTRIBUTION:")
     print("-" * 60)
     
     try:
@@ -154,13 +154,13 @@ def get_entity_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            print(f"  {row[0]}: {row[1]} entities")
+            print("  ", row[0], ":", row[1], "entities")
     except sqlite3.OperationalError as e:
-        print(f"  ⚠️  Database table not found: {e}")
+        print("  ⚠️  Database table not found:", e)
 
 def get_event_type_distribution(conn: sqlite3.Connection):
     """Show event type distribution"""
-    print(f"\n📈 EVENT TYPE DISTRIBUTION:")
+    print("\n📈 EVENT TYPE DISTRIBUTION:")
     print("-" * 60)
     
     try:
@@ -173,13 +173,13 @@ def get_event_type_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            print(f"  {row[0]}: {row[1]} events")
+            print("  ", row[0], ":", row[1], "events")
     except sqlite3.OperationalError as e:
-        print(f"  ⚠️  Database table not found: {e}")
+        print("  ⚠️  Database table not found:", e)
 
 def get_domain_distribution(conn: sqlite3.Connection):
     """Show research domain distribution"""
-    print(f"\n🔬 DOMAIN DISTRIBUTION:")
+    print("\n🔬 DOMAIN DISTRIBUTION:")
     print("-" * 60)
     
     try:
@@ -192,6 +192,6 @@ def get_domain_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            print(f"  {row[0]}: {row[1]} events")
+            print("  ", row[0], ":", row[1], "events")
     except sqlite3.OperationalError as e:
-        print(f"  ⚠️  Database table not found: {e}")
+        print("  ⚠️  Database table not found:", e)

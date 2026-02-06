@@ -1,6 +1,5 @@
 """Tests for entity extraction functionality using pytest"""
 import pytest
-from unittest.mock import patch, Mock
 from utils.run_engine import extract_entities, extract_compounds, extract_targets, extract_models, extract_presented_sequences, is_probable_peptide
 
 
@@ -51,7 +50,7 @@ class TestEntityExtraction:
         
         compounds = extract_compounds(text)
         
-        assert len(compounds) >= 0  # May be 0 if compounds not in seed list
+        assert isinstance(compounds, list)
 
     def test_extract_targets(self):
         """Test target extraction"""
@@ -59,7 +58,7 @@ class TestEntityExtraction:
         
         targets = extract_targets(text)
         
-        assert len(targets) >= 0  # May be 0 if targets not in seed list
+        assert isinstance(targets, list)
 
     def test_extract_models(self):
         """Test model extraction"""
@@ -67,7 +66,7 @@ class TestEntityExtraction:
         
         models = extract_models(text)
         
-        assert len(models) >= 0  # May be 0 if models not in seed list
+        assert isinstance(models, list)
 
     def test_extract_presented_sequences(self):
         """Test sequence extraction from presentation patterns"""
@@ -203,7 +202,7 @@ class TestBiomedicalEntities:
         entities = extract_entities(text, "methods_tooling")
         
         compound_entities = [e for e in entities if e['entity_type'] == 'compound']
-        assert len(compound_entities) >= 0
+        assert isinstance(compound_entities, list)
 
     def test_extract_biomedical_peptides(self):
         """Test extraction of peptides"""
@@ -221,7 +220,7 @@ class TestBiomedicalEntities:
         entities = extract_entities(text, "methods_tooling")
         
         target_entities = [e for e in entities if e['entity_type'] == 'target']
-        assert len(target_entities) >= 0
+        assert isinstance(target_entities, list)
 
     def test_extract_biomedical_models(self):
         """Test extraction of experimental models"""
@@ -230,7 +229,7 @@ class TestBiomedicalEntities:
         entities = extract_entities(text, "methods_tooling")
         
         model_entities = [e for e in entities if e['entity_type'] == 'model']
-        assert len(model_entities) >= 0
+        assert isinstance(model_entities, list)
 
     def test_extract_biomedical_stem_cells(self):
         """Test extraction of stem cell keywords"""

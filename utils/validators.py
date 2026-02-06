@@ -42,7 +42,7 @@ def validate_database(path: Union[str, Path]) -> Path:
     if not p.exists():
         raise ValidationError(f"Database not found: {path}")
     
-    if not p.suffix.lower() in ['.db', '.sqlite', '.sqlite3']:
+    if p.suffix.lower() not in ['.db', '.sqlite', '.sqlite3']:
         raise ValidationError(f"Invalid database extension: {p.suffix}")
     
     return p
@@ -124,8 +124,8 @@ def validate_positive_integer(value: Union[int, str], name: str = "value") -> in
     """Validate positive integer"""
     try:
         int_value = int(value)
-    except (ValueError, TypeError):
-        raise ValidationError(f"{name} must be an integer")
+    except (ValueError, TypeError) as err:
+        raise ValidationError(f"{name} must be an integer") from err
     
     if int_value <= 0:
         raise ValidationError(f"{name} must be positive")
@@ -137,8 +137,8 @@ def validate_percentage(value: Union[float, int, str], name: str = "percentage")
     """Validate percentage value (0.0 to 1.0)"""
     try:
         float_value = float(value)
-    except (ValueError, TypeError):
-        raise ValidationError(f"{name} must be a number")
+    except (ValueError, TypeError) as err:
+        raise ValidationError(f"{name} must be a number") from err
     
     if not 0.0 <= float_value <= 1.0:
         raise ValidationError(f"{name} must be between 0.0 and 1.0")
@@ -173,12 +173,28 @@ def validate_batch_size(size: Union[int, str]) -> int:
 def validate_memory_limit(limit: Union[str, int]) -> int:
     """Validate memory limit in MB"""
     if isinstance(limit, str):
-        # Handle string formats like "512MB", "1GB"
-        limit = limit.upper().replace('MB', '').replace('GB', '000').replace('G', '000')
-        try:
-            limit_int = int(limit)
-        except ValueError:
+        # Handle string formats like "512MB", "1GB", "1.5GB" with regex
+        limit = limit.strip().upper()
+        
+        # Pattern to match numbers with optional decimal and unit suffix
+        pattern = r'^(\d+(?:\.\d+)?)\s*(MB|GB|G)?\s*$'
+        match = re.match(pattern, limit)
+        
+        if not match:
             raise ValidationError("Invalid memory limit format")
+        
+        value_str, unit = match.groups()
+        
+        try:
+            value = float(value_str)
+        except ValueError as err:
+            raise ValidationError("Invalid memory limit value") from err
+        
+        # Convert to MB
+        if unit in ['GB', 'G']:
+            value *= 1000
+        
+        limit_int = int(value)
     else:
         limit_int = validate_positive_integer(limit, "Memory limit")
     

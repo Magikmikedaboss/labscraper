@@ -9,7 +9,11 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 
 def parse_feed(url: str) -> feedparser.FeedParserDict:
     """Parse an RSS/Atom feed"""
-    return feedparser.parse(url)
+    try:
+        return feedparser.parse(url)
+    except Exception as e:
+        # Return empty feed structure on error
+        return feedparser.FeedParserDict({'entries': []})
 
 def extract_pdf_links(entry: Dict) -> List[str]:
     """Extract PDF links from a feed entry"""
@@ -87,7 +91,7 @@ def test_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -
         return {
             'success': True,
             'entries': entry_count,
-            'pdfs': pdf_links,
+            'pdfs': len(pdf_links),  # Return count instead of list
             'title': feed.feed.get('title')
         }
         
