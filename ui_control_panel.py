@@ -15,6 +15,12 @@ from pathlib import Path
 from typing import Dict, List, Any
 import sys
 
+# Import validation utilities
+from utils.validators import (
+    validate_directory, validate_database, validate_feed_url, 
+    validate_domain_name, ValidationError
+)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -215,6 +221,11 @@ class PeptideScraperUI:
         for i in range(self.lens_listbox.size()):
             self.lens_listbox.selection_set(i)
     
+    def log_message(self, message):
+        """Log message to output text area"""
+        self.output_text.insert(tk.END, f"{message}\n")
+        self.output_text.see(tk.END)
+
     def on_domain_change(self, event):
         """Handle domain selection change"""
         selected = self.domain_var.get()
@@ -228,7 +239,12 @@ class PeptideScraperUI:
         """Browse for input directory"""
         directory = filedialog.askdirectory(initialdir="input/pdfs")
         if directory:
-            self.input_dir_var.set(directory)
+            try:
+                validated = validate_directory(directory, must_exist=True)
+                self.input_dir_var.set(str(validated))
+                self.log_message(f"✓ Input directory: {validated}")
+            except ValidationError as e:
+                messagebox.showerror("Invalid Directory", str(e))
     
     def browse_db(self):
         """Browse for database file"""
@@ -238,7 +254,12 @@ class PeptideScraperUI:
             filetypes=[("SQLite files", "*.sqlite"), ("All files", "*.*")]
         )
         if filename:
-            self.db_var.set(filename)
+            try:
+                validated = validate_database(filename)
+                self.db_var.set(str(validated))
+                self.log_message(f"✓ Database file: {validated}")
+            except ValidationError as e:
+                messagebox.showerror("Invalid Database", str(e))
     
     def run_scraper(self):
         """Run the main scraper with selected configuration"""

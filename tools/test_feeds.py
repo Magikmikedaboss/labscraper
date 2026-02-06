@@ -27,15 +27,35 @@ def main():
     
     # Load feeds from config
     if Path(args.config).exists():
-        with open(args.config) as f:
-            config = json.load(f)
-            feeds = [(f['url'], f['name']) for f in config.get('feeds', [])]
+        try:
+            with open(args.config) as f:
+                config = json.load(f)
+                feeds = [(f['url'], f['name']) for f in config.get('feeds', [])]
+        except json.JSONDecodeError as e:
+            print(f"⚠️  Error parsing {args.config}: {e}")
+            print("   Falling back to default feeds...")
+            config = None
+            feeds = [
+                ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
+                ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
+                ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
+            ]
+        except Exception as e:
+            print(f"⚠️  Error reading {args.config}: {e}")
+            print("   Falling back to default feeds...")
+            config = None
+            feeds = [
+                ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
+                ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
+                ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
+            ]
     else:
         # Default test feeds
+        config = None
         feeds = [
             ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
             ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
-            ("http://export.arxiv.org/rss/cs.MA", "arXiv Materials Science"),
+            ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
         ]
     
     print(f"\n🧪 Testing {len(feeds)} feeds...")

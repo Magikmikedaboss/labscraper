@@ -41,92 +41,10 @@ try:
         FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
     )
     print("✅ Successfully imported run_engine functions")
-except ImportError:
-    print("⚠️  Could not import run_engine functions - using mock functions for testing")
-    
-    # Mock functions for testing
-    def extract_metadata(url, abstract_text):
-        return {"title": "Test Paper", "authors": ["Test Author"], "year": "2023"}
-    
-    def guess_stage(text):
-        return "unknown"
-    
-    def guess_section(text):
-        return "abstract"
-    
-    def extract_entities(text, domain):
-        return []
-    
-    def extract_quantitative_data(text):
-        return []
-    
-    def detect_method_tags(text):
-        return []
-    
-    def detect_failure_reason(text):
-        return None
-    
-    def detect_decision(text):
-        return None, None
-    
-    def detect_outcome(text):
-        return "unknown"
-    
-    def classify_event_type(text, tags, failure_reason, decision_taken):
-        return "other"
-    
-    def evidence_strength(text):
-        return "low"
-    
-    def confidence_score(has_entities, tags, failure_reason, decision_taken, has_measurements, text):
-        return 0.5
-    
-    def suggested_keep(conf, event_type, failure_reason, decision_taken, tags):
-        return 1
-    
-    def normalize_event_key(event_type, ents, page_idx, sent):
-        return f"{event_type}_{page_idx}_{hash(sent) % 1000}"
-    
-    def upsert_source(con, source_id, filename, metadata):
-        return source_id
-    
-    def insert_document(con, source_id, path, file_hash):
-        return 1
-    
-    def insert_chunk(con, source_id, doc_id, page_idx, section, text):
-        return 1
-    
-    def insert_event(con, source_id, doc_id, chunk_id, page_number, domain, event_type, study_stage, biological_system, application_area, outcome, failure_reason, decision_taken, decision_driver, evidence_snippet, evidence_strength_v, confidence_v):
-        return 1
-    
-    def link_event_entity(con, event_id, entity_id, role):
-        pass
-    
-    def link_event_tag(con, event_id, tag):
-        pass
-    
-    def insert_measurement(con, event_id, measurement):
-        pass
-    
-    def upsert_entity(con, entity_type, entity_name, entity_variant, role):
-        return 1
-    
-    def now_iso():
-        from datetime import datetime
-        return datetime.now().isoformat()
-    
-    def sha16(text):
-        import hashlib
-        return hashlib.sha256(text.encode()).hexdigest()[:16]
-    
-    def sha64(text):
-        import hashlib
-        return hashlib.sha256(text.encode()).hexdigest()
-    
-    RESEARCH_DOMAIN = "test"
-    FAILURE_PHRASES = {}
-    DECISION_PHRASES = {}
-    METHOD_TAGS = {}
+except ImportError as e:
+    print(f"❌ FATAL: Missing required module: {e}")
+    print("Install dependencies: pip install -r requirements.txt")
+    sys.exit(1)
 
 # Default paths
 DB_PATH = Path("db") / "runs.sqlite"
