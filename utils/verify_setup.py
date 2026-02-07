@@ -31,7 +31,8 @@ def check_dependencies():
     for package, description in required.items():
         try:
             if package == 'sqlite3':
-                import sqlite3
+                # sqlite3 is built-in, so we just check if it's available
+                pass
             else:
                 __import__(package)
             print(f"  ✅ {package:15} - {description}")

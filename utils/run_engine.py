@@ -361,7 +361,6 @@ def extract_entities(sentence: str, domain: str = "methods_tooling") -> list[dic
     Returns: list of {entity_type, entity_name, entity_variant, role}
     """
     ents = []
-    s_l = sentence.lower()
     
     # Track extracted names to avoid duplicates
     extracted_names = set()
