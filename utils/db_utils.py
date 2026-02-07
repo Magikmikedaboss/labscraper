@@ -27,7 +27,7 @@ def get_table_stats(conn: sqlite3.Connection, table: str) -> Dict:
         raise ValueError(f"Table '{table}' does not exist in database")
     
     # Safely quote the table name for use in SQL
-    safe_table = f'"{table.replace('"', '""')}"'
+    safe_table = f'"{table.replace("\"", "\"\"")}"'
     
     cursor = conn.execute(f"SELECT COUNT(*) FROM {safe_table}")
     count = cursor.fetchone()[0]
