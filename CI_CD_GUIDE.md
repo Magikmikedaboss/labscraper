@@ -27,7 +27,8 @@ The main test job runs on Ubuntu latest and performs the following steps:
 
 3. **Install Dependencies**
    - Upgrades pip for latest features
-   - Installs production dependencies from `requirements.txt`
+   - Checks for lock file (`requirements/requirements-lock.txt`) and uses it if present for reproducible installs
+   - Falls back to `requirements.txt` if no lock file exists
    - Installs development tools: `pytest`, `pytest-cov`, `ruff`, `bandit`, `safety`
 
 4. **Code Quality Checks**

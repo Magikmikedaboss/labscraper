@@ -16,7 +16,7 @@ from typing import List, Tuple
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
-from scrape_pdfs_phase1 import (
+from scrape_pdfs_phase1_full import (
     extract_metadata, chunk_sentences, guess_stage, guess_section,
     extract_all_entities, extract_quantitative_data,
     detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
@@ -225,13 +225,7 @@ def main() -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Ensure DB schema is initialized before launching workers
-    schema_path = Path(__file__).resolve().parent / "schema.sql"
-    if not schema_path.exists():
-        raise SystemExit(f"Schema file not found: {schema_path}")
-    schema = schema_path.read_text(encoding="utf-8")
-    with sqlite3.connect(db_path) as con:
-        con.executescript(schema)
-        con.commit()
+    _ensure_db_schema(db_path)
     # Prepare jobs (strings are safer to pickle across platforms)
     jobs: List[Tuple[str, str, str]] = [(str(p), domain, str(db_path)) for p in pdfs]
 

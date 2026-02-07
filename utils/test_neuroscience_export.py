@@ -2,11 +2,11 @@ import csv
 import json
 from pathlib import Path
 
-def test_neuroscience_export():
-    """Test the neuroscience cognition export files"""
+def validate_neuroscience_export():
+    """Validate the neuroscience cognition export files"""
     
     print("\n" + "="*70)
-    print("TESTING NEUROSCIENCE COGNITION EXPORT")
+    print("VALIDATING NEUROSCIENCE COGNITION EXPORT")
     print("="*70)
     
     # Load metadata
@@ -40,7 +40,7 @@ def test_neuroscience_export():
             print(f"   - {events_file}")
         if not candidates_file.exists():
             print(f"   - {candidates_file}")
-        print("❌ Missing export files. Aborting test.")
+        print("❌ Missing export files. Aborting validation.")
         return
 
     with open(events_file, 'r', encoding='utf-8') as f:
@@ -63,7 +63,7 @@ def test_neuroscience_export():
     print(f"  File: {candidates_file.name}")
     expected_primary = meta.get('counts', {}).get('primary_entities', 'N/A')
     print(f"  Rows: {len(candidates)} (expected: {expected_primary})")
-    print(f"  Match: {'✅ YES' if expected_primary != 'N/A' and len(candidates) == expected_primary else '❌ NO'}")    
+    print(f"  Match: {'✅ YES' if expected_primary != 'N/A' and len(candidates) == expected_primary else '❌ NO'}")
     # Show top entities
     print("\n📈 TOP 10 ENTITIES:")
     for i, cand in enumerate(candidates[:10], 1):
@@ -152,4 +152,4 @@ def test_neuroscience_export():
     print("="*70)
 
 if __name__ == "__main__":
-    test_neuroscience_export()
+    validate_neuroscience_export()

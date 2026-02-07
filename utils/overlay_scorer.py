@@ -285,7 +285,12 @@ def load_domain_config(domain_id: str) -> Dict[str, Any]:
     
     if not domain_path.exists():
         # Fallback to seeds/domains for backward compatibility
-        domain_path = Path("seeds/domains") / f"{domain_id}.json"
+        fallback_path = Path("seeds/domains") / f"{domain_id}.json"
+        if fallback_path.exists():
+            print(f"⚠️  Warning: Falling back to seeds/domains for {domain_id}. Consider moving to config/domains to avoid duplicate configs.")
+            domain_path = fallback_path
+        else:
+            raise FileNotFoundError(f"Domain config not found: {domain_path}")
     
     if not domain_path.exists():
         raise FileNotFoundError(f"Domain config not found: {domain_path}")

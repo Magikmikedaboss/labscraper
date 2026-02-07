@@ -59,8 +59,6 @@ class IntegratedEntitySystem:
         3. Combine and deduplicate results
         4. Calculate coverage statistics
         """
-        import time
-        start_time = time.time()
         
         # Step 1: Enhanced extraction
         enhanced_entities = self.enhanced_extractor.extract_entities(text, title)
@@ -77,9 +75,7 @@ class IntegratedEntitySystem:
         final_entities = self._deduplicate_entities(fallback_entities)
         
         # Step 4: Calculate statistics
-        time.time() - start_time
         coverage_stats = self._calculate_coverage_stats(final_entities, enhanced_dict, fallback_entities)
-        self._get_confidence_distribution(final_entities)
         
         # Update global stats
         self.stats['total_extractions'] += 1

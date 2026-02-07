@@ -31,8 +31,8 @@ def extract_pdf_links(entry: Dict) -> List[str]:
     # Check direct links
     for link in entry.get('links', []):
         href = link.get('href', '')
-        if href.lower().endswith('.pdf'):
-            pdf_links.append(href)
+        if href:
+            pdf_links.extend(PDF_REGEX.findall(href))
     
     return list(set(pdf_links))  # Deduplicate
 

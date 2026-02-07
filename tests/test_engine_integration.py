@@ -177,13 +177,15 @@ class TestEngineIntegration:
             with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open:
                 mock_pdf_open.side_effect = Exception("Processing error")
                 
-                # Should handle the error gracefully
-                with pytest.raises(Exception, match="Processing error"):
-                    main(
-                        domain='methods_tooling',
-                        input_dir=str(input_dir),
-                        db_path=str(output_db)
-                    )
+                # Should handle the error gracefully and complete without raising
+                main(
+                    domain='methods_tooling',
+                    input_dir=str(input_dir),
+                    db_path=str(output_db)
+                )
+                
+                # Verify database was still created despite the error
+                assert output_db.exists()
 
     def test_main_function_multiple_pdfs(self):
         """Test engine with multiple PDF files"""

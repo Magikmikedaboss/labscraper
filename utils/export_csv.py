@@ -22,7 +22,7 @@ from axon_domains import get_domain_by_id
 from process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
 from export_utilities import safe_confidence_boost, count_entities_by_role
 
-DB_PATH = Path("runs") / "peptide_intel.sqlite"
+DB_PATH = Path("db") / "runs.sqlite"
 OUTPUT_DIR = Path("output")
 
 def export_events_domain_aware(domain_id: str = None):
