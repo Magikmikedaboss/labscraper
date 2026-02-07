@@ -2,6 +2,7 @@ import re
 import hashlib
 import sqlite3
 import argparse
+import functools
 from pathlib import Path
 from datetime import datetime, timezone
 import pdfplumber
@@ -11,6 +12,7 @@ from tqdm import tqdm
 DB_PATH = Path("db") / "runs.sqlite"
 INPUT_DIR = Path("input/pdfs")
 RESEARCH_DOMAIN = "methods_tooling"
+SEEDS_DIR = Path("seeds")
 # ---------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------
@@ -168,12 +170,11 @@ def load_seed_file(filepath: Path) -> set:
 
 
 def get_seeds():
-    SEEDS_DIR = Path("seeds")
     compound = load_seed_file(SEEDS_DIR / "base/life_sciences/compounds.txt")
     target = load_seed_file(SEEDS_DIR / "base/life_sciences/targets.txt")
     model = load_seed_file(SEEDS_DIR / "base/life_sciences/models.txt")
     stopword = load_seed_file(SEEDS_DIR / "stopwords.txt")
-    print(f"📋 Loaded seeds:")
+    print("📋 Loaded seeds:")
     print(f"   Compounds: {len(compound)}")
     print(f"   Targets: {len(target)}")
     print(f"   Models: {len(model)}")
@@ -256,9 +257,6 @@ STEM_CELL_KEYWORDS = [
 # ---------------------------------------------------------
 # Lazy-loaded seed files
 # ---------------------------------------------------------
-
-import functools
-SEEDS_DIR = Path("seeds")
 
 @functools.lru_cache(maxsize=1)
 def _get_compound_seeds():
@@ -1229,7 +1227,7 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                 print(f"  ❌ Failed to process PDF {pdf_path.name}: {e}")
                 failed_pdfs.append(str(pdf_path))
 
-        print(f"\n✅ Done!")
+        print("\n✅ Done!")
         print(f"   Inserted: ~{inserted_events} research events")
         print(f"   Measurements: {total_measurements}")
         print(f"   Relationships: {total_relationships}")

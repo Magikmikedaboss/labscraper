@@ -3,7 +3,7 @@ import pytest
 import tempfile
 import sqlite3
 from pathlib import Path
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 from utils.run_engine import main
 
 

@@ -12,15 +12,11 @@ import argparse
 import re
 import time
 from pathlib import Path
-from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 import pdfplumber
-import tempfile
-import os
 
 # Import functions from utils/run_engine.py
 import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "utils"))
 
 # Import chunk_sentences function that's missing
@@ -476,7 +472,7 @@ def main():
                 feed_processed += 1
                 print(f"      ✅ Processed: {events_count} events")
             else:
-                print(f"      ⚠️  No events extracted")
+                print("      ⚠️  No events extracted")
         
         total_downloaded += feed_downloaded
         total_processed += feed_processed

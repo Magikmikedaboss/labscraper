@@ -5,7 +5,7 @@ Loads core seeds + optional domain-specific overlays
 
 import json
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 
 
 def load_json(path: str) -> Any:

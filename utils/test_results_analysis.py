@@ -22,12 +22,12 @@ def analyze_test_results():
         cur.execute("SELECT COUNT(DISTINCT entity_id) FROM entities")
         total_entities = cur.fetchone()[0]
 
-        print(f"\n📊 OVERALL EXTRACTION:")
+        print("\n📊 OVERALL EXTRACTION:")
         print(f"   Events: {total_events}")
         print(f"   Unique Entities: {total_entities}")
 
         # Entity type breakdown
-        print(f"\n🏷️  ENTITY TYPE DISTRIBUTION:")
+        print("\n🏷️  ENTITY TYPE DISTRIBUTION:")
         cur.execute("""
             SELECT entity_type, 
                    COUNT(DISTINCT entity_name) as unique_count,
@@ -41,7 +41,7 @@ def analyze_test_results():
             print(f"   {entity_type:12s}: {unique:3d} unique entities | {mentions:4d} total mentions")
 
         # Top models (showing new additions working)
-        print(f"\n🔬 TOP MODELS EXTRACTED (from 160 in enhanced seeds):")
+        print("\n🔬 TOP MODELS EXTRACTED (from 160 in enhanced seeds):")
         cur.execute("""
             SELECT DISTINCT e.entity_name
             FROM entities e
@@ -65,7 +65,7 @@ def analyze_test_results():
             print(f"   {marker} {i:2d}. {model}")
         
         # Top targets
-        print(f"\n🎯 TOP TARGETS EXTRACTED (from 177 in enhanced seeds):")
+        print("\n🎯 TOP TARGETS EXTRACTED (from 177 in enhanced seeds):")
         cur.execute("""
             SELECT DISTINCT e.entity_name
             FROM entities e
@@ -90,7 +90,7 @@ def analyze_test_results():
             print(f"   {marker} {i:2d}. {target}")
         
         # Stem cells
-        print(f"\n🧬 STEM CELL ENTITIES:")
+        print("\n🧬 STEM CELL ENTITIES:")
         cur.execute("""
             SELECT DISTINCT entity_name
             FROM entities
@@ -101,7 +101,7 @@ def analyze_test_results():
             print(f"   - {row[0]}")
         
         # Event types
-        print(f"\n📋 EVENT TYPE DISTRIBUTION:")
+        print("\n📋 EVENT TYPE DISTRIBUTION:")
         cur.execute("""
             SELECT event_type, COUNT(*) as count
             FROM research_events
@@ -113,7 +113,7 @@ def analyze_test_results():
             print(f"   {row[0]:30s}: {row[1]:4d}")
         
         # Confidence distribution
-        print(f"\n📊 CONFIDENCE DISTRIBUTION:")
+        print("\n📊 CONFIDENCE DISTRIBUTION:")
         cur.execute("""
             SELECT confidence, COUNT(*) as count
             FROM research_events
@@ -133,7 +133,7 @@ def analyze_test_results():
         print("\n" + "="*70)
         print("ENHANCEMENT IMPACT SUMMARY")
         print("="*70)
-        print(f"✅ Base seeds loaded: 177 targets, 160 models, 39 compounds")
+        print("✅ Base seeds loaded: 177 targets, 160 models, 39 compounds")
         print(f"✅ Entities extracted: {total_entities} unique entities")
         print(f"✅ Events captured: {total_events} research events")
         
@@ -142,10 +142,10 @@ def analyze_test_results():
         if found_new_targets:
             print(f"✅ NEW targets working: {len(found_new_targets)} detected")
         
-        print(f"\n💡 Next steps:")
-        print(f"   1. Compare with old seed results to quantify improvement")
-        print(f"   2. Use domain-aware export to separate by research area")
-        print(f"   3. Full re-scrape of all ~220 PDFs with enhanced seeds")
+        print("\n💡 Next steps:")
+        print("   1. Compare with old seed results to quantify improvement")
+        print("   2. Use domain-aware export to separate by research area")
+        print("   3. Full re-scrape of all ~220 PDFs with enhanced seeds")
 
 if __name__ == "__main__":
     analyze_test_results()

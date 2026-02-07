@@ -49,7 +49,7 @@ def main():
 
         multi_entity_events = cur.fetchall()
         if multi_entity_events:
-            print(f"  Sample of events with multiple entities (showing up to 5):\n")
+            print("  Sample of events with multiple entities (showing up to 5):\n")
             for event_id, snippet, entity_count in multi_entity_events[:3]:
                 print(f"  Event with {entity_count} entities:")
                 safe_snippet = (snippet or "")[:100]

@@ -2,7 +2,6 @@
 from pathlib import Path
 from typing import Union
 import re
-import os
 
 
 class ValidationError(Exception):

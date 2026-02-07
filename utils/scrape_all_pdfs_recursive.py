@@ -95,7 +95,7 @@ def main():
         return
     
     print(f"\n✅ Total PDFs found: {len(all_pdfs)}")
-    print(f"📊 Estimated time:")
+    print("📊 Estimated time:")
     print(f"   Sequential: ~{len(all_pdfs) * 15 / 60:.1f} minutes")
     print(f"   Parallel ({num_workers} workers): ~{len(all_pdfs) * 15 / 60 / num_workers:.1f} minutes")
     print()
@@ -121,7 +121,7 @@ def main():
     
     # Initialize database if it doesn't exist or is empty
     print(f"\n{'='*70}")
-    print(f"INITIALIZING DATABASE")
+    print("INITIALIZING DATABASE")
     print(f"{'='*70}\n")
     
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -158,7 +158,7 @@ def main():
             con.close()
     
     print(f"\n{'='*70}")
-    print(f"STARTING PARALLEL SCRAPE")
+    print("STARTING PARALLEL SCRAPE")
     print(f"{'='*70}\n")
     
     # Prepare arguments for parallel processing
@@ -183,7 +183,7 @@ def main():
             failed_pdfs.append((pdf_name, error_msg))
     
     print(f"\n{'='*70}")
-    print(f"SCRAPING COMPLETE")
+    print("SCRAPING COMPLETE")
     print(f"{'='*70}")
     print(f"✅ Total PDFs processed: {len(all_pdfs)}")
     print(f"✅ Successful: {len(all_pdfs) - len(failed_pdfs)}")
@@ -198,7 +198,7 @@ def main():
             print(f"   ... and {len(failed_pdfs) - 10} more")    
     # Show database stats
     print(f"\n{'='*70}")
-    print(f"DATABASE STATISTICS")
+    print("DATABASE STATISTICS")
     print(f"{'='*70}")
     
     with sqlite3.connect(db_path) as con:
@@ -214,7 +214,7 @@ def main():
         paper_count = con.execute("SELECT COUNT(DISTINCT source_id) FROM sources").fetchone()[0]
         print(f"📄 Total papers: {paper_count}")    
     print(f"\n{'='*70}")
-    print(f"NEXT STEP: Run dual-lens export")
+    print("NEXT STEP: Run dual-lens export")
     print(f"  python export_dual_lens.py {db_path} {domain}")
     print(f"{'='*70}\n")
 

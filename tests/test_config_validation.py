@@ -1,10 +1,6 @@
 """Tests for configuration validation using pytest"""
-import pytest
 import tempfile
-import os
-import json
 from pathlib import Path
-from unittest.mock import patch, Mock
 from utils.run_engine import load_seed_file
 
 

@@ -1,9 +1,6 @@
 """Tests for domain loading functionality using pytest"""
-import pytest
 import tempfile
-import os
 from pathlib import Path
-from unittest.mock import patch, Mock
 from utils.run_engine import get_seeds
 
 
@@ -31,41 +28,31 @@ class TestDomainLoading:
             stopwords_file = seeds_dir / "stopwords.txt"
             stopwords_file.write_text("# Stopwords\nstopword1\nstopword2\n")
             
-            # Mock the current working directory and clear cache
-            with patch('utils.run_engine.SEEDS_DIR', Path(temp_dir) / "seeds"):
+            # Change working directory to temp_dir and clear cache
+            import utils.run_engine
+            original_cwd = Path.cwd()
+            try:
+                import os
+                os.chdir(temp_dir)
+                
                 # Clear the cache to ensure fresh loading
-                import utils.run_engine
                 utils.run_engine._get_compound_seeds.cache_clear()
                 utils.run_engine._get_target_seeds.cache_clear()
                 utils.run_engine._get_model_seeds.cache_clear()
                 utils.run_engine._get_stopword_seeds.cache_clear()
                 
-                # Also mock the actual file loading functions to use our temp files
-                with patch('utils.run_engine.load_seed_file') as mock_load:
-                    # Mock the function to return our test data
-                    def mock_load_file(filepath):
-                        if 'compounds' in str(filepath):
-                            return {'compound1', 'compound2'}
-                        elif 'targets' in str(filepath):
-                            return {'target1', 'target2'}
-                        elif 'models' in str(filepath):
-                            return {'model1', 'model2'}
-                        elif 'stopwords' in str(filepath):
-                            return {'stopword1', 'stopword2'}
-                        return set()
-                    
-                    mock_load.side_effect = mock_load_file
-                    
-                    compounds, _targets, _models, stopwords = get_seeds()
-                    
-                    assert len(compounds) == 2
-                    assert len(_targets) == 2
-                    assert len(_models) == 2
-                    assert len(stopwords) == 2
-                    assert 'compound1' in compounds
-                    assert 'target1' in _targets
-                    assert 'model1' in _models
-                    assert 'stopword1' in stopwords
+                compounds, _targets, _models, stopwords = get_seeds()
+                
+                assert len(compounds) == 2
+                assert len(_targets) == 2
+                assert len(_models) == 2
+                assert len(stopwords) == 2
+                assert 'compound1' in compounds
+                assert 'target1' in _targets
+                assert 'model1' in _models
+                assert 'stopword1' in stopwords
+            finally:
+                os.chdir(original_cwd)
 
     def test_get_seeds_missing_files(self):
         """Test loading when some seed files are missing"""
@@ -79,37 +66,27 @@ class TestDomainLoading:
             compounds_file.parent.mkdir(parents=True)
             compounds_file.write_text("# Compounds\ncompound1\ncompound2\n")
             
-            # Mock the current working directory and clear cache
-            with patch('utils.run_engine.SEEDS_DIR', Path(temp_dir) / "seeds"):
+            # Change working directory to temp_dir and clear cache
+            import utils.run_engine
+            original_cwd = Path.cwd()
+            try:
+                import os
+                os.chdir(temp_dir)
+                
                 # Clear the cache to ensure fresh loading
-                import utils.run_engine
                 utils.run_engine._get_compound_seeds.cache_clear()
                 utils.run_engine._get_target_seeds.cache_clear()
                 utils.run_engine._get_model_seeds.cache_clear()
                 utils.run_engine._get_stopword_seeds.cache_clear()
                 
-                # Also mock the actual file loading functions to use our temp files
-                with patch('utils.run_engine.load_seed_file') as mock_load:
-                    # Mock the function to return our test data
-                    def mock_load_file(filepath):
-                        if 'compounds' in str(filepath):
-                            return {'compound1', 'compound2'}
-                        elif 'targets' in str(filepath):
-                            return set()  # No targets file
-                        elif 'models' in str(filepath):
-                            return set()  # No models file
-                        elif 'stopwords' in str(filepath):
-                            return set()  # No stopwords file
-                        return set()
-                    
-                    mock_load.side_effect = mock_load_file
-                    
-                    compounds, _targets, _models, stopwords = get_seeds()
-                    
-                    assert len(compounds) == 2
-                    assert len(_targets) == 0
-                    assert len(_models) == 0
-                    assert len(stopwords) == 0
+                compounds, _targets, _models, stopwords = get_seeds()
+                
+                assert len(compounds) == 2
+                assert len(_targets) == 0
+                assert len(_models) == 0
+                assert len(stopwords) == 0
+            finally:
+                os.chdir(original_cwd)
 
     def test_get_seeds_empty_files(self):
         """Test loading empty seed files"""
@@ -126,10 +103,14 @@ class TestDomainLoading:
             targets_file = seeds_dir / "base/life_sciences/targets.txt"
             targets_file.write_text("")
             
-            # Mock the current working directory and clear cache
-            with patch('utils.run_engine.SEEDS_DIR', Path(temp_dir) / "seeds"):
+            # Change working directory to temp_dir and clear cache
+            import utils.run_engine
+            original_cwd = Path.cwd()
+            try:
+                import os
+                os.chdir(temp_dir)
+                
                 # Clear the cache to ensure fresh loading
-                import utils.run_engine
                 utils.run_engine._get_compound_seeds.cache_clear()
                 utils.run_engine._get_target_seeds.cache_clear()
                 utils.run_engine._get_model_seeds.cache_clear()
@@ -141,6 +122,8 @@ class TestDomainLoading:
                 assert len(_targets) == 0
                 assert len(_models) == 0
                 assert len(stopwords) == 0
+            finally:
+                os.chdir(original_cwd)
 
     def test_get_seeds_with_comments(self):
         """Test that comments are properly ignored"""
@@ -154,10 +137,14 @@ class TestDomainLoading:
             compounds_file.parent.mkdir(parents=True)
             compounds_file.write_text("# This is a comment\ncompound1\n# Another comment\ncompound2\n")
             
-            # Mock the current working directory and clear cache
-            with patch('utils.run_engine.SEEDS_DIR', Path(temp_dir) / "seeds"):
+            # Change working directory to temp_dir and clear cache
+            import utils.run_engine
+            original_cwd = Path.cwd()
+            try:
+                import os
+                os.chdir(temp_dir)
+                
                 # Clear the cache to ensure fresh loading
-                import utils.run_engine
                 utils.run_engine._get_compound_seeds.cache_clear()
                 utils.run_engine._get_target_seeds.cache_clear()
                 utils.run_engine._get_model_seeds.cache_clear()
@@ -169,6 +156,8 @@ class TestDomainLoading:
                 assert 'compound1' in compounds
                 assert 'compound2' in compounds
                 assert 'comment' not in compounds
+            finally:
+                os.chdir(original_cwd)
 
     def test_get_seeds_case_insensitive(self):
         """Test that seed loading is case insensitive"""
@@ -182,10 +171,14 @@ class TestDomainLoading:
             compounds_file.parent.mkdir(parents=True)
             compounds_file.write_text("UPPERCASE\nlowercase\nMixedCase\n")
             
-            # Mock the current working directory and clear cache
-            with patch('utils.run_engine.SEEDS_DIR', Path(temp_dir) / "seeds"):
+            # Change working directory to temp_dir and clear cache
+            import utils.run_engine
+            original_cwd = Path.cwd()
+            try:
+                import os
+                os.chdir(temp_dir)
+                
                 # Clear the cache to ensure fresh loading
-                import utils.run_engine
                 utils.run_engine._get_compound_seeds.cache_clear()
                 utils.run_engine._get_target_seeds.cache_clear()
                 utils.run_engine._get_model_seeds.cache_clear()
@@ -200,15 +193,21 @@ class TestDomainLoading:
                 assert 'UPPERCASE' not in compounds  # Should be converted to lowercase
                 assert 'lowercase' in compounds
                 assert 'MixedCase' not in compounds  # Should be converted to lowercase
+            finally:
+                os.chdir(original_cwd)
 
     def test_get_seeds_no_seeds_directory(self):
         """Test behavior when no seeds directory exists"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Don't create seeds directory
-            # Mock the current working directory and clear cache
-            with patch('utils.run_engine.SEEDS_DIR', Path(temp_dir) / "seeds"):
+            # Change working directory to temp_dir and clear cache
+            import utils.run_engine
+            original_cwd = Path.cwd()
+            try:
+                import os
+                os.chdir(temp_dir)
+                
                 # Clear the cache to ensure fresh loading
-                import utils.run_engine
                 utils.run_engine._get_compound_seeds.cache_clear()
                 utils.run_engine._get_target_seeds.cache_clear()
                 utils.run_engine._get_model_seeds.cache_clear()
@@ -220,3 +219,5 @@ class TestDomainLoading:
                 assert len(_targets) == 0
                 assert len(_models) == 0
                 assert len(stopwords) == 0
+            finally:
+                os.chdir(original_cwd)

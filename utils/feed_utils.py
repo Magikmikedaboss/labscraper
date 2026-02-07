@@ -11,9 +11,9 @@ def parse_feed(url: str) -> feedparser.FeedParserDict:
     """Parse an RSS/Atom feed"""
     try:
         return feedparser.parse(url)
-    except Exception as e:
-        # Return empty feed structure on error
-        return feedparser.FeedParserDict({'entries': []})
+    except Exception:
+        # Return empty feed structure on error with both entries and feed keys
+        return feedparser.FeedParserDict({'entries': [], 'feed': feedparser.FeedParserDict()})
 
 def extract_pdf_links(entry: Dict) -> List[str]:
     """Extract PDF links from a feed entry"""
@@ -83,7 +83,9 @@ def test_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -
         # Check keywords if provided
         if check_keywords:
             summary = entry.get('summary', '').lower()
-            found = [kw for kw in check_keywords if kw in summary]
+            # Normalize keywords to lowercase for case-insensitive matching
+            normalized_keywords = [kw.lower() for kw in check_keywords]
+            found = [kw for kw in normalized_keywords if kw in summary]
             if found:
                 print(f"  🔍 Keywords found: {', '.join(found)}")
         

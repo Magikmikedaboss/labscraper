@@ -11,8 +11,8 @@ Based on:
 import json
 import sqlite3
 from pathlib import Path
-from collections import Counter, defaultdict
-from typing import Dict, List, Tuple, Optional
+from collections import Counter
+from typing import Dict, List
 from dataclasses import dataclass
 
 # Paths
@@ -458,7 +458,7 @@ def display_results(results: List[PatternAnalysis]):
     print("="*70)
     
     pattern_counts = Counter(a.pattern_type for a in results)
-    print(f"\n📊 Pattern Distribution:")
+    print("\n📊 Pattern Distribution:")
     for pattern, count in pattern_counts.most_common():
         print(f"   {pattern}: {count}")
     
@@ -480,7 +480,7 @@ if __name__ == "__main__":
     display_results(results)
     
     print("\n✅ Pattern intelligence analysis complete!")
-    print(f"\nNext steps:")
-    print(f"  - Review pattern classifications")
-    print(f"  - Adjust scoring weights if needed")
-    print(f"  - Export results to CSV for dashboard integration")
+    print("\nNext steps:")
+    print("  - Review pattern classifications")
+    print("  - Adjust scoring weights if needed")
+    print("  - Export results to CSV for dashboard integration")

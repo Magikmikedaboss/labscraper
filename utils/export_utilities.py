@@ -7,9 +7,8 @@ Shared utilities for CSV export modules
 
 import json
 from datetime import datetime
-from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Tuple, Any, Optional, Set, List
+from typing import Dict, Tuple, Any, Optional
 
 # Import required modules
 try:

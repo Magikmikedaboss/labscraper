@@ -34,7 +34,7 @@ def test_process_words_demoted():
         print(f"❌ FAIL: Found process words in primary: {found_in_primary}")
         return False
     else:
-        print(f"✅ PASS: No process words in primary entities")
+        print("✅ PASS: No process words in primary entities")
     
     # Verify they exist in run_meta as demoted
     meta_path = OUTPUT_DIR / "run_meta.json"
@@ -45,9 +45,9 @@ def test_process_words_demoted():
         meta = json.load(f)    
     demoted_in_meta = set(x.lower() for x in meta.get("process_words_demoted", []))
     if process_words.issubset(demoted_in_meta):
-        print(f"✅ PASS: All process words listed as demoted in run_meta.json")
+        print("✅ PASS: All process words listed as demoted in run_meta.json")
     else:
-        print(f"⚠️  WARNING: Some process words missing from run_meta")
+        print("⚠️  WARNING: Some process words missing from run_meta")
     
     # Check they appear in top entities as context (defensive against missing keys)
     context_process_words = [
@@ -82,7 +82,7 @@ def test_confidence_boost():
     
     # Verify required columns exist
     if events and 'confidence_original' not in events[0]:
-        print(f"❌ FAIL: Missing 'confidence_original' column")
+        print("❌ FAIL: Missing 'confidence_original' column")
         return False
     
     # Count confidence changes
@@ -105,7 +105,7 @@ def test_confidence_boost():
     
     # Show examples of boosted events
     if boosted_to_high:
-        print(f"\n📋 Examples of events boosted to HIGH:")
+        print("\n📋 Examples of events boosted to HIGH:")
         for i, event in enumerate(boosted_to_high[:3], 1):
             print(f"\n   {i}. Event {event['event_id'][:8]}...")
             print(f"      Original: {event['confidence_original']} → Boosted: {event['confidence_boosted']}")
@@ -119,7 +119,7 @@ def test_confidence_boost():
     with open(meta_path, 'r', encoding='utf-8') as f:
         meta = json.load(f)    
     print(f"\n✅ Boost rule: {meta.get('confidence_boost_rule', '<none>')}")
-    print(f"✅ Confidence distribution after boost:")
+    print("✅ Confidence distribution after boost:")
     distribution = meta.get('confidence_distribution', {})
     total = len(events)
     high = distribution.get('high', 0)
@@ -152,16 +152,16 @@ def test_entity_count_columns():
     
     # Check columns exist (first verify events is not empty)
     if not events:
-        print(f"❌ FAIL: Events export is empty")
+        print("❌ FAIL: Events export is empty")
         return False
     
     required_cols = ['primary_count', 'context_count', 
                      'primary_entities', 'context_entities', 'all_entities']
     
     if all(col in events[0].keys() for col in required_cols):
-        print(f"✅ PASS: All required columns present")
+        print("✅ PASS: All required columns present")
     else:
-        print(f"❌ FAIL: Missing columns")
+        print("❌ FAIL: Missing columns")
         return False
     
     # Validate counts match actual entities
@@ -187,7 +187,7 @@ def test_entity_count_columns():
             print(f"⚠️  Event {event['event_id'][:8]}: Expected P={expected_primary}/C={expected_context}, Got P={actual_primary}/C={actual_context}")
     
     if errors == 0:
-        print(f"✅ PASS: Entity counts match actual entities (checked 10 events)")
+        print("✅ PASS: Entity counts match actual entities (checked 10 events)")
     else:
         print(f"⚠️  WARNING: {errors} events have mismatched counts")
     
@@ -217,13 +217,13 @@ def test_entity_count_columns():
     primary_counts = Counter(valid_primary)
     context_counts = Counter(valid_context)
 
-    print(f"\n📊 Primary Entity Count Distribution:")
+    print("\n📊 Primary Entity Count Distribution:")
     for count in sorted(primary_counts.keys())[:5]:
         print(f"   {count} entities: {primary_counts[count]} events")
     if invalid_primary:
         print(f"⚠️  {len(invalid_primary)} events had invalid primary_entity_count: {invalid_primary}")
 
-    print(f"\n📊 Context Entity Count Distribution:")
+    print("\n📊 Context Entity Count Distribution:")
     for count in sorted(context_counts.keys())[:5]:
         print(f"   {count} entities: {context_counts[count]} events")
     if invalid_context:
@@ -243,7 +243,7 @@ def test_run_meta_json():
     meta_path = OUTPUT_DIR / "run_meta.json"
     
     if not meta_path.exists():
-        print(f"❌ FAIL: run_meta.json not found")
+        print("❌ FAIL: run_meta.json not found")
         return False
     
     with open(meta_path, 'r', encoding='utf-8') as f:
@@ -261,8 +261,8 @@ def test_run_meta_json():
         print(f"❌ FAIL: Missing fields: {missing}")
         return False
     
-    print(f"✅ PASS: All required fields present")
-    print(f"\n📋 Run Metadata:")
+    print("✅ PASS: All required fields present")
+    print("\n📋 Run Metadata:")
     print(f"   Run ID: {meta['run_id']}")
     print(f"   Engine: {meta['engine_version']}")
     print(f"   Timestamp: {meta['timestamp']}")
@@ -271,7 +271,7 @@ def test_run_meta_json():
     print(f"   Primary Entities: {meta['counts']['primary_entities']}")
     print(f"   Context Entities: {meta['counts']['context_entities']}")
     
-    print(f"\n📊 Top 10 Entities:")
+    print("\n📊 Top 10 Entities:")
     for i, entity in enumerate(meta['top_entities'][:10], 1):
         role_icon = "⭐" if entity['role'] == 'primary' else "🔧"
         print(f"   {i}. {role_icon} {entity['name']} ({entity['type']}): {entity['event_count']} events")

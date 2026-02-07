@@ -1,7 +1,6 @@
 # lenses/construction_failure_v1.py
 from __future__ import annotations
 
-import re
 from typing import List, Tuple, Optional
 from .construction_common import (
     LensEvent, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
@@ -51,9 +50,12 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
         score += 2
     if driver_hits:
         score += 2
-    if has_causal: score += 1
-    if has_number(s_l): score += 1
-    if has_unit_signal(s_l): score += 1
+    if has_causal: 
+        score += 1
+    if has_number(s_l): 
+        score += 1
+    if has_unit_signal(s_l): 
+        score += 1
 
     conf = "high" if score >= 6 else "med" if score >= 3 else "low"
 
@@ -62,7 +64,9 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
         tags.append("has_failure_mode")
     if driver_hits:
         tags.append("has_failure_driver")
-    if has_causal: tags.append("has_causality")
-    if has_unit_signal(s_l): tags.append("has_units")
+    if has_causal: 
+        tags.append("has_causality")
+    if has_unit_signal(s_l): 
+        tags.append("has_units")
 
     return LensEvent("failure_analysis", outcome, conf, tags), dedupe_entities(entities)

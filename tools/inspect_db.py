@@ -7,7 +7,6 @@ view_ingests.py, view_rss_results.py, check_rss_ingests.py, etc.
 """
 
 import argparse
-import sqlite3
 import sys
 from pathlib import Path
 

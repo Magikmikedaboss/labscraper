@@ -12,13 +12,11 @@ import subprocess
 import threading
 import logging
 from pathlib import Path
-from typing import Dict, List, Any
 import sys
 
 # Import validation utilities
 from utils.validators import (
-    validate_directory, validate_database, validate_feed_url, 
-    validate_domain_name, ValidationError
+    validate_directory, validate_database, ValidationError
 )
 
 # Configure logging
@@ -435,7 +433,7 @@ class PeptideScraperUI:
 def main():
     """Main entry point"""
     root = tk.Tk()
-    app = PeptideScraperUI(root)
+    PeptideScraperUI(root)
     root.mainloop()
 
 if __name__ == "__main__":

@@ -7,10 +7,6 @@ from datetime import timezone
 
 
 import sys
-import json
-from pathlib import Path
-import datetime
-from datetime import timezone
 
 def main():
     meta_file = Path('output/run_meta_neuroscience_cognition.json')

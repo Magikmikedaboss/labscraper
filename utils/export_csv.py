@@ -17,10 +17,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from entity_normalizer import load_normalization_map, normalize_entity_list, load_overlay_aliases, normalize_entity, get_entity_role
+from entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
 from axon_domains import get_domain_by_id
 from process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
-from export_utilities import safe_confidence_boost, count_entities_by_role, get_domain_info, load_overlay_aliases_safe
+from export_utilities import safe_confidence_boost, count_entities_by_role
 
 DB_PATH = Path("runs") / "peptide_intel.sqlite"
 OUTPUT_DIR = Path("output")
@@ -148,16 +148,16 @@ def export_events_domain_aware(domain_id: str = None):
     elif domain_id:
         print(f"   Domain: {domain_name}")
         print(f"   Overlay: {overlay_id}")
-        print(f"   Aliases used: 0 (no overlay aliases found)")
+        print("   Aliases used: 0 (no overlay aliases found)")
     
     # Safe percentage calculation
     if len(events) > 0:
-        print(f"\n📊 Confidence Distribution (After Boost):")
+        print("\n📊 Confidence Distribution (After Boost):")
         print(f"   High: {confidence_changes['high']} ({confidence_changes['high']/len(events)*100:.1f}%)")
         print(f"   Med: {confidence_changes['med']} ({confidence_changes['med']/len(events)*100:.1f}%)")
         print(f"   Low: {confidence_changes['low']} ({confidence_changes['low']/len(events)*100:.1f}%)")
     
-    print(f"\n🚀 Confidence Boosts Applied:")
+    print("\n🚀 Confidence Boosts Applied:")
     print(f"   Boosted to HIGH: {confidence_changes['boosted_to_high']}")
     print(f"   Boosted to MED: {confidence_changes['boosted_to_med']}")
     
@@ -287,7 +287,7 @@ def export_candidates_domain_aware(domain_id: str = None):
     primary_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "primary")
     context_count = sum(1 for _, data in canonical_entities.items() if data["role"] == "context")
     
-    print(f"✅ Exported domain-aware candidates:")
+    print("✅ Exported domain-aware candidates:")
     print(f"   Primary entities: {primary_count} → {primary_path}")
     print(f"   Context entities: {context_count}")
     if domain_id:
@@ -408,7 +408,7 @@ if __name__ == "__main__":
             print(f"   Name: {domain.name}")
             print(f"   Description: {domain.description[:80]}...")
         else:
-            print(f"   ⚠️  Domain not found, proceeding without domain filter")
+            print("   ⚠️  Domain not found, proceeding without domain filter")
             args.domain = None
     else:
         print("\n📊 Exporting all domains (no filter)")

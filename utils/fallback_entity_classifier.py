@@ -13,9 +13,8 @@ Usage:
 import re
 import json
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional, Set
+from typing import List, Dict, Optional
 from dataclasses import dataclass
-from collections import Counter
 import logging
 
 # Configure logging

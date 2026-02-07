@@ -23,11 +23,11 @@ def main():
                 # Optionally check domain_name
                 # assert row.get('domain_name'), "Missing or empty 'domain_name' in first CSV row"
                 print(f"   ✅ Total columns: {len(row.keys())}")
-                print(f"\n   Domain columns:")
+                print("\n   Domain columns:")
                 print(f"      domain_id: '{row.get('domain_id', '(missing)')}'")
                 print(f"      domain_name: '{row.get('domain_name', '(missing)')}'")
                 print(f"      overlay_id: '{row.get('overlay_id', '(missing)')}'")
-                print(f"\n   Entity columns:")
+                print("\n   Entity columns:")
                 print(f"      primary_entity_count: {row.get('primary_entity_count', '(missing)')}")
                 print(f"      context_entity_count: {row.get('context_entity_count', '(missing)')}")
                 entities_primary = row.get('entities_primary', '')
@@ -46,7 +46,7 @@ def main():
             print(f"   ✅ Total entities: {len(rows)}")
             
             if rows:
-                print(f"\n   Top 5 entities:")
+                print("\n   Top 5 entities:")
                 for i, row in enumerate(rows[:5], 1):
                     print(f"      {i}. {row.get('entity_name', '?')} ({row.get('entity_type', '?')}): {row.get('event_count', '?')} events")
                     print(f"         domain_id: '{row.get('domain_id', '(missing)')}'")

@@ -3,7 +3,6 @@ import pytest
 import sqlite3
 import tempfile
 import os
-from pathlib import Path
 from utils.db_utils import connect_db, get_tables, get_table_stats, inspect_database, show_recent_events, show_top_sources, get_entity_distribution, get_event_type_distribution, get_domain_distribution
 
 

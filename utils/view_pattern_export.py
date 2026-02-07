@@ -15,7 +15,7 @@ def view_export():
     
     if not OUTPUT_FILE.exists():
         print(f"❌ Export file not found: {OUTPUT_FILE}")
-        print(f"\nRun: python export_pattern_intelligence.py")
+        print("\nRun: python export_pattern_intelligence.py")
         return
     
     print("="*80)
@@ -32,26 +32,26 @@ def view_export():
     missing_cols = required_cols - set(reader.fieldnames or [])
     if missing_cols:
         print(f"\n❌ Export file is missing required columns: {', '.join(missing_cols)}")
-        print(f"\nCheck export_pattern_intelligence.py output format.")
+        print("\nCheck export_pattern_intelligence.py output format.")
         return
 
     # Check for empty export
     if not rows:
-        print(f"\n⚠️  Export file is empty - no data to display")
-        print(f"\nRun: python export_pattern_intelligence.py")
+        print("\n⚠️  Export file is empty - no data to display")
+        print("\nRun: python export_pattern_intelligence.py")
         return
 
     print(f"\n📊 Total Entities Analyzed: {len(rows)}")
 
     # Pattern distribution
-    print(f"\n📋 Pattern Distribution:")
+    print("\n📋 Pattern Distribution:")
     pattern_counts = Counter(row.get('pattern_type', '<unknown>') for row in rows)
     for pattern, count in pattern_counts.most_common():
         pct = (count / len(rows) * 100)
         print(f"   {pattern:15s}: {count:2d} ({pct:5.1f}%)")
     
     # Health score distribution
-    print(f"\n📈 Health Score Distribution:")
+    print("\n📈 Health Score Distribution:")
     def safe_health_score(row):
         try:
             return int(row.get('health_score', 0))
@@ -71,7 +71,7 @@ def view_export():
         print(f"   {range_name:20s}: {count:2d} ({pct:5.1f}%)")
     
     # Top 15 by health score
-    print(f"\n🏆 Top 15 Entities by Health Score:")
+    print("\n🏆 Top 15 Entities by Health Score:")
     print(f"{'#':<4} {'Entity':<25} {'Type':<12} {'Score':<6} {'Pattern':<15} {'Events':<7}")
     print("-"*80)
     
@@ -87,7 +87,7 @@ def view_export():
         print(f"{i:<4} {entity:<25} {etype:<12} {score:<6} {pattern:<15} {events:<7}")
     
     # Bottom 10 by health score
-    print(f"\n⚠️  Bottom 10 Entities by Health Score:")
+    print("\n⚠️  Bottom 10 Entities by Health Score:")
     print(f"{'#':<4} {'Entity':<25} {'Type':<12} {'Score':<6} {'Pattern':<15} {'Events':<7}")
     print("-"*80)
     
@@ -107,7 +107,7 @@ def view_export():
         except (ValueError, TypeError):
             return default
 
-    print(f"\n📊 Signal Statistics:")
+    print("\n📊 Signal Statistics:")
     total_positive = sum(safe_int(row.get('positive_signals')) for row in rows)
     total_neutral = sum(safe_int(row.get('neutral_signals')) for row in rows)
     total_negative = sum(safe_int(row.get('negative_signals')) for row in rows)
@@ -128,7 +128,7 @@ def view_export():
         print(f"   Replication: {total_replication:4d} (0.0%)")
     
     # Sample interpretations
-    print(f"\n💬 Sample Interpretations:")
+    print("\n💬 Sample Interpretations:")
     length = len(sorted_rows)
     interp_num = 1
     if length >= 1:
@@ -147,11 +147,11 @@ def view_export():
         print(f"   {sorted_rows[-1].get('interpretation', 'No interpretation available')}")
     
     # Export info
-    print(f"\n" + "="*80)
+    print("\n" + "="*80)
     print(f"📁 Export File: {OUTPUT_FILE}")
     print(f"� Columns: {len(rows[0])} columns")
     print(f"�📊 Rows: {len(rows)} entities")
-    print(f"\n✅ Open in Excel/Google Sheets for full analysis")
+    print("\n✅ Open in Excel/Google Sheets for full analysis")
     print("="*80)
 
 

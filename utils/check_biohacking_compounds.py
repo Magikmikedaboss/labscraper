@@ -53,7 +53,7 @@ def check_biohacking_compounds():
                 print(f"   ✗ {compound}")
         else:
             print("   (none)")
-        print(f"\nAll Compounds Detected:")
+        print("\nAll Compounds Detected:")
         for i, compound in enumerate(compounds_found, 1):
             marker = "🎯" if compound.lower() in longevity_compounds else "  "
             print(f"  {marker} {i:2d}. {compound}")

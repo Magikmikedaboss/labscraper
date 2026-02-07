@@ -115,7 +115,7 @@ def test_multi_entity_events():
                 WHERE ee.event_id = ?
             """, (event_id,))
             entities = cur.fetchall()
-            print(f"   Entities:")
+            print("   Entities:")
             for entity_type, name, role in entities:
                 print(f"     - {entity_type:12} {name:20} [role: {role}]")
         # Assertions
@@ -135,7 +135,7 @@ def test_entity_roles():
             ORDER BY count DESC
         """)
         roles = cur.fetchall()
-        print(f"\nEntity role distribution:")
+        print("\nEntity role distribution:")
         for role, count in roles:
             print(f"  ✓ {role:15} {count:4} linkages")
         # Assertions
@@ -196,7 +196,7 @@ def test_compound_summary():
 
         summaries = cur.fetchall()
 
-        print(f"\nCompound Intelligence Summary:")
+        print("\nCompound Intelligence Summary:")
         print(f"\n{'Compound':<20} {'Events':<8} {'Failures':<10} {'Papers':<8} {'Years':<12}")
         print("-" * 70)
 

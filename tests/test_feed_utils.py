@@ -1,6 +1,5 @@
 """Tests for feed utilities using pytest"""
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from utils.feed_utils import extract_pdf_links, parse_feed, test_feed
 
 

@@ -314,19 +314,19 @@ if __name__ == "__main__":
     }
     
     event_scores = scorer.apply_event_scores(test_event)
-    print(f"\n📊 Event scores:")
+    print("\n📊 Event scores:")
     for overlay_id, score in event_scores.items():
         print(f"   {overlay_id}: {score:+.1f}")
     
     # Test entity priority
-    print(f"\n🎯 Entity priorities:")
+    print("\n🎯 Entity priorities:")
     for entity_type in ['compound', 'pathway', 'target', 'assay']:
         for overlay_id in scorer.get_overlay_ids():
             priority = scorer.apply_entity_priority(entity_type, overlay_id)
             print(f"   {overlay_id} / {entity_type}: {priority}x")
     
     # Test bucketing
-    print(f"\n📦 Score bucketing:")
+    print("\n📦 Score bucketing:")
     for score in [95, 75, 55, 35, 15]:
         bucket = scorer.bucket_score(score, max_score=100)
         print(f"   Score {score} → {bucket}")

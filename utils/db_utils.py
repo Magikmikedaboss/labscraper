@@ -1,7 +1,7 @@
 """Shared utilities for database inspection"""
 import sqlite3
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
     """Connect to database with standard settings"""
@@ -96,7 +96,7 @@ def show_recent_events(conn: sqlite3.Connection, limit: int = 5):
 
 def show_top_sources(conn: sqlite3.Connection, limit: int = 5):
     """Show sources with most events"""
-    print(f"\n📚 TOP SOURCES (by event count):")
+    print("\n📚 TOP SOURCES (by event count):")
     print("-" * 60)
     
     try:

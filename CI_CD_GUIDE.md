@@ -21,8 +21,9 @@ The main test job runs on Ubuntu latest and performs the following steps:
    - Uses `actions/checkout@v4` to clone the repository
 
 2. **Setup Python Environment**
-   - Uses `actions/setup-python@v4` with Python 3.10
+   - Uses `actions/setup-python@v6` with Python 3.10
    - Ensures consistent Python version across all environments
+   - Compatible with modern GitHub Actions runners and Node.js versions
 
 3. **Install Dependencies**
    - Upgrades pip for latest features

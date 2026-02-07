@@ -11,13 +11,10 @@ import sqlite3
 import argparse
 import time
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
-from datetime import datetime
 import json
 
 # Import functions from utils/run_engine.py
 import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Import chunk_sentences function that's missing
@@ -30,14 +27,14 @@ def chunk_sentences(text):
 # Import functions from utils/run_engine.py
 try:
     from utils.run_engine import (
-        extract_metadata, guess_stage, guess_section,
+        guess_stage,
         extract_entities, extract_quantitative_data,
         detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
         classify_event_type, evidence_strength, confidence_score,
         suggested_keep, normalize_event_key,
         upsert_source, insert_document, insert_chunk, insert_event,
         link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-        now_iso, sha16, sha64, RESEARCH_DOMAIN,
+        sha16, sha64,
         FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
     )
     print("✅ Successfully imported run_engine functions")
@@ -318,7 +315,7 @@ def main():
                 abstract_links.extend(doi_matches)
             
             if not abstract_links:
-                print(f"      ⚠️  No abstract links found")
+                print("      ⚠️  No abstract links found")
                 continue
             
             # Process each abstract link
@@ -342,7 +339,7 @@ def main():
                     feed_events += events_count
                     print(f"      ✅ Processed: {events_count} events")
                 else:
-                    print(f"      ⚠️  No events extracted")
+                    print("      ⚠️  No events extracted")
         
         total_processed += feed_processed
         total_events += feed_events
