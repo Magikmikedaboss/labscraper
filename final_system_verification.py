@@ -10,7 +10,7 @@ print('=' * 50)
 print('1. Testing imports...')
 try:
     from utils.integrated_entity_system import IntegratedEntitySystem
-    from utils.scrape_pdfs_phase1_full import extract_all_entities, chunk_sentences
+    from utils.scrape_pdfs_phase1_full import chunk_sentences
     from utils.overlay_scorer import OverlayScorer
     print('✅ All imports successful')
 except Exception as e:
