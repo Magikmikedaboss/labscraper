@@ -3,8 +3,12 @@
 Final system verification script
 """
 
+import sys
+
 print('🧪 FINAL SYSTEM VERIFICATION')
 print('=' * 50)
+
+all_ok = True
 
 # Test 1: Import functionality
 print('1. Testing imports...')
@@ -15,6 +19,7 @@ try:
     print('✅ All imports successful')
 except Exception as e:
     print(f'❌ Import error: {e}')
+    all_ok = False
 
 # Test 2: Entity extraction
 print('2. Testing entity extraction...')
@@ -27,6 +32,7 @@ try:
         print(f'   - {entity["entity_type"]}: {entity["entity_name"]}')
 except Exception as e:
     print(f'❌ Entity extraction error: {e}')
+    all_ok = False
 
 # Test 3: Database functionality
 print('3. Testing database functionality...')
@@ -38,6 +44,7 @@ try:
         print(f'✅ Database access: {stats} events in database')
 except Exception as e:
     print(f'❌ Database error: {e}')
+    all_ok = False
 
 # Test 4: Overlay scoring
 print('4. Testing overlay scoring...')
@@ -52,6 +59,7 @@ try:
         print(f'   - {overlay_id}: {score:+.1f}')
 except Exception as e:
     print(f'❌ Overlay scoring error: {e}')
+    all_ok = False
 
 # Test 5: PDF processing functions
 print('5. Testing PDF processing functions...')
@@ -61,11 +69,16 @@ try:
     print(f'✅ PDF processing: {len(sentences)} sentences found')
 except Exception as e:
     print(f'❌ PDF processing error: {e}')
+    all_ok = False
 
-print('\n🎉 ALL SYSTEMS ARE FIRING CORRECTLY!')
-print('✅ Linting: All checks pass')
-print('✅ Imports: All modules load successfully')
-print('✅ Entity extraction: Working properly')
-print('✅ Database: Accessible and functional')
-print('✅ Overlay scoring: Processing correctly')
-print('✅ PDF processing: Functions operational')
+if all_ok:
+    print('\n🎉 ALL SYSTEMS ARE FIRING CORRECTLY!')
+    print('✅ Imports: All modules load successfully')
+    print('✅ Entity extraction: Working properly')
+    print('✅ Database: Accessible and functional')
+    print('✅ Overlay scoring: Processing correctly')
+    print('✅ PDF processing: Functions operational')
+else:
+    print('\n❌ SOME SYSTEMS FAILED VERIFICATION')
+    print('Please check the error messages above and resolve any issues.')
+    sys.exit(1)

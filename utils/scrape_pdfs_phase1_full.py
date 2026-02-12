@@ -6,15 +6,23 @@ This file contains all the core functions needed for the parallel PDF processing
 import re
 import hashlib
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Pattern
 
-# Import from run_engine.py
-import sys
-sys.path.insert(0, str(Path(__file__).parent))
-
-from run_engine import (
+# Import from run_engine.py using relative import
+from .run_engine import (
     extract_entities, confidence_score
 )
+
+# Precompile quantitative regex patterns at module scope for performance
+QUANTITATIVE_PATTERNS: List[Tuple[Pattern, str]] = [
+    (re.compile(r'ic50.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', re.IGNORECASE), 'ic50'),
+    (re.compile(r'ec50.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', re.IGNORECASE), 'ec50'),
+    (re.compile(r'kd.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', re.IGNORECASE), 'kd'),
+    (re.compile(r'ki.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', re.IGNORECASE), 'ki'),
+    (re.compile(r'half[- ]?life.*?(\d+\.?\d*)\s*(min|hour|day|hr|h)', re.IGNORECASE), 'half_life'),
+    (re.compile(r'stability.*?(\d+\.?\d*)\s*(%|percent)', re.IGNORECASE), 'stability_percent'),
+    (re.compile(r't1/2.*?(\d+\.?\d*)\s*(min|hour|day|hr|h)', re.IGNORECASE), 'half_life'),
+]
 
 # Constants and patterns from run_engine.py
 FAILURE_PHRASES = {
@@ -84,22 +92,12 @@ def extract_all_entities(sentence: str, title: str, domain: str) -> List[Dict]:
     return extract_entities(sentence, domain)
 
 def extract_quantitative_data(sentence: str) -> List[Dict]:
-    """Extract numerical measurements from sentence"""
-    QUANTITATIVE_PATTERNS = [
-        (r'ic50.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', 'ic50'),
-        (r'ec50.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', 'ec50'),
-        (r'kd.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', 'kd'),
-        (r'ki.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', 'ki'),
-        (r'half[- ]?life.*?(\d+\.?\d*)\s*(min|hour|day|hr|h)', 'half_life'),
-        (r'stability.*?(\d+\.?\d*)\s*(%|percent)', 'stability_percent'),
-        (r't1/2.*?(\d+\.?\d*)\s*(min|hour|day|hr|h)', 'half_life'),
-    ]
-    
+    """Extract numerical measurements from sentence using precompiled patterns"""
     measurements = []
     s_l = sentence.lower()
     
     for pattern, mtype in QUANTITATIVE_PATTERNS:
-        matches = re.finditer(pattern, s_l)
+        matches = pattern.finditer(s_l)
         for m in matches:
             try:
                 value = float(m.group(1))
