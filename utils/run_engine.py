@@ -117,14 +117,21 @@ def extract_metadata(pdf_path: Path, pdf) -> dict:
 PEPTIDE_RE = re.compile(r"\b[ACDEFGHIKLMNPQRSTVWY]{8,100}\b")
 
 # Sequence presentation patterns - stricter than before
+# Only match patterns that are explicitly labeled as sequences
+# Each pattern MUST have exactly ONE capture group for the sequence
+# Use uppercase in patterns, we'll convert sentence to uppercase before matching
 SEQUENCE_PRESENTATION_PATTERNS = [
-    r'sequence[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
-    r'seq[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
-    r'peptide[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
-    r'residues?\s+\d+[-–]\d+[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
-    r'[Nn]-terminus[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
-    r'[Cc]-terminus[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
+    # Pattern 1: sequence/seq/peptide followed by AA sequence (with or without colon/space)
+    r'(?:SEQUENCE|SEQ|PEPTIDE)[\s:]+([ACDEFGHIKLMNPQRSTVWY]{8,100})\b',
+    # Pattern 1b: "The sequence was XXX" - flexible pattern without colon
+    r'(?:SEQUENCE|WAS)\s+([ACDEFGHIKLMNPQRSTVWY]{8,100})\b',
+    # Pattern 2: residues 1-10: XXX
+    r'RESIDUES?\s+\d+[-–]\d+[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
+    # Pattern 3: N-terminus or C-terminus
+    r'(?:N-TERMINUS|C-TERMINUS)[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
+    # Pattern 4: (XXX) where XXX is a valid AA sequence - capture the sequence
     r'\(([ACDEFGHIKLMNPQRSTVWY]{8,100})\)',
+    # Pattern 5: [XXX] where XXX is a valid AA sequence - capture the sequence
     r'\[([ACDEFGHIKLMNPQRSTVWY]{8,100})\]',
 ]
 
@@ -137,6 +144,7 @@ FAKE_SEQUENCE_STOPLIST = {
     # Common words that slip through
     "PEPTIDE", "PEPTIDES", "SEQUENCE", "SEQUENCES", "RESIDUES",
     "CLINICAL", "TERMINAL", "MATERIALS", "RESEARCH", "ANALYSIS",
+    "PATTERNS", "PATTERN", "FORMATS", "PRESENTS", "REPORTS",
     # Additional false positives found in testing
     "DEGRADATI", "DEGRADATION", "SYNTHESIS", "HARMLESS", "AMPHIPHILES",
     "AFFINITY", "REMAINING", "INCREASED", "ANDVICEVERSA", "INITIALLY",
@@ -189,35 +197,46 @@ TARGET_CONTEXT_WORDS = [
 
 def is_split_word(seq: str, sentence: str) -> bool:
     """Check if sequence looks like it was chopped from a larger English word"""
-    # Find the sequence in the sentence
+    # Find the sequence in the sentence (use uppercase for consistency)
     seq_upper = seq.upper()
-    idx = sentence.upper().find(seq_upper)
+    sentence_upper = sentence.upper()
+    idx = sentence_upper.find(seq_upper)
     
     if idx == -1:
         return False
     
-    # Check characters immediately before and after
+    # Check characters immediately before and after (use uppercase sentence)
     before_idx = idx - 1
     after_idx = idx + len(seq_upper)
     
-    # If there's an alphabetic character immediately adjacent, it's likely a split word
-    if before_idx >= 0 and sentence[before_idx].isalpha():
-        return True
-    if after_idx < len(sentence) and sentence[after_idx].isalpha():
-        return True
+    # If there's an alphabetic character immediately adjacent (and not a space), it's likely a split word
+    # Allow for spaces and common punctuation between words
+    if before_idx >= 0:
+        before_char = sentence_upper[before_idx]
+        if before_char.isalpha() and before_char != ' ':
+            return True
+    if after_idx < len(sentence_upper):
+        after_char = sentence_upper[after_idx]
+        if after_char.isalpha() and after_char != ' ':
+            return True
     
     return False
 
 def extract_presented_sequences(sentence: str) -> list[str]:
     """Extract sequences that are explicitly presented in the sentence"""
     sequences = []
+    sentence_upper = sentence.upper()  # For matching uppercase sequences
     
-    # Try each presentation pattern
+    # Try each presentation pattern - use uppercase for matching
     for pattern in SEQUENCE_PRESENTATION_PATTERNS:
-        matches = re.finditer(pattern, sentence, re.IGNORECASE)
+        matches = re.finditer(pattern, sentence_upper)
         for match in matches:
-            seq = match.group(1).upper()
-            sequences.append(seq)
+            seq = match.group(1)
+            # Double-check it's valid AA sequence (only ACDEFGHIKLMNPQRSTVWY)
+            if all(c in 'ACDEFGHIKLMNPQRSTVWY' for c in seq):
+                # Filter out false positives using stoplist and validation
+                if is_probable_peptide(seq, sentence):
+                    sequences.append(seq)
     
     return list(set(sequences))
 
@@ -237,8 +256,8 @@ def is_probable_peptide(seq: str, sentence: str = "") -> bool:
     if len(s) < 8 or len(s) > 100:
         return False
     
-    # At least 4 different amino acids
-    if len(set(s)) < 4:
+    # At least 2 different amino acids (relaxed for common repeats like GGGGS)
+    if len(set(s)) < 2:
         return False
     
     # FIX 2: Reject split words (chopped from larger English words)
@@ -666,20 +685,20 @@ FAILURE_PHRASES = {
 }
 
 DECISION_PHRASES = {
-    "abandoned": ["not pursued", "not pursued further", "excluded", "discarded"],
-    "modified": ["optimized", "modified", "analog", "derivative", "cyclized", "pegylated", "amidated"],
-    "continued": ["further study", "continued", "follow-up", "subsequently", "next we"],
-    "paused": ["inconclusive", "unclear", "requires further investigation"],
-    "replicated": ["replicated", "repeated", "validated"],
-    "escalated": ["advanced to", "moved to", "in vivo", "clinical"],
+    "abandoned": ["not pursued", "not pursued further", "excluded", "discarded", "abandoned", "dropped"],
+    "modified": ["optimized", "modified", "analog", "derivative", "cyclized", "pegylated", "amidated", "redesigned"],
+    "continued": ["further study", "continued", "follow-up", "subsequently", "next we", "we decided", "decided to", "chose to"],
+    "paused": ["inconclusive", "unclear", "requires further investigation", "pending"],
+    "replicated": ["replicated", "repeated", "validated", "confirmed"],
+    "escalated": ["advanced to", "moved to", "in vivo", "clinical", "progressed to"],
 }
 
 OUTCOME_PHRASES = {
-    "failed": ["no significant", "no measurable", "inactive", "excluded", "not pursued"],
-    "improved": ["improved", "increased", "enhanced", "more stable", "longer half-life"],
-    "successful": ["significant", "potent", "strong activity"],
-    "weak": ["weak", "limited"],
-    "moderate": ["moderate"],
+    "failed": ["no significant", "no measurable", "inactive", "excluded", "not pursued", "did not", "failed to", "no improvement"],
+    "improved": ["improved", "increased", "enhanced", "more stable", "longer half-life", "better", "higher", "greater"],
+    "successful": ["significant", "potent", "strong activity", "successful", "showed activity", "demonstrated", "was successful"],
+    "weak": ["weak", "limited", "low", "poor"],
+    "moderate": ["moderate", "marginal", "partial"],
 }
 
 def detect_method_tags(sentence_l: str) -> list[str]:

@@ -1,6 +1,6 @@
 """Tests for feed utilities using pytest"""
 from unittest.mock import Mock, patch
-from utils.feed_utils import extract_pdf_links, parse_feed, test_feed
+from utils.feed_utils import extract_pdf_links, parse_feed, probe_feed
 
 
 class TestExtractPDFLinks:
@@ -116,10 +116,10 @@ class TestTestFeed:
             'summary': 'Test summary with https://example.com/paper.pdf',
             'links': []
         }
-        mock_parse.return_value = {'entries': [mock_entry]}
+        mock_parse.return_value = {'entries': [mock_entry], 'feed': {'title': 'Test Entry'}}
         mock_extract.return_value = ['https://example.com/paper.pdf']
         
-        result = test_feed('https://example.com/feed.rss', 'Test Feed')
+        result = probe_feed('https://example.com/feed.rss', 'Test Feed')
         
         assert result['success'] is True
         assert result['entries'] == 1
@@ -129,9 +129,9 @@ class TestTestFeed:
     @patch('utils.feed_utils.parse_feed')
     def test_test_feed_no_entries(self, mock_parse):
         """Test feed testing with no entries"""
-        mock_parse.return_value = {'entries': []}
+        mock_parse.return_value = {'entries': [], 'feed': {}}
         
-        result = test_feed('https://example.com/feed.rss', 'Test Feed')
+        result = probe_feed('https://example.com/feed.rss', 'Test Feed')
         
         assert result['success'] is True
         assert result['entries'] == 0
@@ -145,9 +145,9 @@ class TestTestFeed:
             'summary': 'Study on construction materials',
             'links': []
         }
-        mock_parse.return_value = {'entries': [mock_entry]}
+        mock_parse.return_value = {'entries': [mock_entry], 'feed': {}}
         
-        result = test_feed(
+        result = probe_feed(
             'https://example.com/feed.rss', 
             'Test Feed', 
             check_keywords=['construction', 'materials']
@@ -162,12 +162,12 @@ class TestTestFeed:
         """Test feed testing with no keyword matches"""
         mock_entry = {
             'title': 'Unrelated topic',
-            'summary': 'This is not about construction',
+            'summary': 'This is about weather and sports',
             'links': []
         }
-        mock_parse.return_value = {'entries': [mock_entry]}
+        mock_parse.return_value = {'entries': [mock_entry], 'feed': {}}
         
-        result = test_feed(
+        result = probe_feed(
             'https://example.com/feed.rss', 
             'Test Feed', 
             check_keywords=['construction', 'materials']
