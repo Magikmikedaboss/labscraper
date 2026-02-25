@@ -3,8 +3,6 @@
 from utils.run_engine import (
     extract_entities, 
     detect_failure_reason, 
-    detect_decision, 
-    detect_outcome, 
     detect_method_tags,
     extract_quantitative_data
 )

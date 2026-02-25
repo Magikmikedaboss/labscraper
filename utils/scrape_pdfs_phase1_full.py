@@ -5,7 +5,6 @@ This file contains all the core functions needed for the parallel PDF processing
 
 import re
 import hashlib
-from pathlib import Path
 from typing import List, Dict, Tuple, Pattern
 
 # Import from run_engine.py using relative import
