@@ -10,8 +10,7 @@ Usage:
 
 import time
 import json
-from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict
 from dataclasses import asdict
 
 # Import the enhanced modules
@@ -245,7 +244,7 @@ def generate_test_report(results: Dict):
         print(f"    {', '.join(sorted(all_entity_types))}")
     
     # Overall summary
-    print(f"\n🎯 OVERALL SUMMARY")
+    print("\n🎯 OVERALL SUMMARY")
     print("-" * 60)
     
     total_cases_all = sum(len(results[d]) for d in results)
@@ -264,7 +263,7 @@ def generate_test_report(results: Dict):
     print(f"  Average Processing Time: {avg_time_per_case:.3f} seconds per case")
     
     # Success criteria evaluation
-    print(f"\n✅ SUCCESS CRITERIA EVALUATION")
+    print("\n✅ SUCCESS CRITERIA EVALUATION")
     print("-" * 60)
     
     # Check if we achieved the target coverage improvement
@@ -333,5 +332,5 @@ if __name__ == "__main__":
     # Save results
     save_test_results(results, "enhanced_entity_test_results.json")
     
-    print(f"\n🎉 Enhanced Entity Extraction System Testing Complete!")
-    print(f"   Results saved to: enhanced_entity_test_results.json")
+    print("\n🎉 Enhanced Entity Extraction System Testing Complete!")
+    print("   Results saved to: enhanced_entity_test_results.json")

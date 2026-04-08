@@ -44,7 +44,7 @@ for i, filename in enumerate(csv_files, 1):
     else:
         missing_files.append(filename)
         print(f"{i}. {filename}")
-        print(f"   ❌ NOT FOUND")
+        print("   ❌ NOT FOUND")
         print()
 
 print("=" * 70)

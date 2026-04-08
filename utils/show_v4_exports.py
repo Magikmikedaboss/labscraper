@@ -29,7 +29,7 @@ def main():
     # Show high confidence event (safely handle if none exist)
     high = next((e for e in events if e.get('confidence_boosted') == 'high'), None)
     if high:
-        print(f"\n📋 Sample HIGH Confidence Event:")
+        print("\n📋 Sample HIGH Confidence Event:")
         print(f"   Event ID: {high.get('event_id', '<missing>')}")
         print(f"   Type: {high.get('event_type', '<missing>')}")
         print(f"   Confidence: {high.get('confidence_original', '<missing>')} → {high.get('confidence_boosted', '<missing>')}")
@@ -38,7 +38,7 @@ def main():
         print(f"   Primary Entities ({high.get('primary_entity_count', 0)}): {(entities_primary[:100] + '...') if entities_primary else '(empty)'}")
         print(f"   Context Entities ({high.get('context_entity_count', 0)}): {(entities_context[:100] + '...') if entities_context else '(empty)'}")
     else:
-        print(f"\n⚠️  No HIGH confidence events found")
+        print("\n⚠️  No HIGH confidence events found")
         # Show a medium or low confidence event instead
         sample = events[0] if events else None
         if sample:
@@ -58,7 +58,7 @@ def main():
         print(f'\n❌ Error reading candidates_primary_v4.csv: {e}')
         candidates = []
 
-    print(f"\n📊 Top 10 Primary Entities:")
+    print("\n📊 Top 10 Primary Entities:")
     for i, c in enumerate(candidates[:10], 1):
         name = c.get('entity_name')
         etype = c.get('entity_type')
@@ -95,7 +95,7 @@ def main():
         high_pct = med_pct = low_pct = 0.0
 
     # Use safe pre-computed variables
-    print(f"\n📊 Confidence Distribution:")
+    print("\n📊 Confidence Distribution:")
     if total > 0:
         print(f"   High: {high_count} ({high_pct}%)")
         print(f"   Med: {med_count} ({med_pct}%)")

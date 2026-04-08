@@ -56,3 +56,4 @@ output/*.db
 
 # Keep output CSVs (they're important)
 # output/*.csv  # Commented out - we want to keep these
+output/

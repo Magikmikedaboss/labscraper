@@ -108,11 +108,11 @@ def main():
             print(f"  - {db} (domains: {', '.join(sorted(domains))})")
 
         print("\nNext steps:")
-        print(f"  1. Run dual-lens export for each output database:")
+        print("  1. Run dual-lens export for each output database:")
         for db, domains in db_to_domains.items():
             for domain in sorted(domains):
                 print(f"     python export_dual_lens.py {db} {domain}")
-        print(f"  2. Analyze results in CSV files")
+        print("  2. Analyze results in CSV files")
     else:
         print("\nNo configs available to show output databases or next steps.")
 

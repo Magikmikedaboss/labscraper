@@ -31,7 +31,7 @@ def validate_db_results(db_path):
             ORDER BY count DESC
         ''').fetchall()
         
-        print(f'\n🏗️  Entity Types:')
+        print('\n🏗️  Entity Types:')
         for row in entity_types:
             print(f'   {row["entity_type"]}: {row["count"]}')
         

@@ -19,9 +19,8 @@ import json
 import re
 import unicodedata
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Set
+from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, asdict
-from collections import defaultdict
 import logging
 
 logger = logging.getLogger(__name__)

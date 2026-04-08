@@ -31,7 +31,8 @@ def check_dependencies():
     for package, description in required.items():
         try:
             if package == 'sqlite3':
-                import sqlite3
+                # sqlite3 is built-in, so we just check if it's available
+                pass
             else:
                 __import__(package)
             print(f"  ✅ {package:15} - {description}")
@@ -78,16 +79,16 @@ def check_directories():
         pdf_count = len(list(input_dir.glob('*.pdf')))
         print(f"  ✅ input_pdfs/ exists ({pdf_count} PDFs found)")
         if pdf_count == 0:
-            print(f"     ℹ️ No PDFs found - add some PDFs to get started!")
+            print("     ℹ️ No PDFs found - add some PDFs to get started!")
             # Don't fail verification just because no PDFs are present yet
     else:
-        print(f"  ℹ️ input_pdfs/ does not exist (will be created)")
+        print("  ℹ️ input_pdfs/ does not exist (will be created)")
         input_dir.mkdir(exist_ok=True)
-        print(f"  ✅ Created input_pdfs/ directory")
+        print("  ✅ Created input_pdfs/ directory")
     if output_dir.exists():
-        print(f"  ✅ output/ exists")
+        print("  ✅ output/ exists")
     else:
-        print(f"  ℹ️ output/ does not exist (will be created on first run)")
+        print("  ℹ️ output/ does not exist (will be created on first run)")
     return all_ok
 
 def check_database():
@@ -111,10 +112,10 @@ def check_database():
             break
     
     if not db_path:
-        print(f"  No database found. Expected one of:")
+        print("  No database found. Expected one of:")
         for path in db_paths:
             print(f"    - {path}")
-        print(f"  Run: python init_db.py or python -m init_db")
+        print("  Run: python init_db.py or python -m init_db")
         return True
     
     print(f"  Found database: {db_path.name}")
@@ -137,17 +138,17 @@ def check_database():
                 missing = [t for t in expected_tables if t not in table_names]
                 if missing:
                     print(f"  Database exists but missing tables: {', '.join(missing)}")
-                    print(f"     Run: python init_db.py or python -m init_db")
+                    print("     Run: python init_db.py or python -m init_db")
                     return False
                 
                 # Check record counts
                 sources = con.execute("SELECT COUNT(*) FROM sources").fetchone()[0]
                 events = con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0]
                 entities = con.execute("SELECT COUNT(*) FROM entities").fetchone()[0]
-                print(f"  Database initialized and valid")
+                print("  Database initialized and valid")
                 print(f"     Sources: {sources}, Events: {events}, Entities: {entities}")
             if events == 0:
-                print(f"     No data yet - run: python utils/scrape_pdfs.py")
+                print("     No data yet - run: python utils/scrape_pdfs.py")
         elif db_path.suffix == '.csv':            # CSV file (domain-specific export)
             import csv
             with open(db_path, 'r', encoding='utf-8') as f:
@@ -172,18 +173,14 @@ def test_import():
         if schema_path.exists():
             schema = schema_path.read_text()
             if 'CREATE TABLE' in schema:
-                print(f"  schema.sql is valid")
+                print("  schema.sql is valid")
             else:
-                print(f"  schema.sql appears invalid")
+                print("  schema.sql appears invalid")
                 return False
         
         # Test basic imports
-        import re
-        import hashlib
-        import sqlite3
-        from datetime import datetime, timezone
         
-        print(f"  All core modules can be imported")
+        print("  All core modules can be imported")
         return True
         
     except Exception as e:

@@ -120,7 +120,7 @@ def lint_seeds():
             if seed_upper in KNOWN_PROBLEMATIC:
                 print(f"❌ CRITICAL: '{seed}' in {category}")
                 print(f"   Reason: {KNOWN_PROBLEMATIC[seed_upper]}")
-                print(f"   Action: Remove or use full term")
+                print("   Action: Remove or use full term")
                 issues_found += 1
     
     if issues_found == 0:
@@ -139,7 +139,7 @@ def lint_seeds():
                     continue
                 
                 print(f"⚠️  WARNING: '{seed}' in {category} (length: {len(seed)})")
-                print(f"   Suggestion: Use full term or add to SAFE_SHORT_TERMS if unambiguous")
+                print("   Suggestion: Use full term or add to SAFE_SHORT_TERMS if unambiguous")
                 short_abbrevs += 1
                 warnings_found += 1
     
@@ -159,7 +159,7 @@ def lint_seeds():
     for term, categories in term_locations.items():
         if len(categories) > 1:
             print(f"⚠️  WARNING: '{term}' appears in: {', '.join(categories)}")
-            print(f"   Suggestion: Verify this is intentional")
+            print("   Suggestion: Verify this is intentional")
             duplicates += 1
             warnings_found += 1
     
@@ -181,7 +181,7 @@ def lint_seeds():
         for seed in seeds:
             if seed.lower() in COMMON_WORDS:
                 print(f"⚠️  WARNING: '{seed}' in {category} (very common word)")
-                print(f"   Suggestion: Consider using more specific term")
+                print("   Suggestion: Consider using more specific term")
                 noisy_terms += 1
                 warnings_found += 1
     

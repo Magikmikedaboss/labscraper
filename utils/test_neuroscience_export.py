@@ -2,11 +2,11 @@ import csv
 import json
 from pathlib import Path
 
-def test_neuroscience_export():
-    """Test the neuroscience cognition export files"""
+def validate_neuroscience_export():
+    """Validate the neuroscience cognition export files"""
     
     print("\n" + "="*70)
-    print("TESTING NEUROSCIENCE COGNITION EXPORT")
+    print("VALIDATING NEUROSCIENCE COGNITION EXPORT")
     print("="*70)
     
     # Load metadata
@@ -21,7 +21,7 @@ def test_neuroscience_export():
         print(f"❌ ERROR: Invalid JSON in metadata file: {e}")
         return
     
-    print(f"\n📊 METADATA:")
+    print("\n📊 METADATA:")
     print(f"  Run ID: {meta.get('run_id', 'N/A')}")
     print(f"  Engine: {meta.get('engine_version', 'N/A')}")
     print(f"  Domain: {meta.get('domain_name', 'N/A')}")
@@ -35,12 +35,12 @@ def test_neuroscience_export():
     events_file = Path("output/events_export_neuroscience_cognition.csv")
     candidates_file = Path("output/candidates_primary_neuroscience_cognition.csv")
     if not events_file.exists() or not candidates_file.exists():
-        print(f"❌ ERROR: Missing export file(s):")
+        print("❌ ERROR: Missing export file(s):")
         if not events_file.exists():
             print(f"   - {events_file}")
         if not candidates_file.exists():
             print(f"   - {candidates_file}")
-        print("❌ Missing export files. Aborting test.")
+        print("❌ Missing export files. Aborting validation.")
         return
 
     with open(events_file, 'r', encoding='utf-8') as f:
@@ -53,19 +53,19 @@ def test_neuroscience_export():
     if events:
         print(f"  Columns: {len(events[0].keys())}")
     else:
-        print(f"  Columns: 0 (N/A)")
+        print("  Columns: 0 (N/A)")
 
     with open(candidates_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         candidates = list(reader)
 
-    print(f"\n✅ CANDIDATES CSV:")
+    print("\n✅ CANDIDATES CSV:")
     print(f"  File: {candidates_file.name}")
     expected_primary = meta.get('counts', {}).get('primary_entities', 'N/A')
     print(f"  Rows: {len(candidates)} (expected: {expected_primary})")
-    print(f"  Match: {'✅ YES' if expected_primary != 'N/A' and len(candidates) == expected_primary else '❌ NO'}")    
+    print(f"  Match: {'✅ YES' if expected_primary != 'N/A' and len(candidates) == expected_primary else '❌ NO'}")
     # Show top entities
-    print(f"\n📈 TOP 10 ENTITIES:")
+    print("\n📈 TOP 10 ENTITIES:")
     for i, cand in enumerate(candidates[:10], 1):
         name = str(cand.get('entity_name', '<missing>'))
         etype = str(cand.get('entity_type', '<missing>'))
@@ -76,7 +76,7 @@ def test_neuroscience_export():
             print(f"  {i:2d}. <malformed row>: {cand}")
     
     # Confidence distribution
-    print(f"\n📊 CONFIDENCE DISTRIBUTION:")
+    print("\n📊 CONFIDENCE DISTRIBUTION:")
     conf_dist = meta.get('confidence_distribution', {})
     print(f"  High: {conf_dist.get('high', 'N/A')}")
     print(f"  Med:  {conf_dist.get('med', 'N/A')}")
@@ -90,7 +90,7 @@ def test_neuroscience_export():
         if et:
             event_types[et] = event_types.get(et, 0) + 1
     
-    print(f"\n📋 EVENT TYPES (sample of first 100):")
+    print("\n📋 EVENT TYPES (sample of first 100):")
     for et, count in sorted(event_types.items(), key=lambda x: x[1], reverse=True):
         print(f"  {et:30s}: {count}")
     
@@ -100,7 +100,7 @@ def test_neuroscience_export():
         et = cand.get('entity_type', '<unknown>')
         entity_types[et] = entity_types.get(et, 0) + 1
     
-    print(f"\n🏷️  ENTITY TYPE DISTRIBUTION:")
+    print("\n🏷️  ENTITY TYPE DISTRIBUTION:")
     for et, count in sorted(entity_types.items(), key=lambda x: x[1], reverse=True):
         print(f"  {et:20s}: {count:>4d}")
     
@@ -152,4 +152,4 @@ def test_neuroscience_export():
     print("="*70)
 
 if __name__ == "__main__":
-    test_neuroscience_export()
+    validate_neuroscience_export()

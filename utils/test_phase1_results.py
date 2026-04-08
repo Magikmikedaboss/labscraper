@@ -3,7 +3,6 @@ Test Phase 1 Results - Analyze entity extraction
 """
 import sqlite3
 from pathlib import Path
-from collections import Counter
 
 DB_PATH = Path("output") / "peptide_intel.sqlite"
 
@@ -24,15 +23,15 @@ def analyze_phase1_results():
     """).fetchone()[0]
     coverage = (events_with_entities / total_events * 100) if total_events > 0 else 0
 
-    print(f"\n📊 Overall Stats:")
+    print("\n📊 Overall Stats:")
     print(f"   Total events: {total_events}")
     print(f"   Total unique entities: {total_entities}")
     print(f"   Events with entities: {events_with_entities}/{total_events} ({coverage:.1f}%)")
-    print(f"   Target: ≥70% coverage")
+    print("   Target: ≥70% coverage")
     print(f"   Status: {'✅ PASS' if coverage >= 70 else '❌ FAIL'}")
 
     # 2. Entity type breakdown
-    print(f"\n📋 Entity Types Extracted:")
+    print("\n📋 Entity Types Extracted:")
     entity_types = cur.execute("""
         SELECT entity_type, COUNT(*) as count
         FROM entities
@@ -44,7 +43,7 @@ def analyze_phase1_results():
         print(f"   {etype}: {count}")
 
     # 3. Top entities by type
-    print(f"\n🔝 Top 10 Entities Overall:")
+    print("\n🔝 Top 10 Entities Overall:")
     top_entities = cur.execute("""
         SELECT e.entity_type, e.entity_name, COUNT(ee.event_id) as event_count
         FROM entities e
@@ -57,7 +56,7 @@ def analyze_phase1_results():
         print(f"   {name} ({etype}): {count} events")
 
     # 4. NEW entity types (assays, pathways, indications)
-    print(f"\n🆕 NEW Entity Types (Phase 1):")
+    print("\n🆕 NEW Entity Types (Phase 1):")
     for new_type in ['assay', 'pathway', 'indication']:
         count = cur.execute("""
             SELECT COUNT(*) FROM entities WHERE entity_type = ?
@@ -86,7 +85,7 @@ def analyze_phase1_results():
                 print(f"      - {name}: {cnt} events")
 
     # 5. Events without entities - why?
-    print(f"\n❓ Events Without Entities:")
+    print("\n❓ Events Without Entities:")
     events_without = total_events - events_with_entities
     percent = (events_without/total_events*100) if total_events > 0 else 0.0
     print(f"   Count: {events_without} ({percent:.1f}%)")
@@ -99,11 +98,11 @@ def analyze_phase1_results():
         LIMIT 5
     """).fetchall()
 
-    print(f"\n   Sample events without entities:")
+    print("\n   Sample events without entities:")
     for i, (etype, snippet) in enumerate(sample, 1):
         print(f"   {i}. [{etype}] {(snippet or '')[:100]}...")    
     # 6. Confidence distribution
-    print(f"\n📈 Confidence Distribution:")
+    print("\n📈 Confidence Distribution:")
     conf_dist = cur.execute("""
         SELECT confidence, COUNT(*) as count
         FROM research_events

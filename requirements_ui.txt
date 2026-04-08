@@ -1,0 +1,15 @@
+# UI Control Panel Requirements
+# Additional requirements for the GUI control panel
+
+# GUI Framework (built-in with Python)
+# tkinter - included with Python standard library
+
+# Optional: Enhanced GUI styling
+ttkbootstrap>=1.8.0  # For modern ttk themes and styling
+
+# Optional: Progress bars and notifications
+plyer>=2.1.0  # For system notifications
+
+# Note: Standard library modules (pathlib, concurrent.futures, json, logging, subprocess, sys, os)
+# are included with Python and should not be listed as pip requirements.
+# Only external packages that need to be installed via pip should be listed here.

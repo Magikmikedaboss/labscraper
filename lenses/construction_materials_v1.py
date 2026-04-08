@@ -1,7 +1,6 @@
 # lenses/construction_materials_v1.py
 from __future__ import annotations
 
-import re
 from typing import List, Tuple, Optional
 from .construction_common import (
     LensEvent, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits

@@ -12,15 +12,11 @@ import argparse
 import re
 import time
 from pathlib import Path
-from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 import pdfplumber
-import tempfile
-import os
 
 # Import functions from utils/run_engine.py
 import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "utils"))
 
 # Import chunk_sentences function that's missing
@@ -32,7 +28,7 @@ def chunk_sentences(text):
 
 # Import functions from utils/run_engine.py
 try:
-    from run_engine import (
+    from utils.run_engine import (
         extract_metadata, guess_stage, guess_section,
         extract_entities, extract_quantitative_data,
         detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
@@ -186,11 +182,23 @@ def get_pdf_links_from_feed(feed_url):
                     if '.pdf' in href.lower():
                         links.append(href)
                     # Also check for arXiv PDF pattern
-                    elif 'arxiv.org' in href and '/pdf/' in href:
-                        # Convert arXiv abstract URL to PDF URL
-                        pdf_url = href.replace('/abs/', '/pdf/').replace('/pdf/', '/pdf/')
-                        if not pdf_url.endswith('.pdf'):
-                            pdf_url += '.pdf'
+                    elif 'arxiv.org' in href:
+                        # Parse URL and normalize to PDF format
+                        parsed = urlparse(href)
+                        path = parsed.path
+                        
+                        # Ensure path has /pdf/ and ends with .pdf
+                        if '/abs/' in path:
+                            path = path.replace('/abs/', '/pdf/')
+                        elif '/pdf/' not in path:
+                            path = path.rstrip('/') + '/pdf/'
+                        
+                        # Ensure path ends with .pdf
+                        if not path.endswith('.pdf'):
+                            path += '.pdf'
+                        
+                        # Reconstruct URL preserving query and fragment
+                        pdf_url = parsed._replace(path=path).geturl()
                         links.append(pdf_url)
             
             # Check entry summary for PDF links
@@ -464,7 +472,7 @@ def main():
                 feed_processed += 1
                 print(f"      ✅ Processed: {events_count} events")
             else:
-                print(f"      ⚠️  No events extracted")
+                print("      ⚠️  No events extracted")
         
         total_downloaded += feed_downloaded
         total_processed += feed_processed

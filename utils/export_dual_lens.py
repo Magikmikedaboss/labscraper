@@ -5,7 +5,6 @@ Applies overlay scoring to existing extraction results and exports with dual per
 
 import sqlite3
 import csv
-import json
 from pathlib import Path
 from collections import defaultdict
 from .overlay_scorer import OverlayScorer, load_domain_config
@@ -351,7 +350,7 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     print("\n" + "="*70)
     print("✅ DUAL-LENS EXPORT COMPLETE")
     print("="*70)
-    print(f"\nOutput files:")
+    print("\nOutput files:")
     print(f"  📊 {entities_file}")
     print(f"  📋 {events_file}")
     print(f"  📄 {report_file}")

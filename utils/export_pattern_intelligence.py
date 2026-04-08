@@ -69,7 +69,7 @@ def export_to_csv(results, output_file):
             })
     
     print(f"✅ Exported to: {output_file}")
-    print(f"\n📋 CSV Columns:")
+    print("\n📋 CSV Columns:")
     for col in fieldnames:
         print(f"   - {col}")
 
@@ -92,13 +92,13 @@ def main():
     print("EXPORT SUMMARY")
     print("="*70)
     
-    print(f"\n📊 Pattern Distribution:")
+    print("\n📊 Pattern Distribution:")
     from collections import Counter
     pattern_counts = Counter(a.pattern_type for a in results)
     for pattern, count in pattern_counts.most_common():
         print(f"   {pattern}: {count}")
     
-    print(f"\n📈 Health Score Distribution:")
+    print("\n📈 Health Score Distribution:")
     score_ranges = {
         "Strong (80-100)": len([a for a in results if a.health_score >= 80]),
         "Promising (60-79)": len([a for a in results if 60 <= a.health_score < 80]),
@@ -109,15 +109,15 @@ def main():
     for range_name, count in score_ranges.items():
         print(f"   {range_name}: {count}")
     
-    print(f"\n🚀 Top 10 by Health Score:")
+    print("\n🚀 Top 10 by Health Score:")
     for i, analysis in enumerate(results[:10], 1):
         print(f"   {i}. {analysis.entity_name} ({analysis.entity_type}): {analysis.health_score}/100")
     
-    print(f"\n✅ Pattern intelligence export complete!")
-    print(f"\nNext steps:")
+    print("\n✅ Pattern intelligence export complete!")
+    print("\nNext steps:")
     print(f"  - Open {OUTPUT_FILE} in Excel/Google Sheets")
-    print(f"  - Filter by pattern_type or health_score")
-    print(f"  - Integrate with dashboard visualization")
+    print("  - Filter by pattern_type or health_score")
+    print("  - Integrate with dashboard visualization")
 
 
 if __name__ == "__main__":

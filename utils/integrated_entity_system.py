@@ -12,16 +12,13 @@ Usage:
     coverage_stats = system.get_coverage_stats()
 """
 
-import json
-import re
-from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict
 from dataclasses import dataclass, asdict
 from collections import defaultdict
 import logging
 
 # Import the enhanced modules
-from .enhanced_entity_extractor import EnhancedEntityExtractor, Entity
+from .enhanced_entity_extractor import EnhancedEntityExtractor
 from .fallback_entity_classifier import FallbackEntityClassifier, apply_fallback_classification
 
 # Configure logging
@@ -62,8 +59,6 @@ class IntegratedEntitySystem:
         3. Combine and deduplicate results
         4. Calculate coverage statistics
         """
-        import time
-        start_time = time.time()
         
         # Step 1: Enhanced extraction
         enhanced_entities = self.enhanced_extractor.extract_entities(text, title)
@@ -80,9 +75,7 @@ class IntegratedEntitySystem:
         final_entities = self._deduplicate_entities(fallback_entities)
         
         # Step 4: Calculate statistics
-        processing_time = time.time() - start_time
         coverage_stats = self._calculate_coverage_stats(final_entities, enhanced_dict, fallback_entities)
-        confidence_distribution = self._get_confidence_distribution(final_entities)
         
         # Update global stats
         self.stats['total_extractions'] += 1
