@@ -1,6 +1,6 @@
 """Input validation utilities for the peptide scraper project"""
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 import re
 
 
@@ -34,16 +34,26 @@ def validate_directory(path: Union[str, Path], must_exist: bool = True) -> Path:
     return p
 
 
-def validate_database(path: Union[str, Path]) -> Path:
-    """Validate SQLite database path"""
+def validate_database(path: Union[str, Path], must_exist: bool = False) -> Path:
+    """Validate SQLite database path."""
     p = Path(path)
-    
-    if not p.exists():
-        raise ValidationError(f"Database not found: {path}")
-    
+
     if p.suffix.lower() not in ['.db', '.sqlite', '.sqlite3']:
-        raise ValidationError(f"Invalid database extension: {p.suffix}")
-    
+        raise ValidationError(f"Invalid database extension: {p.suffix or '(missing extension)'}")
+
+    if must_exist and not p.exists():
+        raise ValidationError(f"Database not found: {path}")
+
+    if p.exists() and not p.is_file():
+        raise ValidationError(f"Not a file: {path}")
+
+    parent = p.parent
+    if not parent.exists():
+        try:
+            parent.mkdir(parents=True, exist_ok=True)
+        except Exception as err:
+            raise ValidationError(f"Cannot create database directory: {parent}") from err
+
     return p
 
 
@@ -78,6 +88,53 @@ def validate_file_path(path: Union[str, Path], must_exist: bool = True) -> Path:
         raise ValidationError(f"Not a file: {path}")
     
     return p
+
+
+def validate_feed_entry(feed: dict[str, Any], index: int | None = None) -> dict[str, Any]:
+    """Validate and normalize a single RSS feed configuration entry."""
+    prefix = f"Feed #{index}: " if index is not None else ""
+
+    if not isinstance(feed, dict):
+        raise ValidationError(f"{prefix}Feed entry must be an object")
+
+    missing = [field for field in ("name", "url") if not feed.get(field)]
+    if missing:
+        raise ValidationError(f"{prefix}Missing required field(s): {', '.join(missing)}")
+
+    validated = {
+        "name": str(feed["name"]).strip(),
+        "url": validate_feed_url(str(feed["url"]).strip()),
+        "enabled": bool(feed.get("enabled", True)),
+    }
+
+    if feed.get("domain"):
+        validated["domain"] = validate_domain_name(str(feed["domain"]).strip())
+
+    for optional_key in ("keywords", "notes"):
+        if optional_key in feed:
+            validated[optional_key] = feed[optional_key]
+
+    return validated
+
+
+def validate_feed_config(config: Any) -> dict[str, Any]:
+    """Validate the structure of an RSS feed configuration payload."""
+    if not isinstance(config, dict):
+        raise ValidationError("Feed config must be a JSON object")
+
+    feeds = config.get("feeds", [])
+    if feeds is None:
+        feeds = []
+
+    if not isinstance(feeds, list):
+        raise ValidationError("Feed config field 'feeds' must be a list")
+
+    validated_config = dict(config)
+    validated_config["feeds"] = [
+        validate_feed_entry(feed, index=i)
+        for i, feed in enumerate(feeds, start=1)
+    ]
+    return validated_config
 
 
 def validate_input_pdfs_directory(path: Union[str, Path]) -> Path:

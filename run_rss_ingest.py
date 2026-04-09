@@ -9,6 +9,7 @@ import requests
 import hashlib
 import sqlite3
 import argparse
+import json
 import re
 import time
 from pathlib import Path
@@ -18,6 +19,15 @@ import pdfplumber
 # Import functions from utils/run_engine.py
 import sys
 sys.path.insert(0, str(Path(__file__).parent / "utils"))
+
+from utils.validators import (
+    ValidationError,
+    validate_database,
+    validate_directory,
+    validate_domain_name,
+    validate_feed_config,
+    validate_file_path,
+)
 
 # Import chunk_sentences function that's missing
 def chunk_sentences(text):
@@ -132,10 +142,12 @@ DB_PATH = Path("db") / "runs.sqlite"
 RSS_CACHE_DIR = Path("input") / "rss_cache"
 FEEDS_CONFIG = Path("config") / "feeds.json"
 
-def load_feeds_config():
-    """Load RSS feeds configuration from JSON file"""
-    if not FEEDS_CONFIG.exists():
-        print(f"⚠️  RSS feeds config not found: {FEEDS_CONFIG}")
+def load_feeds_config(feeds_config_path: Path | None = None):
+    """Load and validate RSS feeds configuration from JSON file."""
+    config_path = feeds_config_path or FEEDS_CONFIG
+
+    if not config_path.exists():
+        print(f"⚠️  RSS feeds config not found: {config_path}")
         print("Creating default config...")
         default_config = {
             "feeds": [
@@ -153,16 +165,17 @@ def load_feeds_config():
                 }
             ]
         }
-        import json
-        FEEDS_CONFIG.parent.mkdir(parents=True, exist_ok=True)
-        with open(FEEDS_CONFIG, 'w') as f:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(default_config, f, indent=2)
-        print(f"✅ Created default config at {FEEDS_CONFIG}")
-        return default_config
-    
-    import json
-    with open(FEEDS_CONFIG, 'r') as f:
-        return json.load(f)
+        print(f"✅ Created default config at {config_path}")
+        return validate_feed_config(default_config)
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return validate_feed_config(json.load(f))
+    except json.JSONDecodeError as err:
+        raise ValidationError(f"Invalid JSON in {config_path}: {err}") from err
 
 def get_pdf_links_from_feed(feed_url):
     """Extract PDF links from RSS feed entries"""
@@ -403,10 +416,19 @@ def main():
                        help='Override domain for all feeds (for testing)')
     
     args = parser.parse_args()
-    
-    # Load feeds configuration
-    feeds_config = load_feeds_config()
-    
+
+    try:
+        args.feeds_config = validate_file_path(args.feeds_config, must_exist=False)
+        args.db_path = validate_database(args.db_path, must_exist=False)
+        args.cache_dir = validate_directory(args.cache_dir, must_exist=False)
+        if args.domain:
+            args.domain = validate_domain_name(args.domain)
+
+        feeds_config = load_feeds_config(args.feeds_config)
+    except ValidationError as e:
+        print(f"❌ Validation error: {e}")
+        sys.exit(1)
+
     # Ensure database and cache directories exist
     args.db_path.parent.mkdir(parents=True, exist_ok=True)
     args.cache_dir.mkdir(parents=True, exist_ok=True)

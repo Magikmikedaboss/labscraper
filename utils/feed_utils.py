@@ -120,3 +120,8 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) 
         print(f"  ❌ Error: {e}")
         print()
         return {'success': False, 'error': str(e)}
+
+
+def test_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
+    """Backward-compatible alias for older scripts."""
+    return probe_feed(url, name, check_keywords=check_keywords)

@@ -34,8 +34,8 @@ jobs:
     
     - name: Run tests
       run: |
-        pytest tests/ -v --cov=utils --cov=tools --cov-report=term-missing
+        pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing
     
     - name: Check coverage threshold
       run: |
-        pytest --cov=utils --cov=tools --cov-fail-under=5
+        pytest tests/ -q --cov=utils --cov=tools --cov-config=.coveragerc --cov-fail-under=70

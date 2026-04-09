@@ -13,7 +13,8 @@ from pathlib import Path
 
 # Add the parent directory to the path to import utils
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils.feed_utils import test_feed
+from utils.feed_utils import probe_feed
+from utils.validators import ValidationError, validate_feed_config, validate_file_path
 
 def main():
     parser = argparse.ArgumentParser(description='Test RSS feeds')
@@ -24,46 +25,41 @@ def main():
     parser.add_argument('--save-working', action='store_true',
                        help='Save working feeds back to config')
     args = parser.parse_args()
-    
+
+    default_feeds = [
+        ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
+        ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
+        ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
+    ]
+
+    config = None
+    feeds = default_feeds
+    config_path = Path(args.config)
+
     # Load feeds from config
-    if Path(args.config).exists():
+    if config_path.exists():
         try:
-            with open(args.config) as f:
-                config = json.load(f)
-                feeds = [(f['url'], f['name']) for f in config.get('feeds', [])]
-        except json.JSONDecodeError as e:
-            print(f"⚠️  Error parsing {args.config}: {e}")
+            validated_path = validate_file_path(config_path)
+            with open(validated_path, encoding='utf-8') as f:
+                config = validate_feed_config(json.load(f))
+                feeds = [(feed['url'], feed['name']) for feed in config.get('feeds', [])]
+        except (json.JSONDecodeError, ValidationError) as e:
+            print(f"⚠️  Validation error in {args.config}: {e}")
             print("   Falling back to default feeds...")
             config = None
-            feeds = [
-                ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
-                ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
-                ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
-            ]
+            feeds = default_feeds
         except Exception as e:
             print(f"⚠️  Error reading {args.config}: {e}")
             print("   Falling back to default feeds...")
             config = None
-            feeds = [
-                ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
-                ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
-                ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
-            ]
-    else:
-        # Default test feeds
-        config = None
-        feeds = [
-            ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
-            ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
-            ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
-        ]
+            feeds = default_feeds
     
     print(f"\n🧪 Testing {len(feeds)} feeds...")
     print("=" * 60)
     
     results = []
     for url, name in feeds:
-        result = test_feed(url, name, check_keywords=args.keywords)
+        result = probe_feed(url, name, check_keywords=args.keywords)
         result['url'] = url
         result['name'] = name
         results.append(result)
@@ -88,7 +84,8 @@ def main():
             ]
         }
         Path('config').mkdir(exist_ok=True)
-        with open('config/feeds.json', 'w') as f:
+        output = validate_feed_config(output)
+        with open('config/feeds.json', 'w', encoding='utf-8') as f:
             json.dump(output, f, indent=2)
         print(f"\n💾 Saved {len(working)} working feeds to config/feeds.json")
 

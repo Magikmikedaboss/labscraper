@@ -1,0 +1,15 @@
+[run]
+branch = True
+
+[report]
+include =
+    utils/run_engine.py
+    utils/db_utils.py
+    utils/feed_utils.py
+    utils/validators.py
+    tools/inspect_db.py
+    tools/test_feeds.py
+omit =
+    */__init__.py
+show_missing = True
+skip_covered = False
