@@ -70,11 +70,10 @@ class TestEntityExtraction:
     def test_extract_presented_sequences(self):
         """Test sequence extraction from presentation patterns"""
         text = "The sequence was GGGSGGGSGGG (SEQ ID NO: 1)."
-        
+
         sequences = extract_presented_sequences(text)
-        
-        assert len(sequences) > 0
-        assert any('GGGSGGGSGGG' in seq for seq in sequences)
+
+        assert sequences == ["GGGSGGGSGGG"]
 
     def test_is_probable_peptide_valid(self):
         """Test peptide validation for valid sequences"""
@@ -94,10 +93,9 @@ class TestEntityExtraction:
 
     def test_is_probable_peptide_split_word(self):
         """Test peptide validation rejects split words"""
-        seq = "TEST"
-        
-        result = is_probable_peptide(seq, "This is a TEST sequence.")
-        
+        seq = "TESTSEQX"
+        # Sequence is split across words in the input
+        result = is_probable_peptide(seq, "This is a TEST SEQX sequence.")
         assert result is False
 
     def test_is_probable_peptide_known_peptide(self):
@@ -115,8 +113,8 @@ class TestEntityExtraction:
             ("seq: GGGSGGGSGGG", ["GGGSGGGSGGG"]),
             ("peptide: GGGSGGGSGGG", ["GGGSGGGSGGG"]),
             ("residues 1-10: GGGSGGGSGGG", ["GGGSGGGSGGG"]),
-            ("(GGGSGGGSGGG)", ["GGGSGGGSGGG"]),
-            ("[GGGSGGGSGGG]", ["GGGSGGGSGGG"]),
+            ("peptide (GGGSGGGSGGG)", ["GGGSGGGSGGG"]),
+            ("sequence [GGGSGGGSGGG]", ["GGGSGGGSGGG"]),
         ]
         
         for text, expected in test_cases:
@@ -140,6 +138,22 @@ class TestEntityExtraction:
         
         assert len(sequences) > 0
         assert any('GGGSGGGSGGG' in seq for seq in sequences)
+
+    def test_extract_presented_sequences_rejects_parenthetical_ocr_noise(self):
+        """Bare figure-label words in parentheses should not be treated as peptides."""
+        text = "Representative images (leftpanels) and notes on sampleheating were analyzed."
+
+        sequences = extract_presented_sequences(text)
+
+        assert sequences == []
+
+    def test_is_probable_peptide_rejects_wordlike_artifact_without_sequence_context(self):
+        """Word-like OCR artifacts should not pass peptide validation without explicit sequence cues."""
+        seq = "ANDRISINGFAST"
+
+        result = is_probable_peptide(seq, "Representative note andrisingfast was shown in the figure legend.")
+
+        assert result is False
 
 
 class TestConstructionEntities:

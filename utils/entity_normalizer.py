@@ -53,14 +53,17 @@ def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "s
     """
     try:
         from .seed_overlay_loader import load_overlay
-        overlay = load_overlay(domain_id, overlays_dir)
     except ImportError:
-        # Fallback to direct loading if import fails
-        import logging
-        logging.getLogger(__name__).warning(
-            f"Could not import seed_overlay_loader, overlay aliases unavailable for {domain_id}"
-        )
-        overlay = None
+        try:
+            from seed_overlay_loader import load_overlay
+        except ImportError:
+            import logging
+            logging.getLogger(__name__).warning(
+                f"Could not import seed_overlay_loader, overlay aliases unavailable for {domain_id}"
+            )
+            load_overlay = None
+
+    overlay = load_overlay(domain_id, overlays_dir) if load_overlay else None
     
     if not overlay:
         return {}
@@ -170,14 +173,11 @@ def get_entity_role(entity: dict, norm_map: dict) -> str:
     # Primary entities - these are the main research subjects
     if entity["entity_type"] in ['compound', 'target', 'neural_cell', 'stem_cell', 'peptide', 'indication', 'pathway']:
         return 'primary'
-    
+
     # Context entities - these provide context but aren't the main focus
     if entity["entity_type"] in ['model', 'assay', 'method']:
-        # Special case: biological fluids should be context, not primary
-        biofluids = ['serum', 'plasma', 'blood', 'csf', 'cerebrospinal fluid', 'urine', 'saliva', 'synovial fluid']
-        if entity["entity_name"].lower() in biofluids:
-            return 'context'  # Biological fluids and these types are always context
-    
+        return 'context'
+
     # Default to context for unknown types
     return 'context'
 
@@ -293,3 +293,4 @@ if __name__ == "__main__":
     print("\n" + "=" * 70)
     print("✅ Overlay alias normalization working!")
     print("=" * 70)
+    

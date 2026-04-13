@@ -84,10 +84,12 @@ def main():
             ]
         }
         Path('config').mkdir(exist_ok=True)
-        output = validate_feed_config(output)
-        with open('config/feeds.json', 'w', encoding='utf-8') as f:
-            json.dump(output, f, indent=2)
-        print(f"\n💾 Saved {len(working)} working feeds to config/feeds.json")
-
+        try:
+            output = validate_feed_config(output)
+            with open('config/feeds.json', 'w', encoding='utf-8') as f:
+                json.dump(output, f, indent=2)
+            print(f"\n💾 Saved {len(working)} working feeds to config/feeds.json")
+        except ValidationError as e:
+            print(f"⚠️  Failed to validate output config: {e}")
 if __name__ == "__main__":
     main()

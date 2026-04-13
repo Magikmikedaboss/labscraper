@@ -1,3 +1,8 @@
+
+# Confidence scoring thresholds for evidence strength
+HIGH_CONF_THRESHOLD = 6  # High confidence: strong evidence, multiple signals
+MED_CONF_THRESHOLD = 3   # Medium confidence: moderate evidence
+
 import re
 import hashlib
 import sqlite3
@@ -7,6 +12,13 @@ from pathlib import Path
 from datetime import datetime, timezone
 import pdfplumber
 from tqdm import tqdm
+import logging
+
+def run_migrations(con):
+    """Apply schema migrations from migrations/00_init.sql to the given sqlite3 connection."""
+    schema_path = Path(__file__).parent.parent / "migrations" / "00_init.sql"
+    sql = schema_path.read_text(encoding="utf-8")
+    con.executescript(sql)
 
 # Default paths (can be overridden via CLI)
 DB_PATH = Path("db") / "runs.sqlite"
@@ -76,9 +88,6 @@ def extract_metadata(pdf_path: Path, pdf) -> dict:
                 if year_match:
                     metadata['year'] = int(year_match.group(0))
             except Exception as e:
-                import logging
-                if isinstance(e, (KeyboardInterrupt, SystemExit)):
-                    raise
                 logging.exception(f"Error extracting year from CreationDate: {e}")
     
     # Try first page text for DOI and other metadata
@@ -121,18 +130,13 @@ PEPTIDE_RE = re.compile(r"\b[ACDEFGHIKLMNPQRSTVWY]{8,100}\b")
 # Each pattern MUST have exactly ONE capture group for the sequence
 # Use uppercase in patterns, we'll convert sentence to uppercase before matching
 SEQUENCE_PRESENTATION_PATTERNS = [
-    # Pattern 1: sequence/seq/peptide followed by AA sequence (with or without colon/space)
-    r'(?:SEQUENCE|SEQ|PEPTIDE)[\s:]+([ACDEFGHIKLMNPQRSTVWY]{8,100})\b',
-    # Pattern 1b: "The sequence was XXX" - flexible pattern without colon
-    r'(?:SEQUENCE|WAS)\s+([ACDEFGHIKLMNPQRSTVWY]{8,100})\b',
-    # Pattern 2: residues 1-10: XXX
+    # Explicit sequence labeling only; avoid free-form OCR noise from figure legends.
+    r'(?:SEQUENCE|SEQ(?:UENCE)?|PEPTIDE)(?:\s+ID(?:\s+NO\.?)?)?[\s:=-]+([ACDEFGHIKLMNPQRSTVWY]{8,100})\b',
+    r'(?:SEQUENCE\s+WAS|SEQ(?:UENCE)?\s+WAS|PEPTIDE\s+WAS)\s+([ACDEFGHIKLMNPQRSTVWY]{8,100})\b',
     r'RESIDUES?\s+\d+[-–]\d+[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
-    # Pattern 3: N-terminus or C-terminus
     r'(?:N-TERMINUS|C-TERMINUS)[:\s]+([ACDEFGHIKLMNPQRSTVWY]{8,100})',
-    # Pattern 4: (XXX) where XXX is a valid AA sequence - capture the sequence
-    r'\(([ACDEFGHIKLMNPQRSTVWY]{8,100})\)',
-    # Pattern 5: [XXX] where XXX is a valid AA sequence - capture the sequence
-    r'\[([ACDEFGHIKLMNPQRSTVWY]{8,100})\]',
+    r'(?:SEQUENCE|SEQ(?:UENCE)?|PEPTIDE)[^\n\r]{0,24}\(([ACDEFGHIKLMNPQRSTVWY]{8,100})\)',
+    r'(?:SEQUENCE|SEQ(?:UENCE)?|PEPTIDE)[^\n\r]{0,24}\[([ACDEFGHIKLMNPQRSTVWY]{8,100})\]',
 ]
 
 # Small stoplist for obvious non-peptides
@@ -145,10 +149,12 @@ FAKE_SEQUENCE_STOPLIST = {
     "PEPTIDE", "PEPTIDES", "SEQUENCE", "SEQUENCES", "RESIDUES",
     "CLINICAL", "TERMINAL", "MATERIALS", "RESEARCH", "ANALYSIS",
     "PATTERNS", "PATTERN", "FORMATS", "PRESENTS", "REPORTS",
-    # Additional false positives found in testing
+    # Additional false positives found in testing / OCR-heavy figure legends
     "DEGRADATI", "DEGRADATION", "SYNTHESIS", "HARMLESS", "AMPHIPHILES",
     "AFFINITY", "REMAINING", "INCREASED", "ANDVICEVERSA", "INITIALLY",
-    "ALDEHYDES", "CHEMISTS", "CLEAVAGE", "SEGMENTS",
+    "ALDEHYDES", "CHEMISTS", "CLEAVAGE", "SEGMENTS", "LEFTPANELS",
+    "SAMPLEHEATING", "ANDRISINGFAST", "IDENTITY", "DERIVATIVES", "AIRYSCAN",
+    "MEDSCAPE", "INTERNET", "PIPELINE", "PERKINELMER", "GEHEALTHCARE",
 }
 
 # Known therapeutic peptides (whitelist)
@@ -213,11 +219,11 @@ def is_split_word(seq: str, sentence: str) -> bool:
     # Allow for spaces and common punctuation between words
     if before_idx >= 0:
         before_char = sentence_upper[before_idx]
-        if before_char.isalpha() and before_char != ' ':
+        if before_char.isalpha():
             return True
     if after_idx < len(sentence_upper):
         after_char = sentence_upper[after_idx]
-        if after_char.isalpha() and after_char != ' ':
+        if after_char.isalpha():
             return True
     
     return False
@@ -241,7 +247,7 @@ def extract_presented_sequences(sentence: str) -> list[str]:
     return list(set(sequences))
 
 def is_probable_peptide(seq: str, sentence: str = "") -> bool:
-    """Light validation - simple and future-proof"""
+    """Light validation with explicit-context safeguards against OCR word noise."""
     s = seq.upper().strip()
     
     # Whitelist: Known therapeutic peptides always pass
@@ -260,9 +266,23 @@ def is_probable_peptide(seq: str, sentence: str = "") -> bool:
     if len(set(s)) < 2:
         return False
     
-    # FIX 2: Reject split words (chopped from larger English words)
+    # Reject split words (chopped from larger English words)
     if sentence and is_split_word(s, sentence):
         return False
+
+    if sentence:
+        sentence_l = sentence.lower()
+        has_sequence_context = any(
+            hint in sentence_l for hint in [
+                "sequence", "seq", "peptide", "residues", "n-terminus",
+                "c-terminus", "amino acid", "amino-acid", "seq id"
+            ]
+        )
+        appears_explicitly_uppercase = s in sentence
+
+        # Fresh runs should only keep unlabeled sequences when authors explicitly present them in uppercase.
+        if not has_sequence_context and not appears_explicitly_uppercase:
+            return False
     
     return True
 
@@ -694,11 +714,18 @@ DECISION_PHRASES = {
 }
 
 OUTCOME_PHRASES = {
-    "failed": ["no significant", "no measurable", "inactive", "excluded", "not pursued", "did not", "failed to", "no improvement"],
-    "improved": ["improved", "increased", "enhanced", "more stable", "longer half-life", "better", "higher", "greater"],
-    "successful": ["significant", "potent", "strong activity", "successful", "showed activity", "demonstrated", "was successful"],
-    "weak": ["weak", "limited", "low", "poor"],
-    "moderate": ["moderate", "marginal", "partial"],
+    # Prioritize negative evidence first to avoid false positives from words like "improved"
+    # inside phrases such as "no significant improvement".
+    "negative": [
+        "no significant", "no measurable", "inactive", "excluded", "not pursued", "did not",
+        "failed to", "no improvement", "worsened", "decreased", "declined", "degradation",
+        "toxic", "toxicity", "adverse"
+    ],
+    "positive": [
+        "improved", "increased", "enhanced", "more stable", "longer half-life", "better",
+        "higher", "greater", "successful", "showed activity", "demonstrated", "significant"
+    ],
+    "neutral": ["moderate", "marginal", "partial", "mixed", "limited", "trend"],
 }
 
 def detect_method_tags(sentence_l: str) -> list[str]:
@@ -729,7 +756,7 @@ def detect_decision(sentence_l: str) -> tuple[str, str | None]:
     return "unknown", None
 
 def detect_outcome(sentence_l: str) -> str:
-    for outcome in ["failed", "improved", "successful", "moderate", "weak"]:
+    for outcome in ["negative", "positive", "neutral"]:
         if any(p in sentence_l for p in OUTCOME_PHRASES[outcome]):
             return outcome
     return "unknown"
@@ -770,12 +797,13 @@ def evidence_strength(sentence_l: str) -> str:
 
 def confidence_score(has_entity: bool, method_tags: list[str], failure_reason: str, decision_taken: str, has_measurements: bool, sentence_l: str = "") -> str:
     """
-    FIX C: Improved confidence scoring with multi-signal detection
+    Compute a confidence label ("high", "med", "low") for an evidence sentence.
     
-    High confidence requires multiple strong signals:
-    - Entities + measurements + method
-    - Entities + failure reason + decision
-    - Multiple high-signal terms in evidence
+    Scoring rationale:
+    - Entities, method tags, failure reason, decision taken, and measurements each contribute to the score.
+    - High-signal terms in the sentence provide additional boosts.
+    - Thresholds: HIGH_CONF_THRESHOLD = 6, MED_CONF_THRESHOLD = 3 (see module constants).
+    - High: strong evidence (multiple signals); Med: moderate evidence; Low: weak or ambiguous evidence.
     """
     score = 0
     
@@ -808,10 +836,15 @@ def confidence_score(has_entity: bool, method_tags: list[str], failure_reason: s
     elif signal_count >= 2:
         score += 1  # Moderate multi-signal boost
     
-    # Thresholds (more generous to get better distribution)
+    # Use named constants for thresholds
     # Old: high>=6, med>=3 gave 0.3% high, 17% med, 83% low
     # New: high>=6, med>=3 with multi-signal boost
-    return "high" if score >= 6 else "med" if score >= 3 else "low"
+    if score >= HIGH_CONF_THRESHOLD:
+        return "high"
+    elif score >= MED_CONF_THRESHOLD:
+        return "med"
+    else:
+        return "low"
 
 def suggested_keep(conf: str, event_type: str, failure_reason: str, decision_taken: str, tags: list[str]) -> int:
     if conf in ("med", "high"):
@@ -979,6 +1012,8 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
     
     # Use context manager for database connection
     with sqlite3.connect(db_path) as con:
+            # Run migrations once after establishing the connection
+            run_migrations(con)
         # Initialize schema if tables don't exist
         con.execute("""
             CREATE TABLE IF NOT EXISTS sources (
@@ -1163,100 +1198,5 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                                 ents = extract_entities(sent, research_domain)
                                 measurements = extract_quantitative_data(sent)
                                 
-                                # FIX C: Pass sentence for multi-signal detection
-                                conf = confidence_score(bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l)
-                                keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
 
-                                # Skip low-signal filler
-                                if keep == 0 and event_type == "other":
-                                    continue
 
-                                # Deduplication check
-                                event_key = normalize_event_key(event_type, ents, page_idx, sent)
-                                if event_key in seen_events:
-                                    continue
-                                seen_events.add(event_key)
-
-                                # Optional: guess biological_system from some tags/words
-                                bio_sys = None
-                                if "serum" in tags:
-                                    bio_sys = "serum/plasma"
-                                elif "organoid" in s_l:
-                                    bio_sys = "organoid"
-                                elif "cell line" in s_l or "cells" in s_l:
-                                    bio_sys = "cells"
-
-                                # Insert event
-                                event_id = insert_event(
-                                    con=con,
-                                    source_id=source_id,
-                                    doc_id=doc_id,
-                                    chunk_id=chunk_id,
-                                    page_number=page_idx,
-                                    domain=research_domain,
-                                    event_type=event_type,
-                                    study_stage=stage,
-                                    biological_system=bio_sys,
-                                    application_area=None,
-                                    outcome=outcome,
-                                    failure_reason=failure_reason,
-                                    decision_taken=decision_taken,
-                                    decision_driver=decision_driver,
-                                    evidence_snippet=sent,
-                                    evidence_strength_v=strength,
-                                    confidence_v=conf,
-                                )
-
-                                # Link tags
-                                for t in tags:
-                                    link_event_tag(con, event_id, t)
-
-                                # Link entities and create entity map for relationships
-                                entity_map = {}
-                                for e in ents:
-                                    entity_id = upsert_entity(con, e["entity_type"], e["entity_name"], e["entity_variant"], None)
-                                    link_event_entity(con, event_id, entity_id, e.get("role", "unknown"))
-                                    entity_map[e["entity_name"]] = entity_id
-
-                                # Insert measurements
-                                for m in measurements:
-                                    insert_measurement(con, event_id, m)
-                                    total_measurements += 1
-
-                                # Extract and insert relationships
-                                relationships = extract_relationships(sent, ents)
-                                for rel in relationships:
-                                    if rel['entity_1'] in entity_map and rel['entity_2'] in entity_map:
-                                        insert_relationship(
-                                            con, event_id,
-                                            entity_map[rel['entity_1']],
-                                            entity_map[rel['entity_2']],
-                                            rel['relationship_type'],
-                                            rel['confidence']
-                                        )
-                                        total_relationships += 1
-
-                                inserted_events += 1
-
-                        except Exception as e:
-                            print(f"  ⚠️  Error processing page {page_idx} of {pdf_path.name}: {e}")
-                            continue
-            except Exception as e:
-                print(f"  ❌ Failed to process PDF {pdf_path.name}: {e}")
-                failed_pdfs.append(str(pdf_path))
-
-        print("\n✅ Done!")
-        print(f"   Inserted: ~{inserted_events} research events")
-        print(f"   Measurements: {total_measurements}")
-        print(f"   Relationships: {total_relationships}")
-        print(f"   DB: {db_path.resolve()}")
-        
-        if failed_pdfs:
-            print(f"\n⚠️  Failed to process {len(failed_pdfs)} PDFs:")
-            for pdf in failed_pdfs:
-                print(f"   - {pdf}")
-        
-        print("\nNext step: Run export_csv.py to export data for analysis.")
-
-if __name__ == "__main__":
-    main()

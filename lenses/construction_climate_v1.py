@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
 
 HAZARDS = [
@@ -29,7 +29,7 @@ CONSTRUCTION_SYSTEMS = [
     "drainage", "plumbing", "electrical", "mechanical", "structural system", "building envelope"
 ]
 
-def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
+def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
 
@@ -46,12 +46,14 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     for r in resil[:4]:
         entities.append(make_entity("resilience_term", r, "concept", "context"))
 
-    # If both positive and negative signals are present, outcome will be set to 'failed' (fail-safe precedence)
-    outcome = "unknown"
+    # If both positive and negative signals are present, negative takes precedence
+    outcome = "neutral"
     if contains_any(s_l, ["reduced", "mitigated", "improved", "enhanced"]):
         outcome = "improved"
-    if contains_any(s_l, ["increased risk", "worsened", "exacerbated"]):
+    if contains_any(s_l, ["increased risk", "risk increased", "worsened", "exacerbated", "higher vulnerability"]):
         outcome = "failed"
+    elif outcome == "neutral" and haz:
+        outcome = "negative"
 
     score = 0
     if haz:
@@ -87,4 +89,4 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     if materials_hits or systems_hits:
         tags.append("construction_climate_interaction")
 
-    return LensEvent("climate_resilience", outcome, conf, tags), dedupe_entities(entities)
+    return build_lens_event("climate", "climate_resilience", outcome, conf, tags, sentence, source_type), dedupe_entities(entities)

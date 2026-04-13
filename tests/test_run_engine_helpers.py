@@ -87,7 +87,7 @@ def test_detection_classification_and_confidence_helpers_work_together():
     # DECISION_PHRASES is checked in dict order; "continued" is checked before "modified".
     assert decision_taken in ("continued", "modified")
     assert decision_driver is None
-    assert outcome == "improved"
+    assert outcome == "positive"
     assert event_type == "stability_issue"
     assert evidence_strength("we demonstrate robust and significant activity") == "strong"
     assert evidence_strength("this may suggest a trend") == "weak"

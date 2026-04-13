@@ -24,10 +24,6 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
-.venv/
-venv/
-ENV/
 
 # IDE
 .vscode/
@@ -56,4 +52,6 @@ output/*.db
 
 # Keep output CSVs (they're important)
 # output/*.csv  # Commented out - we want to keep these
-output/
+
+# Ignore generated run metadata
+output/*.json

@@ -4,74 +4,74 @@ DUAL-LENS ANALYSIS REPORT
 
 Domain: Biohacking & Longevity
 Overlays: science_research_v1, biohacking_curiosity_v1
-Total Events: 1297
-Total Entities: 219
+Total Events: 2508
+Total Entities: 75
 
 ======================================================================
 TOP 20 ENTITIES - SCIENCE_RESEARCH_V1
 ======================================================================
 
- 1. plasma                         (model       ) Score: 184.64 [strong         ] Events:  67
- 2. serum                          (model       ) Score: 150.39 [strong         ] Events:  62
- 3. validation                     (assay       ) Score: 115.86 [strong         ] Events:  39
- 4. human                          (model       ) Score: 112.72 [strong         ] Events:  45
- 5. dogs                           (model       ) Score: 107.35 [strong         ] Events:  39
- 6. cancer                         (indication  ) Score:  98.99 [strong         ] Events:  38
- 7. in vivo                        (model       ) Score:  87.39 [strong         ] Events:  37
- 8. mice                           (model       ) Score:  75.13 [strong         ] Events:  31
- 9. blood                          (model       ) Score:  72.67 [strong         ] Events:  29
-10. humans                         (model       ) Score:  54.83 [strong         ] Events:  18
-11. rapamycin                      (compound    ) Score:  50.05 [promising      ] Events:  36
-12. dog                            (model       ) Score:  48.27 [strong         ] Events:  16
-13. infection                      (indication  ) Score:  47.45 [strong         ] Events:  19
-14. cell death                     (pathway     ) Score:  45.51 [strong         ] Events:  17
-15. mitochondria                   (model       ) Score:  39.80 [strong         ] Events:  15
-16. autophagy                      (pathway     ) Score:  38.84 [strong         ] Events:  19
-17. metformin                      (compound    ) Score:  38.73 [promising      ] Events:  31
-18. reduction                      (pathway     ) Score:  38.60 [strong         ] Events:  14
-19. lupus                          (indication  ) Score:  37.55 [strong         ] Events:  13
-20. in vitro                       (model       ) Score:  37.02 [strong         ] Events:  15
+ 1. metformin                      (compound    ) Score:  38.73 [promising      ] Events:  31
+ 2. QUERCETIN                      (compound    ) Score:  18.77 [promising      ] Events:  15
+ 3. ACE                            (target      ) Score:  16.20 [strong         ] Events:   9
+ 4. RECEPTOR                       (target      ) Score:  13.86 [exploratory    ] Events:  14
+ 5. differentiation                (stem_cell   ) Score:  12.99 [exploratory    ] Events:  11
+ 6. TNF                            (target      ) Score:   8.38 [promising      ] Events:   6
+ 7. AKT                            (target      ) Score:   8.30 [strong         ] Events:   4
+ 8. IL-6                           (target      ) Score:   7.75 [promising      ] Events:   5
+ 9. stem cell                      (stem_cell   ) Score:   7.67 [promising      ] Events:   6
+10. NAD+                           (compound    ) Score:   7.30 [promising      ] Events:   5
+11. RESVERATROL                    (compound    ) Score:   7.20 [promising      ] Events:   6
+12. AMPK                           (target      ) Score:   6.70 [promising      ] Events:   5
+13. mTOR signaling                 (target      ) Score:   6.56 [promising      ] Events:   4
+14. SPERMIDINE                     (compound    ) Score:   5.90 [exploratory    ] Events:   4
+15. GLUCAGON                       (compound    ) Score:   5.55 [exploratory    ] Events:   4
+16. TLR4                           (target      ) Score:   4.75 [exploratory    ] Events:   4
+17. ERK1                           (target      ) Score:   4.20 [exploratory    ] Events:   2
+18. sirtuin                        (target      ) Score:   3.80 [stalled        ] Events:   3
+19. LC3                            (target      ) Score:   3.67 [stalled        ] Events:   3
+20. SYNTHASE                       (target      ) Score:   3.40 [stalled        ] Events:   2
 
 ======================================================================
 TOP 20 ENTITIES - BIOHACKING_CURIOSITY_V1
 ======================================================================
 
- 1. cancer                         (indication  ) Score:  98.68 [strong         ] Events:  38
- 2. rapamycin                      (compound    ) Score:  97.21 [strong         ] Events:  36
- 3. metformin                      (compound    ) Score:  77.55 [strong         ] Events:  31
- 4. dogs                           (model       ) Score:  52.96 [promising      ] Events:  39
- 5. infection                      (indication  ) Score:  47.34 [strong         ] Events:  19
- 6. plasma                         (model       ) Score:  46.11 [stalled        ] Events:  67
- 7. serum                          (model       ) Score:  37.68 [stalled        ] Events:  62
- 8. mice                           (model       ) Score:  37.24 [promising      ] Events:  31
- 9. quercetin                      (compound    ) Score:  37.08 [strong         ] Events:  15
-10. lupus                          (indication  ) Score:  36.71 [strong         ] Events:  13
-11. validation                     (assay       ) Score:  29.13 [stalled        ] Events:  39
-12. human                          (model       ) Score:  28.23 [stalled        ] Events:  45
-13. diabetes                       (indication  ) Score:  26.43 [strong         ] Events:   9
-14. pancreatic cancer              (indication  ) Score:  24.54 [strong         ] Events:   9
-15. dog                            (model       ) Score:  23.10 [promising      ] Events:  16
-16. cell death                     (pathway     ) Score:  22.96 [promising      ] Events:  17
-17. in vivo                        (model       ) Score:  21.04 [stalled        ] Events:  37
-18. mitochondria                   (model       ) Score:  20.23 [promising      ] Events:  15
-19. hypertension                   (indication  ) Score:  20.10 [strong         ] Events:   9
-20. autophagy                      (pathway     ) Score:  19.26 [exploratory    ] Events:  19
+ 1. metformin                      (compound    ) Score:  77.55 [strong         ] Events:  31
+ 2. QUERCETIN                      (compound    ) Score:  37.53 [strong         ] Events:  15
+ 3. NAD+                           (compound    ) Score:  16.60 [strong         ] Events:   5
+ 4. ACE                            (target      ) Score:  16.20 [strong         ] Events:   9
+ 5. RESVERATROL                    (compound    ) Score:  14.73 [strong         ] Events:   6
+ 6. RECEPTOR                       (target      ) Score:  14.29 [exploratory    ] Events:  14
+ 7. SPERMIDINE                     (compound    ) Score:  11.80 [strong         ] Events:   4
+ 8. differentiation                (stem_cell   ) Score:  11.36 [exploratory    ] Events:  11
+ 9. GLUCAGON                       (compound    ) Score:  10.10 [strong         ] Events:   4
+10. EVEROLIMUS                     (compound    ) Score:   8.00 [strong         ] Events:   2
+11. IL-6                           (target      ) Score:   7.55 [promising      ] Events:   5
+12. TNF                            (target      ) Score:   7.54 [promising      ] Events:   6
+13. AMPK                           (target      ) Score:   6.50 [promising      ] Events:   5
+14. AKT                            (target      ) Score:   6.30 [promising      ] Events:   4
+15. stem cell                      (stem_cell   ) Score:   6.00 [exploratory    ] Events:   6
+16. mTOR signaling                 (target      ) Score:   5.56 [exploratory    ] Events:   4
+17. DULAGLUTIDE                    (compound    ) Score:   5.00 [exploratory    ] Events:   2
+18. APIGENIN                       (compound    ) Score:   5.00 [exploratory    ] Events:   2
+19. sirtuin                        (target      ) Score:   4.47 [exploratory    ] Events:   3
+20. SIRT6                          (target      ) Score:   4.00 [exploratory    ] Events:   2
 
 ======================================================================
 BUCKET DISTRIBUTION
 ======================================================================
 
 science_research_v1:
-  strong         :   57 ( 26.0%)
-  promising      :   20 (  9.1%)
-  exploratory    :   38 ( 17.4%)
-  stalled        :   56 ( 25.6%)
-  deprioritized  :   48 ( 21.9%)
+  strong         :    2 (  2.7%)
+  promising      :    9 ( 12.0%)
+  exploratory    :    6 (  8.0%)
+  stalled        :   18 ( 24.0%)
+  deprioritized  :   40 ( 53.3%)
 
 biohacking_curiosity_v1:
-  strong         :   19 (  8.7%)
-  promising      :   19 (  8.7%)
-  exploratory    :   31 ( 14.2%)
-  stalled        :   67 ( 30.6%)
-  deprioritized  :   83 ( 37.9%)
+  strong         :    8 ( 10.7%)
+  promising      :    4 (  5.3%)
+  exploratory    :    9 ( 12.0%)
+  stalled        :   23 ( 30.7%)
+  deprioritized  :   31 ( 41.3%)
 

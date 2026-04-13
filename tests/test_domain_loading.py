@@ -1,7 +1,9 @@
 """Tests for domain loading functionality using pytest"""
+import json
 import tempfile
 from pathlib import Path
 from utils.run_engine import get_seeds
+from utils.axon_domains import get_domain_by_id
 
 
 class TestDomainLoading:
@@ -219,5 +221,32 @@ class TestDomainLoading:
                 assert len(_targets) == 0
                 assert len(_models) == 0
                 assert len(stopwords) == 0
+            finally:
+                os.chdir(original_cwd)
+
+    def test_get_domain_by_id_falls_back_to_config_domains(self):
+        """Domain lookup should support the current production config/domains layout."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_domains = Path(temp_dir) / "config" / "domains"
+            config_domains.mkdir(parents=True)
+            (config_domains / "biohacking_longevity.json").write_text(
+                json.dumps({
+                    "id": "biohacking_longevity",
+                    "name": "Biohacking & Longevity",
+                    "description": "Observational longevity lens"
+                }),
+                encoding="utf-8",
+            )
+
+            original_cwd = Path.cwd()
+            try:
+                import os
+                os.chdir(temp_dir)
+
+                profile = get_domain_by_id("biohacking_longevity")
+
+                assert profile is not None
+                assert profile.id == "biohacking_longevity"
+                assert profile.name == "Biohacking & Longevity"
             finally:
                 os.chdir(original_cwd)

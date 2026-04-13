@@ -4,8 +4,8 @@ DUAL-LENS ANALYSIS REPORT
 
 Domain: Construction Science & Engineering
 Overlays: 
-Total Events: 4327
-Total Entities: 84
+Total Events: 2508
+Total Entities: 75
 
 ======================================================================
 BUCKET DISTRIBUTION

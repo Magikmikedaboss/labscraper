@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
 
 ASSEMBLIES = [
@@ -19,7 +19,7 @@ PHYSICS_TERMS = [
     "indoor temperature", "comfort"
 ]
 
-def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
+def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
 
@@ -36,7 +36,12 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
         entities.append(make_entity("physics_metric", t, "metric", "measurement"))
 
     # outcome heuristic
-    outcome = "improved" if contains_any(s_l, ["reduced", "lower", "improved", "decreased"]) else "unknown"
+    if contains_any(s_l, ["reduced", "lower", "improved", "decreased", "better"]):
+        outcome = "improved"
+    elif contains_any(s_l, ["higher energy", "increased leakage", "worsened", "condensation", "mold"]):
+        outcome = "degraded"
+    else:
+        outcome = "neutral"
 
     score = 0
     if terms:
@@ -58,4 +63,4 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     if has_unit_signal(s_l):
         tags.append("has_units")
 
-    return LensEvent("building_physics_performance", outcome, conf, tags), dedupe_entities(entities)
+    return build_lens_event("building_physics", "building_physics_performance", outcome, conf, tags, sentence, source_type), dedupe_entities(entities)

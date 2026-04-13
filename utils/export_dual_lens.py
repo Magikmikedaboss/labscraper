@@ -4,10 +4,18 @@ Applies overlay scoring to existing extraction results and exports with dual per
 """
 
 import sqlite3
+from contextlib import closing
 import csv
+import re
+import shutil
 from pathlib import Path
 from collections import defaultdict
 from .overlay_scorer import OverlayScorer, load_domain_config
+
+try:
+    from .entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
+except ImportError:
+    from entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
 
 
 def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
@@ -34,13 +42,30 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     
     overlay_ids = scorer.get_overlay_ids()
     print(f"\n📋 Overlays: {', '.join(overlay_ids)}")
-    
-    # Connect to database and perform all DB operations
-    con = sqlite3.connect(db_path)
-    con.row_factory = sqlite3.Row
-    cur = con.cursor()
 
-    try:
+    norm_map = load_normalization_map()
+    overlay_aliases = load_overlay_aliases(domain_id)
+
+    def is_valid_export_peptide(name: str) -> bool:
+        """Filter obvious OCR/noise artifacts from peptide exports."""
+        token = (name or "").strip()
+        if not token:
+            return False
+        # Keep canonical peptide sequences only when they are explicitly uppercase.
+        if re.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]{8,100}", token):
+            return True
+        known = {
+            "ETELCALCETIDE", "PLECANATIDE", "TERIPARATIDE", "OCTREOTIDE",
+            "LANREOTIDE", "PASIREOTIDE", "SOMATOSTATIN"
+        }
+        return token.upper() in known
+    
+    # Connect to database and perform all DB operations; ensure connection is closed explicitly
+    events = []
+    with closing(sqlite3.connect(db_path)) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+
         # Step 1: Score all events
         print("\n📊 Step 1: Scoring events...")
         events = cur.execute("SELECT * FROM research_events").fetchall()
@@ -64,36 +89,27 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
         def normalize_entity_type(name: str, entity_type: str) -> str:
             """Apply type precedence rules"""
             name_lower = name.lower()
-            # Neural cells
             if name_lower in {"microglia", "astrocyte", "neuron", "neurons", "astrocytes", "microglial", "neuronal", "astrocytic"}:
                 return "neural_cell"
-            # Stem cells
             if name_lower in {"ipsc", "msc", "esc"}:
                 return "stem_cell"
-            # Organoids -> model
             if name_lower in {"organoid", "organoids"}:
                 return "model"
-            # Construction science specific precedence
             if domain_id == "construction_science":
-                # Environment-related terms should be consistently classified as environment
                 if name_lower in {"ice", "water", "air", "moisture", "humidity", "temperature", "heat", "cold", "frost", "snow", "vapor", "climate", "weather", "acoustic", "sound", "thaw", "freeze"}:
                     return "environment"
-                # Hazard-related terms should be consistently classified as hazard
                 if name_lower in {"corrosion", "fire", "wind", "seismic", "earthquake", "flood", "storm", "lightning", "tornado", "impact", "cold"}:
                     return "hazard"
-                # Material-related terms should be consistently classified as material
                 if name_lower in {"steel", "concrete", "wood", "glass", "brick", "masonry", "plastic", "polymer", "composite", "aluminum", "copper", "board", "insulation", "panel", "coating", "timber"}:
                     return "material"
-                # System-related terms should be consistently classified as system
                 if name_lower in {"structure", "building", "foundation", "roof", "wall", "floor", "frame", "assembly", "component", "door", "ventilation", "building envelope", "column", "heating", "cooling", "mechanical", "electrical"}:
                     return "system"
-                # Failure modes should be consistently classified as failure_mode
                 if name_lower in {"failure", "collapse", "crack", "fracture", "buckling", "deflection", "deformation", "leakage", "damage", "rot", "deterioration", "weathering", "decay", "expansion", "creep", "shrinkage"}:
                     return "failure_mode"
-                # Test methods should be consistently classified as test_method
                 if name_lower in {"test", "method", "guideline", "standard", "procedure", "protocol", "assay", "approach", "practice", "technique", "specification", "requirement", "code", "strategy"}:
                     return "test_method"
             return entity_type
+
         # Normalize entities: merge duplicates by canonical name + type
         entity_canonical = {}  # (canonical_name, canonical_type) -> merged_entity
         entity_id_mapping = {}  # old_entity_id -> canonical_entity_id
@@ -102,30 +118,36 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
             name = entity['entity_name']
             entity_type = entity['entity_type']
 
-            # Apply type precedence
             canonical_type = normalize_entity_type(name, entity_type)
+            normalized = normalize_entity(
+                {"entity_type": canonical_type, "entity_name": name},
+                norm_map,
+                overlay_aliases,
+            )
+            canonical_name = normalized["entity_name"].strip()
+            canonical_key = canonical_name.lower()
 
-            # Create canonical name (lowercase)
-            canonical_name = name.lower()
+            # Filter noisy peptide artifacts and context-only entities from ranking exports.
+            if canonical_type == "peptide" and not is_valid_export_peptide(canonical_name):
+                continue
+            if get_entity_role({"entity_type": canonical_type, "entity_name": canonical_name}, norm_map) == "context":
+                continue
 
-            key = (canonical_name, canonical_type)
+            key = (canonical_key, canonical_type)
 
             if key not in entity_canonical:
-                # Create new canonical entity
                 canonical_entity = dict(entity)
-                canonical_entity['entity_name'] = canonical_name  # Use lowercase canonical name
+                canonical_entity['entity_id'] = str(key)
+                canonical_entity['entity_name'] = canonical_name
                 canonical_entity['entity_type'] = canonical_type
-                canonical_entity['original_names'] = [name]  # Track original names
+                canonical_entity['original_names'] = [name]
                 entity_canonical[key] = canonical_entity
             else:
-                # Merge into existing canonical entity
                 canonical_entity = entity_canonical[key]
                 if name not in canonical_entity['original_names']:
                     canonical_entity['original_names'].append(name)
 
-            # Map old entity_id to canonical entity_id
-            # Use the key to ensure consistent mapping
-            entity_id_mapping[entity['entity_id']] = key
+            entity_id_mapping[entity['entity_id']] = str(key)
 
         # Update entities list to use canonical entities
         entities = list(entity_canonical.values())
@@ -198,8 +220,7 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
 
         print(f"   ✅ Calculated scores for {len(entities)} entities")
     
-    finally:
-        con.close()
+    # No explicit con.close() needed; handled by context manager
     
     print("\n📝 Step 3: Exporting entities CSV...")
     
@@ -227,7 +248,11 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
         for entity in entities:
             entity_id = entity['entity_id']
             event_count = len(entity_events.get(entity_id, []))
-            
+
+            # Suppress single-mention peptide artifacts that are typically OCR/token noise.
+            if entity['entity_type'] == 'peptide' and event_count < 2:
+                continue
+
             row = {
                 'entity_name': entity['entity_name'],
                 'entity_type': entity['entity_type'],
@@ -244,6 +269,12 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
             writer.writerow(row)
     
     print(f"   ✅ Exported: {entities_file}")
+
+    latest_dir = Path("exports") / "latest" / domain_id
+    latest_dir.mkdir(parents=True, exist_ok=True)
+    latest_entities_file = latest_dir / "entities.csv"
+    shutil.copyfile(entities_file, latest_entities_file)
+    print(f"   ↳ Published latest entities: {latest_entities_file}")
     
     # Step 4: Export events with overlay scores
     print("\n📝 Step 4: Exporting events CSV...")
@@ -281,6 +312,10 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
             writer.writerow(row)
     
     print(f"   ✅ Exported: {events_file}")
+
+    latest_events_file = latest_dir / "events_dual_lens.csv"
+    shutil.copyfile(events_file, latest_events_file)
+    print(f"   ↳ Published latest dual-lens events: {latest_events_file}")
     
     # Step 5: Generate comparison report
     print("\n📊 Step 5: Generating comparison report...")
@@ -345,8 +380,7 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     
     print(f"   ✅ Report: {report_file}")
     
-    # con.close() removed; handled by context manager
-    
+    # Database operations complete; connection handled by context manager above    
     print("\n" + "="*70)
     print("✅ DUAL-LENS EXPORT COMPLETE")
     print("="*70)
@@ -357,9 +391,9 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     print()
 
 
+
 if __name__ == "__main__":
     import sys
-    import re
 
     if len(sys.argv) < 2:
         print("Usage: python export_dual_lens.py <database_path> [domain_id]")

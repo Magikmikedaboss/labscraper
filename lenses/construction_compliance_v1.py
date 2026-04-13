@@ -4,15 +4,15 @@ from __future__ import annotations
 import re
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, contains_any, has_number, has_unit_signal, make_entity, dedupe_entities
+    LensEvent, build_lens_event, contains_any, has_number, has_unit_signal, make_entity, dedupe_entities
 )
 
 # Recognize common standards bodies + some explicit patterns
 STD_TOKENS = ["astm", "aci", "asce", "ibc", "iecc", "ashrae", "iso", "eurocode"]
-PASS_PHRASES = ["meets", "complies", "in accordance with", "conforms", "satisfies"]
-FAIL_PHRASES = ["non-compliant", "does not meet", "fails to meet", "violation"]
+PASS_PHRASES = ["meets", "complies", "complied with", "in accordance with", "conforms", "satisfies"]
+FAIL_PHRASES = ["non-compliant", "noncompliant", "does not meet", "did not comply", "fails to meet", "violation"]
 
-def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
+def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
 
@@ -30,8 +30,9 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     elif has_std:
         entities.append(make_entity("code_standard", "STANDARD", "standard", "standard"))
 
-    outcome = "unknown"
-    # If both pass and fail phrases are present, pass takes precedence
+    outcome = "neutral"
+    # Pass overrides fail in mixed-signal sentences to treat any affirmative indication as a success.
+    # If both pass and fail phrases are present, pass takes precedence.
     if contains_any(s_l, PASS_PHRASES):
         outcome = "successful"
     elif contains_any(s_l, FAIL_PHRASES):
@@ -55,4 +56,4 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     if outcome == "failed":
         tags.append("fail")
 
-    return LensEvent("code_compliance", outcome, conf, tags), dedupe_entities(entities)
+    return build_lens_event("compliance", "code_compliance", outcome, conf, tags, sentence, source_type), dedupe_entities(entities)
