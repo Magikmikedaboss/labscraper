@@ -131,11 +131,18 @@ def export_candidates_domain_aware(domain_id: str = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--domain", type=str)
+    parser.add_argument("--domain", type=str, required=True)
     args = parser.parse_args()
 
     canonical_entities = export_candidates_domain_aware(args.domain)
-    # TODO: confidence_changes is currently unimplemented; passing {} for now. Update this argument and the confidence_changes parameter in write_run_meta when confidence tracking is added.
-    write_run_meta({}, canonical_entities, args.domain)
+    # Pass a fully populated confidence_changes dict with all expected keys initialized to 0
+    confidence_changes = {
+        "high": 0,
+        "med": 0,
+        "low": 0,
+        "boosted_to_high": 0,
+        "boosted_to_med": 0
+    }
+    write_run_meta(confidence_changes, canonical_entities, args.domain)
 
     print("✅ Export complete!")

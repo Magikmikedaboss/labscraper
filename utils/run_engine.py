@@ -1,3 +1,5 @@
+# (moved to end of file)
+# Add at the very end of the file:
 import re
 import hashlib
 import sqlite3
@@ -9,26 +11,18 @@ import pdfplumber
 from tqdm import tqdm
 import logging
 
+from pathlib import Path
+
+# Define SEEDS_DIR to fix undefined variable error
+if (Path('input/seeds').exists()):
+    SEEDS_DIR = Path('input/seeds')
+else:
+    SEEDS_DIR = Path('seeds')
+
 # Confidence scoring thresholds for evidence strength
 HIGH_CONF_THRESHOLD = 6  # High confidence: strong evidence, multiple signals
 MED_CONF_THRESHOLD = 3   # Medium confidence: moderate evidence
 
-def run_migrations(con):
-    """Apply schema migrations from migrations/00_init.sql to the given sqlite3 connection."""
-    schema_path = Path(__file__).parent.parent / "migrations" / "00_init.sql"
-    try:
-        if not schema_path.exists():
-            raise FileNotFoundError(f"migration file missing: {schema_path}")
-        sql = schema_path.read_text(encoding="utf-8")
-    except FileNotFoundError as e:
-        raise FileNotFoundError(f"run_migrations: migration file missing: {schema_path}") from e
-    con.executescript(sql)
-
-# Default paths (can be overridden via CLI)
-DB_PATH = Path("db") / "runs.sqlite"
-INPUT_DIR = Path("input/pdfs")
-RESEARCH_DOMAIN = "methods_tooling"
-SEEDS_DIR = Path("seeds")
 # ---------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------
@@ -923,7 +917,7 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
              outcome, failure_reason, decision_taken, decision_driver,
              evidence_snippet, evidence_strength, confidence,
              source_id, doc_id, chunk_id, page_number, created_at
-           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             event_id, domain, event_type, study_stage, biological_system, application_area,
             outcome, failure_reason, decision_taken, decision_driver,
@@ -1018,7 +1012,9 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
     if not input_dir.exists():
         raise SystemExit(f"Missing folder: {input_dir.resolve()}")
 
-    pdfs = sorted(input_dir.glob("*.pdf"))
+    # Recursively find all PDFs in input_dir and subfolders
+    pdfs = sorted(input_dir.rglob("*.pdf"))
+    print(f"Found {len(pdfs)} PDFs to process in {input_dir.resolve()}")
     if not pdfs:
         raise SystemExit(f"No PDFs found in: {input_dir.resolve()}")
 
@@ -1027,8 +1023,7 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
     
     # Use context manager for database connection
     with sqlite3.connect(db_path) as con:
-        # Run migrations once after establishing the connection
-        run_migrations(con)
+        # Schema initialization is handled by init_db.py; do not run migrations here
         # Initialize schema if tables don't exist
         con.execute("""
             CREATE TABLE IF NOT EXISTS sources (
@@ -1161,6 +1156,7 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
         """)
 
         for pdf_path in tqdm(pdfs, desc="PDFs"):
+            print(f"Processing PDF: {pdf_path}")
             try:
                 # create stable-ish ids
                 source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
@@ -1179,15 +1175,11 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                             text = page.extract_text() or ""
                             if not text.strip():
                                 continue
-
-
                             section = guess_section(text.lower())
-                            insert_chunk(con, source_id, doc_id, page_idx, section, text)
-
+                            chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
                             # sentence scan
                             for sent in chunk_sentences(text):
                                 s_l = sent.lower()
-
                                 # keep only sentences with any signal
                                 has_signal = (
                                     any(p in s_l for lst in FAILURE_PHRASES.values() for p in lst) or
@@ -1196,16 +1188,40 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                                 )
                                 if not has_signal:
                                     continue
-
                                 tags = detect_method_tags(s_l)
                                 failure_reason = detect_failure_reason(s_l)
                                 decision_taken, decision_driver = detect_decision(s_l)
-                                detect_outcome(s_l)
-                                guess_stage(s_l)
-                                classify_event_type(s_l, tags, failure_reason, decision_taken)
-                                evidence_strength(s_l)
-                                extract_entities(sent, research_domain)
-                                extract_quantitative_data(sent)
+                                outcome = detect_outcome(s_l)
+                                stage = guess_stage(s_l)
+                                event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
+                                strength = evidence_strength(s_l)
+                                entities = extract_entities(sent, research_domain)
+                                quantitative = extract_quantitative_data(sent)
+                                # Compute confidence
+                                conf = confidence_score(bool(entities), tags, failure_reason, decision_taken, bool(quantitative), s_l)
+                                # Insert event
+                                event_id = insert_event(
+                                    con, source_id, doc_id, chunk_id, page_idx,
+                                    research_domain, event_type, stage, None, None,
+                                    outcome, failure_reason, decision_taken, decision_driver,
+                                    sent, strength, conf
+                                )
+                                # Link entities
+                                for ent in entities:
+                                    entity_id = upsert_entity(
+                                        con,
+                                        ent.get("entity_type"),
+                                        ent.get("entity_name"),
+                                        ent.get("entity_variant"),
+                                        ent.get("organism") if "organism" in ent else None
+                                    )
+                                    link_event_entity(con, event_id, entity_id, ent.get("role", ""))
+                                # Link tags
+                                for tag in tags:
+                                    link_event_tag(con, event_id, tag)
+                                # Insert quantitative measurements
+                                for m in quantitative:
+                                    insert_measurement(con, event_id, m)
                         except Exception as e:
                             print(f"  ⚠️  Error processing page {page_idx} in {pdf_path.name}: {e}")
             except Exception as e:

@@ -52,7 +52,9 @@ pembrolizumab
 nivolumab
 rituximab
 
+
 # small molecules (common in peptide-related research)
+aspirin
 dexamethasone
 cyclosporine
 tacrolimus

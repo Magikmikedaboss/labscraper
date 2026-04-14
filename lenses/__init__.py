@@ -41,13 +41,8 @@ def detect_multi_lens(
         if event is None:
             continue
 
-        if event.lens is None:
-            event.lens = lens_name
-        if event.source_weight is None:
-            event.source_weight = get_source_weight(source_type)
 
         stacked = event.as_dict()
-        stacked["lens"] = event.lens if event.lens is not None else lens_name
         stacked["entities"] = entities
         results.append(stacked)
 
