@@ -46,7 +46,6 @@ vasopressin
 desmopressin
 calcitonin
 glucagon
-
 # monoclonal antibodies
 trastuzumab
 pembrolizumab

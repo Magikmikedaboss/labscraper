@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional
+from typing import Iterable, List, Optional
 
 from .construction_building_physics_v1 import detect as detect_building_physics
 from .construction_climate_v1 import detect as detect_climate

@@ -28,11 +28,13 @@ def test_test_feeds_main_uses_validated_config(tmp_path, monkeypatch):
     )
 
     calls = []
+    def fake_probe_feed(url, name, check_keywords=None):
+        calls.append((url, name, check_keywords))
+        return {"success": True, "pdfs": 1}
     monkeypatch.setattr(
         test_feeds_module,
         "probe_feed",
-        lambda url, name, check_keywords=None: calls.append((url, name, check_keywords))
-        or {"success": True, "pdfs": 1},
+        fake_probe_feed,
     )
     monkeypatch.setattr(
         sys,
@@ -52,11 +54,13 @@ def test_test_feeds_main_falls_back_on_invalid_config(tmp_path, monkeypatch, cap
     config_path.write_text(json.dumps({"feeds": {"bad": "structure"}}), encoding="utf-8")
 
     calls = []
+    def fake_probe_feed(url, name, check_keywords=None):
+        calls.append((url, name))
+        return {"success": True, "pdfs": 0}
     monkeypatch.setattr(
         test_feeds_module,
         "probe_feed",
-        lambda url, name, check_keywords=None: calls.append((url, name))
-        or {"success": True, "pdfs": 0},
+        fake_probe_feed,
     )
     monkeypatch.setattr(sys, "argv", ["test_feeds.py", "--config", str(config_path)])
 

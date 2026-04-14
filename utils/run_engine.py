@@ -1,8 +1,3 @@
-
-# Confidence scoring thresholds for evidence strength
-HIGH_CONF_THRESHOLD = 6  # High confidence: strong evidence, multiple signals
-MED_CONF_THRESHOLD = 3   # Medium confidence: moderate evidence
-
 import re
 import hashlib
 import sqlite3
@@ -14,10 +9,19 @@ import pdfplumber
 from tqdm import tqdm
 import logging
 
+# Confidence scoring thresholds for evidence strength
+HIGH_CONF_THRESHOLD = 6  # High confidence: strong evidence, multiple signals
+MED_CONF_THRESHOLD = 3   # Medium confidence: moderate evidence
+
 def run_migrations(con):
     """Apply schema migrations from migrations/00_init.sql to the given sqlite3 connection."""
     schema_path = Path(__file__).parent.parent / "migrations" / "00_init.sql"
-    sql = schema_path.read_text(encoding="utf-8")
+    try:
+        if not schema_path.exists():
+            raise FileNotFoundError(f"migration file missing: {schema_path}")
+        sql = schema_path.read_text(encoding="utf-8")
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"run_migrations: migration file missing: {schema_path}") from e
     con.executescript(sql)
 
 # Default paths (can be overridden via CLI)
@@ -207,14 +211,20 @@ def is_split_word(seq: str, sentence: str) -> bool:
     seq_upper = seq.upper()
     sentence_upper = sentence.upper()
     idx = sentence_upper.find(seq_upper)
-    
+
+    # If not found, check in whitespace-collapsed version (for OCR splits)
     if idx == -1:
-        return False
-    
+        collapsed = sentence_upper.replace(" ", "")
+        idx = collapsed.find(seq_upper)
+        if idx == -1:
+            return False
+        # If found in collapsed, treat as split word
+        return True
+
     # Check characters immediately before and after (use uppercase sentence)
     before_idx = idx - 1
     after_idx = idx + len(seq_upper)
-    
+
     # If there's an alphabetic character immediately adjacent (and not a space), it's likely a split word
     # Allow for spaces and common punctuation between words
     if before_idx >= 0:
@@ -225,7 +235,7 @@ def is_split_word(seq: str, sentence: str) -> bool:
         after_char = sentence_upper[after_idx]
         if after_char.isalpha():
             return True
-    
+
     return False
 
 def extract_presented_sequences(sentence: str) -> list[str]:
@@ -317,15 +327,20 @@ def extract_compounds(sentence: str) -> list[dict]:
     """Extract compound/drug names from sentence"""
     compounds = []
     s_l = sentence.lower()
+    extracted_names = set()
     # Check seed list
     for compound in _get_compound_seeds():
         if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
-            compounds.append({
-                "entity_type": "compound",
-                "entity_name": compound.upper(),
-                "entity_variant": "drug",
-                "role": "tested"
-            })
+            name = compound.upper()
+            if name not in extracted_names:
+                compounds.append({
+                    "entity_type": "compound",
+                    "entity_name": name,
+                    "entity_variant": "drug",
+                    "role": "tested",
+                    "text": sentence
+                })
+                extracted_names.add(name)
     return compounds
 
 def extract_targets(sentence: str) -> list[dict]:
@@ -340,7 +355,8 @@ def extract_targets(sentence: str) -> list[dict]:
                 "entity_type": "target",
                 "entity_name": target.upper(),
                 "entity_variant": "protein",
-                "role": "target"
+                "role": "target",
+                "text": sentence
             })
     
     return targets
@@ -349,46 +365,36 @@ def extract_models(sentence: str) -> list[dict]:
     """Extract experimental models from unified seed list"""
     models = []
     s_l = sentence.lower()
-    
-    # Check unified model seed list
     for model in _get_model_seeds():
         if re.search(r'\b' + re.escape(model) + r'\b', s_l):
-            # Determine variant based on model type
             variant = "unknown"
             role = "model"
-            
-            # Cell lines (typically have numbers or hyphens)
             if any(char.isdigit() for char in model) or '-' in model:
                 variant = "cell_line"
                 role = "model"
-            # Organisms
-            elif model in ["mouse", "mice", "rat", "rats", "human", "humans", "rabbit", "guinea pig", 
-                          "hamster", "zebrafish", "drosophila", "c. elegans", "xenopus", "primate", 
+            elif model in ["mouse", "mice", "rat", "rats", "human", "humans", "rabbit", "guinea pig", \
+                          "hamster", "zebrafish", "drosophila", "c. elegans", "xenopus", "primate", \
                           "pig", "dog"]:
                 variant = "organism"
                 role = "model"
-            # Biofluids
-            elif model in ["serum", "plasma", "blood", "csf", "cerebrospinal fluid", "urine", 
+            elif model in ["serum", "plasma", "blood", "csf", "cerebrospinal fluid", "urine", \
                           "saliva", "synovial fluid", "peritoneal fluid", "ascites"]:
                 variant = "biofluid"
                 role = "matrix"
-            # Tissues/organs
-            elif model in ["liver", "kidney", "heart", "brain", "lung", "spleen", "muscle", 
+            elif model in ["liver", "kidney", "heart", "brain", "lung", "spleen", "muscle", \
                           "adipose", "pancreas", "intestine", "colon", "stomach", "skin", "bone", "cartilage"]:
                 variant = "tissue"
                 role = "model"
-            # 3D models
             elif "organoid" in model or "spheroid" in model or "3d" in model:
                 variant = "3d_model"
                 role = "model"
-            
             models.append({
                 "entity_type": "model",
                 "entity_name": model.upper() if model.isupper() or len(model) <= 5 else model.capitalize(),
                 "entity_variant": variant,
-                "role": role
+                "role": role,
+                "text": sentence
             })
-    
     return models
 
 def extract_entities(sentence: str, domain: str = "methods_tooling") -> list[dict]:
@@ -548,7 +554,8 @@ def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dic
                     "entity_type": "compound",
                     "entity_name": name,
                     "entity_variant": "drug",
-                    "role": "tested"
+                    "role": "tested",
+                    "text": sentence
                 })
                 extracted_names.add(name)
 
@@ -560,7 +567,8 @@ def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dic
                 "entity_type": "peptide",
                 "entity_name": seq,
                 "entity_variant": None,
-                "role": "tested"
+                "role": "tested",
+                "text": sentence
             })
             extracted_names.add(seq)
 
@@ -573,13 +581,19 @@ def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dic
                     "entity_type": "target",
                     "entity_name": name,
                     "entity_variant": "protein",
-                    "role": "target"
+                    "role": "target",
+                    "text": sentence
                 })
                 extracted_names.add(name)
     
     # 4) MODEL: Experimental systems
     for e in extract_models(sentence):
+        # Promote neural cell types to 'neural_cell' if present in the name
+        name_lower = e["entity_name"].lower()
+        if any(neural in name_lower for neural in ["neuron", "neurons", "microglia", "astrocyte", "astrocytes"]):
+            e["entity_type"] = "neural_cell"
         if e["entity_name"] not in extracted_names:
+            e["text"] = sentence
             ents.append(e)
             extracted_names.add(e["entity_name"])
     
@@ -592,7 +606,8 @@ def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dic
                     "entity_type": "stem_cell",
                     "entity_name": name,
                     "entity_variant": None,
-                    "role": "tested"
+                    "role": "tested",
+                    "text": sentence
                 })
                 extracted_names.add(name)
 
@@ -908,7 +923,7 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
              outcome, failure_reason, decision_taken, decision_driver,
              evidence_snippet, evidence_strength, confidence,
              source_id, doc_id, chunk_id, page_number, created_at
-           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             event_id, domain, event_type, study_stage, biological_system, application_area,
             outcome, failure_reason, decision_taken, decision_driver,
@@ -1012,8 +1027,8 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
     
     # Use context manager for database connection
     with sqlite3.connect(db_path) as con:
-            # Run migrations once after establishing the connection
-            run_migrations(con)
+        # Run migrations once after establishing the connection
+        run_migrations(con)
         # Initialize schema if tables don't exist
         con.execute("""
             CREATE TABLE IF NOT EXISTS sources (
@@ -1144,13 +1159,8 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                 FOREIGN KEY (event_id) REFERENCES research_events (event_id)
             )
         """)
-        inserted_events = 0
-        total_measurements = 0
-        total_relationships = 0
-        failed_pdfs = []
 
         for pdf_path in tqdm(pdfs, desc="PDFs"):
-
             try:
                 # create stable-ish ids
                 source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
@@ -1162,8 +1172,7 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                     upsert_source(con, source_id, pdf_path.name, metadata)
                     doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
 
-                    # Track seen events for deduplication
-                    seen_events = set()
+
 
                     for page_idx, page in enumerate(pdf.pages, start=1):
                         try:
@@ -1171,8 +1180,9 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                             if not text.strip():
                                 continue
 
+
                             section = guess_section(text.lower())
-                            chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
+                            insert_chunk(con, source_id, doc_id, page_idx, section, text)
 
                             # sentence scan
                             for sent in chunk_sentences(text):
@@ -1190,13 +1200,16 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                                 tags = detect_method_tags(s_l)
                                 failure_reason = detect_failure_reason(s_l)
                                 decision_taken, decision_driver = detect_decision(s_l)
-                                outcome = detect_outcome(s_l)
-                                stage = guess_stage(s_l)
-                                event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
-                                strength = evidence_strength(s_l)
+                                detect_outcome(s_l)
+                                guess_stage(s_l)
+                                classify_event_type(s_l, tags, failure_reason, decision_taken)
+                                evidence_strength(s_l)
+                                extract_entities(sent, research_domain)
+                                extract_quantitative_data(sent)
+                        except Exception as e:
+                            print(f"  ⚠️  Error processing page {page_idx} in {pdf_path.name}: {e}")
+            except Exception as e:
+                print(f"  ⚠️  Error processing PDF {pdf_path.name}: {e}")
 
-                                ents = extract_entities(sent, research_domain)
-                                measurements = extract_quantitative_data(sent)
-                                
 
 

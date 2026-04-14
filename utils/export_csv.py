@@ -4,20 +4,17 @@ CSV Export v5 - Domain-Aware with Overlay Support
 
 import sqlite3
 import csv
-import json
 import argparse
 from pathlib import Path
 from collections import defaultdict
-from datetime import datetime
 import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
-from axon_domains import get_domain_by_id
-from process_words import PROCESS_WORDS_TO_DEMOTE, is_process_word
-from export_utilities import safe_confidence_boost, count_entities_by_role
+from utils.process_words import is_process_word
+from export_utilities import write_run_meta
 
 DB_PATH = Path("db") / "runs.sqlite"
 OUTPUT_DIR = Path("output")
@@ -29,9 +26,6 @@ def export_candidates_domain_aware(domain_id: str = None):
     norm_map = load_normalization_map()
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
 
-    domain = get_domain_by_id(domain_id) if domain_id else None
-    domain_name = domain.name if domain else "All Domains"
-    overlay_id = f"{domain_id}_v1" if domain_id else None
 
     with sqlite3.connect(DB_PATH) as con:
         cur = con.cursor()
@@ -132,57 +126,7 @@ def export_candidates_domain_aware(domain_id: str = None):
     return canonical_entities
 
 
-def write_run_meta(confidence_changes, canonical_entities, domain_id=None):
 
-    # Compute v5 fields
-    engine_version = "v5_domain_aware"
-    # Dummy confidence distribution for compatibility; real values should be computed if available
-    confidence_distribution = {
-        "high": 0,
-        "med": 0,
-        "low": 0,
-        "boosted_to_high": 0,
-        "boosted_to_med": 0
-    }
-    # Top entities by event count (if available)
-    top_entities = []
-    for (etype, ename), data in sorted(canonical_entities.items(), key=lambda x: x[1]["event_count"], reverse=True)[:20]:
-        top_entities.append({
-            "name": ename,
-            "type": etype,
-            "event_count": data["event_count"],
-            "role": data["role"]
-        })
-    # Dummy process_words_demoted and confidence_boost_rule for compatibility
-    process_words_demoted = []
-    confidence_boost_rule = None
-
-    meta = {
-        "run_id": datetime.now().strftime("%Y%m%d_%H%M%S"),
-        "engine_version": engine_version,
-        "timestamp": datetime.now().isoformat(),
-        "database": str(DB_PATH.as_posix()),
-        "domain_id": domain_id,
-        "domain_name": None,
-        "overlay_id": None,
-        "overlay_aliases_count": 0,
-        "counts": {
-            "total_entities": len(canonical_entities)
-        },
-        "confidence_distribution": confidence_distribution,
-        "top_entities": top_entities,
-        "process_words_demoted": process_words_demoted,
-        "confidence_boost_rule": confidence_boost_rule,
-        "confidence_changes": confidence_changes if confidence_changes else None
-    }
-
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    meta_path = OUTPUT_DIR / "run_meta.json"
-
-    with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(meta, f, indent=2)
-
-    print(f"✅ Wrote run metadata: {meta_path}")
 
 
 if __name__ == "__main__":

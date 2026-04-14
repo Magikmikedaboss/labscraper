@@ -8,7 +8,6 @@ Tests verify:
 - Returned entities have the expected structural keys
 - Multi-lens stacking can return multiple truths for one sentence
 """
-import pytest
 
 
 # ---------------------------------------------------------------------------

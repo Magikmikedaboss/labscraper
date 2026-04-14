@@ -1,6 +1,5 @@
 """Tests for input and feed configuration validation helpers."""
 
-from pathlib import Path
 
 import pytest
 

@@ -42,8 +42,8 @@ class TestNeuroscienceCognitionDomain:
         text = "Dopaminergic neurons were depleted in the substantia nigra."
         entities = extract_entities(text, "neuroscience_cognition")
         neural = [e for e in entities if e["entity_name"].lower() == "neurons"]
-        if neural:
-            assert neural[0]["entity_type"] == "neural_cell"
+        assert len(neural) > 0, "No 'neurons' entity extracted"
+        assert neural[0]["entity_type"] == "neural_cell"
 
 
 class TestBiohackingLongevityDomain:
@@ -106,16 +106,17 @@ class TestDrugDiscoveryDomain:
         """Both compound and target can appear in the same sentence."""
         text = "Aspirin inhibited mTOR at nanomolar concentrations in the binding assay."
         entities = extract_entities(text, "drug_discovery")
-        assert len(entities) >= 1
         types = {e["entity_type"] for e in entities}
-        assert "compound" in types or "target" in types
+        assert "compound" in types, "Compound not found"
+        assert "target" in types, "Target not found"
+        assert len(entities) >= 2, "Less than two entities extracted"
 
     def test_model_in_drug_discovery(self):
         """Cell line models used in drug discovery should be extractable."""
         text = "The compound was screened in HEK293 cells and showed selective activity."
         entities = extract_entities(text, "drug_discovery")
         types = [e["entity_type"] for e in entities]
-        assert "model" in types or "compound" in types
+        assert "model" in types, "Model not found in drug discovery extraction"
 
     def test_no_entities_generic_text(self):
         """Non-scientific prose returns empty list."""
@@ -148,14 +149,14 @@ class TestStemCellsRegenDomain:
         text = "Brain organoids derived from iPSCs showed spontaneous neural activity."
         entities = extract_entities(text, "stem_cells_regen")
         types = [e["entity_type"] for e in entities]
-        assert "model" in types or "stem_cell" in types
+        assert "model" in types, "Organoid not typed as model"
 
     def test_target_extracted_from_regen_context(self):
         """Well-known regen targets like mTOR should still be extractable."""
         text = "mTOR signaling drives proliferation in MSC populations after injury."
         entities = extract_entities(text, "stem_cells_regen")
         names = [e["entity_name"].upper() for e in entities]
-        assert "MTOR" in names or "MSC" in names
+        assert "MTOR" in names, "mTOR not extracted as target in regen context"
 
     def test_empty_text_returns_empty_list(self):
         assert extract_entities("", "stem_cells_regen") == []

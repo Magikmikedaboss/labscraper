@@ -32,10 +32,6 @@ jobs:
         bandit -r utils/ tools/ -ll || true
         safety check --json || true
     
-    - name: Run tests
+    - name: Run tests and check coverage
       run: |
-        pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing
-    
-    - name: Check coverage threshold
-      run: |
-        pytest tests/ -q --cov=utils --cov=tools --cov-config=.coveragerc --cov-fail-under=70
+        pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing --cov-fail-under=70

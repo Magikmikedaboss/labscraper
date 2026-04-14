@@ -82,6 +82,8 @@ t cells
 b cells
 nk cells
 splenocytes
+neuron
+neurons
 
 # Biofluids
 serum

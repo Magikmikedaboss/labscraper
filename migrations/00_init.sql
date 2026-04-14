@@ -1,15 +1,7 @@
 -- Schema initialization for labscraper
 -- Enable foreign key enforcement
 PRAGMA foreign_keys = ON;
--- Indexes to speed up foreign key lookups
-CREATE INDEX IF NOT EXISTS idx_documents_source_id ON documents(source_id);
-CREATE INDEX IF NOT EXISTS idx_chunks_doc_id ON chunks(doc_id);
-CREATE INDEX IF NOT EXISTS idx_chunks_source_id ON chunks(source_id);
-CREATE INDEX IF NOT EXISTS idx_research_events_source_id ON research_events(source_id);
-CREATE INDEX IF NOT EXISTS idx_research_events_doc_id ON research_events(doc_id);
-CREATE INDEX IF NOT EXISTS idx_research_events_chunk_id ON research_events(chunk_id);
-CREATE INDEX IF NOT EXISTS idx_event_entities_entity_id ON event_entities(entity_id);
-CREATE INDEX IF NOT EXISTS idx_quantitative_measurements_event_id ON quantitative_measurements(event_id);
+
 CREATE TABLE IF NOT EXISTS sources (
     source_id TEXT PRIMARY KEY,
     pdf_file TEXT NOT NULL,
@@ -119,3 +111,13 @@ CREATE TABLE IF NOT EXISTS quantitative_measurements (
     created_at TEXT NOT NULL,
     FOREIGN KEY (event_id) REFERENCES research_events (event_id)
 );
+
+-- Indexes to speed up foreign key lookups (must come after table creation)
+CREATE INDEX IF NOT EXISTS idx_documents_source_id ON documents(source_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_doc_id ON chunks(doc_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_source_id ON chunks(source_id);
+CREATE INDEX IF NOT EXISTS idx_research_events_source_id ON research_events(source_id);
+CREATE INDEX IF NOT EXISTS idx_research_events_doc_id ON research_events(doc_id);
+CREATE INDEX IF NOT EXISTS idx_research_events_chunk_id ON research_events(chunk_id);
+CREATE INDEX IF NOT EXISTS idx_event_entities_entity_id ON event_entities(entity_id);
+CREATE INDEX IF NOT EXISTS idx_quantitative_measurements_event_id ON quantitative_measurements(event_id);
