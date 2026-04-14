@@ -6,7 +6,6 @@ from typing import Iterable, List, Optional
 
 from .construction_building_physics_v1 import detect as detect_building_physics
 from .construction_climate_v1 import detect as detect_climate
-from .construction_common import get_source_weight
 from .construction_compliance_v1 import detect as detect_compliance
 from .construction_failure_v1 import detect as detect_failure
 from .construction_materials_v1 import detect as detect_materials
@@ -27,7 +26,12 @@ def detect_multi_lens(
 ) -> List[dict]:
     """Run all enabled construction lenses and return stacked results for one sentence."""
     results: List[dict] = []
-    selected_lenses = list(enabled_lenses) if enabled_lenses is not None else list(LENS_REGISTRY.keys())
+    if isinstance(enabled_lenses, str):
+        selected_lenses = [enabled_lenses]
+    elif enabled_lenses is not None:
+        selected_lenses = list(enabled_lenses)
+    else:
+        selected_lenses = list(LENS_REGISTRY.keys())
 
     confidence_rank = {"low": 1, "med": 2, "high": 3}
     context_rank = {"weak": 1, "moderate": 2, "strong": 3}

@@ -2,6 +2,7 @@
 import sqlite3
 from pathlib import Path
 from typing import List, Dict
+from utils.common import now_iso, sha16
 
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
     """Connect to database with standard settings"""
@@ -202,3 +203,104 @@ def get_domain_distribution(conn: sqlite3.Connection):
             print("  ", row[0], ":", row[1], "events")
     except sqlite3.OperationalError as e:
         print("  ⚠️  Database table not found:", e)
+
+def upsert_source(con, source_id: str, pdf_file: str, metadata: dict):
+    """Updated to include metadata"""
+    con.execute(
+        """INSERT OR IGNORE INTO sources(source_id, pdf_file, title, authors, year, doi, imported_at)
+           VALUES (?,?,?,?,?,?,?)""",
+        (source_id, pdf_file, metadata.get('title'), metadata.get('authors'), 
+         metadata.get('year'), metadata.get('doi'), now_iso()),
+    )
+
+def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
+    doc_id = sha16(f"{source_id}|{file_path}|{sha256}")
+    con.execute(
+        """INSERT OR IGNORE INTO documents(doc_id, source_id, file_path, file_type, sha256, created_at)
+           VALUES (?,?,?,?,?,?)""",
+        (doc_id, source_id, file_path, "pdf", sha256, now_iso()),
+    )
+    return doc_id
+
+def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
+    chunk_id = sha16(f"{doc_id}|{page_number}|{chunk_text[:200]}")
+    con.execute(
+        """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
+           VALUES (?,?,?,?,?,?,?)""",
+        (chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, now_iso()),
+    )
+    return chunk_id
+
+def upsert_tag(con, tag: str):
+    con.execute("INSERT OR IGNORE INTO tags(tag) VALUES(?)", (tag,))
+
+def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str | None, organism: str | None) -> str:
+    key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
+    entity_id = sha16(key)
+    con.execute(
+        """INSERT OR IGNORE INTO entities(entity_id, entity_type, entity_name, entity_variant, organism, created_at)
+           VALUES (?,?,?,?,?,?)""",
+        (entity_id, entity_type, entity_name, entity_variant, organism, now_iso()),
+    )
+    return entity_id
+
+def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: int,
+                 domain: str, event_type: str, study_stage: str, biological_system: str | None, application_area: str | None,
+                 outcome: str, failure_reason: str, decision_taken: str, decision_driver: str | None,
+                 evidence_snippet: str, evidence_strength_v: str, confidence_v: str) -> str:
+    base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
+    event_id = sha16(base)
+    con.execute(
+        """INSERT OR IGNORE INTO research_events(
+             event_id, research_domain, event_type, study_stage, biological_system, application_area,
+             outcome, failure_reason, decision_taken, decision_driver,
+             evidence_snippet, evidence_strength, confidence,
+             source_id, doc_id, chunk_id, page_number, created_at
+           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (
+            event_id, domain, event_type, study_stage, biological_system, application_area,
+            outcome, failure_reason, decision_taken, decision_driver,
+            evidence_snippet[:500], evidence_strength_v, confidence_v,
+            source_id, doc_id, chunk_id, page_number, now_iso()
+        ),
+    )
+    return event_id
+
+def link_event_entity(con, event_id: str, entity_id: str, role: str):
+    con.execute(
+        """INSERT OR IGNORE INTO event_entities(event_id, entity_id, role)
+           VALUES (?,?,?)""",
+        (event_id, entity_id, role),
+    )
+
+def link_event_tag(con, event_id: str, tag: str):
+    upsert_tag(con, tag)
+    con.execute(
+        """INSERT OR IGNORE INTO event_tags(event_id, tag)
+           VALUES (?,?)""",
+        (event_id, tag),
+    )
+
+def insert_measurement(con, event_id: str, measurement: dict):
+    """Insert quantitative measurement"""
+    measurement_id = sha16(f"{event_id}|{measurement['measurement_type']}|{measurement['value']}|{measurement['unit']}")
+    con.execute(
+        """INSERT OR IGNORE INTO quantitative_measurements(
+             measurement_id, event_id, measurement_type, value, unit, context, created_at
+           ) VALUES (?,?,?,?,?,?,?)""",
+        (measurement_id, event_id, measurement['measurement_type'], 
+         measurement['value'], measurement['unit'], measurement['context'], now_iso()),
+    )
+
+def insert_relationship(con, event_id: str, entity_id_1: str, entity_id_2: str, 
+                       relationship_type: str, confidence: str):
+    """Insert entity relationship"""
+    relationship_id = sha16(f"{entity_id_1}|{entity_id_2}|{relationship_type}|{event_id}")
+    con.execute(
+        """INSERT OR IGNORE INTO entity_relationships(
+             relationship_id, entity_id_1, entity_id_2, relationship_type, 
+             event_id, confidence, created_at
+           ) VALUES (?,?,?,?,?,?,?)""",
+        (relationship_id, entity_id_1, entity_id_2, relationship_type, 
+         event_id, confidence, now_iso()),
+    )

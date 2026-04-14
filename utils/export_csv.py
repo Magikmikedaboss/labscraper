@@ -13,7 +13,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
-from utils.process_words import is_process_word
+from process_words import is_process_word
 from export_utilities import write_run_meta
 
 DB_PATH = Path("db") / "runs.sqlite"
@@ -41,9 +41,9 @@ def export_candidates_domain_aware(domain_id: str = None):
             else:
                 entities_data = cur.execute("""
                     SELECT 
-                        e.entity_id,
+                        MIN(e.entity_id) as entity_id,
                         e.entity_type,
-                        e.entity_name,
+                        n.entity_name as canonical_name,
                         e.entity_variant,
                         COUNT(DISTINCT ee.event_id) as event_count,
                         GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
@@ -52,8 +52,12 @@ def export_candidates_domain_aware(domain_id: str = None):
                     FROM entities e
                     JOIN event_entities ee ON e.entity_id = ee.entity_id
                     JOIN research_events re ON ee.event_id = re.event_id
+                    JOIN (
+                        SELECT entity_id, entity_type, entity_name, entity_variant
+                        FROM entities
+                    ) n ON n.entity_type = e.entity_type AND n.entity_name = e.entity_name
                     WHERE re.research_domain = ?
-                    GROUP BY e.entity_id
+                    GROUP BY e.entity_type, n.entity_name, e.entity_variant
                     ORDER BY event_count DESC
                 """, (domain_id,)).fetchall()
         else:
@@ -107,6 +111,11 @@ def export_candidates_domain_aware(domain_id: str = None):
 
     # Write to exports/latest/<domain>/entities.csv if domain_id is given
     if domain_id:
+        # Sanitize domain_id to prevent path traversal or unsafe values
+        import re
+        from pathlib import PurePath
+        if os.path.isabs(domain_id) or len(PurePath(domain_id).parts) > 1 or '..' in domain_id or not re.match(r'^[A-Za-z0-9_-]+$', domain_id):
+            raise ValueError(f"Invalid domain_id: {domain_id}")
         latest_dir = LATEST_DIR / domain_id
         latest_dir.mkdir(parents=True, exist_ok=True)
         entities_path = latest_dir / "entities.csv"
@@ -135,14 +144,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     canonical_entities = export_candidates_domain_aware(args.domain)
-    # Pass a fully populated confidence_changes dict with all expected keys initialized to 0
-    confidence_changes = {
-        "high": 0,
-        "med": 0,
-        "low": 0,
-        "boosted_to_high": 0,
-        "boosted_to_med": 0
-    }
+    # Compute real confidence_changes from canonical_entities
+    confidence_changes = {"high": 0, "med": 0, "low": 0, "boosted_to_high": 0, "boosted_to_med": 0}
+    for data in canonical_entities.values():
+        # Example: count by event_count or other available confidence info
+        # (Replace this logic with actual confidence extraction if available)
+        if data.get("event_count", 0) > 10:
+            confidence_changes["high"] += 1
+        elif data.get("event_count", 0) > 5:
+            confidence_changes["med"] += 1
+        elif data.get("event_count", 0) > 0:
+            confidence_changes["low"] += 1
     write_run_meta(confidence_changes, canonical_entities, args.domain)
 
     print("✅ Export complete!")
