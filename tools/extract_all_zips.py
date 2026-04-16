@@ -20,13 +20,19 @@ def extract_all_zips(base_dir):
                                 abs_target.relative_to(abs_root)
                             except ValueError:
                                 print(f"  ⚠️  Skipping unsafe file in {zip_path}: {member.filename}")
+                                failures.append({
+                                    "zip_path": str(zip_path),
+                                    "member": member.filename,
+                                    "reason": "unsafe member"
+                                })
                                 continue
                             if member.is_dir():
                                 abs_target.mkdir(parents=True, exist_ok=True)
                             else:
                                 abs_target.parent.mkdir(parents=True, exist_ok=True)
-                                with abs_target.open('wb') as f:
-                                    f.write(zip_ref.read(member))
+                                import shutil
+                                with zip_ref.open(member) as src, abs_target.open('wb') as dst:
+                                    shutil.copyfileobj(src, dst, length=64 * 1024)
                 except zipfile.BadZipFile as e:
                     print(f"  ⚠️  Bad zip file {zip_path}: {e}")
                     failures.append(zip_path)

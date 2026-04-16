@@ -9,18 +9,17 @@ from unittest.mock import Mock, patch
 from utils.run_engine import main
 from utils.db_init import _init_db_schema
 
-def test_main_function_invalid_domain():
+def test_main_function_falsy_domain_uses_default():
     with tempfile.TemporaryDirectory() as temp_dir:
         input_dir = Path(temp_dir) / "input_pdfs"
         input_dir.mkdir()
         output_db = Path(temp_dir) / "test_output.sqlite"
-        _init_db_schema(str(output_db))
 
         # Create a mock PDF file
         test_pdf = input_dir / "test.pdf"
         test_pdf.write_text("Mock PDF content")
 
-        # Should handle invalid domain gracefully (uses default)
+        # Should handle falsy domain gracefully (uses default/fallback)
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open, \
              patch('utils.run_engine.extract_metadata') as mock_metadata, \
              patch('utils.run_engine.chunk_sentences') as mock_sentences:
@@ -35,7 +34,7 @@ def test_main_function_invalid_domain():
             mock_sentences.return_value = ['Test sentence.']
 
             main(
-                domain='invalid_domain',
+                domain='',  # Falsy domain triggers fallback
                 input_dir=str(input_dir),
                 db_path=str(output_db)
             )

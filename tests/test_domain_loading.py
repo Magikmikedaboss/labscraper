@@ -43,9 +43,9 @@ class TestDomainLoading:
                 assert len(_targets) == 2
                 assert len(_models) == 2
                 assert len(stopwords) == 2
-                assert 'compound1' in compounds
-                assert 'target1' in _targets
-                assert 'model1' in _models
+                assert 'COMPOUND1' in compounds
+                assert 'TARGET1' in _targets
+                assert 'MODEL1' in _models
                 assert 'stopword1' in stopwords
             finally:
                 os.chdir(original_cwd)
@@ -131,9 +131,9 @@ class TestDomainLoading:
                 compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
                 
                 assert len(compounds) == 2
-                assert 'compound1' in compounds
-                assert 'compound2' in compounds
-                assert 'comment' not in compounds
+                assert 'COMPOUND1' in compounds
+                assert 'COMPOUND2' in compounds
+                assert 'COMMENT' not in compounds
             finally:
                 os.chdir(original_cwd)
 
@@ -159,12 +159,12 @@ class TestDomainLoading:
                 compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
                 
                 assert len(compounds) == 3
-                assert 'uppercase' in compounds
-                assert 'lowercase' in compounds
-                assert 'mixedcase' in compounds
-                assert 'UPPERCASE' not in compounds  # Should be converted to lowercase
-                assert 'lowercase' in compounds
-                assert 'MixedCase' not in compounds  # Should be converted to lowercase
+                assert 'UPPERCASE' in compounds
+                assert 'LOWERCASE' in compounds
+                assert 'MIXEDCASE' in compounds
+                assert 'uppercase' not in compounds  # Should be converted to uppercase
+                assert 'lowercase' not in compounds
+                assert 'MixedCase' not in compounds  # Should be converted to uppercase
             finally:
                 os.chdir(original_cwd)
 

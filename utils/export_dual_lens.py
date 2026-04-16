@@ -272,9 +272,9 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
 
     latest_dir = Path("exports") / "latest" / domain_id
     latest_dir.mkdir(parents=True, exist_ok=True)
-    latest_entities_file = latest_dir / "entities.csv"
+    latest_entities_file = latest_dir / "entities_dual_lens.csv"
     shutil.copyfile(entities_file, latest_entities_file)
-    print(f"   ↳ Published latest entities: {latest_entities_file}")
+    print(f"   ↳ Published latest dual-lens entities: {latest_entities_file}")
     
     # Step 4: Export events with overlay scores
     print("\n📝 Step 4: Exporting events CSV...")

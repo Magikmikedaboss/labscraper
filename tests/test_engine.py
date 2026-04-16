@@ -51,5 +51,6 @@ def test_main_function_database_creation():
         tables = [row[0] for row in cursor.fetchall()]
         assert 'sources' in tables
         assert 'documents' in tables
+        cursor.close()
         conn.close()
         gc.collect()

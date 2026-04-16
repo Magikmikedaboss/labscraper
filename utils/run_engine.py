@@ -1,9 +1,15 @@
+# Re-export for test imports
+from utils.common import get_seeds, load_seed_file, sha16, sha64
+
+# Explicitly declare public API for re-exports
+__all__ = ["sha16", "sha64", "get_seeds", "load_seed_file"]
 # ---------------------------------------------------------
 # IMPORTS
 # ---------------------------------------------------------
 
 from pathlib import Path
 import sqlite3
+import sys
 import re
 import logging
 import argparse
@@ -14,7 +20,7 @@ import pdfplumber
 from tqdm import tqdm
 
 # Local utils
-from utils.common import sha16, sha64, get_seeds, load_seed_file  # Re-export for consumers
+from utils.common import sha16, sha64  # Re-export for consumers
 from utils.text_utils import chunk_sentences, guess_stage, guess_section
 from utils.entities import extract_entities
 from utils.data_extractors import extract_quantitative_data
@@ -149,11 +155,11 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with sqlite3.connect(db_path) as con:
 
+    with sqlite3.connect(db_path) as con:
+        success_count = 0
         for pdf_path in tqdm(pdfs, desc="PDFs"):
             print(f"Processing: {pdf_path.name}")
-
             try:
                 with open(pdf_path, "rb") as f:
                     file_bytes = f.read()
@@ -163,40 +169,29 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                 file_hash = sha64(str(pdf_path) + content_hash)
 
                 with pdfplumber.open(str(pdf_path)) as pdf:
-
                     metadata = extract_metadata(pdf_path, pdf)
                     upsert_source(con, source_id, pdf_path.name, metadata)
-
                     doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
-
                     for page_idx, page in enumerate(pdf.pages, start=1):
                         text = page.extract_text() or ""
-
                         if not text.strip():
                             continue
-
                         section = guess_section(text.lower())
-
                         chunk_id = insert_chunk(
                             con, source_id, doc_id, page_idx, section, text
                         )
-
                         for sent in chunk_sentences(text):
                             s_l = sent.lower()
-
                             quantitative = extract_quantitative_data(sent)
                             tags = detect_method_tags(s_l)
                             decision_taken, decision_driver = detect_decision(s_l)
-
                             has_failure_phrase = any(
                                 p in s_l for lst in FAILURE_PHRASES.values() for p in lst
                             )
                             has_method_tag = bool(tags)
                             has_decision = bool(decision_taken)
-
                             if not quantitative and not has_failure_phrase and not has_method_tag and not has_decision:
                                 continue
-
                             failure_reason = detect_failure_reason(s_l)
                             outcome = detect_outcome(s_l)
                             stage = guess_stage(s_l)
@@ -204,9 +199,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 s_l, tags, failure_reason, decision_taken
                             )
                             strength = evidence_strength(s_l)
-
                             entities = extract_entities(sent, research_domain)
-
                             conf = confidence_score(
                                 bool(entities),
                                 tags,
@@ -215,7 +208,6 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 bool(quantitative),
                                 s_l,
                             )
-
                             event_id = insert_event(
                                 con,
                                 source_id,
@@ -235,7 +227,6 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 strength,
                                 conf,
                             )
-
                             for ent in entities:
                                 entity_id = upsert_entity(
                                     con,
@@ -247,15 +238,15 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 link_event_entity(
                                     con, event_id, entity_id, ent.get("role", "")
                                 )
-
                             for tag in tags:
                                 link_event_tag(con, event_id, tag)
-
                             for m in quantitative:
                                 insert_measurement(con, event_id, m)
-
-            except Exception as e:
-                print(f"⚠️ Error processing {pdf_path.name}: {e}")
+                    success_count += 1
+            except Exception:
+                logging.exception("⚠️ Error processing %s", pdf_path)
+        if success_count == 0:
+            sys.exit(1)
 
 
 # ---------------------------------------------------------

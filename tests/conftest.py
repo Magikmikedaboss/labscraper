@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from utils.db_init import _init_db_schema
 
 @pytest.fixture(scope="function")

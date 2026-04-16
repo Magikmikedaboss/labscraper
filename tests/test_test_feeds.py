@@ -1,6 +1,6 @@
 import pytest
 import json
-from utils.validators import validate_feed_config, validate_file_path
+from utils.validators import validate_feed_config, validate_file_path, ValidationError
 
 # Test for tools/test_feeds.py coverage (lines 40–57, 51–55, 92–93, 95)
 def test_validate_feed_config_valid(tmp_path):
@@ -21,9 +21,7 @@ def test_validate_feed_config_invalid(tmp_path):
         json.dump(config, f)
     with open(path, encoding="utf-8") as f:
         loaded = json.load(f)
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(ValidationError, match="Missing required field"):
         validate_feed_config(loaded)
-    # Accept either project ValidationError or ValueError for flexibility
-    assert exc_info.type.__name__ in ("ValidationError", "ValueError")
 
 # Add more tests for probe_feed, error handling, and save-working logic as needed

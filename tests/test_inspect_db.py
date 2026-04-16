@@ -1,5 +1,4 @@
 from utils.db_utils import inspect_database
-from pathlib import Path
 
 # Test for lines 38–46, 52–53, 55, 59 in tools/inspect_db.py
 

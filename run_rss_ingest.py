@@ -174,8 +174,8 @@ def load_feeds_config(feeds_config_path: Path | None = None):
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             return validate_feed_config(json.load(f))
-    except json.JSONDecodeError as err:
-        raise ValidationError(f"Invalid JSON in {config_path}: {err}") from err
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as err:
+        raise ValidationError(f"Failed to load config {config_path}: {err}") from err
 
 def get_pdf_links_from_feed(feed_url):
     """Extract PDF links from RSS feed entries"""
