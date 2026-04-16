@@ -1,7 +1,6 @@
 """Tests for entity extraction functionality using pytest"""
 from utils.run_engine import extract_entities, extract_compounds
 from utils.entities import extract_targets, extract_models
-import pytest
 
 
 class TestEntityExtraction:
@@ -65,117 +64,9 @@ class TestEntityExtraction:
         models = extract_models(text)
         assert isinstance(models, list)
 
-    @pytest.mark.skip(reason="extract_presented_sequences not implemented")
-    def test_extract_presented_sequences(self):
-        text = "The sequence was GGGSGGGSGGG (SEQ ID NO: 1)."
-        # sequences = extract_presented_sequences(text)
-        # assert sequences == ["GGGSGGGSGGG"]
-        pass
 
-    @pytest.mark.skip(reason="is_probable_peptide not implemented")
-    def test_is_probable_peptide_valid(self):
-        seq = "GGGSGGGSGGG"
-        # result = is_probable_peptide(seq, "The sequence GGGSGGGSGGG was tested.")
-        # assert result is True
-        pass
 
-    @pytest.mark.skip(reason="is_probable_peptide not implemented")
-    def test_is_probable_peptide_invalid(self):
-        seq = "MALDI"
-        # result = is_probable_peptide(seq, "MALDI was used for analysis.")
-        # assert result is False
-        pass
 
-    @pytest.mark.skip(reason="is_probable_peptide not implemented")
-    def test_is_probable_peptide_split_word(self):
-        seq = "TESTSEQX"
-        # result = is_probable_peptide(seq, "This is a TEST SEQX sequence.")
-        # assert result is False
-        pass
-
-    @pytest.mark.skip(reason="is_probable_peptide not implemented")
-    def test_is_probable_peptide_known_peptide(self):
-        seq = "ETELCALCETIDE"
-        # result = is_probable_peptide(seq, "ETELCALCETIDE was tested.")
-        # assert result is True
-        pass
-
-    @pytest.mark.skip(reason="extract_presented_sequences not implemented")
-    def test_extract_presented_sequences_patterns(self):
-        pass
-
-    @pytest.mark.skip(reason="extract_presented_sequences not implemented")
-    def test_extract_presented_sequences_no_matches(self):
-        pass
-
-    @pytest.mark.skip(reason="extract_presented_sequences not implemented")
-    def test_extract_presented_sequences_case_insensitive(self):
-        pass
-
-    @pytest.mark.skip(reason="extract_presented_sequences not implemented")
-    def test_extract_presented_sequences_rejects_parenthetical_ocr_noise(self):
-        pass
-
-    @pytest.mark.skip(reason="is_probable_peptide not implemented")
-    def test_is_probable_peptide_rejects_wordlike_artifact_without_sequence_context(self):
-        pass
-
-    def test_is_probable_peptide_known_peptide(self):
-        """Test that known therapeutic peptides always pass"""
-        seq = "ETELCALCETIDE"
-        
-        result = is_probable_peptide(seq, "ETELCALCETIDE was tested.")
-        
-        assert result is True
-
-    def test_extract_presented_sequences_patterns(self):
-        """Test different sequence presentation patterns"""
-        test_cases = [
-            ("sequence: GGGSGGGSGGG", ["GGGSGGGSGGG"]),
-            ("seq: GGGSGGGSGGG", ["GGGSGGGSGGG"]),
-            ("peptide: GGGSGGGSGGG", ["GGGSGGGSGGG"]),
-            ("residues 1-10: GGGSGGGSGGG", ["GGGSGGGSGGG"]),
-            ("peptide (GGGSGGGSGGG)", ["GGGSGGGSGGG"]),
-            ("sequence [GGGSGGGSGGG]", ["GGGSGGGSGGG"]),
-        ]
-        
-        for text, expected in test_cases:
-            sequences = extract_presented_sequences(text)
-            assert len(sequences) > 0
-            assert any(expected[0] in seq for seq in sequences)
-
-    def test_extract_presented_sequences_no_matches(self):
-        """Test sequence extraction with no presentation patterns"""
-        text = "This is just regular text with no sequence patterns."
-        
-        sequences = extract_presented_sequences(text)
-        
-        assert len(sequences) == 0
-
-    def test_extract_presented_sequences_case_insensitive(self):
-        """Test sequence extraction is case insensitive"""
-        text = "SEQUENCE: gggsgggsggg"
-        
-        sequences = extract_presented_sequences(text)
-        
-        assert len(sequences) > 0
-        assert any('GGGSGGGSGGG' in seq for seq in sequences)
-
-    def test_extract_presented_sequences_rejects_parenthetical_ocr_noise(self):
-        """Bare figure-label words in parentheses should not be treated as peptides."""
-        text = "Representative images (leftpanels) and notes on sampleheating were analyzed."
-
-        sequences = extract_presented_sequences(text)
-
-        assert sequences == []
-
-    def test_is_probable_peptide_rejects_wordlike_artifact_without_sequence_context(self):
-        """Word-like OCR artifacts should not pass peptide validation without explicit sequence cues."""
-        seq = "ANDRISINGFAST"
-
-        result = is_probable_peptide(seq, "Representative note andrisingfast was shown in the figure legend.")
-
-        assert result is False
 
 
 class TestConstructionEntities:

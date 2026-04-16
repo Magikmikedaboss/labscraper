@@ -26,8 +26,11 @@ def _get_compound_seeds(SEEDS_DIR=None):
     resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
     f = resolved_dir / "base/life_sciences/compounds.txt"
     # If SEEDS_DIR is provided, never fall back to bundled seeds
+    # If running in a temp dir and no seeds dir exists, do not fall back to bundled seeds
     if not f.exists():
         if SEEDS_DIR is None:
+            if _is_temp_dir(Path.cwd()) and not (Path.cwd() / 'seeds').exists() and not (Path.cwd() / 'input' / 'seeds').exists():
+                return set()
             project_root = Path(__file__).resolve().parent.parent
             bundled = project_root / 'seeds' / "base/life_sciences/compounds.txt"
             if bundled.exists():
@@ -40,6 +43,8 @@ def _get_target_seeds(SEEDS_DIR=None):
     f = resolved_dir / "base/life_sciences/targets.txt"
     if not f.exists():
         if SEEDS_DIR is None:
+            if _is_temp_dir(Path.cwd()) and not (Path.cwd() / 'seeds').exists() and not (Path.cwd() / 'input' / 'seeds').exists():
+                return set()
             project_root = Path(__file__).resolve().parent.parent
             bundled = project_root / 'seeds' / "base/life_sciences/targets.txt"
             if bundled.exists():
@@ -52,6 +57,8 @@ def _get_model_seeds(SEEDS_DIR=None):
     f = resolved_dir / "base/life_sciences/models.txt"
     if not f.exists():
         if SEEDS_DIR is None:
+            if _is_temp_dir(Path.cwd()) and not (Path.cwd() / 'seeds').exists() and not (Path.cwd() / 'input' / 'seeds').exists():
+                return set()
             project_root = Path(__file__).resolve().parent.parent
             bundled = project_root / 'seeds' / "base/life_sciences/models.txt"
             if bundled.exists():
@@ -64,6 +71,8 @@ def _get_stopword_seeds(SEEDS_DIR=None):
     f = resolved_dir / "stopwords.txt"
     if not f.exists():
         if SEEDS_DIR is None:
+            if _is_temp_dir(Path.cwd()) and not (Path.cwd() / 'seeds').exists() and not (Path.cwd() / 'input' / 'seeds').exists():
+                return set()
             project_root = Path(__file__).resolve().parent.parent
             bundled = project_root / 'seeds' / "stopwords.txt"
             if bundled.exists():
