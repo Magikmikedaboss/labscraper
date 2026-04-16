@@ -1,5 +1,6 @@
 """Tests for entity extraction functionality using pytest"""
-from utils.run_engine import extract_entities, extract_compounds
+from utils.run_engine import extract_entities
+from utils.entities import extract_compounds
 from utils.entities import extract_targets, extract_models
 
 

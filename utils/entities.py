@@ -89,6 +89,21 @@ def extract_models(sentence: str) -> list[dict]:
                 "text": sentence
             })
     return models
+def extract_presented_sequences(sentence: str) -> list:
+    # Simple regex for peptide sequences (e.g., GGGSGGGSGGG, SEQ ID NO: 1)
+    # Matches uppercase letters (A-Z) of length >=5, optionally with spaces, and optionally with (SEQ ID NO: n)
+    seqs = []
+    # Find AA sequences (10+ uppercase letters, no spaces)
+    seqs += re.findall(r'\b[A-Z]{5,}\b', sentence)
+    # Find sequences in (SEQ ID NO: n) format
+    seqid_matches = re.findall(r'([A-Z]{3,}\s*\(SEQ ID NO: \d+\))', sentence)
+    seqs += [m.split('(')[0].strip() for m in seqid_matches]
+    return seqs
+
+def is_probable_peptide(seq: str, sentence: str) -> bool:
+    # Heuristic: only ACGT or 1-letter AA codes, length >=5
+    return bool(re.fullmatch(r'[ACDEFGHIKLMNPQRSTVWY]{5,}', seq)) or len(seq) >= 10
+
 # --- Entity extraction (domain aware) ---
 def extract_entities(sentence: str, domain: str = "methods_tooling") -> list[dict]:
     ents = []
@@ -261,18 +276,17 @@ def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dic
                 })
                 extracted_names.add(name)
     # 2) PEPTIDE SEQUENCES: Only if NOT already a compound
-    # extract_presented_sequences and is_probable_peptide must be implemented
-    # presented_seqs = extract_presented_sequences(sentence)
-    # for seq in presented_seqs:
-    #     if is_probable_peptide(seq, sentence) and seq not in extracted_names:
-    #         ents.append({
-    #             "entity_type": "peptide",
-    #             "entity_name": seq,
-    #             "entity_variant": None,
-    #             "role": "tested",
-    #             "text": sentence
-    #         })
-    #         extracted_names.add(seq)
+    presented_seqs = extract_presented_sequences(sentence)
+    for seq in presented_seqs:
+        if is_probable_peptide(seq, sentence) and seq not in extracted_names:
+            ents.append({
+                "entity_type": "peptide",
+                "entity_name": seq,
+                "entity_variant": None,
+                "role": "tested",
+                "text": sentence
+            })
+            extracted_names.add(seq)
     for target in _get_target_seeds():
         if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
             name = target.upper()

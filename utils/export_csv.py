@@ -44,7 +44,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                         MIN(e.entity_id) as entity_id,
                         e.entity_type,
                         n.entity_name as canonical_name,
-                        MIN(e.entity_variant) as entity_variant,
+                        GROUP_CONCAT(DISTINCT e.entity_variant) as entity_variant,
                         COUNT(DISTINCT ee.event_id) as event_count,
                         GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
                         MIN(re.created_at) as first_seen,
@@ -53,7 +53,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                     JOIN event_entities ee ON e.entity_id = ee.entity_id
                     JOIN research_events re ON ee.event_id = re.event_id
                     JOIN (
-                        SELECT entity_id, entity_type, entity_name, entity_variant
+                        SELECT entity_type, entity_name
                         FROM entities
                     ) n ON n.entity_type = e.entity_type AND n.entity_name = e.entity_name
                     WHERE re.research_domain = ?

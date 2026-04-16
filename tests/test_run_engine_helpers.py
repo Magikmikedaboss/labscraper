@@ -14,12 +14,12 @@ from utils.run_engine import (
     evidence_strength,
     extract_metadata,
     extract_quantitative_data,
-    extract_relationships,
     guess_section,
     guess_stage,
     sha16,
     sha64,
 )
+from utils.data_extractors import extract_relationships
 from utils.common import now_iso
 from utils.event_classification import suggested_keep
 from utils.deduplication import normalize_event_key
