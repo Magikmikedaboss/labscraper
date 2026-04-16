@@ -44,7 +44,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                         MIN(e.entity_id) as entity_id,
                         e.entity_type,
                         n.entity_name as canonical_name,
-                        e.entity_variant,
+                        MIN(e.entity_variant) as entity_variant,
                         COUNT(DISTINCT ee.event_id) as event_count,
                         GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
                         MIN(re.created_at) as first_seen,
@@ -57,7 +57,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                         FROM entities
                     ) n ON n.entity_type = e.entity_type AND n.entity_name = e.entity_name
                     WHERE re.research_domain = ?
-                    GROUP BY e.entity_type, n.entity_name, e.entity_variant
+                    GROUP BY e.entity_type, n.entity_name
                     ORDER BY event_count DESC
                 """, (domain_id,)).fetchall()
         else:
@@ -144,11 +144,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     canonical_entities = export_candidates_domain_aware(args.domain)
-    # Compute real confidence_changes from canonical_entities
+    # Compute real confidence_changes from canonical_entities (placeholder: use actual counters if available)
     confidence_changes = {"high": 0, "med": 0, "low": 0, "boosted_to_high": 0, "boosted_to_med": 0}
+    # TODO: Replace with actual confidence counters from event export path if available
     for data in canonical_entities.values():
-        # Example: count by event_count or other available confidence info
-        # (Replace this logic with actual confidence extraction if available)
         if data.get("event_count", 0) > 10:
             confidence_changes["high"] += 1
         elif data.get("event_count", 0) > 5:

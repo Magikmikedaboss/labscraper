@@ -33,7 +33,7 @@ def detect_multi_lens(
     else:
         selected_lenses = list(LENS_REGISTRY.keys())
 
-    confidence_rank = {"low": 1, "med": 2, "high": 3}
+    confidence_rank = {"low": 1, "med": 2, "medium": 2, "high": 3}
     context_rank = {"weak": 1, "moderate": 2, "strong": 3}
 
     for lens_name in selected_lenses:
@@ -41,7 +41,12 @@ def detect_multi_lens(
         if detector is None:
             continue
 
-        event, entities = detector(sentence, source_type=source_type)
+        try:
+            event, entities = detector(sentence, source_type=source_type)
+        except Exception as e:
+            import logging
+            logging.error(f"Lens '{lens_name}' detector error: {e}")
+            continue
         if event is None:
             continue
 

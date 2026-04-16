@@ -6,12 +6,15 @@ def chunk_sentences(text: str) -> List[str]:
     return [p.strip() for p in parts if p.strip()]
 
 def guess_stage(sentence_l: str) -> str:
-    if any(k in sentence_l for k in ["in vivo", "mouse", "rat", "animal model"]):
-        return "in_vivo"
-    if any(k in sentence_l for k in ["in vitro", "cell line", "cells", "culture"]):
-        return "in_vitro"
-    if any(k in sentence_l for k in ["clinical", "patients", "phase i", "phase ii", "randomized"]):
-        return "clinical"
+    stage_keywords = {
+        "in_vivo": ["in vivo", "mouse", "rat", "animal model"],
+        "in_vitro": ["in vitro", "cell line", "cells", "culture"],
+        "clinical": ["clinical", "patients", "phase i", "phase ii", "randomized"],
+    }
+    for stage, keywords in stage_keywords.items():
+        for k in keywords:
+            if re.search(r'\b' + re.escape(k) + r'\b', sentence_l):
+                return stage
     return "unknown"
 
 def guess_section(page_text_l: str) -> str:

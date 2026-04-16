@@ -28,7 +28,7 @@ DECISION_PHRASES = {
     "continued": ["further study", "continued", "follow-up", "subsequently", "next we", "we decided", "decided to", "chose to"],
     "paused": ["inconclusive", "unclear", "requires further investigation", "pending"],
     "replicated": ["replicated", "repeated", "validated", "confirmed"],
-    "escalated": ["advanced to", "moved to", "in vivo", "clinical", "progressed to"],
+    "escalated": ["advanced to", "moved to", "progressed to"],
 }
 
 OUTCOME_PHRASES = {

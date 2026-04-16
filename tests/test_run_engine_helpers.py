@@ -17,11 +17,8 @@ from utils.run_engine import (
     extract_relationships,
     guess_section,
     guess_stage,
-    normalize_event_key,
-    now_iso,
     sha16,
     sha64,
-    suggested_keep,
 )
 
 

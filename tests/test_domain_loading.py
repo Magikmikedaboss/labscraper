@@ -37,13 +37,7 @@ class TestDomainLoading:
                 import os
                 os.chdir(temp_dir)
                 
-                # Clear the cache to ensure fresh loading
-                utils.run_engine._get_compound_seeds.cache_clear()
-                utils.run_engine._get_target_seeds.cache_clear()
-                utils.run_engine._get_model_seeds.cache_clear()
-                utils.run_engine._get_stopword_seeds.cache_clear()
-                
-                compounds, _targets, _models, stopwords = get_seeds()
+                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
                 
                 assert len(compounds) == 2
                 assert len(_targets) == 2
@@ -75,13 +69,7 @@ class TestDomainLoading:
                 import os
                 os.chdir(temp_dir)
                 
-                # Clear the cache to ensure fresh loading
-                utils.run_engine._get_compound_seeds.cache_clear()
-                utils.run_engine._get_target_seeds.cache_clear()
-                utils.run_engine._get_model_seeds.cache_clear()
-                utils.run_engine._get_stopword_seeds.cache_clear()
-                
-                compounds, _targets, _models, stopwords = get_seeds()
+                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
                 
                 assert len(compounds) == 2
                 assert len(_targets) == 0
@@ -112,13 +100,7 @@ class TestDomainLoading:
                 import os
                 os.chdir(temp_dir)
                 
-                # Clear the cache to ensure fresh loading
-                utils.run_engine._get_compound_seeds.cache_clear()
-                utils.run_engine._get_target_seeds.cache_clear()
-                utils.run_engine._get_model_seeds.cache_clear()
-                utils.run_engine._get_stopword_seeds.cache_clear()
-                
-                compounds, _targets, _models, stopwords = get_seeds()
+                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
                 
                 assert len(compounds) == 0
                 assert len(_targets) == 0
@@ -146,13 +128,7 @@ class TestDomainLoading:
                 import os
                 os.chdir(temp_dir)
                 
-                # Clear the cache to ensure fresh loading
-                utils.run_engine._get_compound_seeds.cache_clear()
-                utils.run_engine._get_target_seeds.cache_clear()
-                utils.run_engine._get_model_seeds.cache_clear()
-                utils.run_engine._get_stopword_seeds.cache_clear()
-                
-                compounds, _targets, _models, stopwords = get_seeds()
+                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
                 
                 assert len(compounds) == 2
                 assert 'compound1' in compounds
@@ -180,13 +156,7 @@ class TestDomainLoading:
                 import os
                 os.chdir(temp_dir)
                 
-                # Clear the cache to ensure fresh loading
-                utils.run_engine._get_compound_seeds.cache_clear()
-                utils.run_engine._get_target_seeds.cache_clear()
-                utils.run_engine._get_model_seeds.cache_clear()
-                utils.run_engine._get_stopword_seeds.cache_clear()
-                
-                compounds, _targets, _models, stopwords = get_seeds()
+                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
                 
                 assert len(compounds) == 3
                 assert 'uppercase' in compounds
@@ -208,12 +178,6 @@ class TestDomainLoading:
             try:
                 import os
                 os.chdir(temp_dir)
-                
-                # Clear the cache to ensure fresh loading
-                utils.run_engine._get_compound_seeds.cache_clear()
-                utils.run_engine._get_target_seeds.cache_clear()
-                utils.run_engine._get_model_seeds.cache_clear()
-                utils.run_engine._get_stopword_seeds.cache_clear()
                 
                 compounds, _targets, _models, stopwords = get_seeds()
                 

@@ -1,9 +1,7 @@
-
 # Entrypoint will be placed at the end of the file
 import re
 import sqlite3
 import argparse
- 
 import logging
 from pathlib import Path
 
@@ -11,11 +9,12 @@ from pathlib import Path
 import pdfplumber
 from tqdm import tqdm
 
+
 # Local imports
 from utils.common import sha16, sha64
 from utils.text_utils import chunk_sentences, guess_stage, guess_section
-from utils.entities import extract_entities
-from utils.data_extractors import extract_quantitative_data
+from utils.entities import extract_entities, extract_compounds
+from utils.data_extractors import extract_quantitative_data, extract_relationships
 from utils.event_classification import (
     METHOD_TAGS,
     FAILURE_PHRASES,
@@ -32,6 +31,29 @@ from utils.db_utils import (
     upsert_source, insert_document, insert_chunk, upsert_entity, insert_event,
     link_event_entity, link_event_tag, insert_measurement
 )
+
+# Use plain text loader for text seeds
+from utils.common import load_seed_file
+
+# Re-export for backward compatibility
+__all__ = [
+    "load_seed_file",
+    "extract_compounds",
+    "extract_relationships",
+    "extract_entities",
+]
+
+# --- Seed loading for backward compatibility ---
+from utils.common import _get_compound_seeds, _get_target_seeds, _get_model_seeds, _get_stopword_seeds
+
+def get_seeds(SEEDS_DIR=None):
+    """Return (compounds, targets, models, stopwords) as sets."""
+    return (
+        _get_compound_seeds(SEEDS_DIR),
+        _get_target_seeds(SEEDS_DIR),
+        _get_model_seeds(SEEDS_DIR),
+        _get_stopword_seeds(SEEDS_DIR),
+    )
 
 
 # Define SEEDS_DIR relative to the project root (repo root)
@@ -157,17 +179,27 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
         for pdf_path in tqdm(pdfs, desc="PDFs"):
             print(f"Processing PDF: {pdf_path}")
             try:
-                # create stable-ish ids
-                source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
-                file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
+                # create stable-ish ids using file content hash and relative path
+                try:
+                    rel_path = str(pdf_path.relative_to(project_root))
+                except ValueError:
+                    # Fallback: use os.path.relpath or str(pdf_path) as stable alternative
+                    try:
+                        import os
+                        rel_path = os.path.relpath(str(pdf_path), str(project_root))
+                    except Exception:
+                        rel_path = str(pdf_path)
+                with open(pdf_path, "rb") as f:
+                    file_bytes = f.read()
+                content_hash = sha16(file_bytes.hex())
+                source_id = sha16(f"{rel_path}|{content_hash}")
+                file_hash = sha64(f"{rel_path}|{content_hash}")
 
                 with pdfplumber.open(str(pdf_path)) as pdf:
                     # Extract metadata
                     metadata = extract_metadata(pdf_path, pdf)
                     upsert_source(con, source_id, pdf_path.name, metadata)
                     doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
-
-
 
                     for page_idx, page in enumerate(pdf.pages, start=1):
                         try:
@@ -179,11 +211,13 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                             # sentence scan
                             for sent in chunk_sentences(text):
                                 s_l = sent.lower()
-                                # keep only sentences with any signal
+                                # keep only sentences with any signal or quantitative data
+                                quantitative = extract_quantitative_data(sent)
                                 has_signal = (
                                     any(p in s_l for lst in FAILURE_PHRASES.values() for p in lst) or
                                     any(p in s_l for lst in DECISION_PHRASES.values() for p in lst) or
-                                    any(p in s_l for lst in METHOD_TAGS.values() for p in lst)
+                                    any(p in s_l for lst in METHOD_TAGS.values() for p in lst) or
+                                    bool(quantitative)
                                 )
                                 if not has_signal:
                                     continue
@@ -195,7 +229,6 @@ def main(domain: str | None = None, input_dir: Path | None = None, db_path: Path
                                 event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                                 strength = evidence_strength(s_l)
                                 entities = extract_entities(sent, research_domain)
-                                quantitative = extract_quantitative_data(sent)
                                 # Compute confidence
                                 conf = confidence_score(bool(entities), tags, failure_reason, decision_taken, bool(quantitative), s_l)
                                 # Insert event

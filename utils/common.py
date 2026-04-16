@@ -1,39 +1,75 @@
-
-import functools
 import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
+import tempfile
 
 # Lazy-loaded seed file caches
 def _resolve_seeds_dir(SEEDS_DIR=None):
-    """Resolve the seeds directory, preferring input/seeds if it exists."""
+    """Resolve the seeds directory, preferring input/seeds if it exists. If SEEDS_DIR is absolute, use as is."""
     if SEEDS_DIR is not None:
-        return SEEDS_DIR
+        p = Path(SEEDS_DIR)
+        return p if p.is_absolute() else (Path.cwd() / p)
     project_root = Path(__file__).resolve().parent.parent
     input_seeds = project_root / 'input' / 'seeds'
     if input_seeds.exists():
         return input_seeds
     return project_root / 'seeds'
 
-@functools.lru_cache(maxsize=1)
+def _is_temp_dir(path):
+    try:
+        temp_root = str(Path(tempfile.gettempdir()).resolve())
+        return str(Path(path).resolve()).startswith(temp_root)
+    except Exception:
+        return False
+
 def _get_compound_seeds(SEEDS_DIR=None):
     resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-    return load_seed_file(resolved_dir / "base/life_sciences/compounds.txt")
+    f = resolved_dir / "base/life_sciences/compounds.txt"
+    # If SEEDS_DIR is provided, never fall back to bundled seeds
+    if not f.exists():
+        if SEEDS_DIR is None:
+            project_root = Path(__file__).resolve().parent.parent
+            bundled = project_root / 'seeds' / "base/life_sciences/compounds.txt"
+            if bundled.exists():
+                return load_seed_file(bundled)
+        return set()
+    return load_seed_file(f)
 
-@functools.lru_cache(maxsize=1)
 def _get_target_seeds(SEEDS_DIR=None):
     resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-    return load_seed_file(resolved_dir / "base/life_sciences/targets.txt")
+    f = resolved_dir / "base/life_sciences/targets.txt"
+    if not f.exists():
+        if SEEDS_DIR is None:
+            project_root = Path(__file__).resolve().parent.parent
+            bundled = project_root / 'seeds' / "base/life_sciences/targets.txt"
+            if bundled.exists():
+                return load_seed_file(bundled)
+        return set()
+    return load_seed_file(f)
 
-@functools.lru_cache(maxsize=1)
 def _get_model_seeds(SEEDS_DIR=None):
     resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-    return load_seed_file(resolved_dir / "base/life_sciences/models.txt")
+    f = resolved_dir / "base/life_sciences/models.txt"
+    if not f.exists():
+        if SEEDS_DIR is None:
+            project_root = Path(__file__).resolve().parent.parent
+            bundled = project_root / 'seeds' / "base/life_sciences/models.txt"
+            if bundled.exists():
+                return load_seed_file(bundled)
+        return set()
+    return load_seed_file(f)
 
-@functools.lru_cache(maxsize=1)
 def _get_stopword_seeds(SEEDS_DIR=None):
     resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-    return load_seed_file(resolved_dir / "stopwords.txt")
+    f = resolved_dir / "stopwords.txt"
+    if not f.exists():
+        if SEEDS_DIR is None:
+            project_root = Path(__file__).resolve().parent.parent
+            bundled = project_root / 'seeds' / "stopwords.txt"
+            if bundled.exists():
+                return load_seed_file(bundled)
+        return set()
+    return load_seed_file(f)
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")

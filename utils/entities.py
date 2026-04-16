@@ -18,7 +18,7 @@ def extract_compounds(sentence: str) -> list[dict]:
     s_l = sentence.lower()
     extracted_names = set()
     for compound in _get_compound_seeds():
-        if re.search(r'\\b' + re.escape(compound) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
             name = compound.upper()
             if name not in extracted_names:
                 compounds.append({
@@ -35,7 +35,7 @@ def extract_compounds(sentence: str) -> list[dict]:
 def extract_targets(sentence: str) -> list[dict]:
     targets = []
     for target in _get_target_seeds():
-        if re.search(r'\\b' + re.escape(target) + r'\\b', sentence, re.IGNORECASE):
+        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
             targets.append({
                 "entity_type": "target",
                 "entity_name": target.upper(),
@@ -50,7 +50,7 @@ def extract_models(sentence: str) -> list[dict]:
     models = []
     s_l = sentence.lower()
     for model in _get_model_seeds():
-        if re.search(r'\\b' + re.escape(model) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(model) + r'\b', s_l):
             variant = "unknown"
             if any(char.isdigit() for char in model) or '-' in model:
                 variant = "cell_line"
@@ -72,8 +72,23 @@ def extract_models(sentence: str) -> list[dict]:
                 "entity_variant": variant,
                 "text": sentence
             })
-    return models
 
+    # Fallback: extract common model terms even if not in seeds
+    fallback_models = [
+        "mouse", "mice", "rat", "rats", "human", "humans", "rabbit", "guinea pig",
+        "hamster", "zebrafish", "drosophila", "c. elegans", "xenopus", "primate",
+        "pig", "dog", "HEK293", "293T", "CHO", "COS-7", "HeLa", "U2OS", "SH-SY5Y"
+    ]
+    for fm in fallback_models:
+        if re.search(r'\b' + re.escape(fm.lower()) + r'\b', s_l):
+            variant = "cell_line" if any(char.isdigit() for char in fm) or '-' in fm or fm.isupper() else "organism"
+            models.append({
+                "entity_type": "model",
+                "entity_name": fm.upper() if fm.isupper() or len(fm) <= 5 else fm.capitalize(),
+                "entity_variant": variant,
+                "text": sentence
+            })
+    return models
 # --- Entity extraction (domain aware) ---
 def extract_entities(sentence: str, domain: str = "methods_tooling") -> list[dict]:
     ents = []
@@ -111,7 +126,7 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
         "corrosion", "weathering", "thermal", "fire", "seismic", "load", "stress", "strain"
     }
     for material in construction_materials:
-        if re.search(r'\\b' + re.escape(material) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(material) + r'\b', s_l):
             name = material.upper()
             if name not in extracted_names:
                 ents.append({
@@ -122,7 +137,7 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
                 })
                 extracted_names.add(name)
     for system in construction_systems:
-        if re.search(r'\\b' + re.escape(system) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(system) + r'\b', s_l):
             name = system.upper()
             if name not in extracted_names:
                 ents.append({
@@ -133,7 +148,7 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
                 })
                 extracted_names.add(name)
     for env in environmental_exposures:
-        if re.search(r'\\b' + re.escape(env) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(env) + r'\b', s_l):
             name = env.upper()
             if name not in extracted_names:
                 ents.append({
@@ -144,7 +159,7 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
                 })
                 extracted_names.add(name)
     for failure in failure_modes:
-        if re.search(r'\\b' + re.escape(failure) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(failure) + r'\b', s_l):
             name = failure.upper()
             if name not in extracted_names:
                 ents.append({
@@ -155,7 +170,7 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
                 })
                 extracted_names.add(name)
     for hazard in hazards:
-        if re.search(r'\\b' + re.escape(hazard) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(hazard) + r'\b', s_l):
             name = hazard.upper()
             if name not in extracted_names:
                 ents.append({
@@ -166,7 +181,7 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
                 })
                 extracted_names.add(name)
     for test in test_methods:
-        if re.search(r'\\b' + re.escape(test) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(test) + r'\b', s_l):
             name = test.upper()
             if name not in extracted_names:
                 ents.append({
@@ -181,8 +196,60 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
 def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dict]:
     ents = []
     s_l = sentence.lower()
+    # Compound extraction
     for compound in _get_compound_seeds():
-        if re.search(r'\\b' + re.escape(compound) + r'\\b', s_l):
+        if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
+            name = compound.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "compound",
+                    "entity_name": name,
+                    "entity_variant": "drug",
+                    "role": "tested",
+                    "text": sentence
+                })
+                extracted_names.add(name)
+
+    # Target extraction
+    for target in _get_target_seeds():
+        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
+            name = target.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "target",
+                    "entity_name": name,
+                    "entity_variant": "protein",
+                    "role": "target",
+                    "text": sentence
+                })
+                extracted_names.add(name)
+
+    # Model extraction
+    for e in extract_models(sentence):
+        name_lower = e["entity_name"].lower()
+        if any(neural in name_lower for neural in ["neuron", "neurons", "microglia", "astrocyte", "astrocytes"]):
+            e["entity_type"] = "neural_cell"
+        if e["entity_name"] not in extracted_names:
+            e["text"] = sentence
+            ents.append(e)
+            extracted_names.add(e["entity_name"])
+
+    # Explicit neural cell extraction
+    neural_cell_terms = ["neuron", "neurons", "microglia", "astrocyte", "astrocytes"]
+    for nc in neural_cell_terms:
+        if re.search(r'\b' + re.escape(nc) + r'\b', s_l):
+            name = nc.upper()
+            if name not in extracted_names:
+                ents.append({
+                    "entity_type": "neural_cell",
+                    "entity_name": name,
+                    "entity_variant": None,
+                    "role": "tested",
+                    "text": sentence
+                })
+                extracted_names.add(name)
+    for compound in _get_compound_seeds():
+        if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
             name = compound.upper()
             if name not in extracted_names:
                 ents.append({
@@ -207,7 +274,7 @@ def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dic
     #         })
     #         extracted_names.add(seq)
     for target in _get_target_seeds():
-        if re.search(r'\\b' + re.escape(target) + r'\\b', sentence, re.IGNORECASE):
+        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
             name = target.upper()
             if name not in extracted_names:
                 ents.append({
