@@ -31,7 +31,7 @@ class TestDomainLoading:
             stopwords_file.write_text("# Stopwords\nstopword1\nstopword2\n")
             
             # Change working directory to temp_dir and clear cache
-            import utils.run_engine
+            # import utils.run_engine  # Removed unused import
             original_cwd = Path.cwd()
             try:
                 import os
@@ -63,7 +63,7 @@ class TestDomainLoading:
             compounds_file.write_text("# Compounds\ncompound1\ncompound2\n")
             
             # Change working directory to temp_dir and clear cache
-            import utils.run_engine
+            # import utils.run_engine  # Removed unused import
             original_cwd = Path.cwd()
             try:
                 import os
@@ -94,7 +94,7 @@ class TestDomainLoading:
             targets_file.write_text("")
             
             # Change working directory to temp_dir and clear cache
-            import utils.run_engine
+            # import utils.run_engine  # Removed unused import
             original_cwd = Path.cwd()
             try:
                 import os
@@ -122,7 +122,7 @@ class TestDomainLoading:
             compounds_file.write_text("# This is a comment\ncompound1\n# Another comment\ncompound2\n")
             
             # Change working directory to temp_dir and clear cache
-            import utils.run_engine
+            # import utils.run_engine  # Removed unused import
             original_cwd = Path.cwd()
             try:
                 import os
@@ -150,7 +150,7 @@ class TestDomainLoading:
             compounds_file.write_text("UPPERCASE\nlowercase\nMixedCase\n")
             
             # Change working directory to temp_dir and clear cache
-            import utils.run_engine
+            # import utils.run_engine  # Removed unused import
             original_cwd = Path.cwd()
             try:
                 import os
@@ -173,7 +173,7 @@ class TestDomainLoading:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Don't create seeds directory
             # Change working directory to temp_dir and clear cache
-            import utils.run_engine
+            # import utils.run_engine  # Removed unused import
             original_cwd = Path.cwd()
             try:
                 import os
