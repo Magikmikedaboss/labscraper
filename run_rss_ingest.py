@@ -85,81 +85,18 @@ except ImportError:
     def classify_event_type(text, tags, failure_reason, decision_taken):
         return "other"
     
-    def evidence_strength(text):
-        return "low"
-    
-    def confidence_score(has_entities, tags, failure_reason, decision_taken, has_measurements, text):
-        return 0.5
-    
-    def suggested_keep(conf, event_type, failure_reason, decision_taken, tags):
-        return 1
-    
-    def normalize_event_key(event_type, ents, page_idx, sent):
-        return f"{event_type}_{page_idx}_{hash(sent) % 1000}"
-    
-    def upsert_source(con, source_id, filename, metadata):
-        return source_id
-    
-    def insert_document(con, source_id, path, file_hash):
-        return 1
-    
-    def insert_chunk(con, source_id, doc_id, page_idx, section, text):
-        return 1
-    
-    def insert_event(con, source_id, doc_id, chunk_id, page_number, domain, event_type, study_stage, biological_system, application_area, outcome, failure_reason, decision_taken, decision_driver, evidence_snippet, evidence_strength_v, confidence_v):
-        return 1
-    
-    def link_event_entity(con, event_id, entity_id, role):
-        pass
-    
-    def link_event_tag(con, event_id, tag):
-        pass
-    
-    def insert_measurement(con, event_id, measurement):
-        pass
-    
-    def upsert_entity(con, entity_type, entity_name, entity_variant, role):
-        return 1
-    
-    def now_iso():
-        from datetime import datetime
-        return datetime.now().isoformat()
-    
-    def sha16(text):
-        import hashlib
-        return hashlib.sha256(text.encode()).hexdigest()[:16]
-    
-    def sha64(text):
-        import hashlib
-        return hashlib.sha256(text.encode()).hexdigest()
-    
-    RESEARCH_DOMAIN = "test"
-    FAILURE_PHRASES = {}
-    DECISION_PHRASES = {}
-    METHOD_TAGS = {}
-
-# Default paths
-DB_PATH = Path("db") / "runs.sqlite"
-RSS_CACHE_DIR = Path("input") / "rss_cache"
-FEEDS_CONFIG = Path("config") / "feeds.json"
-
-def load_feeds_config(feeds_config_path: Path | None = None):
-    """Load and validate RSS feeds configuration from JSON file."""
-    config_path = feeds_config_path or FEEDS_CONFIG
-
-    if not config_path.exists():
-        print(f"⚠️  RSS feeds config not found: {config_path}")
-        print("Creating default config...")
-        default_config = {
-            "feeds": [
-                {
-                    "name": "arXiv Materials Science",
-                    "url": "http://export.arxiv.org/rss/cs.MA",
-                    "domain": "construction_science",
-                    "enabled": True
-                },
-                {
-                    "name": "arXiv Biomaterials",
+    from utils.metadata_utils import extract_metadata
+    from utils.run_engine import (
+        guess_stage, guess_section,
+        extract_entities, extract_quantitative_data,
+        detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
+        classify_event_type, evidence_strength, confidence_score,
+        suggested_keep, normalize_event_key,
+        upsert_source, insert_document, insert_chunk, insert_event,
+        link_event_entity, link_event_tag, insert_measurement, upsert_entity,
+        now_iso, sha16, sha64, RESEARCH_DOMAIN,
+        FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
+    )
                     "url": "http://export.arxiv.org/rss/q-bio.BM",
                     "domain": "methods_tooling", 
                     "enabled": True

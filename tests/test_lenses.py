@@ -197,12 +197,10 @@ class TestMaterialsLens:
 
     def test_test_marker_alone_triggers(self):
         from lenses.construction_materials_v1 import detect
-        # "tested specimens" alone should be enough if test marker logic allows
+        # "tested specimens" alone should be rejected by the detector (marker-only rejection)
         sentence = "Specimens were tested to characterize long-term behaviour."
-        # This may or may not fire depending on logic; check consistent return type
         result = detect(sentence)
-        assert isinstance(result, tuple)
-        assert len(result) == 2
+        assert result == (None, [])
 
 
 # ---------------------------------------------------------------------------
@@ -355,3 +353,145 @@ class TestMultiLensStacking:
         assert all(r["outcome"] in ("positive", "negative", "neutral", "unknown") for r in results)
         assert all("context_strength" in r for r in results)
         assert all("source_weight" in r for r in results)
+
+
+# ---------------------------------------------------------------------------
+# Direct tests for build_lens_event and LensEvent.as_dict
+# ---------------------------------------------------------------------------
+def test_build_lens_event_and_as_dict():
+
+
+    # ---------------------------------------------------------------------------
+    # Edge-case and error-handling tests for construction_common.py utilities
+    # ---------------------------------------------------------------------------
+    import pytest
+
+    def test_build_lens_event_with_missing_and_unknown_fields():
+        from lenses.construction_common import build_lens_event, LensEvent
+
+        # Missing raw_outcome, unknown source_type
+        event = build_lens_event(
+            lens_name="test_lens",
+            event_type="",
+            raw_outcome=None,
+            confidence="low",
+            tags=[],
+            sentence="",
+            source_type="unknown_type",
+        )
+        assert isinstance(event, LensEvent)
+        assert event.lens == "test_lens"
+        assert event.event_type == ""
+        assert event.outcome == "unknown"
+        assert event.confidence == "low"
+        assert event.context_strength == "weak"
+        # Should fallback to default source_weight (0.9)
+        assert event.source_weight == 0.9
+        assert event.raw_outcome == "unknown"
+        assert event.tags == []
+
+    def test_lens_event_as_dict_with_empty_fields():
+        from lenses.construction_common import LensEvent
+        e = LensEvent(
+            event_type="",
+            outcome="",
+            confidence="",
+            tags=[],
+            context_strength="",
+            source_weight=0.0,
+            lens=None,
+            raw_outcome="",
+        )
+        d = e.as_dict()
+        assert d["lens"] is None
+        assert d["event_type"] == ""
+        assert d["outcome"] == ""
+        assert d["raw_outcome"] == ""
+        assert d["confidence"] == ""
+        assert d["context_strength"] == ""
+        assert d["source_weight"] == 0.0
+        assert d["tags"] == []
+
+    @pytest.mark.parametrize("s_l,expected", [
+        ("", False),
+        ("no units here", False),
+        ("strength 30 mpa", True),
+        ("5% shrinkage", True),
+    ])
+    def test_has_unit_signal_edge_cases(s_l, expected):
+        from lenses.construction_common import has_unit_signal
+        assert has_unit_signal(s_l) == expected
+
+    @pytest.mark.parametrize("s_l,expected", [
+        ("", False),
+        ("no numbers", False),
+        ("value is 42", True),
+        ("0.0 is a number", True),
+    ])
+    def test_has_number_edge_cases(s_l, expected):
+        from lenses.construction_common import has_number
+        assert has_number(s_l) == expected
+
+    @pytest.mark.parametrize("s_l,phrases,expected", [
+        ("", ["fail"], False),
+        ("failure occurred", ["fail"], True),
+        ("no match", ["absent"], False),
+    ])
+    def test_contains_any_edge_cases(s_l, phrases, expected):
+        from lenses.construction_common import contains_any
+        assert contains_any(s_l, phrases) == expected
+
+    def test_wordhit_and_list_hits_empty():
+        from lenses.construction_common import wordhit, list_hits
+        assert not wordhit("", "fail")
+        assert list_hits("", ["fail"]) == []
+
+    def test_normalize_outcome_and_get_source_weight_unknown():
+        from lenses.construction_common import normalize_outcome, get_source_weight
+        assert normalize_outcome(None) == "unknown"
+        assert normalize_outcome("") == "unknown"
+        assert get_source_weight("not_a_source") == 0.9
+
+    def test_infer_context_strength_empty():
+        from lenses.construction_common import infer_context_strength
+        assert infer_context_strength("") == "weak"
+    from lenses.construction_common import build_lens_event, LensEvent
+
+    lens_name = "materials"
+    event_type = "strength_increase"
+    raw_outcome = "improved"
+    confidence = "high"
+    tags = ["concrete", "test"]
+    sentence = "The compressive strength improved to 45 MPa."
+    source_type = "research_paper"
+
+    event = build_lens_event(
+        lens_name=lens_name,
+        event_type=event_type,
+        raw_outcome=raw_outcome,
+        confidence=confidence,
+        tags=tags,
+        sentence=sentence,
+        source_type=source_type,
+    )
+    # Check type and normalized fields
+    assert isinstance(event, LensEvent)
+    assert event.lens == lens_name
+    assert event.event_type == event_type
+    assert event.outcome == "positive"
+    assert event.confidence == confidence
+    assert event.context_strength in ("weak", "moderate", "strong")
+    assert event.source_weight == 0.9
+    assert event.raw_outcome == "improved"
+    assert set(event.tags) == set(tags)
+
+    # Test as_dict output
+    d = event.as_dict()
+    assert d["lens"] == lens_name
+    assert d["event_type"] == event_type
+    assert d["outcome"] == "positive"
+    assert d["raw_outcome"] == "improved"
+    assert d["confidence"] == confidence
+    assert d["context_strength"] == event.context_strength
+    assert d["source_weight"] == 0.9
+    assert set(d["tags"]) == set(tags)

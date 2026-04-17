@@ -99,11 +99,13 @@ def test_main_function_error_handling():
 
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open:
             mock_pdf_open.side_effect = Exception("Processing error")
-            main(
-                domain='methods_tooling',
-                input_dir=str(input_dir),
-                db_path=str(output_db)
-            )
+            with pytest.raises(SystemExit) as e:
+                main(
+                    domain='methods_tooling',
+                    input_dir=str(input_dir),
+                    db_path=str(output_db)
+                )
+            assert e.value.code == 1
         gc.collect()
         assert output_db.exists()
 
