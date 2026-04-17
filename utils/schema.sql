@@ -1,3 +1,6 @@
+
+-- DEPRECATED: This file is no longer canonical.
+-- The canonical schema is now at the project root: ../schema.sql
 PRAGMA foreign_keys = ON;
 
 -- =========================================================

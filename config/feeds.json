@@ -1,0 +1,16 @@
+{
+  "feeds": [
+    {
+      "name": "Arxiv Physics",
+      "url": "https://export.arxiv.org/rss/physics",
+      "domain": "physics",
+      "enabled": true
+    },
+    {
+      "name": "Science Magazine",
+      "url": "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science",
+      "domain": "science",
+      "enabled": true
+    }
+  ]
+}

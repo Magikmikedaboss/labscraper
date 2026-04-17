@@ -5,7 +5,9 @@ import sqlite3
 from pathlib import Path
 
 def main(db_path="db.sqlite"):
-    schema_path = Path(__file__).parent / "schema.sql"
+    # Always use the canonical root-level schema.sql
+    project_root = Path(__file__).resolve().parents[1]
+    schema_path = project_root / "schema.sql"
     if not schema_path.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")
     schema_sql = schema_path.read_text(encoding="utf-8")

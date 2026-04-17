@@ -24,7 +24,9 @@ def _init_db_schema(db_path):
     Args:
         db_path (str or Path): Path to the SQLite database file to initialize.
     """
-    schema_path = os.path.join(os.path.dirname(__file__), 'schema.sql')
+    # Always use the canonical root-level schema.sql
+    project_root = Path(__file__).resolve().parents[1]
+    schema_path = project_root / 'schema.sql'
 
     # Block initialization of the canonical persistent DB
     db_path_resolved = Path(db_path).resolve()
@@ -34,11 +36,10 @@ def _init_db_schema(db_path):
     if db_path_resolved == canonical_path:
         raise ValueError(f"Refusing to initialize canonical persistent DB: {db_path_resolved}")
 
-    if not os.path.exists(schema_path):
+    if not schema_path.exists():
         raise FileNotFoundError(f"Missing schema.sql at {schema_path}")
 
-    with open(schema_path, 'r', encoding='utf-8') as f:
-        schema_sql = f.read()
+    schema_sql = schema_path.read_text(encoding='utf-8')
 
     with sqlite3.connect(db_path) as con:
         con.executescript(schema_sql)
