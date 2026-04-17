@@ -1,8 +1,10 @@
 
+
 import gc
 import pytest
 import sqlite3
 import tempfile
+import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -86,7 +88,7 @@ def test_main_function_database_creation():
         assert 'entity_relationships' in tables
         conn.close()
 
-@pytest.mark.skip(reason="Windows file locking issue with SQLite")
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows file locking issue with SQLite")
 def test_main_function_error_handling():
     with tempfile.TemporaryDirectory() as temp_dir:
         input_dir = Path(temp_dir) / "input_pdfs"

@@ -35,14 +35,15 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     for t in terms[:6]:
         entities.append(make_entity("physics_metric", t, "metric", "measurement"))
 
-    # outcome heuristic
-    if contains_any(s_l, ["reduced", "lower", "improved", "decreased", "better"]):
-        outcome = "improved"
-    elif contains_any(s_l, ["higher energy", "increased leakage", "worsened", "condensation", "mold"]):
+    # outcome heuristic: negative signals take priority
+    pos = contains_any(s_l, ["reduced", "lower", "improved", "decreased", "better"])
+    neg = contains_any(s_l, ["higher energy", "increased leakage", "worsened", "condensation risk", "mold growth", "mold detected"])
+    if neg:
         outcome = "degraded"
+    elif pos:
+        outcome = "improved"
     else:
         outcome = "neutral"
-
     score = 0
     if terms:
         score += 2

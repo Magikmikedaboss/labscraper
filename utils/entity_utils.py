@@ -2,8 +2,8 @@
 Entity normalization, role assignment, and counting utilities
 """
 from typing import Tuple, Dict
-from entity_normalizer import normalize_entity, get_entity_role
-from process_words import is_process_word
+from utils.entity_normalizer import normalize_entity, get_entity_role
+from utils.process_words import is_process_word
 
 def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: dict = None) -> Tuple[int, int, str, str, str]:
     """

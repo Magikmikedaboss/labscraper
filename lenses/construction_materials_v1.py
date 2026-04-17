@@ -33,8 +33,13 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     mats = list_hits(s_l, MATERIALS)
     props = list_hits(s_l, PROPERTIES)
 
-    # Signal: materials + property, or strong unit/numeric measurement + property, or test marker alone
-    signal = (bool(mats) and bool(props)) or (bool(props) and (has_unit_signal(s_l) or has_number(s_l))) or contains_any(s_l, TEST_MARKERS)
+
+    # Signal: materials + property, or strong unit/numeric measurement + property, or test marker (only if mats or props present)
+    signal = (
+        (bool(mats) and bool(props))
+        or (bool(props) and (has_unit_signal(s_l) or has_number(s_l)))
+        or ((bool(mats) or bool(props)) and contains_any(s_l, TEST_MARKERS))
+    )
 
     # Return early if no signal
     if not signal:

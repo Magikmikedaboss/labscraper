@@ -32,7 +32,7 @@ class TestNeuroscienceCognitionDomain:
         entities = extract_entities(text, "neuroscience_cognition", SEEDS_DIR=SEEDS_DIR)
         types = [e["entity_type"] for e in entities]
         assert "model" in types
-        assert any("hek293" in e["text"].lower() or "mouse" in e["text"].lower() for e in entities)
+        assert any("hek293" in e["entity_name"].lower() or "mouse" in e["entity_name"].lower() for e in entities)
 
     def test_no_entities_from_irrelevant_text(self):
         """Purely generic text without biomedical terms returns no entities."""

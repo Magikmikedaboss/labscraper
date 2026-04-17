@@ -1,35 +1,11 @@
-# Ignore one-off status/progress markdown files
-*PROGRESS.md
-*STATUS.md
-*SUMMARY.md
-*FIXES_*.md
-*_RESULTS.md
-*_COMPLETE.md
-*_SNAPSHOT.md
-*_VERIFICATION.md
-*_SUCCESS.md
-*_TODO.md
-*_PLAN.md
-*_REVIEW.md
-*_GUIDE.md
-*_DEMONSTRATION.md
-*_FOUNDATION.md
-*_IMPLEMENTED.md
-*_AUDIT.md
-*_CORPUS_ISSUE.md
-*_DELIVERY.md
-*_PHASE*.md
-*_EXPORT*.md
-*_SYSTEM*.md
-*_OVERLAY*.md
-*_PROMOTION*.md
-*_MIGRATION*.md
-*_COMPARISON*.md
-*_SCORING*.md
-*_PATTERNS*.md
-*_ANALYSIS*.md
-*_MULTI_DOMAIN*.md
-*_V*.md
+# Ignore one-off status/progress markdown files (anchored to repo root)
+# Ignore generated markdown files in .artifacts/
+.artifacts/*.md
+# Naming convention: generated files use GEN_*, TEMP_*, or _temp_*.md
+GEN_*.md
+TEMP_*.md
+_temp_*.md
+# See .artifacts/README.md for details
 # Python
 __pycache__/
 *.py[cod]

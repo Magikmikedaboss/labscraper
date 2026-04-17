@@ -98,8 +98,9 @@ def infer_context_strength(sentence: str, *, has_numbers: Optional[bool] = None,
     s_l = sentence.lower()
     numbers = has_number(s_l) if has_numbers is None else has_numbers
     units = has_unit_signal(s_l) if has_units is None else has_units
-    has_strong_terms = contains_any(s_l, STRONG_RESULT_TERMS)
-    has_context_terms = contains_any(s_l, MODERATE_CONTEXT_TERMS)
+
+    has_strong_terms = any(wordhit(s_l, term) for term in STRONG_RESULT_TERMS)
+    has_context_terms = any(wordhit(s_l, term) for term in MODERATE_CONTEXT_TERMS)
 
     if (numbers and units) or (has_strong_terms and (numbers or units)):
         return "strong"

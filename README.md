@@ -68,12 +68,13 @@ cd labscraper
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
+
 # Install dependencies
 pip install -r requirements.txt
 
 # Initialize database
 python init_db.py
-```text
+```
 
 
 ### Usage
@@ -147,7 +148,7 @@ labscraper/
 │   ├── common.py                   # Common helpers (hashing, etc.)
 │   ├── entity_extractor.py         # (legacy) Entity extraction logic
 │   ├── entity_normalizer.py        # (legacy) Variant normalization
-│   ├── init_db.py                  # Database initialization
+│   ├── init_db.py                  # Database initialization (run root init_db.py to create db/runs.sqlite)
 │   ├── schema.sql                  # Database schema
 │   └── scrape_pdfs_phase1.py       # Base scraper functions
 ```

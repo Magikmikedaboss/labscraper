@@ -50,10 +50,11 @@ def test_main_function_database_creation():
         assert output_db.exists()
 
         conn = sqlite3.connect(str(output_db))
-        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row[0] for row in cursor.fetchall()]
-        assert 'sources' in tables
-        assert 'documents' in tables
-        cursor.close()
-        conn.close()
-        gc.collect()
+        try:
+            cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cursor.fetchall()]
+            assert 'sources' in tables
+            assert 'documents' in tables
+            cursor.close()
+        finally:
+            conn.close()

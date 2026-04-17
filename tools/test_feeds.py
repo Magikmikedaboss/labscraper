@@ -16,6 +16,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.feed_utils import probe_feed
 from utils.validators import ValidationError, validate_feed_config, validate_file_path
 
+
+# Default feeds moved to module level for test access
+default_feeds = [
+    ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
+    ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
+    ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
+]
+
 def main():
     parser = argparse.ArgumentParser(description='Test RSS feeds')
     parser.add_argument('--config', default='config/feeds.json', 
@@ -25,12 +33,6 @@ def main():
     parser.add_argument('--save-working', action='store_true',
                        help='Save working feeds back to config')
     args = parser.parse_args()
-
-    default_feeds = [
-        ("https://feeds.feedburner.com/oreilly/radar/atom", "O'Reilly Radar"),
-        ("https://www.frontiersin.org/journals/materials/rss", "Frontiers in Materials"),
-        ("http://export.arxiv.org/rss/cond-mat.mtrl-sci", "arXiv Materials Science"),
-    ]
 
     config = None
     feeds = default_feeds

@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Tuple, Any, Optional
 from utils.entity_utils import load_overlay_aliases_safe
-from process_words import PROCESS_WORDS_TO_DEMOTE
+from utils.process_words import PROCESS_WORDS_TO_DEMOTE
 
 def _ensure_set(value):
     if value is None:
@@ -18,8 +18,8 @@ def _ensure_set(value):
 def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[Tuple[str, str], Dict[str, Any]], 
                   domain_id: str = None, output_dir: Path = Path("output"), suffix: str = "") -> None:
     """Write run metadata for reproducibility"""
-    from axon_domains import get_domain_by_id
-    from entity_normalizer import load_normalization_map, normalize_entity
+    from utils.axon_domains import get_domain_by_id
+    from utils.entity_normalizer import load_normalization_map, normalize_entity
     domain = get_domain_by_id(domain_id) if domain_id else None
     overlay_id = f"{domain_id}_v1" if domain_id else None
     overlay_aliases = load_overlay_aliases_safe(domain_id) if domain_id else {}
@@ -39,10 +39,8 @@ def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[
             }
         else:
             normalized_entities[key]["event_count"] += data["event_count"]
-            normalized_entities[key]["paper_ids"] = _ensure_set(normalized_entities[key].get("paper_ids"))
             data_paper_ids = _ensure_set(data.get("paper_ids"))
             normalized_entities[key]["paper_ids"].update(data_paper_ids)
-            normalized_entities[key]["original_names"] = _ensure_set(normalized_entities[key].get("original_names"))
             data_original_names = _ensure_set(data.get("original_names"))
             normalized_entities[key]["original_names"].update(data_original_names)
     for ent in normalized_entities.values():

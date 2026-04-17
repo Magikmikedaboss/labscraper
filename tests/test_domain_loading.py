@@ -31,7 +31,6 @@ class TestDomainLoading:
             stopwords_file.write_text("# Stopwords\nstopword1\nstopword2\n")
             
             # Change working directory to temp_dir and clear cache
-            # import utils.run_engine  # Removed unused import
             original_cwd = Path.cwd()
             try:
                 import os

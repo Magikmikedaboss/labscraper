@@ -10,7 +10,10 @@ from .construction_common import (
 # Recognize common standards bodies + some explicit patterns
 STD_TOKENS = ["astm", "aci", "asce", "ibc", "iecc", "ashrae", "iso", "eurocode"]
 PASS_PHRASES = ["meets", "complies", "complied with", "in accordance with", "conforms", "satisfies"]
-FAIL_PHRASES = ["non-compliant", "noncompliant", "does not meet", "did not comply", "fails to meet", "violation"]
+FAIL_PHRASES = [
+    "non-compliant", "noncompliant", "does not meet", "did not comply", "fails to meet", "violation",
+    "does not comply", "doesn't comply", "doesn't meet"
+]
 
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()

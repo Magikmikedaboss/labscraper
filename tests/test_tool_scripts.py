@@ -68,7 +68,12 @@ def test_test_feeds_main_falls_back_on_invalid_config(tmp_path, monkeypatch, cap
     out = capsys.readouterr().out
 
     assert "Validation error" in out
-    assert len(calls) == 3
+    # Access default_feeds from main's globals if not directly available
+    if hasattr(test_feeds_module, "default_feeds"):
+        expected_len = len(test_feeds_module.default_feeds)
+    else:
+        expected_len = len(test_feeds_module.main.__globals__["default_feeds"])
+    assert len(calls) == expected_len
 
 
 def test_inspect_db_main_invokes_helpers(monkeypatch):

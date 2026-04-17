@@ -16,18 +16,34 @@ from typing import List, Tuple
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
-from scrape_pdfs_phase1_full import (
-    extract_metadata, chunk_sentences, guess_stage, guess_section,
-    extract_all_entities, extract_quantitative_data,
-    detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
-    classify_event_type, evidence_strength, confidence_score_phase1,
-    suggested_keep, normalize_event_key,
-    upsert_source, insert_document, insert_chunk, insert_event,
-    link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-    sha16, sha64,
+
+from utils.metadata_utils import extract_metadata
+from utils.text_utils import chunk_sentences, guess_stage, guess_section
+from utils.data_extractors import extract_quantitative_data
+from utils.entities import extract_entities
+from utils.event_classification import (
+    detect_method_tags,
+    detect_failure_reason,
+    detect_decision,
+    detect_outcome,
+    classify_event_type,
+    evidence_strength,
+    confidence_score,
     FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
 )
-
+from utils.db_utils import (
+    upsert_source,
+    insert_document,
+    insert_chunk,
+    insert_event,
+    link_event_entity,
+    link_event_tag,
+    insert_measurement,
+    upsert_entity
+)
+from utils.deduplication import normalize_event_key
+from utils.common import sha16, sha64
+import time
 
 def _connect(db_path: Path) -> sqlite3.Connection:
     """Create a sqlite connection configured for concurrent writes."""
@@ -82,6 +98,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         if not _has_signal(s_l):
                             continue
 
+
                         tags = detect_method_tags(s_l)
                         failure_reason = detect_failure_reason(s_l)
                         decision_taken, decision_driver = detect_decision(s_l)
@@ -90,15 +107,14 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                         strength = evidence_strength(s_l)
 
-                        ents = extract_all_entities(sent, metadata.get("title", "") or "", domain)
+                        ents = extract_entities(sent, domain)
                         measurements = extract_quantitative_data(sent)
 
-                        conf = confidence_score_phase1(
+                        # Use new confidence_score for filtering
+                        conf = confidence_score(
                             bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l
                         )
-                        keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
-
-                        if keep == 0 and event_type == "other":
+                        if conf == "low":
                             continue
 
                         event_key = normalize_event_key(event_type, ents, page_idx, sent)
@@ -114,25 +130,35 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         elif "cell line" in s_l or re.search(r'\bcell culture\b|\bcell lines?\b', s_l):
                             bio_sys = "cells"
 
-                        event_id = insert_event(
-                            con=con,
-                            source_id=source_id,
-                            doc_id=doc_id,
-                            chunk_id=chunk_id,
-                            page_number=page_idx,
-                            domain=domain,
-                            event_type=event_type,
-                            study_stage=stage,
-                            biological_system=bio_sys,
-                            application_area=None,
-                            outcome=outcome,
-                            failure_reason=failure_reason,
-                            decision_taken=decision_taken,
-                            decision_driver=decision_driver,
-                            evidence_snippet=sent,
-                            evidence_strength_v=strength,
-                            confidence_v=conf,
-                        )
+                        # Add retry logic for SQLite writes
+                        event_id = None
+                        for _ in range(3):
+                            try:
+                                event_id = insert_event(
+                                    con=con,
+                                    source_id=source_id,
+                                    doc_id=doc_id,
+                                    chunk_id=chunk_id,
+                                    page_number=page_idx,
+                                    domain=domain,
+                                    event_type=event_type,
+                                    study_stage=stage,
+                                    biological_system=bio_sys,
+                                    application_area=None,
+                                    outcome=outcome,
+                                    failure_reason=failure_reason,
+                                    decision_taken=decision_taken,
+                                    decision_driver=decision_driver,
+                                    evidence_snippet=sent,
+                                    evidence_strength_v=strength,
+                                    confidence_v=conf,
+                                )
+                                break
+                            except sqlite3.OperationalError:
+                                time.sleep(0.1)
+                        else:
+                            # All retries exhausted - skip this event
+                            continue
 
                         for t in tags:
                             link_event_tag(con, event_id, t)
@@ -151,7 +177,6 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                             insert_measurement(con, event_id, m)
 
                         events_count += 1
-
             con.commit()
             return (pdf_path.name, events_count, True, "")
     except Exception as e:

@@ -36,24 +36,30 @@ def detect_multi_lens(
     confidence_rank = {"low": 1, "med": 2, "medium": 2, "high": 3}
     context_rank = {"weak": 1, "moderate": 2, "strong": 3}
 
+
+    # Validate selected_lenses
+    invalid_lenses = [name for name in selected_lenses if name not in LENS_REGISTRY]
+    if invalid_lenses:
+        raise ValueError(f"Invalid lens name(s): {invalid_lenses}. Valid options: {list(LENS_REGISTRY.keys())}")
+
+
+    detector_errors = {}
     for lens_name in selected_lenses:
         detector = LENS_REGISTRY.get(lens_name)
-        if detector is None:
-            continue
-
         try:
             event, entities = detector(sentence, source_type=source_type)
         except Exception as e:
-            import logging
-            logging.error(f"Lens '{lens_name}' detector error: {e}")
+            detector_errors[lens_name] = str(e)
             continue
         if event is None:
+            detector_errors[lens_name] = "No event returned"
             continue
-
-
         stacked = event.as_dict()
         stacked["entities"] = entities
         results.append(stacked)
+
+    if not results:
+        raise RuntimeError(f"No detector produced results. Errors: {detector_errors}")
 
     results.sort(
         key=lambda item: (
