@@ -195,54 +195,30 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
                     "text": sentence
                 })
                 extracted_names.add(norm)
-            # Only match canonical AA codes, min length 7, or uppercase tokens with SEQ ID context
-            aa_pattern = r'\b[ACDEFGHIKLMNPQRSTVWY]{7,}\b'
-            seqs = re.findall(aa_pattern, sentence)
-            # Also allow uppercase tokens of length >=5 if they appear with (SEQ ID NO: n)
-            seqid_matches = re.findall(r'([A-Z]{5,})\s*\(SEQ ID NO: \d+\)', sentence)
-            seqs += [m for m in seqid_matches if m not in seqs]
-            return seqs
-    for e in extract_models(sentence, SEEDS_DIR=SEEDS_DIR):
-        norm = normalize_name(e["entity_name"])
-        if norm not in extracted_names:
-            e["text"] = sentence
-            ents.append(e)
-            extracted_names.add(norm)
-    # 4. PEPTIDES
-    for seq in extract_presented_sequences(sentence):
-        norm = normalize_name(seq)
-        if is_probable_peptide(seq, sentence) and norm not in extracted_names:
-            ents.append({
-                "entity_type": "peptide",
-                "entity_name": seq,
-                "role": "tested",
+    # 3. MODELS
+    models = []
+    for model in _get_model_seeds(SEEDS_DIR):
+        if re.search(r'\b' + re.escape(model) + r'\b', sentence, re.IGNORECASE):
+            variant = "unknown"
+            if any(c.isdigit() for c in model) or '-' in model:
+                variant = "cell_line"
+            elif model in ["mouse", "mice", "rat", "human"]:
+                variant = "organism"
+            elif "organoid" in model or "3d" in model:
+                variant = "3d_model"
+            models.append({
+                "entity_type": "model",
+                "entity_name": model.upper(),
+                "entity_variant": variant,
                 "text": sentence
             })
-            extracted_names.add(norm)
-    # 5. STEM CELLS
-    stem_cells = []
-    for k in STEM_CELL_KEYWORDS:
-        if k in sentence:
-            name = k.upper() if k in ["msc", "ipsc"] else k
-            norm = normalize_name(name)
-            stem_cells.append({
-                "entity_type": "stem_cell",
-                "entity_name": name,
-                "entity_variant": norm,
+    fallback_models = ["mouse", "rat", "human", "hela", "hek293"]
+    for fm in fallback_models:
+        if re.search(r'\b' + re.escape(fm) + r'\b', sentence, re.IGNORECASE):
+            models.append({
+                "entity_type": "model",
+                "entity_name": fm.upper(),
+                "entity_variant": "organism",
                 "text": sentence
             })
-    ents.extend(stem_cells)
-    # 6. NEURAL CELLS
-    neural_cells = []
-    for k in NEURAL_CELL_KEYWORDS:
-        if k in sentence:
-            name = k.upper()
-            norm = normalize_name(name)
-            neural_cells.append({
-                "entity_type": "neural_cell",
-                "entity_name": name,
-                "entity_variant": norm,
-                "text": sentence
-            })
-    ents.extend(neural_cells)
     return ents
