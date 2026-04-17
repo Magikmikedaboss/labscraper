@@ -43,21 +43,26 @@ def export_candidates_domain_aware(domain_id: str = None):
                     SELECT 
                         MIN(e.entity_id) as entity_id,
                         e.entity_type,
-                        n.entity_name as canonical_name,
+                        n.canonical_name as canonical_name,
                         GROUP_CONCAT(DISTINCT e.entity_variant) as entity_variant,
                         COUNT(DISTINCT ee.event_id) as event_count,
                         GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
                         MIN(re.created_at) as first_seen,
                         MAX(re.created_at) as last_seen
-                    FROM entities e
+                    FROM (
+                        SELECT entity_id, entity_type, entity_name,
+                               -- Use normalization in Python, so just pass through
+                               entity_variant
+                        FROM entities
+                    ) e
                     JOIN event_entities ee ON e.entity_id = ee.entity_id
                     JOIN research_events re ON ee.event_id = re.event_id
                     JOIN (
-                        SELECT entity_type, entity_name
+                        SELECT entity_type, entity_name as canonical_name
                         FROM entities
-                    ) n ON n.entity_type = e.entity_type AND n.entity_name = e.entity_name
+                    ) n ON n.entity_type = e.entity_type AND n.canonical_name = e.entity_name
                     WHERE re.research_domain = ?
-                    GROUP BY e.entity_type, n.entity_name
+                    GROUP BY e.entity_type, n.canonical_name
                     ORDER BY event_count DESC
                 """, (domain_id,)).fetchall()
         else:
@@ -80,7 +85,7 @@ def export_candidates_domain_aware(domain_id: str = None):
 
         canonical_entities = defaultdict(lambda: {
             "entity_type": None,
-            "entity_variant": None,
+            "entity_variant": set(),
             "event_count": 0,
             "paper_ids": set(),
             "original_names": set(),
@@ -103,7 +108,8 @@ def export_candidates_domain_aware(domain_id: str = None):
 
             key = (etype, canonical_name)
             canonical_entities[key]["entity_type"] = etype
-            canonical_entities[key]["entity_variant"] = evariant
+            if evariant:
+                canonical_entities[key]["entity_variant"].add(evariant)
             canonical_entities[key]["event_count"] += event_count
             canonical_entities[key]["paper_ids"].update(source_ids.split(",") if source_ids else [])
             canonical_entities[key]["original_names"].add(ename)
@@ -124,10 +130,11 @@ def export_candidates_domain_aware(domain_id: str = None):
             writer.writerow(['entity_name', 'entity_type', 'entity_variant', 'event_count'])
             # Only write rows if there are any entities
             for (etype, ename), data in canonical_entities.items():
+                variant_str = ','.join(sorted(data["entity_variant"])) if data["entity_variant"] else ''
                 writer.writerow([
                     ename,
                     etype,
-                    data["entity_variant"] if data["entity_variant"] else '',
+                    variant_str,
                     data["event_count"]
                 ])
         print(f"✅ Wrote filtered entities: {entities_path}")
@@ -144,16 +151,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     canonical_entities = export_candidates_domain_aware(args.domain)
-    # Compute real confidence_changes from canonical_entities (placeholder: use actual counters if available)
-    confidence_changes = {"high": 0, "med": 0, "low": 0, "boosted_to_high": 0, "boosted_to_med": 0}
-    # TODO: Replace with actual confidence counters from event export path if available
-    for data in canonical_entities.values():
-        if data.get("event_count", 0) > 10:
-            confidence_changes["high"] += 1
-        elif data.get("event_count", 0) > 5:
-            confidence_changes["med"] += 1
-        elif data.get("event_count", 0) > 0:
-            confidence_changes["low"] += 1
-    write_run_meta(confidence_changes, canonical_entities, args.domain)
+    # Only write real confidence counters if available; do not write synthetic fields
+    # If you have real counters, pass them here; otherwise, omit confidence_changes
+    write_run_meta({}, canonical_entities, args.domain)
 
     print("✅ Export complete!")

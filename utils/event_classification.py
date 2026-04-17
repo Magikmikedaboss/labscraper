@@ -17,7 +17,9 @@ FAILURE_PHRASES = {
     "stability_failure": ["rapidly degraded", "degraded", "unstable", "poor stability", "short half-life"],
     "no_activity": ["no significant", "no measurable", "did not show", "no activity", "inactive"],
     "toxicity_flag": ["cytotoxic", "toxicity", "cell death"],
-    "reproducibility": ["reproducible", "reproducibility", "batch-to-batch", "variability"],
+    "reproducibility": [
+        "not reproducible", "poor reproducibility", "lack of reproducibility", "irreproducible", "failed reproducibility"
+    ],
     "scalability": ["scale-up", "scalable", "manufacturing", "yield", "process", "costly to produce"],
     "regulatory": ["regulatory", "guideline", "compliance", "safety concern", "risk assessment"],
 }

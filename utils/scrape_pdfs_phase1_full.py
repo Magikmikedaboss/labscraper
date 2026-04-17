@@ -1,11 +1,6 @@
-"""
-Phase 1 PDF Scraper Functions - Full Version
-This file contains all the core functions needed for the parallel PDF processing.
-"""
-
 import re
-import hashlib
 from typing import List, Dict, Tuple, Pattern
+from utils.common import sha16
 
 # Import from run_engine.py using relative import
 from .run_engine import (
@@ -51,13 +46,6 @@ METHOD_TAGS = {
     "gmp": ["gmp", "good manufacturing practice"],
 }
 
-def sha16(s: str) -> str:
-    """Generate 16-character SHA256 hash"""
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
-
-def sha64(s: str) -> str:
-    """Generate full SHA256 hash"""
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 def chunk_sentences(text: str) -> List[str]:
     """Split text into sentences"""
@@ -244,7 +232,7 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
              outcome, failure_reason, decision_taken, decision_driver,
              evidence_snippet, evidence_strength, confidence,
              source_id, doc_id, chunk_id, page_number, created_at
-           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             event_id, domain, event_type, study_stage, biological_system, application_area,
             outcome, failure_reason, decision_taken, decision_driver,

@@ -1,29 +1,36 @@
-def normalize_name(name):
-    """Normalize entity name for deduplication: lowercase, strip, remove predictable punctuation."""
-    return re.sub(r'[\s\-_,.;:]+', '', name.strip().lower())
-"""
-Entity extraction logic for PDF scraping pipeline.
-Includes: extract_presented_sequences, is_probable_peptide, extract_compounds, extract_targets, extract_models, extract_entities, extract_construction_entities, extract_biomedical_entities, STEM_CELL_KEYWORDS.
-"""
 import re
 from utils.common import _get_compound_seeds, _get_target_seeds, _get_model_seeds
 
-# Stem cell / general bio entities (super lightweight v1)
+
+# ---------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------
+def normalize_name(name: str) -> str:
+    """Normalize entity name for deduplication."""
+    return re.sub(r'[\s\-_,.;:]+', '', name.strip().lower())
+
+
 STEM_CELL_KEYWORDS = [
-    "msc", "mesenchymal", "ipsc", "pluripotent", "stem cell", "stem-cell",
-    "organoid", "differentiation", "reprogramming"
+    "msc", "mesenchymal", "ipsc", "pluripotent",
+    "stem cell", "stem-cell", "organoid",
+    "differentiation", "reprogramming"
+]
+
+NEURAL_CELL_KEYWORDS = [
+    "neuron", "neurons", "dopaminergic", "glutamatergic", "gabaergic", "astrocyte", "astrocytes", "oligodendrocyte", "oligodendrocytes", "microglia", "microglial"
 ]
 
 
-# --- Compound extraction ---
-def extract_compounds(sentence: str) -> list[dict]:
+# ---------------------------------------------------------
+# COMPOUNDS
+# ---------------------------------------------------------
+def extract_compounds(sentence: str, SEEDS_DIR=None) -> list[dict]:
     compounds = []
-    s_l = sentence.lower()
-    extracted_names = set()
-    for compound in _get_compound_seeds():
-        if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
+    seen = set()
+    for compound in _get_compound_seeds(SEEDS_DIR):
+        if re.search(r'\b' + re.escape(compound) + r'\b', sentence, re.IGNORECASE):
             name = compound.upper()
-            if name not in extracted_names:
+            if name not in seen:
                 compounds.append({
                     "entity_type": "compound",
                     "entity_name": name,
@@ -31,210 +38,138 @@ def extract_compounds(sentence: str) -> list[dict]:
                     "role": "tested",
                     "text": sentence
                 })
-                extracted_names.add(name)
+                seen.add(name)
     return compounds
 
-# --- Target extraction ---
-def extract_targets(sentence: str) -> list[dict]:
+
+# ---------------------------------------------------------
+# TARGETS
+# ---------------------------------------------------------
+def extract_targets(sentence: str, SEEDS_DIR=None) -> list[dict]:
     targets = []
-    for target in _get_target_seeds():
-        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
+    seen_target_names = set()
+    for target in _get_target_seeds(SEEDS_DIR):
+        norm_name = target.upper()
+        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE) and norm_name not in seen_target_names:
             targets.append({
                 "entity_type": "target",
-                "entity_name": target.upper(),
+                "entity_name": norm_name,
                 "entity_variant": "protein",
                 "role": "target",
                 "text": sentence
             })
+            seen_target_names.add(norm_name)
     return targets
 
-# --- Model extraction ---
-def extract_models(sentence: str) -> list[dict]:
+
+# ---------------------------------------------------------
+# MODELS
+# ---------------------------------------------------------
+def extract_models(sentence: str, SEEDS_DIR=None) -> list[dict]:
     models = []
-    s_l = sentence.lower()
-    for model in _get_model_seeds():
-        if re.search(r'\b' + re.escape(model) + r'\b', s_l):
+    for model in _get_model_seeds(SEEDS_DIR):
+        if re.search(r'\b' + re.escape(model) + r'\b', sentence, re.IGNORECASE):
             variant = "unknown"
-            if any(char.isdigit() for char in model) or '-' in model:
+            if any(c.isdigit() for c in model) or '-' in model:
                 variant = "cell_line"
-            elif model in ["mouse", "mice", "rat", "rats", "human", "humans", "rabbit", "guinea pig", \
-                          "hamster", "zebrafish", "drosophila", "c. elegans", "xenopus", "primate", \
-                          "pig", "dog"]:
+            elif model in ["mouse", "mice", "rat", "human"]:
                 variant = "organism"
-            elif model in ["serum", "plasma", "blood", "csf", "cerebrospinal fluid", "urine", \
-                          "saliva", "synovial fluid", "peritoneal fluid", "ascites"]:
-                variant = "biofluid"
-            elif model in ["liver", "kidney", "heart", "brain", "lung", "spleen", "muscle", \
-                          "adipose", "pancreas", "intestine", "colon", "stomach", "skin", "bone", "cartilage"]:
-                variant = "tissue"
-            elif "organoid" in model or "spheroid" in model or "3d" in model:
+            elif "organoid" in model or "3d" in model:
                 variant = "3d_model"
             models.append({
                 "entity_type": "model",
-                "entity_name": model.upper() if model.isupper() or len(model) <= 5 else model.capitalize(),
+                "entity_name": model.upper(),
                 "entity_variant": variant,
                 "text": sentence
             })
-
-    # Fallback: extract common model terms even if not in seeds
-    fallback_models = [
-        "mouse", "mice", "rat", "rats", "human", "humans", "rabbit", "guinea pig",
-        "hamster", "zebrafish", "drosophila", "c. elegans", "xenopus", "primate",
-        "pig", "dog", "HEK293", "293T", "CHO", "COS-7", "HeLa", "U2OS", "SH-SY5Y"
-    ]
+    fallback_models = ["mouse", "rat", "human", "hela", "hek293"]
     for fm in fallback_models:
-        if re.search(r'\b' + re.escape(fm.lower()) + r'\b', s_l):
-            variant = "cell_line" if any(char.isdigit() for char in fm) or '-' in fm or fm.isupper() else "organism"
+        if re.search(r'\b' + re.escape(fm) + r'\b', sentence, re.IGNORECASE):
             models.append({
                 "entity_type": "model",
-                "entity_name": fm.upper() if fm.isupper() or len(fm) <= 5 else fm.capitalize(),
-                "entity_variant": variant,
+                "entity_name": fm.upper(),
+                "entity_variant": "organism",
                 "text": sentence
             })
     return models
+# ---------------------------------------------------------
+# SEQUENCES / PEPTIDES
+# ---------------------------------------------------------
 def extract_presented_sequences(sentence: str) -> list:
-    # Simple regex for peptide sequences (e.g., GGGSGGGSGGG, SEQ ID NO: 1)
-    # Matches uppercase letters (A-Z) of length >=5, optionally with spaces, and optionally with (SEQ ID NO: n)
-    seqs = []
-    # Find AA sequences (10+ uppercase letters, no spaces)
-    seqs += re.findall(r'\b[A-Z]{5,}\b', sentence)
-    # Find sequences in (SEQ ID NO: n) format
-    seqid_matches = re.findall(r'([A-Z]{3,}\s*\(SEQ ID NO: \d+\))', sentence)
-    seqs += [m.split('(')[0].strip() for m in seqid_matches]
+    # Only match canonical AA codes, min length 7, or uppercase tokens with SEQ ID context
+    aa_pattern = r'\b[ACDEFGHIKLMNPQRSTVWY]{7,}\b'
+    seqs = re.findall(aa_pattern, sentence)
+    # Also allow uppercase tokens of length >=5 if they appear with (SEQ ID NO: n)
+    seqid_matches = re.findall(r'([A-Z]{5,})\s*\(SEQ ID NO: \d+\)', sentence)
+    seqs += [m for m in seqid_matches if m not in seqs]
     return seqs
 
+
 def is_probable_peptide(seq: str, sentence: str) -> bool:
-    """
-    Heuristic: Only 1-letter AA codes, length >=7, >=80% valid AA, at least 3 distinct AAs.
-    Accepts strict full-match or passes fractional/distinct check.
-    """
     aa_set = set("ACDEFGHIKLMNPQRSTVWY")
     seq = seq.strip().upper()
-    if re.fullmatch(r'[ACDEFGHIKLMNPQRSTVWY]{5,}', seq):
+    # Accept only if fullmatch of AA codes and length >=7
+    if re.fullmatch(r'[ACDEFGHIKLMNPQRSTVWY]{7,}', seq):
         return True
-    if len(seq) < 7:
-        return False
-    valid = [c for c in seq if c in aa_set]
-    frac_valid = len(valid) / len(seq) if seq else 0
-    distinct = set(valid)
-    return frac_valid >= 0.8 and len(distinct) >= 3
+    # Otherwise, only allow fallback if SEQ ID context is present
+    if "SEQ ID NO" in sentence.upper():
+        if len(seq) < 5:
+            return False
+        valid = [c for c in seq if c in aa_set]
+        frac_valid = len(valid) / len(seq) if seq else 0
+        return frac_valid >= 0.8 and len(set(valid)) >= 3
+    return False
 
-# --- Entity extraction (domain aware) ---
-def extract_entities(sentence: str, domain: str = "methods_tooling") -> list[dict]:
-    ents = []
+
+# ---------------------------------------------------------
+# MAIN ENTITY ROUTER
+# ---------------------------------------------------------
+def extract_entities(sentence: str, domain: str = "methods_tooling", SEEDS_DIR=None) -> list[dict]:
     extracted_names = set()
     if domain == "construction_science":
-        ents.extend(extract_construction_entities(sentence, extracted_names))
-    else:
-        ents.extend(extract_biomedical_entities(sentence, extracted_names))
-    return ents
+        return extract_construction_entities(sentence, extracted_names)
+    return extract_biomedical_entities(sentence, extracted_names, SEEDS_DIR=SEEDS_DIR)
 
+
+# ---------------------------------------------------------
+# CONSTRUCTION DOMAIN
 def extract_construction_entities(sentence: str, extracted_names: set) -> list[dict]:
     ents = []
     s_l = sentence.lower()
-    construction_materials = {
-        "concrete", "steel", "wood", "timber", "brick", "stone", "glass", "plastic",
-        "aluminum", "copper", "iron", "composite", "polymer", "ceramic", "asphalt"
-    }
-    construction_systems = {
-        "foundation", "wall", "roof", "floor", "beam", "column", "truss", "frame",
-        "slab", "panel", "cladding", "insulation", "ventilation", "plumbing", "electrical"
-    }
-    environmental_exposures = {
-        "temperature", "humidity", "moisture", "rain", "snow", "wind", "sunlight",
-        "UV", "freeze", "thaw", "corrosion", "rust", "mold", "mildew", "fungi"
-    }
-    failure_modes = {
-        "crack", "cracking", "fracture", "break", "failure", "collapse", "buckling",
-        "deflection", "deformation", "creep", "fatigue", "deterioration", "degradation"
-    }
-    hazards = {
-        "fire", "earthquake", "flood", "wind", "seismic", "impact", "blast", "explosion"
-    }
-    test_methods = {
-        "compression", "tension", "bending", "shear", "torsion", "impact", "fatigue",
-        "corrosion", "weathering", "thermal", "fire", "seismic", "load", "stress", "strain"
-    }
-    for material in construction_materials:
-        if re.search(r'\b' + re.escape(material) + r'\b', s_l):
-            name = material.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "material",
-                    "entity_name": name,
-                    "entity_variant": None,
-                    "role": "material"
-                })
-                extracted_names.add(norm)
-    for system in construction_systems:
-        if re.search(r'\b' + re.escape(system) + r'\b', s_l):
-            name = system.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "system",
-                    "entity_name": name,
-                    "entity_variant": None,
-                    "role": "system"
-                })
-                extracted_names.add(norm)
-    for env in environmental_exposures:
-        if re.search(r'\b' + re.escape(env) + r'\b', s_l):
-            name = env.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "environment",
-                    "entity_name": name,
-                    "entity_variant": None,
-                    "role": "exposure"
-                })
-                extracted_names.add(norm)
-    for failure in failure_modes:
-        if re.search(r'\b' + re.escape(failure) + r'\b', s_l):
-            name = failure.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "failure_mode",
-                    "entity_name": name,
-                    "entity_variant": None,
-                    "role": "failure"
-                })
-                extracted_names.add(norm)
-    for hazard in hazards:
-        if re.search(r'\b' + re.escape(hazard) + r'\b', s_l):
-            name = hazard.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "hazard",
-                    "entity_name": name,
-                    "entity_variant": None,
-                    "role": "hazard"
-                })
-                extracted_names.add(norm)
-    for test in test_methods:
-        if re.search(r'\b' + re.escape(test) + r'\b', s_l):
-            name = test.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "test_method",
-                    "entity_name": name,
-                    "entity_variant": None,
-                    "role": "test"
-                })
-                extracted_names.add(norm)
+
+    materials = {"concrete", "steel", "wood", "glass"}
+    systems = {"wall", "roof", "foundation"}
+    failures = {"crack", "fracture", "collapse"}
+
+    for group, entity_type in [
+        (materials, "material"),
+        (systems, "system"),
+        (failures, "failure_mode")
+    ]:
+        for item in group:
+            if item in s_l:
+                name = item.upper()
+                norm = normalize_name(name)
+
+                if norm not in extracted_names:
+                    ents.append({
+                        "entity_type": entity_type,
+                        "entity_name": name,
+                        "role": entity_type
+                    })
+                    extracted_names.add(norm)
+
     return ents
 
-def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dict]:
+
+# ---------------------------------------------------------
+# BIOMEDICAL DOMAIN (CLEAN PIPELINE)
+# ---------------------------------------------------------
+def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=None) -> list[dict]:
     ents = []
-    s_l = sentence.lower()
-    # Compound extraction
-    for compound in _get_compound_seeds():
-        if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
+    # 1. COMPOUNDS
+    for compound in _get_compound_seeds(SEEDS_DIR):
+        if re.search(r'\b' + re.escape(compound) + r'\b', sentence, re.IGNORECASE):
             name = compound.upper()
             norm = normalize_name(name)
             if norm not in extracted_names:
@@ -246,9 +181,8 @@ def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dic
                     "text": sentence
                 })
                 extracted_names.add(norm)
-
-    # Target extraction
-    for target in _get_target_seeds():
+    # 2. TARGETS
+    for target in _get_target_seeds(SEEDS_DIR):
         if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
             name = target.upper()
             norm = normalize_name(name)
@@ -261,103 +195,54 @@ def extract_biomedical_entities(sentence: str, extracted_names: set) -> list[dic
                     "text": sentence
                 })
                 extracted_names.add(norm)
-
-    # Model extraction
-    for e in extract_models(sentence):
-        name_lower = e["entity_name"].lower()
-        if any(neural in name_lower for neural in ["neuron", "neurons", "microglia", "astrocyte", "astrocytes"]):
-            e["entity_type"] = "neural_cell"
+            # Only match canonical AA codes, min length 7, or uppercase tokens with SEQ ID context
+            aa_pattern = r'\b[ACDEFGHIKLMNPQRSTVWY]{7,}\b'
+            seqs = re.findall(aa_pattern, sentence)
+            # Also allow uppercase tokens of length >=5 if they appear with (SEQ ID NO: n)
+            seqid_matches = re.findall(r'([A-Z]{5,})\s*\(SEQ ID NO: \d+\)', sentence)
+            seqs += [m for m in seqid_matches if m not in seqs]
+            return seqs
+    for e in extract_models(sentence, SEEDS_DIR=SEEDS_DIR):
         norm = normalize_name(e["entity_name"])
         if norm not in extracted_names:
             e["text"] = sentence
             ents.append(e)
             extracted_names.add(norm)
-
-    # Explicit neural cell extraction
-    neural_cell_terms = ["neuron", "neurons", "microglia", "astrocyte", "astrocytes"]
-    for nc in neural_cell_terms:
-        if re.search(r'\b' + re.escape(nc) + r'\b', s_l):
-            name = nc.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "neural_cell",
-                    "entity_name": name,
-                    "entity_variant": None,
-                    "role": "tested",
-                    "text": sentence
-                })
-                extracted_names.add(norm)
-    for compound in _get_compound_seeds():
-        if re.search(r'\b' + re.escape(compound) + r'\b', s_l):
-            name = compound.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "compound",
-                    "entity_name": name,
-                    "entity_variant": "drug",
-                    "role": "tested",
-                    "text": sentence
-                })
-                extracted_names.add(norm)
-    # 2) PEPTIDE SEQUENCES: Only if NOT already a compound
-    presented_seqs = extract_presented_sequences(sentence)
-    for seq in presented_seqs:
+    # 4. PEPTIDES
+    for seq in extract_presented_sequences(sentence):
         norm = normalize_name(seq)
         if is_probable_peptide(seq, sentence) and norm not in extracted_names:
             ents.append({
                 "entity_type": "peptide",
                 "entity_name": seq,
-                "entity_variant": None,
                 "role": "tested",
                 "text": sentence
             })
             extracted_names.add(norm)
-    for target in _get_target_seeds():
-        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
-            name = target.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "target",
-                    "entity_name": name,
-                    "entity_variant": "protein",
-                    "role": "target",
-                    "text": sentence
-                })
-                extracted_names.add(norm)
-    for e in extract_models(sentence):
-        name_lower = e["entity_name"].lower()
-        if any(neural in name_lower for neural in ["neuron", "neurons", "microglia", "astrocyte", "astrocytes"]):
-            e["entity_type"] = "neural_cell"
-        norm = normalize_name(e["entity_name"])
-        if norm not in extracted_names:
-            e["text"] = sentence
-            ents.append(e)
-            extracted_names.add(norm)
+    # 5. STEM CELLS
+    stem_cells = []
     for k in STEM_CELL_KEYWORDS:
-        if k in s_l:
+        if k in sentence:
             name = k.upper() if k in ["msc", "ipsc"] else k
             norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "stem_cell",
-                    "entity_name": name,
-                    "entity_variant": None,
-                    "role": "tested",
-                    "text": sentence
-                })
-                extracted_names.add(norm)
-    neural_cell_names = {"microglia", "astrocyte", "neuron", "neurons"}
-    model_names = {"organoid", "organoids"}
-    stem_cell_names = {"ipsc", "msc", "esc"}
-    for e in ents:
-        name_lower = e["entity_name"].lower()
-        if name_lower in neural_cell_names:
-            e["entity_type"] = "neural_cell"
-        elif name_lower in model_names:
-            e["entity_type"] = "model"
-        elif name_lower in stem_cell_names:
-            e["entity_type"] = "stem_cell"
+            stem_cells.append({
+                "entity_type": "stem_cell",
+                "entity_name": name,
+                "entity_variant": norm,
+                "text": sentence
+            })
+    ents.extend(stem_cells)
+    # 6. NEURAL CELLS
+    neural_cells = []
+    for k in NEURAL_CELL_KEYWORDS:
+        if k in sentence:
+            name = k.upper()
+            norm = normalize_name(name)
+            neural_cells.append({
+                "entity_type": "neural_cell",
+                "entity_name": name,
+                "entity_variant": norm,
+                "text": sentence
+            })
+    ents.extend(neural_cells)
     return ents

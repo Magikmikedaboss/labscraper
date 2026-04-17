@@ -11,6 +11,7 @@ For initializing the main db/runs.sqlite database, always use the canonical root
 """
 import os
 import sqlite3
+from pathlib import Path
 
 def _init_db_schema(db_path):
     """
@@ -24,6 +25,14 @@ def _init_db_schema(db_path):
         db_path (str or Path): Path to the SQLite database file to initialize.
     """
     schema_path = os.path.join(os.path.dirname(__file__), 'schema.sql')
+
+    # Block initialization of the canonical persistent DB
+    db_path_resolved = Path(db_path).resolve()
+    # Compute project root (assume db/ is at project root)
+    project_root = Path(__file__).resolve().parents[1]
+    canonical_path = (project_root / 'db' / 'runs.sqlite').resolve()
+    if db_path_resolved == canonical_path:
+        raise ValueError(f"Refusing to initialize canonical persistent DB: {db_path_resolved}")
 
     if not os.path.exists(schema_path):
         raise FileNotFoundError(f"Missing schema.sql at {schema_path}")

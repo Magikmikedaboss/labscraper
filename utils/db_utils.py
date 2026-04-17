@@ -232,7 +232,11 @@ def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_gue
     return chunk_id
 
 def upsert_tag(con, tag: str):
-    con.execute("INSERT OR IGNORE INTO tags(tag) VALUES(?)", (tag,))
+    con.execute("INSERT OR IGNORE INTO tags(tag_name) VALUES(?)", (tag,))
+    # Get tag_id for further use
+    cur = con.execute("SELECT tag_id FROM tags WHERE tag_name=?", (tag,))
+    row = cur.fetchone()
+    return row[0] if row else None
 
 def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str | None, organism: str | None) -> str:
     key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
@@ -273,14 +277,20 @@ def link_event_entity(con, event_id: str, entity_id: str, role: str):
         (event_id, entity_id, role),
     )
 
-def link_event_tag(con, event_id: str, tag: str):
-    upsert_tag(con, tag)
-    con.execute(
-        """INSERT OR IGNORE INTO event_tags(event_id, tag)
-           VALUES (?,?)""",
-        (event_id, tag),
-    )
+import logging
 
+logger = logging.getLogger(__name__)
+
+def link_event_tag(con, event_id: str, tag: str):
+    tag_id = upsert_tag(con, tag)
+    if tag_id is not None:
+        con.execute(
+            """INSERT OR IGNORE INTO event_tags(tag_id, event_id)
+               VALUES (?,?)""",
+            (tag_id, event_id),
+        )
+    else:
+        logger.warning(f"Failed to get tag_id for tag '{tag}', skipping link to event {event_id}")
 def insert_measurement(con, event_id: str, measurement: dict):
     """Insert quantitative measurement"""
     measurement_id = sha16(f"{event_id}|{measurement['measurement_type']}|{measurement['value']}|{measurement['unit']}")
@@ -292,15 +302,13 @@ def insert_measurement(con, event_id: str, measurement: dict):
          measurement['value'], measurement['unit'], measurement['context'], now_iso()),
     )
 
-def insert_relationship(con, event_id: str, entity_id_1: str, entity_id_2: str, 
-                       relationship_type: str, confidence: str):
-    """Insert entity relationship"""
-    relationship_id = sha16(f"{entity_id_1}|{entity_id_2}|{relationship_type}|{event_id}")
+def insert_relationship(con, entity_id_1: str, entity_id_2: str, relationship_type: str):
+    """Insert entity relationship (matches entity_relationships schema)"""
+    relationship_id = sha16(f"{entity_id_1}|{entity_id_2}|{relationship_type}")
     con.execute(
         """INSERT OR IGNORE INTO entity_relationships(
-             relationship_id, entity_id_1, entity_id_2, relationship_type, 
-             event_id, confidence, created_at
-           ) VALUES (?,?,?,?,?,?,?)""",
-        (relationship_id, entity_id_1, entity_id_2, relationship_type, 
-         event_id, confidence, now_iso()),
+             relationship_id, source_entity_id, target_entity_id, relationship_type, created_at
+           ) VALUES (?,?,?,?,?)""",
+        (relationship_id, entity_id_1, entity_id_2, relationship_type, now_iso()),
     )
+    return relationship_id

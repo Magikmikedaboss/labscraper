@@ -20,7 +20,7 @@ import pdfplumber
 from tqdm import tqdm
 
 # Local utils
-from utils.common import sha16, sha64  # Re-export for consumers
+
 from utils.text_utils import chunk_sentences, guess_stage, guess_section
 from utils.entities import extract_entities
 from utils.data_extractors import extract_quantitative_data
@@ -189,7 +189,8 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 p in s_l for lst in FAILURE_PHRASES.values() for p in lst
                             )
                             has_method_tag = bool(tags)
-                            has_decision = bool(decision_taken)
+                            # Only count as a decision if not 'unknown' and not falsy
+                            has_decision = bool(decision_taken) and decision_taken != "unknown"
                             if not quantitative and not has_failure_phrase and not has_method_tag and not has_decision:
                                 continue
                             failure_reason = detect_failure_reason(s_l)

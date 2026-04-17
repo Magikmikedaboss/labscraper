@@ -44,6 +44,9 @@ def test_main_function_database_creation():
                 db_path=str(output_db)
             )
 
+        # Force release of SQLite handles before file cleanup
+        gc.collect()
+
         assert output_db.exists()
 
         conn = sqlite3.connect(str(output_db))

@@ -10,7 +10,10 @@ import re
 import shutil
 from pathlib import Path
 from collections import defaultdict
-from .overlay_scorer import OverlayScorer, load_domain_config
+try:
+    from .overlay_scorer import OverlayScorer, load_domain_config
+except ImportError:
+    from overlay_scorer import OverlayScorer, load_domain_config
 
 try:
     from .entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
