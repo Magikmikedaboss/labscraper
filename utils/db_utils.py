@@ -1,9 +1,12 @@
-"""Shared utilities for database inspection"""
+import logging
 import sqlite3
 from pathlib import Path
 from typing import List, Dict
 from utils.common import now_iso, sha16
 
+logger = logging.getLogger(__name__)
+
+"""Shared utilities for database inspection"""
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
     """Connect to database with standard settings"""
     if not Path(db_path).exists():
@@ -277,20 +280,6 @@ def link_event_entity(con, event_id: str, entity_id: str, role: str):
         (event_id, entity_id, role),
     )
 
-import logging
-
-logger = logging.getLogger(__name__)
-
-def link_event_tag(con, event_id: str, tag: str):
-    tag_id = upsert_tag(con, tag)
-    if tag_id is not None:
-        con.execute(
-            """INSERT OR IGNORE INTO event_tags(tag_id, event_id)
-               VALUES (?,?)""",
-            (tag_id, event_id),
-        )
-    else:
-        logger.warning(f"Failed to get tag_id for tag '{tag}', skipping link to event {event_id}")
 def insert_measurement(con, event_id: str, measurement: dict):
     """Insert quantitative measurement"""
     measurement_id = sha16(f"{event_id}|{measurement['measurement_type']}|{measurement['value']}|{measurement['unit']}")
@@ -312,3 +301,11 @@ def insert_relationship(con, entity_id_1: str, entity_id_2: str, relationship_ty
         (relationship_id, entity_id_1, entity_id_2, relationship_type, now_iso()),
     )
     return relationship_id
+
+def link_event_tag(con, event_id: str, tag: str):
+    upsert_tag(con, tag)   # ensures tag row exists first
+    con.execute(
+        "INSERT OR IGNORE INTO event_tags (event_id, tag) VALUES (?, ?)",
+        (event_id, tag)
+    )
+    con.commit()
