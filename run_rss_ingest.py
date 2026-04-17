@@ -38,8 +38,9 @@ def chunk_sentences(text):
 
 # Import functions from utils/run_engine.py
 try:
+    from utils.metadata_utils import extract_metadata
     from utils.run_engine import (
-        extract_metadata, guess_stage, guess_section,
+        guess_stage, guess_section,
         extract_entities, extract_quantitative_data,
         detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
         classify_event_type, evidence_strength, confidence_score,

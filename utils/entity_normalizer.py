@@ -1,42 +1,3 @@
-def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: dict = None) -> dict:
-    """
-    Normalize an entity using the normalization map and overlay aliases.
-    Args:
-        entity: dict with keys 'entity_type', 'entity_name', 'entity_variant'
-        norm_map: normalization mapping
-        overlay_aliases: overlay alias mapping (optional)
-    Returns:
-        dict with normalized 'entity_type', 'entity_name', 'entity_variant'
-    """
-    name = entity.get('entity_name', '').strip().lower()
-    etype = entity.get('entity_type', '').strip().lower()
-    variant = entity.get('entity_variant', '').strip().lower() if entity.get('entity_variant') else ''
-    # Overlay alias normalization
-    if overlay_aliases and name in overlay_aliases:
-        name = overlay_aliases[name].lower()
-    # Normalization map
-    if etype in norm_map and name in norm_map[etype]:
-        name = norm_map[etype][name].lower()
-    return {
-        'entity_type': etype,
-        'entity_name': name,
-        'entity_variant': variant
-    }
-
-def get_entity_role(entity: dict, norm_map: dict) -> str:
-    """
-    Assign a role to the entity based on type and normalization map.
-    Returns 'primary' for main entities, 'context' for context-only, or 'unknown'.
-    """
-    etype = entity.get('entity_type', '').strip().lower()
-    name = entity.get('entity_name', '').strip().lower()
-    # Example logic: context entities are marked in norm_map under a 'context' key
-    if 'context' in norm_map and etype in norm_map['context'] and name in norm_map['context'][etype]:
-        return 'context'
-    # Default: primary for known types
-    if etype in {'gene', 'protein', 'compound', 'cell_type', 'assay', 'test_method'}:
-        return 'primary'
-    return 'unknown'
 """
 Entity Normalization Module
 
@@ -111,3 +72,47 @@ def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "s
     except Exception as e:
         logging.getLogger(__name__).warning(f"Error loading overlay aliases for {domain_id}: {e}")
     return overlay_map
+
+
+def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: dict = None) -> dict:
+    """
+    Normalize an entity using the normalization map and overlay aliases.
+    Args:
+        entity: dict with keys 'entity_type', 'entity_name', 'entity_variant'
+        norm_map: normalization mapping
+        overlay_aliases: overlay alias mapping (optional)
+    Returns:
+        dict with normalized 'entity_type', 'entity_name', 'entity_variant', preserving extra keys
+    Notes:
+        Keys are matched case-sensitively, but mapped values from overlay_aliases and norm_map will be lowercased for consistency (see etype, name).
+    """
+    copy = dict(entity)
+    name = (entity.get('entity_name') or '').strip().lower()
+    etype = (entity.get('entity_type') or '').strip().lower()
+    variant = (entity.get('entity_variant') or '').strip().lower()
+    # Overlay alias normalization (mapped values are lowercased)
+    if overlay_aliases and name in overlay_aliases:
+        name = overlay_aliases[name].lower()
+    # Normalization map (mapped values are lowercased)
+    if etype in norm_map and name in norm_map[etype]:
+        name = norm_map[etype][name].lower()
+    copy['entity_type'] = etype
+    copy['entity_name'] = name
+    copy['entity_variant'] = variant
+    return copy
+
+
+def get_entity_role(entity: dict, norm_map: dict) -> str:
+    """
+    Assign a role to the entity based on type and normalization map.
+    Returns 'primary' for main entities, 'context' for context-only, or 'unknown'.
+    """
+    etype = (entity.get('entity_type') or '').strip().lower()
+    name = (entity.get('entity_name') or '').strip().lower()
+    # Example logic: context entities are marked in norm_map under a 'context' key
+    if 'context' in norm_map and etype in norm_map['context'] and name in norm_map['context'][etype]:
+        return 'context'
+    # Default: primary for known types
+    if etype in {'gene', 'protein', 'compound', 'cell_type', 'assay', 'test_method'}:
+        return 'primary'
+    return 'unknown'

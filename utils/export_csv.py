@@ -10,11 +10,14 @@ from collections import defaultdict
 import sys
 import os
 
+import re
+from pathlib import PurePath
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
 from process_words import is_process_word
-from export_utilities import write_run_meta
+from utils.reporting_utils import write_run_meta
 
 DB_PATH = Path("db") / "runs.sqlite"
 OUTPUT_DIR = Path("output")
@@ -92,7 +95,7 @@ def export_candidates_domain_aware(domain_id: str = None):
             "role": None
         })
 
-        for entity_id, etype, ename, evariant, event_ids, source_ids, first_seen, last_seen in entities_data:
+        for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
             entity_dict = {
                 "entity_type": etype,
                 "entity_name": ename,
@@ -112,13 +115,9 @@ def export_candidates_domain_aware(domain_id: str = None):
             if evariant:
                 for v in (s.strip() for s in evariant.split(",") if s.strip()):
                     canonical_entities[key]["entity_variant"].add(v)
-            # Deduplicate event_ids for event_count
-            if event_ids:
-                if isinstance(event_ids, int):
-                    canonical_entities[key]["event_count"] += event_ids
-                elif isinstance(event_ids, str):
-                    event_id_set = set(eid.strip() for eid in event_ids.split(",") if eid.strip())
-                    canonical_entities[key]["event_count"] += len(event_id_set)
+            # Use event_count directly (it's an integer)
+            if event_count:
+                canonical_entities[key]["event_count"] += event_count
             canonical_entities[key]["paper_ids"].update(source_ids.split(",") if source_ids else [])
             canonical_entities[key]["original_names"].add(ename)
             canonical_entities[key]["role"] = role
@@ -126,8 +125,6 @@ def export_candidates_domain_aware(domain_id: str = None):
     # Write to exports/latest/<domain>/entities.csv if domain_id is given
     if domain_id:
         # Sanitize domain_id to prevent path traversal or unsafe values
-        import re
-        from pathlib import PurePath
         if os.path.isabs(domain_id) or len(PurePath(domain_id).parts) > 1 or '..' in domain_id or not re.match(r'^[A-Za-z0-9_-]+$', domain_id):
             raise ValueError(f"Invalid domain_id: {domain_id}")
         latest_dir = LATEST_DIR / domain_id

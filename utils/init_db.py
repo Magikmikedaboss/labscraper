@@ -3,7 +3,6 @@ Initialize the main db.sqlite database using the schema.sql file.
 """
 import sqlite3
 from pathlib import Path
-import os
 
 def main(db_path="db.sqlite"):
     schema_path = Path(__file__).parent / "schema.sql"

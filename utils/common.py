@@ -64,23 +64,26 @@ def get_seeds(SEEDS_DIR=None):
 # ---------------------------------------------------------
 # PATH RESOLUTION (FIXED)
 # ---------------------------------------------------------
+# Helper for seeds root normalization
+def _normalize_seeds_root(resolved: Path) -> Path:
+    """If path ends with base/life_sciences, return grandparent, else resolved."""
+    if len(resolved.parts) >= 2 and resolved.parts[-2:] == ("base", "life_sciences"):
+        return resolved.parent.parent.resolve()
+    return resolved
+
 def _resolve_seeds_dir(SEEDS_DIR=None):
+
 
     if SEEDS_DIR:
         p = Path(SEEDS_DIR)
         if p.exists():
             resolved = p.resolve()
-            # If the path ends with base/life_sciences, return the grandparent (the seeds root)
-            if len(resolved.parts) >= 2 and resolved.parts[-2:] == ("base", "life_sciences"):
-                return resolved.parent.parent.resolve()
-            return resolved
+            return _normalize_seeds_root(resolved)
 
         p2 = Path.cwd() / p
         if p2.exists():
             resolved = p2.resolve()
-            if len(resolved.parts) >= 2 and resolved.parts[-2:] == ("base", "life_sciences"):
-                return resolved.parent.parent.resolve()
-            return resolved
+            return _normalize_seeds_root(resolved)
 
         warnings.warn(f"Provided SEEDS_DIR '{SEEDS_DIR}' not found as absolute or relative path; falling back to auto-discovery.")
 
