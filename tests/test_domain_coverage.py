@@ -4,7 +4,7 @@ neuroscience_cognition, biohacking_longevity, drug_discovery, stem_cells_regen
 
 from utils.run_engine import extract_entities
 from pathlib import Path
-SEEDS_DIR = Path(__file__).parent.parent / "seeds" / "base" / "life_sciences"
+SEEDS_DIR = Path(__file__).parent.parent / "seeds"
 
 
 class TestNeuroscienceCognitionDomain:

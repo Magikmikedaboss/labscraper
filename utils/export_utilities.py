@@ -142,14 +142,16 @@ def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[
     """Write run metadata for reproducibility"""
     domain = get_domain_by_id(domain_id) if domain_id else None
     overlay_id = f"{domain_id}_v1" if domain_id else None
-    
+
     # Ensure overlay aliases are loaded and applied for normalization
     try:
         from .entity_normalizer import load_overlay_aliases
     except ImportError:
         from entity_normalizer import load_overlay_aliases
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
-    overlay_aliases_count = len(overlay_aliases)    # Re-normalize canonical_entities with overlay aliases if not already
+    overlay_aliases_count = len(overlay_aliases)
+
+    # Normalize canonical_entities for meta reporting
     norm_map = load_normalization_map()
     normalized_entities = {}
     for (etype, ename), data in canonical_entities.items():
@@ -199,17 +201,50 @@ def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[
         "overlay_id": overlay_id,
         "overlay_aliases_count": overlay_aliases_count,
         "counts": {
-            "total_events": confidence_changes["high"] + confidence_changes["med"] + confidence_changes["low"] + confidence_changes.get("other", 0),
+            "total_events": confidence_changes.get("high", 0) + confidence_changes.get("med", 0) + confidence_changes.get("low", 0) + confidence_changes.get("other", 0),
             "total_entities": len(normalized_entities),
             "primary_entities": sum(1 for _, data in normalized_entities.items() if data["role"] == "primary"),
             "context_entities": sum(1 for _, data in normalized_entities.items() if data["role"] == "context")
         },
         "confidence_distribution": {
-            "high": confidence_changes["high"],
-            "med": confidence_changes["med"],
-            "low": confidence_changes["low"],
-            "boosted_to_high": confidence_changes["boosted_to_high"],
-            "boosted_to_med": confidence_changes["boosted_to_med"]
+            "high": confidence_changes.get("high", 0),
+            "med": confidence_changes.get("med", 0),
+            "low": confidence_changes.get("low", 0),
+            "boosted_to_high": confidence_changes.get("boosted_to_high", 0),
+            "boosted_to_med": confidence_changes.get("boosted_to_med", 0),
+            "other": confidence_changes.get("other", 0)
+        }
+    }
+
+    # Convert set-valued fields to lists for JSON serialization
+    for ent in normalized_entities.values():
+        if isinstance(ent.get("paper_ids"), set):
+            ent["paper_ids"] = list(ent["paper_ids"])
+        if isinstance(ent.get("original_names"), set):
+            ent["original_names"] = list(ent["original_names"])
+
+    meta = {
+        "run_id": datetime.now().strftime("%Y%m%d_%H%M%S"),
+        "engine_version": "v5_domain_aware",
+        "timestamp": datetime.now().isoformat(),
+        "seeds_version": "2026-01-22",
+        "domain_id": domain_id or None,
+        "domain_name": domain.name if domain else "All Domains",
+        "overlay_id": overlay_id,
+        "overlay_aliases_count": overlay_aliases_count,
+        "counts": {
+            "total_events": confidence_changes.get("high", 0) + confidence_changes.get("med", 0) + confidence_changes.get("low", 0) + confidence_changes.get("other", 0),
+            "total_entities": len(normalized_entities),
+            "primary_entities": sum(1 for _, data in normalized_entities.items() if data["role"] == "primary"),
+            "context_entities": sum(1 for _, data in normalized_entities.items() if data["role"] == "context")
+        },
+        "confidence_distribution": {
+            "high": confidence_changes.get("high", 0),
+            "med": confidence_changes.get("med", 0),
+            "low": confidence_changes.get("low", 0),
+            "boosted_to_high": confidence_changes.get("boosted_to_high", 0),
+            "boosted_to_med": confidence_changes.get("boosted_to_med", 0),
+            "other": confidence_changes.get("other", 0)
         },
         "top_entities": [
             {

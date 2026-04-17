@@ -1,3 +1,42 @@
+def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: dict = None) -> dict:
+    """
+    Normalize an entity using the normalization map and overlay aliases.
+    Args:
+        entity: dict with keys 'entity_type', 'entity_name', 'entity_variant'
+        norm_map: normalization mapping
+        overlay_aliases: overlay alias mapping (optional)
+    Returns:
+        dict with normalized 'entity_type', 'entity_name', 'entity_variant'
+    """
+    name = entity.get('entity_name', '').strip().lower()
+    etype = entity.get('entity_type', '').strip().lower()
+    variant = entity.get('entity_variant', '').strip().lower() if entity.get('entity_variant') else ''
+    # Overlay alias normalization
+    if overlay_aliases and name in overlay_aliases:
+        name = overlay_aliases[name].lower()
+    # Normalization map
+    if etype in norm_map and name in norm_map[etype]:
+        name = norm_map[etype][name].lower()
+    return {
+        'entity_type': etype,
+        'entity_name': name,
+        'entity_variant': variant
+    }
+
+def get_entity_role(entity: dict, norm_map: dict) -> str:
+    """
+    Assign a role to the entity based on type and normalization map.
+    Returns 'primary' for main entities, 'context' for context-only, or 'unknown'.
+    """
+    etype = entity.get('entity_type', '').strip().lower()
+    name = entity.get('entity_name', '').strip().lower()
+    # Example logic: context entities are marked in norm_map under a 'context' key
+    if 'context' in norm_map and etype in norm_map['context'] and name in norm_map['context'][etype]:
+        return 'context'
+    # Default: primary for known types
+    if etype in {'gene', 'protein', 'compound', 'cell_type', 'assay', 'test_method'}:
+        return 'primary'
+    return 'unknown'
 """
 Entity Normalization Module
 
@@ -51,24 +90,24 @@ def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "s
     Example:
         {"msc": "mesenchymal stem cell", "ipsc": "induced pluripotent stem cell"}
     """
+    # Dynamically import seed_overlay_loader if present and get alias map
+    import importlib.util
+    import importlib
+    import logging
+    loader_name = 'seed_overlay_loader'
+    overlay_map = {}
     try:
-        import importlib.util
-        if importlib.util.find_spec('.seed_overlay_loader', __package__):
-            pass  # Module exists, but import failed for another reason
-    except ImportError as e:
-        # Only fallback if the import failed because the module is missing
-        if getattr(e, 'name', None) == 'seed_overlay_loader' or isinstance(e, ModuleNotFoundError):
-            try:
-                import importlib.util
-                if importlib.util.find_spec('seed_overlay_loader') is not None:
-                    pass  # Module exists, but import failed for another reason
-            except ImportError as e2:
-                if getattr(e2, 'name', None) == 'seed_overlay_loader' or isinstance(e2, ModuleNotFoundError):
-                    import logging
-                    logging.getLogger(__name__).warning(
-                        f"Could not import seed_overlay_loader, overlay aliases unavailable for {domain_id}"
-                    )
-                else:
-                    raise
+        spec = importlib.util.find_spec(loader_name)
+        if spec is not None:
+            module = importlib.import_module(loader_name)
+            if hasattr(module, 'get_overlay_aliases'):
+                overlay_map = module.get_overlay_aliases(domain_id, overlays_dir)
+            elif hasattr(module, 'OVERLAY_ALIASES'):
+                overlay_map = module.OVERLAY_ALIASES.get(domain_id, {})
+            else:
+                logging.getLogger(__name__).warning(f"seed_overlay_loader found but no loader function or alias map present for {domain_id}")
         else:
-            raise
+            logging.getLogger(__name__).warning(f"seed_overlay_loader not found, overlay aliases unavailable for {domain_id}")
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Error loading overlay aliases for {domain_id}: {e}")
+    return overlay_map

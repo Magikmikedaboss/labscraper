@@ -92,7 +92,7 @@ def export_candidates_domain_aware(domain_id: str = None):
             "role": None
         })
 
-        for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
+        for entity_id, etype, ename, evariant, event_ids, source_ids, first_seen, last_seen in entities_data:
             entity_dict = {
                 "entity_type": etype,
                 "entity_name": ename,
@@ -108,9 +108,17 @@ def export_candidates_domain_aware(domain_id: str = None):
 
             key = (etype, canonical_name)
             canonical_entities[key]["entity_type"] = etype
+            # Split evariant on commas, deduplicate, and add each
             if evariant:
-                canonical_entities[key]["entity_variant"].add(evariant)
-            canonical_entities[key]["event_count"] += event_count
+                for v in (s.strip() for s in evariant.split(",") if s.strip()):
+                    canonical_entities[key]["entity_variant"].add(v)
+            # Deduplicate event_ids for event_count
+            if event_ids:
+                if isinstance(event_ids, int):
+                    canonical_entities[key]["event_count"] += event_ids
+                elif isinstance(event_ids, str):
+                    event_id_set = set(eid.strip() for eid in event_ids.split(",") if eid.strip())
+                    canonical_entities[key]["event_count"] += len(event_id_set)
             canonical_entities[key]["paper_ids"].update(source_ids.split(",") if source_ids else [])
             canonical_entities[key]["original_names"].add(ename)
             canonical_entities[key]["role"] = role

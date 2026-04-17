@@ -12,7 +12,8 @@ def normalize_name(name: str) -> str:
 
 STEM_CELL_KEYWORDS = [
     "msc", "mesenchymal", "ipsc", "pluripotent",
-    "stem cell", "stem-cell", "organoid",
+    "stem cell", "stem-cell",
+    # "organoid" REMOVED — typed as model via models.txt
     "differentiation", "reprogramming"
 ]
 
@@ -137,28 +138,28 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
     ents = []
     s_l = sentence.lower()
 
-    materials = {"concrete", "steel", "wood", "glass"}
-    systems = {"wall", "roof", "foundation"}
-    failures = {"crack", "fracture", "collapse"}
+    groups = [
+        ({"concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation"}, "material"),
+        ({"wall", "roof", "foundation", "floor", "column", "beam", "slab"}, "system"),
+        ({"crack", "cracking", "fracture", "collapse", "buckling", "fatigue", "spalling"}, "failure_mode"),
+        ({"temperature", "humidity", "moisture", "wind", "rain", "fire", "freeze", "thermal", "frost"}, "environment"),
+        ({"compression", "tension", "shear", "bending", "torsion", "fatigue", "impact", "flexure"}, "test_method"),
+        ({"flood", "seismic", "corrosion", "erosion", "vibration", "overload"}, "hazard"),
+    ]
 
-    for group, entity_type in [
-        (materials, "material"),
-        (systems, "system"),
-        (failures, "failure_mode")
-    ]:
+    for group, entity_type in groups:
         for item in group:
             if item in s_l:
                 name = item.upper()
                 norm = normalize_name(name)
-
                 if norm not in extracted_names:
                     ents.append({
                         "entity_type": entity_type,
                         "entity_name": name,
-                        "role": entity_type
+                        "role": entity_type,
+                        "text": sentence
                     })
                     extracted_names.add(norm)
-
     return ents
 
 
@@ -169,7 +170,8 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
     ents = []
     # 1. COMPOUNDS
     for compound in _get_compound_seeds(SEEDS_DIR):
-        if re.search(r'\b' + re.escape(compound) + r'\b', sentence, re.IGNORECASE):
+        pattern = r'\b' + re.escape(compound) + r'\b'
+        if re.search(pattern, sentence, re.IGNORECASE):
             name = compound.upper()
             norm = normalize_name(name)
             if norm not in extracted_names:
@@ -181,9 +183,11 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
                     "text": sentence
                 })
                 extracted_names.add(norm)
+
     # 2. TARGETS
     for target in _get_target_seeds(SEEDS_DIR):
-        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
+        pattern = r'\b' + re.escape(target) + r'\b'
+        if re.search(pattern, sentence, re.IGNORECASE):
             name = target.upper()
             norm = normalize_name(name)
             if norm not in extracted_names:
@@ -195,30 +199,58 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
                     "text": sentence
                 })
                 extracted_names.add(norm)
-    # 3. MODELS
+
+    # 3. STEM CELLS — must run BEFORE models to win deduplication for MSC/iPSC/HSC etc.
+    for k in STEM_CELL_KEYWORDS:
+        if re.search(r'\b' + re.escape(k) + r'\b', sentence, re.IGNORECASE):
+            name = k.upper() if len(k) <= 5 or k.lower() in {"msc", "ipsc", "hsc", "esc", "nsc"} else k
+            norm = normalize_name(name)
+            if norm not in extracted_names:
+                ents.append({"entity_type": "stem_cell", "entity_name": name,
+                             "entity_variant": norm, "text": sentence})
+                extracted_names.add(norm)
+
+    # 4. NEURAL CELLS — must run BEFORE models to win deduplication for neuron/neurons/microglia
+    for k in NEURAL_CELL_KEYWORDS:
+        if re.search(r'\b' + re.escape(k) + r'\b', sentence, re.IGNORECASE):
+            name = k.upper()
+            norm = normalize_name(name)
+            if norm not in extracted_names:
+                ents.append({"entity_type": "neural_cell", "entity_name": name,
+                             "entity_variant": norm, "text": sentence})
+                extracted_names.add(norm)
+
+    # 5. MODELS — after stem/neural cells so dedup blocks their overlap terms
     models = []
     for model in _get_model_seeds(SEEDS_DIR):
         if re.search(r'\b' + re.escape(model) + r'\b', sentence, re.IGNORECASE):
             variant = "unknown"
             if any(c.isdigit() for c in model) or '-' in model:
                 variant = "cell_line"
-            elif model in ["mouse", "mice", "rat", "human"]:
+            elif model.lower() in {"mouse", "mice", "rat", "human"}:
                 variant = "organism"
-            elif "organoid" in model or "3d" in model:
-                variant = "3d_model"
-            models.append({
-                "entity_type": "model",
-                "entity_name": model.upper(),
-                "entity_variant": variant,
-                "text": sentence
-            })
-    fallback_models = ["mouse", "rat", "human", "hela", "hek293"]
-    for fm in fallback_models:
+            elif "organoid" in model.lower() or "3d" in model.lower():
+                pass  # No special variant, keep as unknown
+            models.append({"entity_type": "model", "entity_name": model.upper(),
+                           "entity_variant": variant, "text": sentence})
+
+    for fm in ["mouse", "rat", "human", "hela", "hek293"]:
         if re.search(r'\b' + re.escape(fm) + r'\b', sentence, re.IGNORECASE):
-            models.append({
-                "entity_type": "model",
-                "entity_name": fm.upper(),
-                "entity_variant": "organism",
-                "text": sentence
-            })
+            variant = "cell_line" if fm in ["hela", "hek293"] else "organism"
+            models.append({"entity_type": "model", "entity_name": fm.upper(),
+                           "entity_variant": variant, "text": sentence})
+    for m in models:
+        norm = normalize_name(m["entity_name"])
+        if norm not in extracted_names:
+            ents.append(m)
+            extracted_names.add(norm)
+
+    # 6. PEPTIDES
+    for seq in extract_presented_sequences(sentence):
+        norm = normalize_name(seq)
+        if is_probable_peptide(seq, sentence) and norm not in extracted_names:
+            ents.append({"entity_type": "peptide", "entity_name": seq,
+                         "role": "tested", "text": sentence})
+            extracted_names.add(norm)
+
     return ents

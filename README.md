@@ -73,9 +73,26 @@ pip install -r requirements.txt
 
 # Initialize database
 python init_db.py
-```
+```text
+
 
 ### Usage
+
+#### Modular Pipeline (Development/Debug)
+
+The modular pipeline is orchestrated by `utils/scrape_pdfs_phase1_full.py`. This script demonstrates the core PDF-to-database logic using only the new modular utility functions, and is ideal for debugging, development, or as a template for further customization.
+
+```bash
+# Run the modular pipeline (default input and db paths):
+python utils/scrape_pdfs_phase1_full.py
+
+# Specify custom input and database paths:
+python utils/scrape_pdfs_phase1_full.py --input-dir input/pdfs --db-path db/dev.sqlite
+```
+
+- All logic is delegated to modular utilities in `utils/`.
+- Use this script to test new entity extractors, event logic, or database schema changes.
+- Output: Populates the specified SQLite database with parsed research events, entities, and measurements.
 
 #### Basic Processing
 ```bash
@@ -116,16 +133,31 @@ ls db/
 ```
 labscraper/
 ├── utils/                      # Core processing modules
-│   ├── scrape_pdfs_parallel.py # Parallel PDF processing (recommended)
-│   ├── run_engine.py           # Single-threaded processing
-│   ├── export_dual_lens.py     # Advanced dual-lens analysis
+│   ├── scrape_pdfs_parallel.py     # Parallel PDF processing (recommended)
+│   ├── run_engine.py               # Single-threaded processing
+│   ├── export_dual_lens.py         # Advanced dual-lens analysis
 │   ├── export_csv_v5_domain_aware.py # Domain-aware CSV export
-│   ├── entity_extractor.py     # Entity extraction logic
-│   ├── entity_normalizer.py    # Variant normalization
-│   ├── init_db.py              # Database initialization
-│   ├── schema.sql              # Database schema
-│   └── scrape_pdfs_phase1.py   # Base scraper functions
-│
+│   ├── scrape_pdfs_phase1_full.py  # Modular pipeline (development/debug)
+│   ├── entities.py                 # Entity extraction utilities
+│   ├── event_classification.py     # Event classification logic
+│   ├── db_utils.py                 # Database helpers
+│   ├── text_utils.py               # Text processing utilities
+│   ├── data_extractors.py          # Quantitative data extraction
+│   ├── metadata_utils.py           # PDF metadata extraction
+│   ├── common.py                   # Common helpers (hashing, etc.)
+│   ├── entity_extractor.py         # (legacy) Entity extraction logic
+│   ├── entity_normalizer.py        # (legacy) Variant normalization
+│   ├── init_db.py                  # Database initialization
+│   ├── schema.sql                  # Database schema
+│   └── scrape_pdfs_phase1.py       # Base scraper functions
+```
+
+## 🛠️ Development & Debugging
+
+- To test or extend the modular pipeline, use `utils/scrape_pdfs_phase1_full.py`.
+- All core logic is now modularized in `utils/` for easy reuse and testing.
+- For production/parallel runs, use `utils/run_engine.py` or `utils/scrape_pdfs_parallel.py`.
+
 ├── config/                     # Configuration files
 │   ├── domains/               # Domain-specific configurations
 │   ├── lenses/                # Overlay configurations

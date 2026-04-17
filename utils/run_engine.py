@@ -8,16 +8,15 @@ __all__ = ["sha16", "sha64", "get_seeds", "load_seed_file"]
 # ---------------------------------------------------------
 
 from pathlib import Path
+
 import sqlite3
 import sys
-import re
 import logging
 import argparse
 from utils.db_init import _init_db_schema
-
-
 import pdfplumber
 from tqdm import tqdm
+from utils.metadata_utils import extract_metadata
 
 # Local utils
 
@@ -52,8 +51,12 @@ def _init_db_schema_if_needed(db_path):
     """
     Ensure the database at db_path is initialized with the schema.
     Delegates to utils.db_init._init_db_schema for actual initialization logic.
+    Only initialize schema for non-canonical/test DBs.
     """
-    _init_db_schema(str(db_path))
+    canonical_path = str(Path("db/runs.sqlite").resolve())
+    db_path_resolved = str(Path(db_path).resolve())
+    if db_path_resolved != canonical_path:
+        _init_db_schema(str(db_path))
 
 
 # ---------------------------------------------------------
@@ -67,54 +70,8 @@ else:
     SEEDS_DIR = project_root / "seeds"
 
 
-# ---------------------------------------------------------
-# METADATA EXTRACTION
-# ---------------------------------------------------------
-def extract_metadata(pdf_path: Path, pdf) -> dict:
-    metadata = {
-        "title": None,
-        "authors": None,
-        "year": None,
-        "doi": None,
-        "venue": None,
-    }
 
-    if pdf.metadata:
-        metadata["title"] = pdf.metadata.get("Title")
-        metadata["authors"] = pdf.metadata.get("Author")
 
-        if pdf.metadata.get("CreationDate"):
-            try:
-                year_match = re.search(r"(19|20)\d{2}", str(pdf.metadata.get("CreationDate")))
-                if year_match:
-                    metadata["year"] = int(year_match.group(0))
-            except Exception as e:
-                logging.exception(f"Error extracting year: {e}")
-
-    if pdf.pages:
-        try:
-            first_page = pdf.pages[0].extract_text() or ""
-
-            doi_match = re.search(r"doi[:\s]*(10\.\d{4,}/[^\s]+)", first_page, re.I)
-            if doi_match:
-                metadata["doi"] = doi_match.group(1).rstrip(".,;")
-
-            if not metadata["year"]:
-                year_match = re.search(r"\b(19|20)\d{2}\b", first_page)
-                if year_match:
-                    metadata["year"] = int(year_match.group(0))
-
-            if not metadata["title"]:
-                lines = first_page.split("\n")[:10]
-                for line in lines:
-                    if 20 < len(line) < 200:
-                        metadata["title"] = line.strip()
-                        break
-
-        except Exception as e:
-            print(f"⚠️ Metadata extraction failed: {e}")
-
-    return metadata
 
 
 # ---------------------------------------------------------
@@ -141,7 +98,10 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
     input_dir = Path(input_dir)
     db_path = Path(db_path)
 
-    # Initialize DB
+    # Ensure DB directory exists before schema init
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Initialize DB (only for non-canonical/test DBs)
     _init_db_schema_if_needed(db_path)
 
     if not input_dir.exists():
@@ -152,9 +112,6 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
 
     if not pdfs:
         raise SystemExit("No PDFs found.")
-
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-
 
     with sqlite3.connect(db_path) as con:
         success_count = 0
@@ -169,7 +126,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                 file_hash = sha64(str(pdf_path) + content_hash)
 
                 with pdfplumber.open(str(pdf_path)) as pdf:
-                    metadata = extract_metadata(pdf_path, pdf)
+                    metadata = extract_metadata(pdf_path)
                     upsert_source(con, source_id, pdf_path.name, metadata)
                     doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                     for page_idx, page in enumerate(pdf.pages, start=1):
@@ -189,7 +146,6 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 p in s_l for lst in FAILURE_PHRASES.values() for p in lst
                             )
                             has_method_tag = bool(tags)
-                            # Only count as a decision if not 'unknown' and not falsy
                             has_decision = bool(decision_taken) and decision_taken != "unknown"
                             if not quantitative and not has_failure_phrase and not has_method_tag and not has_decision:
                                 continue
@@ -200,7 +156,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 s_l, tags, failure_reason, decision_taken
                             )
                             strength = evidence_strength(s_l)
-                            entities = extract_entities(sent, research_domain)
+                            entities = extract_entities(sent, research_domain, SEEDS_DIR)
                             conf = confidence_score(
                                 bool(entities),
                                 tags,
@@ -228,6 +184,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 strength,
                                 conf,
                             )
+                            print(f"[EVENT] {event_type} | conf={conf} | {sent[:60]}")
                             for ent in entities:
                                 entity_id = upsert_entity(
                                     con,

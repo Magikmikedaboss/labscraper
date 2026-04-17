@@ -232,45 +232,40 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
     
     entities_file = output_path / f"entities_dual_lens_{domain_id}.csv"
     
+
+    # Peptide suppression filter: only keep peptides with >=2 events
+    filtered_entities = [
+        entity for entity in entities
+        if not (entity['entity_type'] == 'peptide' and len(entity_events.get(entity['entity_id'], [])) < 2)
+    ]
+
     with open(entities_file, 'w', newline='', encoding='utf-8') as f:
         # Build column headers
         base_cols = ['entity_name', 'entity_type', 'entity_variant', 'event_count']
-        
         overlay_cols = []
         for overlay_id in overlay_ids:
             overlay_cols.extend([
                 f'{overlay_id}_score',
                 f'{overlay_id}_bucket'
             ])
-        
         all_cols = base_cols + overlay_cols
-        
         writer = csv.DictWriter(f, fieldnames=all_cols)
         writer.writeheader()
-        
-        for entity in entities:
+        for entity in filtered_entities:
             entity_id = entity['entity_id']
             event_count = len(entity_events.get(entity_id, []))
-
-            # Suppress single-mention peptide artifacts that are typically OCR/token noise.
-            if entity['entity_type'] == 'peptide' and event_count < 2:
-                continue
-
             row = {
                 'entity_name': entity['entity_name'],
                 'entity_type': entity['entity_type'],
                 'entity_variant': entity['entity_variant'] or '',
                 'event_count': event_count
             }
-            
             # Add overlay scores
             for overlay_id in overlay_ids:
                 scores = entity_scores[entity_id][overlay_id]
                 row[f'{overlay_id}_score'] = f"{scores['score']:.2f}"
                 row[f'{overlay_id}_bucket'] = scores['bucket']
-            
             writer.writerow(row)
-    
     print(f"   ✅ Exported: {entities_file}")
 
     latest_dir = Path("exports") / "latest" / domain_id
@@ -333,26 +328,23 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
         f.write(f"Domain: {domain_config['name']}\n")
         f.write(f"Overlays: {', '.join(overlay_ids)}\n")
         f.write(f"Total Events: {len(events)}\n")
-        f.write(f"Total Entities: {len(entities)}\n\n")
-        
+        f.write(f"Total Entities: {len(filtered_entities)}\n\n")
+
         # Top entities per overlay
         for overlay_id in overlay_ids:
             f.write("="*70 + "\n")
             f.write(f"TOP 20 ENTITIES - {overlay_id.upper()}\n")
             f.write("="*70 + "\n\n")
-            
-            # Sort entities by this overlay's score
+            # Sort filtered entities by this overlay's score
             sorted_entities = sorted(
-                entities,
+                filtered_entities,
                 key=lambda e: entity_scores[e['entity_id']][overlay_id]['score'],
                 reverse=True
             )
-            
             for i, entity in enumerate(sorted_entities[:20], 1):
                 entity_id = entity['entity_id']
                 scores = entity_scores[entity_id][overlay_id]
                 event_count = len(entity_events.get(entity_id, []))
-                
                 f.write(f"{i:2d}. {entity['entity_name']:30s} ")
                 f.write(f"({entity['entity_type']:12s}) ")
                 f.write(f"Score: {scores['score']:6.2f} ")

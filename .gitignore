@@ -1,3 +1,35 @@
+# Ignore one-off status/progress markdown files
+*PROGRESS.md
+*STATUS.md
+*SUMMARY.md
+*FIXES_*.md
+*_RESULTS.md
+*_COMPLETE.md
+*_SNAPSHOT.md
+*_VERIFICATION.md
+*_SUCCESS.md
+*_TODO.md
+*_PLAN.md
+*_REVIEW.md
+*_GUIDE.md
+*_DEMONSTRATION.md
+*_FOUNDATION.md
+*_IMPLEMENTED.md
+*_AUDIT.md
+*_CORPUS_ISSUE.md
+*_DELIVERY.md
+*_PHASE*.md
+*_EXPORT*.md
+*_SYSTEM*.md
+*_OVERLAY*.md
+*_PROMOTION*.md
+*_MIGRATION*.md
+*_COMPARISON*.md
+*_SCORING*.md
+*_PATTERNS*.md
+*_ANALYSIS*.md
+*_MULTI_DOMAIN*.md
+*_V*.md
 # Python
 __pycache__/
 *.py[cod]

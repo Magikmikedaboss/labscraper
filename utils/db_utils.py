@@ -1,3 +1,4 @@
+"""Shared utilities for database inspection"""
 import logging
 import sqlite3
 from pathlib import Path
@@ -5,8 +6,6 @@ from typing import List, Dict
 from utils.common import now_iso, sha16
 
 logger = logging.getLogger(__name__)
-
-"""Shared utilities for database inspection"""
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
     """Connect to database with standard settings"""
     if not Path(db_path).exists():
@@ -58,35 +57,31 @@ def inspect_database(db_path: str = 'db/runs.sqlite', detailed: bool = False):
     """
     print(f"\n{'='*60}")
     print(f"DATABASE INSPECTION: {db_path}")
-    print(f"{'='*60}\n")
-    
+    logger.info('%s', '='*60)
+    logger.info('DATABASE INSPECTION: %s', db_path)
+    logger.info('%s\n', '='*60)
     try:
         conn = connect_db(db_path)
         tables = get_tables(conn)
-        
-        print("📊 Tables found:", len(tables))
-        print()
-        
+        logger.info("📊 Tables found: %d", len(tables))
+        logger.info("")
         for table in tables:
             stats = get_table_stats(conn, table)
-            print(f"📋 {table}")
-            print(f"   Rows: {stats['count']:,}")
-            
+            logger.info("📋 %s", table)
+            logger.info("   Rows: %s", f"{stats['count']:,}")
             if detailed:
-                print(f"   Columns: {', '.join(stats['columns'])}")
-            print()
-        
+                logger.info("   Columns: %s", ', '.join(stats['columns']))
+            logger.info("")
         conn.close()
-        
     except FileNotFoundError as e:
-        print(f"❌ {e}")
+        logger.error("❌ %s", e)
     except sqlite3.Error as e:
-        print(f"❌ Database error: {e}")
+        logger.error("❌ Database error: %s", e)
 
 def show_recent_events(conn: sqlite3.Connection, limit: int = 5):
     """Show recent research events"""
-    print(f"\n📰 RECENT EVENTS (last {limit}):")
-    print("-" * 60)
+    logger.info("\n📰 RECENT EVENTS (last %d):", limit)
+    logger.info("-" * 60)
     
     try:
         query = """
@@ -99,16 +94,16 @@ def show_recent_events(conn: sqlite3.Connection, limit: int = 5):
         
         for row in cursor:
             confidence = row[2] if row[2] is not None else "unknown"
-            print("  •", row[0], "|", row[1], "| confidence:", confidence)
-            print("    ", row[3])
-            print()
+            logger.info("  • %s | %s | confidence: %s", row[0], row[1], confidence)
+            logger.info("    %s", row[3])
+            logger.info("")
     except sqlite3.OperationalError as e:
-        print(f"  ⚠️  Database table not found: {e}")
+        logger.error("  ⚠️  Database table not found: %s", e)
 
 def show_top_sources(conn: sqlite3.Connection, limit: int = 5):
     """Show sources with most events"""
-    print("\n📚 TOP SOURCES (by event count):")
-    print("-" * 60)
+    logger.info("\n📚 TOP SOURCES (by event count):")
+    logger.info("-" * 60)
     
     try:
         query = """
@@ -122,38 +117,49 @@ def show_top_sources(conn: sqlite3.Connection, limit: int = 5):
         cursor = conn.execute(query, (limit,))
         
         for row in cursor:
-            print("  ", row[1])
-            print("    Events:", row[2])
-            print()
+            logger.info(f"  {row[1]}")
+            logger.info(f"    Events: {row[2]}")
+            logger.info("")
     except sqlite3.OperationalError as e:
-        print(f"  ⚠️  Database table not found: {e}")
+        logger.error(f"  ⚠️  Database table not found: {e}")
 
 def show_pdf_cache(cache_dir: str = 'input/rss_cache'):
     """Show PDF cache contents"""
     cache_dir = Path(cache_dir)
     
-    print("\n📁 PDF CACHE:")
-    print("-" * 60)
+    logger.info("\n📁 PDF CACHE:")
+    logger.info("-" * 60)
     
     if not cache_dir.exists():
-        print("  ⚠️  Cache directory not found")
+        logger.error("  ⚠️  Cache directory not found")
         return
     
     pdfs = list(cache_dir.glob('*.pdf'))
-    print("  PDFs:", len(pdfs))
-    
+    logger.info(f"  PDFs: {len(pdfs)}")
     if pdfs:
         total_size = sum(p.stat().st_size for p in pdfs)
-        print("  Total size:", total_size / 1024 / 1024, "MB")
-        print("\n  Recent files:")
+        if total_size >= 1024 * 1024:
+            total_str = f"{total_size / 1024 / 1024:.2f} MB"
+        elif total_size >= 1024:
+            total_str = f"{total_size / 1024:.2f} KB"
+        else:
+            total_str = f"{total_size} bytes"
+        logger.info(f"  Total size: {total_str}")
+        logger.info("\n  Recent files:")
         for pdf in sorted(pdfs, key=lambda p: p.stat().st_mtime, reverse=True)[:5]:
-            size_kb = pdf.stat().st_size / 1024
-            print("    •", pdf.name, "(", size_kb, "KB)")
+            size_bytes = pdf.stat().st_size
+            if size_bytes >= 1024 * 1024:
+                size_str = f"{size_bytes / 1024 / 1024:.2f} MB"
+            elif size_bytes >= 1024:
+                size_str = f"{size_bytes / 1024:.2f} KB"
+            else:
+                size_str = f"{size_bytes} bytes"
+            logger.info(f"    • {pdf.name} ({size_str})")
 
 def get_entity_distribution(conn: sqlite3.Connection):
     """Show entity distribution across types"""
-    print("\n🏗️  ENTITY DISTRIBUTION:")
-    print("-" * 60)
+    logger.info("\n🏗️  ENTITY DISTRIBUTION:")
+    logger.info("-" * 60)
     
     try:
         query = """
@@ -165,14 +171,14 @@ def get_entity_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            print("  ", row[0], ":", row[1], "entities")
+            logger.info(f"  {row[0]} : {row[1]} entities")
     except sqlite3.OperationalError as e:
-        print("  ⚠️  Database table not found:", e)
+        logger.error(f"  ⚠️  Database table not found: {e}")
 
 def get_event_type_distribution(conn: sqlite3.Connection):
     """Show event type distribution"""
-    print("\n📈 EVENT TYPE DISTRIBUTION:")
-    print("-" * 60)
+    logger.info("\n📈 EVENT TYPE DISTRIBUTION:")
+    logger.info("-" * 60)
     
     try:
         query = """
@@ -184,14 +190,14 @@ def get_event_type_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            print("  ", row[0], ":", row[1], "events")
+            logger.info(f"  {row[0]} : {row[1]} events")
     except sqlite3.OperationalError as e:
-        print("  ⚠️  Database table not found:", e)
+        logger.error(f"  ⚠️  Database table not found: {e}")
 
 def get_domain_distribution(conn: sqlite3.Connection):
     """Show research domain distribution"""
-    print("\n🔬 DOMAIN DISTRIBUTION:")
-    print("-" * 60)
+    logger.info("\n🔬 DOMAIN DISTRIBUTION:")
+    logger.info("-" * 60)
     
     try:
         query = """
@@ -203,9 +209,9 @@ def get_domain_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            print("  ", row[0], ":", row[1], "events")
+            logger.info(f"  {row[0]} : {row[1]} events")
     except sqlite3.OperationalError as e:
-        print("  ⚠️  Database table not found:", e)
+        logger.error(f"  ⚠️  Database table not found: {e}")
 
 def upsert_source(con, source_id: str, pdf_file: str, metadata: dict):
     """Updated to include metadata"""
@@ -235,9 +241,9 @@ def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_gue
     return chunk_id
 
 def upsert_tag(con, tag: str):
-    con.execute("INSERT OR IGNORE INTO tags(tag_name) VALUES(?)", (tag,))
-    # Get tag_id for further use
-    cur = con.execute("SELECT tag_id FROM tags WHERE tag_name=?", (tag,))
+    con.execute("INSERT OR IGNORE INTO tags(tag) VALUES(?)", (tag,))
+    # Get tag for further use
+    cur = con.execute("SELECT tag FROM tags WHERE tag=?", (tag,))
     row = cur.fetchone()
     return row[0] if row else None
 
@@ -308,4 +314,3 @@ def link_event_tag(con, event_id: str, tag: str):
         "INSERT OR IGNORE INTO event_tags (event_id, tag) VALUES (?, ?)",
         (event_id, tag)
     )
-    con.commit()

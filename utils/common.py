@@ -65,14 +65,22 @@ def get_seeds(SEEDS_DIR=None):
 # PATH RESOLUTION (FIXED)
 # ---------------------------------------------------------
 def _resolve_seeds_dir(SEEDS_DIR=None):
+
     if SEEDS_DIR:
         p = Path(SEEDS_DIR)
         if p.exists():
-            return p.resolve()
+            resolved = p.resolve()
+            # If the path ends with base/life_sciences, return the grandparent (the seeds root)
+            if len(resolved.parts) >= 2 and resolved.parts[-2:] == ("base", "life_sciences"):
+                return resolved.parent.parent.resolve()
+            return resolved
 
         p2 = Path.cwd() / p
         if p2.exists():
-            return p2.resolve()
+            resolved = p2.resolve()
+            if len(resolved.parts) >= 2 and resolved.parts[-2:] == ("base", "life_sciences"):
+                return resolved.parent.parent.resolve()
+            return resolved
 
         warnings.warn(f"Provided SEEDS_DIR '{SEEDS_DIR}' not found as absolute or relative path; falling back to auto-discovery.")
 
@@ -134,10 +142,15 @@ def get_stopword_seeds(SEEDS_DIR=None):
 
 @lru_cache(maxsize=32)
 def _get_stopword_seeds_resolved(resolved_dir_str):
+    # Try base/life_sciences/stopwords.txt first
     f = Path(resolved_dir_str) / "base" / "life_sciences" / "stopwords.txt"
-    if not f.exists():
-        return set()
-    return load_seed_file(f)
+    if f.exists():
+        return load_seed_file(f)
+    # Fallback: seeds/stopwords.txt (for test compatibility)
+    f2 = Path(resolved_dir_str) / "stopwords.txt"
+    if f2.exists():
+        return load_seed_file(f2)
+    return set()
 
 
 # ---------------------------------------------------------
