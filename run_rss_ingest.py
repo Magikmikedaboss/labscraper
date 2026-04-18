@@ -104,20 +104,36 @@ def has_signal(sentence_l: str):
 # RSS
 # ---------------------------------------------------------
 def get_pdf_links_from_feed(feed_url: str):
+    import re
+    from urllib.parse import urlparse
+    from utils.feed_utils import extract_pdf_links
+
     feed = feedparser.parse(feed_url)
     pdf_links = []
 
-    from urllib.parse import urlparse
-
     for entry in feed.entries:
+        # Strategy 1: reuse feed_utils regex (scans summary, content, links)
+        found_urls = extract_pdf_links(entry)
+
+        # Strategy 2: arXiv abstract URL → PDF URL conversion
+        entry_link = entry.get("link", "")
+        if "arxiv.org/abs/" in entry_link:
+            arxiv_pdf = entry_link.replace("/abs/", "/pdf/") + ".pdf"
+            if arxiv_pdf not in found_urls:
+                found_urls.append(arxiv_pdf)
+
+        # Strategy 3: check link elements for type=application/pdf or title=pdf (Atom feeds)
         for link in entry.get("links", []):
             href = link.get("href", "")
-            path = urlparse(href).path.lower()
-            if path.endswith(".pdf"):
-                pdf_links.append({
-                    "url": href,
-                    "title": entry.get("title", ""),
-                })
+            if (
+                "application/pdf" in link.get("type", "")
+                or link.get("title", "").lower() == "pdf"
+            ):
+                if href and href not in found_urls:
+                    found_urls.append(href)
+
+        for url in found_urls:
+            pdf_links.append({"url": url, "title": entry.get("title", "")})
 
     return pdf_links
 
@@ -149,82 +165,95 @@ def process_pdf(pdf_path: Path, domain: str, db_path: Path):
     events = 0
     seen = set()
 
+    import io
+    def is_valid_pdf(path):
+        try:
+            with open(path, "rb") as f:
+                header = f.read(5)
+                if header != b"%PDF-":
+                    return False
+            return True
+        except Exception:
+            return False
+
     with sqlite3.connect(db_path) as con:
-        with pdfplumber.open(str(pdf_path)) as pdf:
-
-            # metadata = extract_metadata(str(pdf_path))
-
-            # Use a content-based hash for source_id
-            with open(pdf_path, "rb") as f:
-                file_bytes = f.read()
-            source_id = sha16(file_bytes.hex())
-            doc_id = insert_document(con, source_id, str(pdf_path), sha64(pdf_path.name))
-
-            for i, page in enumerate(pdf.pages, start=1):
-                text = page.extract_text() or ""
-                if not text.strip():
-                    continue
-
-                section = guess_section(text.lower())
-                chunk_id = insert_chunk(con, source_id, doc_id, i, section, text)
-
-                for sent in chunk_sentences(text):
-                    s_l = sent.lower()
-
-                    if not has_signal(s_l):
+        try:
+            with pdfplumber.open(str(pdf_path)) as pdf:
+                # metadata = extract_metadata(str(pdf_path))
+                # Use a content-based hash for source_id
+                with open(pdf_path, "rb") as f:
+                    file_bytes = f.read()
+                source_id = sha16(file_bytes.hex())
+                doc_id = insert_document(con, source_id, str(pdf_path), sha64(pdf_path.name))
+                for i, page in enumerate(pdf.pages, start=1):
+                    text = page.extract_text() or ""
+                    if not text.strip():
                         continue
 
-                    tags = detect_method_tags(s_l)
-                    failure = detect_failure_reason(s_l)
-                    decision, driver = detect_decision(s_l)
-                    outcome = detect_outcome(s_l)
-                    stage = guess_stage(s_l)
+                    section = guess_section(text.lower())
+                    chunk_id = insert_chunk(con, source_id, doc_id, i, section, text)
 
-                    event_type = classify_event_type(s_l, tags, failure, decision)
-                    strength = evidence_strength(s_l)
+                    for sent in chunk_sentences(text):
+                        s_l = sent.lower()
 
-                    entities = extract_entities(sent, domain)
-                    measurements = extract_quantitative_data(sent)
+                        # RELAXED: Do not filter by has_signal
+                        # if not has_signal(s_l):
+                        #     continue
 
-                    conf = confidence_score(
-                        bool(entities),
-                        tags,
-                        failure,
-                        decision,
-                        bool(measurements),
-                        s_l
-                    )
+                        tags = detect_method_tags(s_l)
+                        failure = detect_failure_reason(s_l)
+                        decision, driver = detect_decision(s_l)
+                        outcome = detect_outcome(s_l)
+                        stage = guess_stage(s_l)
 
-                    if suggested_keep(conf, event_type, failure, decision, tags) == 0:
-                        continue
+                        event_type = classify_event_type(s_l, tags, failure, decision)
+                        strength = evidence_strength(s_l)
+                        entities = extract_entities(sent, domain)
+                        measurements = extract_quantitative_data(sent)
 
-                    key = normalize_event_key(event_type, entities, i, sent)
+                        conf = confidence_score(
+                            bool(entities),
+                            tags,
+                            failure,
+                            decision,
+                            bool(measurements),
+                            s_l
+                        )
 
-                    if key in seen:
-                        continue
+                        # RELAXED: Do not filter by suggested_keep
+                        # if suggested_keep(conf, event_type, failure, decision, tags) == 0:
+                        #     continue
 
-                    seen.add(key)
+                        key = normalize_event_key(event_type, entities, i, sent)
 
-                    event_id = insert_event(
-                        con, source_id, doc_id, chunk_id, i,
-                        domain, event_type, stage,
-                        None, None, outcome,
-                        failure, decision, driver,
-                        sent, strength, conf
-                    )
+                        if key in seen:
+                            continue
 
-                    for e in entities:
-                        eid = upsert_entity(con, e["entity_type"], e["entity_name"], None, None)
-                        link_event_entity(con, event_id, eid, e.get("role", "unknown"))
+                        seen.add(key)
 
-                    for tag in tags:
-                        link_event_tag(con, event_id, tag)
+                        event_id = insert_event(
+                            con, source_id, doc_id, chunk_id, i,
+                            domain, event_type, stage,
+                            None, None, outcome,
+                            failure, decision, driver,
+                            sent, strength, conf
+                        )
 
-                    for m in measurements:
-                        insert_measurement(con, event_id, m)
+                        for e in entities:
+                            eid = upsert_entity(con, e["entity_type"], e["entity_name"], None, None)
+                            link_event_entity(con, event_id, eid, e.get("role", "unknown"))
 
-                    events += 1
+                        for tag in tags:
+                            link_event_tag(con, event_id, tag)
 
+                        for m in measurements:
+                            insert_measurement(con, event_id, m)
+
+                        events += 1
+        except Exception as e:
+            print(f"❌ Failed to process PDF {pdf_path}: {e}")
+            return 0
+    return events
     return events
 
 # ---------------------------------------------------------

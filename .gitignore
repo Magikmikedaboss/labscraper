@@ -1,6 +1,7 @@
 # Ignore one-off status/progress markdown files (anchored to repo root)
 # Ignore generated markdown files in .artifacts/
 .artifacts/*.md
+/.artifacts/**/*.md
 # Naming convention: generated files use GEN_*, TEMP_*, or _temp_*.md
 GEN_*.md
 TEMP_*.md

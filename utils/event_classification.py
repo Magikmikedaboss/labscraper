@@ -77,39 +77,43 @@ def classify_event_type(sentence_l: str, method_tags: List[str], failure_reason:
     if "nitrosamine" in method_tags or failure_reason == "regulatory":
         return "regulatory_risk"
     # 2. Toxicity
-    if failure_reason == "toxicity_flag" or "toxic" in s:
+    if failure_reason == "toxicity_flag" or "toxic" in s or "toxicity" in s or "cytotoxic" in s:
         return "toxicity_flag"
     # 3. Stability issue or Degradation
     if failure_reason == "stability_failure":
         return "stability_issue"
-    if any(k in s for k in ["degradation", "degraded", "corrosion", "rust", "oxidation", "deterioration", "decay", "weathering"]):
+    if any(k in s for k in ["degradation", "degraded", "corrosion", "rust", "oxidation", "deterioration", "decay", "weathering", "aging", "instability", "unstable", "short half-life", "poor stability"]):
         return "degradation_event"
     # 4. Structural failure
-    if any(k in s for k in ["crack", "cracking", "buckling", "delamination", "fracture", "rupture", "collapse", "shear failure", "yielding", "spalling", "failure mode"]):
+    if any(k in s for k in ["crack", "cracking", "buckling", "delamination", "fracture", "rupture", "collapse", "shear failure", "yielding", "spalling", "failure mode", "instability", "microcrack", "macrocrack", "brittle fracture", "ductile fracture", "plastic hinge"]):
         return "structural_failure"
     # 5. Environmental stress
-    if any(k in s for k in ["temperature", "thermal", "moisture", "humidity", "freeze", "thaw", "uv", "solar", "environmental stress", "exposure"]):
+    if any(k in s for k in ["temperature", "thermal", "moisture", "humidity", "freeze", "thaw", "uv", "solar", "environmental stress", "exposure", "weather", "climate", "precipitation", "snow", "hail", "thermal shock"]):
         return "environmental_stress"
     # 6. Load event
-    if any(k in s for k in ["impact", "load", "loading", "stress", "strain", "pressure", "force", "torsion", "bending", "compression", "tension"]):
+    if any(k in s for k in ["impact", "load", "loading", "stress", "strain", "pressure", "force", "torsion", "bending", "compression", "tension", "modulus", "stiffness", "ductility", "hardness", "strength", "yield strength", "ultimate strength", "elasticity", "plasticity"]):
         return "load_event"
     # 7. Fatigue
-    if "fatigue" in s:
-        return "fatigue_event"    # 8. Efficacy
-    if failure_reason == "no_activity" or any(k in s for k in ["activity", "efficacy", "potent", "ic50", "ec50"]):
+    if "fatigue" in s or "creep" in s or "shrinkage" in s:
+        return "fatigue_event"
+    # 8. Efficacy
+    if failure_reason == "no_activity" or any(k in s for k in ["activity", "efficacy", "potent", "ic50", "ec50", "performance", "effectiveness", "output", "result"]):
         return "efficacy_result"
     # 9. Manufacturing constraint
-    if failure_reason == "scalability" or any(k in s for k in ["manufacturing", "scale-up", "yield"]):
+    if failure_reason == "scalability" or any(k in s for k in ["manufacturing", "scale-up", "yield", "production", "fabrication", "assembly", "costly to produce", "process", "costly"]):
         return "manufacturing_constraint"
     # 10. Cost tradeoff
     if method_tags:
-        if any(k in s for k in ["cost-intensive", "expensive", "time-consuming", "fast", "cost-effective"]):
+        if any(k in s for k in ["cost-intensive", "expensive", "time-consuming", "fast", "cost-effective", "affordable", "cheap", "efficient", "resource-intensive"]):
             return "cost_tradeoff"
         return "method_evaluation"
-    # 11. Decision point
+    # 11. Hazard event
+    if any(k in s for k in ["flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction", "subsidence", "settlement", "liquefaction", "tsunami", "landslide", "storm", "hurricane", "typhoon", "cyclone"]):
+        return "hazard_event"
+    # 12. Decision point
     if decision_taken != "unknown":
         return "decision_point"
-    # 12. Fallback
+    # 13. Fallback
     return "other"
 
 def evidence_strength(sentence_l: str) -> str:

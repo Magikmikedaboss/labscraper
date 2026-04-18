@@ -1,62 +1,6 @@
--- Schema initialization for labscraper
--- Enable foreign key enforcement
-PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS sources (
-    source_id TEXT PRIMARY KEY,
-    pdf_file TEXT NOT NULL,
-    title TEXT,
-    authors TEXT,
-    year INTEGER,
-    doi TEXT,
-    imported_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS documents (
-    doc_id TEXT PRIMARY KEY,
-    source_id TEXT NOT NULL,
-    file_path TEXT NOT NULL,
-    file_type TEXT NOT NULL,
-    sha256 TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (source_id) REFERENCES sources (source_id)
-);
-
-CREATE TABLE IF NOT EXISTS chunks (
-    chunk_id TEXT PRIMARY KEY,
-    doc_id TEXT NOT NULL,
-    source_id TEXT NOT NULL,
-    page_number INTEGER NOT NULL,
-    section_guess TEXT,
-    chunk_text TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (doc_id) REFERENCES documents (doc_id),
-    FOREIGN KEY (source_id) REFERENCES sources (source_id)
-);
-
-CREATE TABLE IF NOT EXISTS research_events (
-    event_id TEXT PRIMARY KEY,
-    research_domain TEXT NOT NULL,
-    event_type TEXT NOT NULL,
-    study_stage TEXT,
-    biological_system TEXT,
-    application_area TEXT,
-    outcome TEXT,
-    failure_reason TEXT,
-    decision_taken TEXT,
-    decision_driver TEXT,
-    evidence_snippet TEXT,
-    evidence_strength TEXT,
-    confidence TEXT,
-    source_id TEXT NOT NULL,
-    doc_id TEXT NOT NULL,
-    chunk_id TEXT NOT NULL,
-    page_number INTEGER NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (source_id) REFERENCES sources (source_id),
-    FOREIGN KEY (doc_id) REFERENCES documents (doc_id),
-    FOREIGN KEY (chunk_id) REFERENCES chunks (chunk_id)
-);
+-- DEPRECATED: This file is no longer canonical.
+-- The canonical schema is now at the project root: ../schema.sql
 
 CREATE TABLE IF NOT EXISTS entities (
     entity_id TEXT PRIMARY KEY,

@@ -138,14 +138,14 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
     ents = []
     s_l = sentence.lower()
 
-    # Expanded and more specific groups
+    # Expanded and more specific groups (boosted with more keywords)
     groups = [
-        ({"concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation", "polymer", "composite", "asphalt", "aluminum", "copper"}, "material"),
-        ({"wall", "roof", "foundation", "floor", "column", "beam", "slab", "girder", "truss", "panel", "joint"}, "system"),
-        ({"crack", "cracking", "shear failure", "buckling", "fatigue", "delamination", "fracture", "rupture", "collapse", "spalling", "yielding", "debonding", "creep", "shrinkage", "corrosion fatigue"}, "failure_mode"),
-        ({"temperature", "thermal cycling", "humidity", "moisture", "wind", "rain", "fire", "freeze", "frost", "uv", "solar", "environmental stress", "exposure", "condensation"}, "environment"),
-        ({"compression", "tension", "shear", "bending", "torsion", "impact", "flexure", "creep test", "fatigue test", "tensile test", "load test", "stress test", "thermal analysis"}, "test_method"),
-        ({"flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction"}, "hazard"),
+        ({"concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation", "polymer", "composite", "asphalt", "aluminum", "copper", "gypsum", "plaster", "ceramic", "stone", "aggregate", "fiber", "foam", "bitumen", "PVC", "EPS", "XPS", "HDPE", "LDPE"}, "material"),
+        ({"wall", "roof", "foundation", "floor", "column", "beam", "slab", "girder", "truss", "panel", "joint", "window", "door", "façade", "cladding", "insulation system", "partition", "rafter", "stud", "joist", "lintel"}, "system"),
+        ({"crack", "cracking", "shear failure", "buckling", "fatigue", "delamination", "fracture", "rupture", "collapse", "spalling", "yielding", "debonding", "creep", "shrinkage", "corrosion fatigue", "brittle fracture", "ductile fracture", "plastic hinge", "instability", "failure mode", "microcrack", "macrocrack"}, "failure_mode"),
+        ({"temperature", "thermal cycling", "humidity", "moisture", "wind", "rain", "fire", "freeze", "frost", "uv", "solar", "environmental stress", "exposure", "condensation", "weather", "climate", "precipitation", "snow", "hail", "thermal shock"}, "environment"),
+        ({"compression", "tension", "shear", "bending", "torsion", "impact", "flexure", "creep test", "fatigue test", "tensile test", "load test", "stress test", "thermal analysis", "modulus", "stiffness", "ductility", "hardness", "strength", "yield strength", "ultimate strength", "elasticity", "plasticity"}, "test_method"),
+        ({"flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction", "subsidence", "settlement", "liquefaction", "tsunami", "landslide", "storm", "hurricane", "typhoon", "cyclone"}, "hazard"),
     ]
 
     # Helper: look for multi-word descriptors near generic terms
@@ -153,12 +153,17 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
         # e.g., "shear failure", "fatigue crack", "stress corrosion"
         patterns = [
             r"(shear|fatigue|stress|thermal|brittle|ductile|creep|shrinkage|corrosion) (failure|crack|fracture|collapse|spalling)",
-            r"(failure|crack|fracture|collapse|spalling) (due to|from|by) (shear|fatigue|stress|thermal|creep|corrosion)"
+            r"(failure|crack|fracture|collapse|spalling) (due to|from|by) (shear|fatigue|stress|thermal|creep|corrosion)",
+            r"([a-z]+) (fracture|crack|failure|collapse)",
+            r"(fracture|crack|failure|collapse) of ([a-z]+)"
         ]
         matches = []
         for pat in patterns:
             for m in re.findall(pat, sentence.lower()):
-                matches.append(" ".join([w for w in m if w]))
+                if isinstance(m, tuple):
+                    matches.append(" ".join([w for w in m if w]))
+                else:
+                    matches.append(m)
         return matches
 
     # Add specific failures first
@@ -174,13 +179,14 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
             })
             extracted_names.add(norm)
 
-    # Add all other entities, but skip generic terms unless paired with a descriptor
+    # Add all other entities, allow partial matches and include generic terms if paired with descriptors
     generic_skip = {"failure", "thermal", "stress"}
     for group, entity_type in groups:
         for item in group:
-            if item in s_l:
-                # Skip generic terms unless part of a more specific phrase
-                if item in generic_skip:
+            if item.lower() in s_l or (len(item) > 4 and any(word in s_l for word in item.lower().split())):
+                # Allow generic terms if a specific failure was found in the sentence
+                allow_generic = any(g in s_l for g in generic_skip) and any(x in s_l for x in ["crack", "fracture", "collapse", "spalling"])
+                if item in generic_skip and not allow_generic:
                     continue
                 name = item.upper()
                 norm = normalize_name(name)

@@ -169,4 +169,9 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                         print(f"    Inserted event: {event_id} (page {page_num})")
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="Modular PDF-to-DB pipeline")
+    parser.add_argument('--input-dir', type=str, default="input/pdfs", help="Input directory containing PDFs")
+    parser.add_argument('--db-path', type=str, default="db.sqlite", help="Path to output SQLite database")
+    args = parser.parse_args()
+    main(input_dir=args.input_dir, db_path=args.db_path)

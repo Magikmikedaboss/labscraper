@@ -265,7 +265,7 @@ def write_run_meta(events, entities, relationships, sources):
             "event_id": event['event_id'],
             "type": event['event_type'],
             "confidence": event['confidence'],
-            "outcome": truncate_outcome(event.get('outcome'))
+            "outcome": truncate_outcome(event['outcome'])
         }
         for event in sorted(events, key=lambda x: confidence_priority.get(x['confidence'], 0), reverse=True)[:10]
     ]

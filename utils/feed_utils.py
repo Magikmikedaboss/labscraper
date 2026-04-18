@@ -3,8 +3,7 @@ import re
 import feedparser
 from typing import List, Dict, Optional
 
-# Reusable patterns
-PDF_REGEX = re.compile(r'https?://[^\s<>"\']+\.(?:pdf|PDF)(?:\?[^&\s]*)?(?:&[^&\s]*)?', re.IGNORECASE)
+DOC_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.(?:pdf|PDF|docx?|DOCX?|html|HTML)(?:\?[^&\s]*)?(?:&[^&\s]*)?', re.IGNORECASE)
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
 def parse_feed(url: str):
@@ -17,24 +16,20 @@ def parse_feed(url: str):
 
 def extract_pdf_links(entry: Dict) -> List[str]:
     """Extract PDF links from a feed entry"""
-    pdf_links = []
-    
+    doc_links = []
     # Check summary
     summary = entry.get('summary', '')
-    pdf_links.extend(PDF_REGEX.findall(summary))
-    
+    doc_links.extend(DOC_LINK_REGEX.findall(summary))
     # Check content blocks
     for content in entry.get('content', []):
         content_value = content.get('value', '')
-        pdf_links.extend(PDF_REGEX.findall(content_value))
-    
+        doc_links.extend(DOC_LINK_REGEX.findall(content_value))
     # Check direct links
     for link in entry.get('links', []):
         href = link.get('href', '')
         if href:
-            pdf_links.extend(PDF_REGEX.findall(href))
-    
-    return list(set(pdf_links))  # Deduplicate
+            doc_links.extend(DOC_LINK_REGEX.findall(href))
+    return list(set(doc_links))  # Deduplicate
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
     """

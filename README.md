@@ -149,6 +149,7 @@ labscraper/
 │   ├── entity_extractor.py         # (legacy) Entity extraction logic
 │   ├── entity_normalizer.py        # (legacy) Variant normalization
 │   ├── init_db.py                  # Database initialization (run root init_db.py to create db/runs.sqlite)
+
 │   ├── schema.sql                  # Database schema
 │   └── scrape_pdfs_phase1.py       # Base scraper functions
 ```

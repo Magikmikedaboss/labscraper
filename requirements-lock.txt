@@ -2,6 +2,7 @@ certifi==2026.1.4
 cffi==2.0.0
 charset-normalizer==3.4.4
 colorama==0.4.6
+coverage==7.13.3
 cryptography==46.0.7
 execnet==2.1.2
 feedparser==6.0.12

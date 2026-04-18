@@ -51,8 +51,12 @@ def detect_multi_lens(
         except Exception as e:
             detector_errors[lens_name] = str(e)
             continue
+        # Only record as error if event is None and entities is not empty (unexpected),
+        # or if there is an explicit error signal. Normal no-match (None, []) is not an error.
         if event is None:
-            detector_errors[lens_name] = "No event returned"
+            if entities:
+                detector_errors[lens_name] = "No event returned but entities present"
+            # else: normal no-match, do not record error
             continue
         stacked = event.as_dict()
         stacked["entities"] = entities
