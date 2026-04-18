@@ -9,7 +9,6 @@ This module provides helpers for initializing a test database schema in isolatio
 
 For initializing the main db/runs.sqlite database, always use the canonical root-level init_db.py script or its init_db() function.
 """
-import os
 import sqlite3
 from pathlib import Path
 
