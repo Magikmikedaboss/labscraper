@@ -1,7 +1,5 @@
-import pytest
 import sqlite3
 import tempfile
-from pathlib import Path
 from utils import db_utils, event_classification, data_extractors, entities, common, text_utils
 
 def test_connect_db_and_get_tables(tmp_path):

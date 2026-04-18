@@ -161,28 +161,28 @@ def download_pdf(url: str, cache_dir: Path):
 # ---------------------------------------------------------
 # PROCESS
 # ---------------------------------------------------------
+
+def is_valid_pdf(path):
+    try:
+        with open(path, "rb") as f:
+            header = f.read(5)
+            if header != b"%PDF-":
+                return False
+        return True
+    except Exception:
+        return False
+
 def process_pdf(pdf_path: Path, domain: str, db_path: Path):
     events = 0
     seen = set()
 
-    def is_valid_pdf(path):
-        try:
-            with open(path, "rb") as f:
-                header = f.read(5)
-                if header != b"%PDF-":
-                    return False
-            return True
-        except Exception:
-            return False
-
     with sqlite3.connect(db_path) as con:
         try:
+            # Use a content-based hash for source_id (fast version)
+            source_id = sha16(str(pdf_path) + str(pdf_path.stat().st_size))
+            # metadata = extract_metadata(str(pdf_path))  # Uncomment if needed
+
             with pdfplumber.open(str(pdf_path)) as pdf:
-                # metadata = extract_metadata(str(pdf_path))
-                # Use a content-based hash for source_id
-                with open(pdf_path, "rb") as f:
-                    file_bytes = f.read()
-                source_id = sha16(file_bytes.hex())
                 doc_id = insert_document(con, source_id, str(pdf_path), sha64(pdf_path.name))
                 for i, page in enumerate(pdf.pages, start=1):
                     text = page.extract_text() or ""
@@ -194,10 +194,6 @@ def process_pdf(pdf_path: Path, domain: str, db_path: Path):
 
                     for sent in chunk_sentences(text):
                         s_l = sent.lower()
-
-                        # RELAXED: Do not filter by has_signal
-                        # if not has_signal(s_l):
-                        #     continue
 
                         tags = detect_method_tags(s_l)
                         failure = detect_failure_reason(s_l)
@@ -219,9 +215,9 @@ def process_pdf(pdf_path: Path, domain: str, db_path: Path):
                             s_l
                         )
 
-                        # RELAXED: Do not filter by suggested_keep
-                        # if suggested_keep(conf, event_type, failure, decision, tags) == 0:
-                        #     continue
+                        # SMART FILTER: Only keep if at least one signal
+                        if not (entities or tags or measurements):
+                            continue
 
                         key = normalize_event_key(event_type, entities, i, sent)
 
@@ -253,7 +249,6 @@ def process_pdf(pdf_path: Path, domain: str, db_path: Path):
             print(f"❌ Failed to process PDF {pdf_path}: {e}")
             return 0
     return events
-    return events
 
 # ---------------------------------------------------------
 # MAIN
@@ -283,8 +278,13 @@ def main():
             if args.dry_run:
                 continue
 
+
             pdf = download_pdf(item["url"], RSS_CACHE_DIR)
             if not pdf:
+                continue
+
+            if not is_valid_pdf(pdf):
+                print("⚠️ Skipping invalid PDF")
                 continue
 
             count = process_pdf(pdf, feed.get("domain", "methods_tooling"), DB_PATH)
