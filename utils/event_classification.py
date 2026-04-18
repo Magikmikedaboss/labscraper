@@ -72,22 +72,44 @@ def detect_outcome(sentence_l: str) -> str:
     return "unknown"
 
 def classify_event_type(sentence_l: str, method_tags: List[str], failure_reason: str, decision_taken: str) -> str:
+    s = sentence_l
+    # 1. Regulatory
     if "nitrosamine" in method_tags or failure_reason == "regulatory":
         return "regulatory_risk"
-    if failure_reason == "toxicity_flag":
+    # 2. Toxicity
+    if failure_reason == "toxicity_flag" or "toxic" in s:
         return "toxicity_flag"
+    # 3. Stability issue or Degradation
     if failure_reason == "stability_failure":
         return "stability_issue"
-    if failure_reason == "no_activity" or any(k in sentence_l for k in ["activity", "efficacy", "potent", "ic50", "ec50"]):
+    if any(k in s for k in ["degradation", "degraded", "corrosion", "rust", "oxidation", "deterioration", "decay", "weathering"]):
+        return "degradation_event"
+    # 4. Structural failure
+    if any(k in s for k in ["crack", "cracking", "buckling", "delamination", "fracture", "rupture", "collapse", "shear failure", "yielding", "spalling", "failure mode"]):
+        return "structural_failure"
+    # 5. Environmental stress
+    if any(k in s for k in ["temperature", "thermal", "moisture", "humidity", "freeze", "thaw", "uv", "solar", "environmental stress", "exposure"]):
+        return "environmental_stress"
+    # 6. Load event
+    if any(k in s for k in ["impact", "load", "loading", "stress", "strain", "pressure", "force", "torsion", "bending", "compression", "tension"]):
+        return "load_event"
+    # 7. Fatigue
+    if "fatigue" in s:
+        return "fatigue_event"    # 8. Efficacy
+    if failure_reason == "no_activity" or any(k in s for k in ["activity", "efficacy", "potent", "ic50", "ec50"]):
         return "efficacy_result"
-    if failure_reason == "scalability" or any(k in sentence_l for k in ["manufacturing", "scale-up", "yield"]):
+    # 9. Manufacturing constraint
+    if failure_reason == "scalability" or any(k in s for k in ["manufacturing", "scale-up", "yield"]):
         return "manufacturing_constraint"
+    # 10. Cost tradeoff
     if method_tags:
-        if any(k in sentence_l for k in ["cost-intensive", "expensive", "time-consuming", "fast", "cost-effective"]):
+        if any(k in s for k in ["cost-intensive", "expensive", "time-consuming", "fast", "cost-effective"]):
             return "cost_tradeoff"
         return "method_evaluation"
+    # 11. Decision point
     if decision_taken != "unknown":
         return "decision_point"
+    # 12. Fallback
     return "other"
 
 def evidence_strength(sentence_l: str) -> str:

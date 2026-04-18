@@ -138,18 +138,50 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
     ents = []
     s_l = sentence.lower()
 
+    # Expanded and more specific groups
     groups = [
-        ({"concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation"}, "material"),
-        ({"wall", "roof", "foundation", "floor", "column", "beam", "slab"}, "system"),
-        ({"crack", "cracking", "fracture", "collapse", "buckling", "fatigue", "spalling"}, "failure_mode"),
-        ({"temperature", "humidity", "moisture", "wind", "rain", "fire", "freeze", "thermal", "frost"}, "environment"),
-        ({"compression", "tension", "shear", "bending", "torsion", "fatigue", "impact", "flexure"}, "test_method"),
-        ({"flood", "seismic", "corrosion", "erosion", "vibration", "overload"}, "hazard"),
+        ({"concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation", "polymer", "composite", "asphalt", "aluminum", "copper"}, "material"),
+        ({"wall", "roof", "foundation", "floor", "column", "beam", "slab", "girder", "truss", "panel", "joint"}, "system"),
+        ({"crack", "cracking", "shear failure", "buckling", "fatigue", "delamination", "fracture", "rupture", "collapse", "spalling", "yielding", "debonding", "creep", "shrinkage", "corrosion fatigue"}, "failure_mode"),
+        ({"temperature", "thermal cycling", "humidity", "moisture", "wind", "rain", "fire", "freeze", "frost", "uv", "solar", "environmental stress", "exposure", "condensation"}, "environment"),
+        ({"compression", "tension", "shear", "bending", "torsion", "impact", "flexure", "creep test", "fatigue test", "tensile test", "load test", "stress test", "thermal analysis"}, "test_method"),
+        ({"flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction"}, "hazard"),
     ]
 
+    # Helper: look for multi-word descriptors near generic terms
+    def find_specific_failure(sentence):
+        # e.g., "shear failure", "fatigue crack", "stress corrosion"
+        patterns = [
+            r"(shear|fatigue|stress|thermal|brittle|ductile|creep|shrinkage|corrosion) (failure|crack|fracture|collapse|spalling)",
+            r"(failure|crack|fracture|collapse|spalling) (due to|from|by) (shear|fatigue|stress|thermal|creep|corrosion)"
+        ]
+        matches = []
+        for pat in patterns:
+            for m in re.findall(pat, sentence.lower()):
+                matches.append(" ".join([w for w in m if w]))
+        return matches
+
+    # Add specific failures first
+    for specific in find_specific_failure(sentence):
+        name = specific.upper()
+        norm = normalize_name(name)
+        if norm not in extracted_names:
+            ents.append({
+                "entity_type": "failure_mode",
+                "entity_name": name,
+                "role": "failure_mode",
+                "text": sentence
+            })
+            extracted_names.add(norm)
+
+    # Add all other entities, but skip generic terms unless paired with a descriptor
+    generic_skip = {"failure", "thermal", "stress"}
     for group, entity_type in groups:
         for item in group:
             if item in s_l:
+                # Skip generic terms unless part of a more specific phrase
+                if item in generic_skip:
+                    continue
                 name = item.upper()
                 norm = normalize_name(name)
                 if norm not in extracted_names:

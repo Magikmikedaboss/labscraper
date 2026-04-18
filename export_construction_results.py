@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Export construction science results from db/runs.sqlite
+Export construction science results from db/rss.sqlite
 """
-
 import sqlite3
 import csv
 import json
@@ -10,7 +9,7 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 
-DB_PATH = Path("runs/construction_test_final.sqlite")
+DB_PATH = Path("db/rss.sqlite")
 OUTPUT_DIR = Path("output")
 DOMAIN_ID = "construction_science"
 
@@ -255,12 +254,18 @@ def write_run_meta(events, entities, relationships, sources):
     
     # Top events by confidence using priority mapping
     confidence_priority = {'high': 3, 'med': 2, 'low': 1}
+    def truncate_outcome(outcome, max_len=100):
+        outcome = outcome or ""
+        if len(outcome) > max_len:
+            return outcome[:max_len] + "..."
+        return outcome
+
     meta["top_events"] = [
         {
             "event_id": event['event_id'],
             "type": event['event_type'],
             "confidence": event['confidence'],
-            "outcome": event['outcome'][:100] + "..." if event['outcome'] and len(event['outcome']) > 100 else (event['outcome'] or "")
+            "outcome": truncate_outcome(event.get('outcome'))
         }
         for event in sorted(events, key=lambda x: confidence_priority.get(x['confidence'], 0), reverse=True)[:10]
     ]
@@ -316,11 +321,10 @@ def main():
     print("\n✅ All exports completed successfully!")
     print(f"📁 Output directory: {OUTPUT_DIR.absolute()}")
     print("📋 Files created:")
-    print("   - events_export_construction_science.csv")
-    print("   - construction_entities.csv")
-    print("   - construction_event_entities.csv")
-    print("   - construction_sources.csv")
-    print("   - run_meta_construction_science.json")
-
+    print(f"   - events_export_{DOMAIN_ID}.csv")
+    print(f"   - {DOMAIN_ID}_entities.csv")
+    print(f"   - {DOMAIN_ID}_event_entities.csv")
+    print(f"   - {DOMAIN_ID}_sources.csv")
+    print(f"   - run_meta_{DOMAIN_ID}.json")
 if __name__ == "__main__":
     main()
