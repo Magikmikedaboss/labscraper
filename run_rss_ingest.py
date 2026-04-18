@@ -104,8 +104,6 @@ def has_signal(sentence_l: str):
 # RSS
 # ---------------------------------------------------------
 def get_pdf_links_from_feed(feed_url: str):
-    import re
-    from urllib.parse import urlparse
     from utils.feed_utils import extract_pdf_links
 
     feed = feedparser.parse(feed_url)
@@ -165,7 +163,6 @@ def process_pdf(pdf_path: Path, domain: str, db_path: Path):
     events = 0
     seen = set()
 
-    import io
     def is_valid_pdf(path):
         try:
             with open(path, "rb") as f:
