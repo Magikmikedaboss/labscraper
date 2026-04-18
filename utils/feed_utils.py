@@ -29,7 +29,9 @@ def extract_pdf_links(entry: Dict) -> List[str]:
         href = link.get('href', '')
         if href:
             doc_links.extend(DOC_LINK_REGEX.findall(href))
-    return list(set(doc_links))  # Deduplicate
+    # Only keep links ending with .pdf (case-insensitive)
+    pdf_links = [url for url in set(doc_links) if url.lower().endswith('.pdf')]
+    return pdf_links
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
     """

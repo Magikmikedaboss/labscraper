@@ -130,7 +130,9 @@ def get_pdf_links_from_feed(feed_url: str):
                 if href and href not in found_urls:
                     found_urls.append(href)
 
-        for url in found_urls:
+        # Only keep URLs that look like PDFs
+        pdf_urls = [url for url in found_urls if url.lower().endswith(".pdf")]
+        for url in pdf_urls:
             pdf_links.append({"url": url, "title": entry.get("title", "")})
 
     return pdf_links
