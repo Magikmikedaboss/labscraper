@@ -1,6 +1,8 @@
 """Tests for domain loading functionality using pytest"""
+
 import json
 import tempfile
+import gc
 from pathlib import Path
 from utils.run_engine import get_seeds
 from utils.axon_domains import get_domain_by_id
@@ -9,189 +11,146 @@ from utils.axon_domains import get_domain_by_id
 class TestDomainLoading:
     """Test domain loading functionality"""
     
-    def test_get_seeds_valid_files(self):
+    def test_get_seeds_valid_files(self, monkeypatch):
         """Test loading valid seed files"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Set up seeds directory
             seeds_dir = Path(temp_dir) / "seeds"
             seeds_dir.mkdir()
-            
             # Create seed files
             compounds_file = seeds_dir / "base/life_sciences/compounds.txt"
             compounds_file.parent.mkdir(parents=True)
             compounds_file.write_text("# Compounds\ncompound1\ncompound2\n")
-            
             targets_file = seeds_dir / "base/life_sciences/targets.txt"
             targets_file.write_text("# Targets\ntarget1\ntarget2\n")
-            
             models_file = seeds_dir / "base/life_sciences/models.txt"
             models_file.write_text("# Models\nmodel1\nmodel2\n")
-            
             stopwords_file = seeds_dir / "stopwords.txt"
             stopwords_file.write_text("# Stopwords\nstopword1\nstopword2\n")
-            
             # Change working directory to temp_dir and clear cache
-            original_cwd = Path.cwd()
-            try:
-                import os
-                os.chdir(temp_dir)
-                
-                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
-                
-                assert len(compounds) == 2
-                assert len(_targets) == 2
-                assert len(_models) == 2
-                assert len(stopwords) == 2
-                assert 'COMPOUND1' in compounds
-                assert 'TARGET1' in _targets
-                assert 'MODEL1' in _models
-                assert 'stopword1' in stopwords
-            finally:
-                os.chdir(original_cwd)
+            monkeypatch.chdir(temp_dir)
+            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            assert len(compounds) == 2
+            assert len(_targets) == 2
+            assert len(_models) == 2
+            assert len(stopwords) == 2
+            assert 'COMPOUND1' in compounds
+            assert 'TARGET1' in _targets
+            assert 'MODEL1' in _models
+            assert 'stopword1' in stopwords
+            # Explicitly delete Path objects and collect garbage to avoid Windows file locking issues
+            del compounds_file, targets_file, models_file, stopwords_file, seeds_dir
+            gc.collect()
 
-    def test_get_seeds_missing_files(self):
+    def test_get_seeds_missing_files(self, monkeypatch):
         """Test loading when some seed files are missing"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Set up seeds directory with only some files
             seeds_dir = Path(temp_dir) / "seeds"
             seeds_dir.mkdir()
-            
             # Create only compounds file
             compounds_file = seeds_dir / "base/life_sciences/compounds.txt"
             compounds_file.parent.mkdir(parents=True)
             compounds_file.write_text("# Compounds\ncompound1\ncompound2\n")
-            
             # Change working directory to temp_dir and clear cache
-            # import utils.run_engine  # Removed unused import
-            original_cwd = Path.cwd()
-            try:
-                import os
-                os.chdir(temp_dir)
-                
-                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
-                
-                assert len(compounds) == 2
-                assert len(_targets) == 0
-                assert len(_models) == 0
-                assert len(stopwords) == 0
-            finally:
-                os.chdir(original_cwd)
+            monkeypatch.chdir(temp_dir)
+            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            assert len(compounds) == 2
+            assert len(_targets) == 0
+            assert len(_models) == 0
+            assert len(stopwords) == 0
+            # Explicitly delete Path objects and collect garbage to avoid Windows file locking issues
+            del compounds_file, seeds_dir
+            gc.collect()
 
-    def test_get_seeds_empty_files(self):
+    def test_get_seeds_empty_files(self, monkeypatch):
         """Test loading empty seed files"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Set up seeds directory with empty files
             seeds_dir = Path(temp_dir) / "seeds"
             seeds_dir.mkdir()
-            
             # Create empty seed files
             compounds_file = seeds_dir / "base/life_sciences/compounds.txt"
             compounds_file.parent.mkdir(parents=True)
             compounds_file.write_text("")
-            
             targets_file = seeds_dir / "base/life_sciences/targets.txt"
             targets_file.write_text("")
-            
             # Change working directory to temp_dir and clear cache
-            # import utils.run_engine  # Removed unused import
-            original_cwd = Path.cwd()
-            try:
-                import os
-                os.chdir(temp_dir)
-                
-                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
-                
-                assert len(compounds) == 0
-                assert len(_targets) == 0
-                assert len(_models) == 0
-                assert len(stopwords) == 0
-            finally:
-                os.chdir(original_cwd)
+            monkeypatch.chdir(temp_dir)
+            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            assert len(compounds) == 0
+            assert len(_targets) == 0
+            assert len(_models) == 0
+            assert len(stopwords) == 0
+            # Explicitly delete Path objects and collect garbage to avoid Windows file locking issues
+            del compounds_file, targets_file, seeds_dir
+            gc.collect()
 
-    def test_get_seeds_with_comments(self):
+    def test_get_seeds_with_comments(self, monkeypatch):
         """Test that comments are properly ignored"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Set up seeds directory with comments
             seeds_dir = Path(temp_dir) / "seeds"
             seeds_dir.mkdir()
-            
             # Create seed file with comments
             compounds_file = seeds_dir / "base/life_sciences/compounds.txt"
             compounds_file.parent.mkdir(parents=True)
             compounds_file.write_text("# This is a comment\ncompound1\n# Another comment\ncompound2\n")
-            
             # Change working directory to temp_dir and clear cache
-            # import utils.run_engine  # Removed unused import
-            original_cwd = Path.cwd()
-            try:
-                import os
-                os.chdir(temp_dir)
-                
-                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
-                
-                assert len(compounds) == 2
-                assert 'COMPOUND1' in compounds
-                assert 'COMPOUND2' in compounds
-                assert 'COMMENT' not in compounds
-            finally:
-                os.chdir(original_cwd)
+            monkeypatch.chdir(temp_dir)
+            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            assert len(compounds) == 2
+            assert 'COMPOUND1' in compounds
+            assert 'COMPOUND2' in compounds
+            # Assert no entry in compounds is a comment line
+            assert all(not c.strip().startswith('#') for c in compounds)
+            # Explicitly delete Path objects and collect garbage to avoid Windows file locking issues
+            del compounds_file, seeds_dir
+            gc.collect()
 
-    def test_get_seeds_case_insensitive(self):
+    def test_get_seeds_case_insensitive(self, monkeypatch):
         """Test that seed loading is case insensitive"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Set up seeds directory with mixed case
             seeds_dir = Path(temp_dir) / "seeds"
             seeds_dir.mkdir()
-            
             # Create seed file with mixed case
             compounds_file = seeds_dir / "base/life_sciences/compounds.txt"
             compounds_file.parent.mkdir(parents=True)
             compounds_file.write_text("UPPERCASE\nlowercase\nMixedCase\n")
-            
             # Change working directory to temp_dir and clear cache
-            # import utils.run_engine  # Removed unused import
-            original_cwd = Path.cwd()
-            try:
-                import os
-                os.chdir(temp_dir)
-                
-                compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
-                
-                assert len(compounds) == 3
-                assert 'UPPERCASE' in compounds
-                assert 'LOWERCASE' in compounds
-                assert 'MIXEDCASE' in compounds
-                assert 'uppercase' not in compounds  # Should be converted to uppercase
-                assert 'lowercase' not in compounds
-                assert 'MixedCase' not in compounds  # Should be converted to uppercase
-            finally:
-                os.chdir(original_cwd)
+            monkeypatch.chdir(temp_dir)
+            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            assert len(compounds) == 3
+            assert 'UPPERCASE' in compounds
+            assert 'LOWERCASE' in compounds
+            assert 'MIXEDCASE' in compounds
+            assert 'uppercase' not in compounds  # Should be converted to uppercase
+            assert 'lowercase' not in compounds
+            assert 'MixedCase' not in compounds  # Should be converted to uppercase
+            # Explicitly delete Path objects and collect garbage to avoid Windows file locking issues
+            del compounds_file, seeds_dir
+            gc.collect()
 
-    def test_get_seeds_no_seeds_directory(self):
+    def test_get_seeds_no_seeds_directory(self, monkeypatch):
         """Test behavior when no seeds directory exists"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Don't create seeds directory
             # Change working directory to temp_dir and clear cache
-            # import utils.run_engine  # Removed unused import
-            original_cwd = Path.cwd()
-            try:
-                import os
-                os.chdir(temp_dir)
-                
-                compounds, _targets, _models, stopwords = get_seeds()
-                
-                assert len(compounds) == 0
-                assert len(_targets) == 0
-                assert len(_models) == 0
-                assert len(stopwords) == 0
-            finally:
-                os.chdir(original_cwd)
+            monkeypatch.chdir(temp_dir)
+            compounds, _targets, _models, stopwords = get_seeds()
+            assert len(compounds) == 0
+            assert len(_targets) == 0
+            assert len(_models) == 0
+            assert len(stopwords) == 0
+            # No files created, nothing to delete
 
     def test_get_domain_by_id_falls_back_to_config_domains(self):
         """Domain lookup should support the current production config/domains layout."""
         with tempfile.TemporaryDirectory() as temp_dir:
             config_domains = Path(temp_dir) / "config" / "domains"
             config_domains.mkdir(parents=True)
+
             (config_domains / "biohacking_longevity.json").write_text(
                 json.dumps({
                     "id": "biohacking_longevity",
@@ -200,6 +159,10 @@ class TestDomainLoading:
                 }),
                 encoding="utf-8",
             )
+
+            # Explicitly delete Path objects and collect garbage to avoid Windows file locking issues
+            del config_domains
+            gc.collect()
 
             original_cwd = Path.cwd()
             try:

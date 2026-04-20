@@ -1,7 +1,9 @@
 """Input validation utilities for the peptide scraper project"""
+
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, Dict, Optional
 import re
+import copy
 
 
 class ValidationError(Exception):
@@ -49,10 +51,7 @@ def validate_database(path: Union[str, Path], must_exist: bool = False) -> Path:
 
     parent = p.parent
     if not parent.exists():
-        try:
-            parent.mkdir(parents=True, exist_ok=True)
-        except Exception as err:
-            raise ValidationError(f"Cannot create database directory: {parent}") from err
+        raise ValidationError(f"Database directory does not exist: {parent}")
 
     return p
 
@@ -90,16 +89,22 @@ def validate_file_path(path: Union[str, Path], must_exist: bool = True) -> Path:
     return p
 
 
-def validate_feed_entry(feed: dict[str, Any], index: int | None = None) -> dict[str, Any]:
+def validate_feed_entry(feed: Dict[str, Any], index: Optional[int] = None) -> Dict[str, Any]:
     """Validate and normalize a single RSS feed configuration entry."""
     prefix = f"Feed #{index}: " if index is not None else ""
 
     if not isinstance(feed, dict):
         raise ValidationError(f"{prefix}Feed entry must be an object")
 
-    missing = [field for field in ("name", "url") if not feed.get(field)]
+
+    required_fields = ("name", "url")
+    missing = [field for field in required_fields if field not in feed]
     if missing:
         raise ValidationError(f"{prefix}Missing required field(s): {', '.join(missing)}")
+
+    empty = [field for field in required_fields if str(feed.get(field, "")).strip() == ""]
+    if empty:
+        raise ValidationError(f"{prefix}Empty value for field(s): {', '.join(empty)}")
 
     validated = {
         "name": str(feed["name"]).strip(),
@@ -112,12 +117,22 @@ def validate_feed_entry(feed: dict[str, Any], index: int | None = None) -> dict[
 
     for optional_key in ("keywords", "notes"):
         if optional_key in feed:
-            validated[optional_key] = feed[optional_key]
+            value = feed[optional_key]
+            if optional_key == "keywords":
+                # Accept only list/tuple of strings
+                if isinstance(value, (list, tuple)) and all(isinstance(x, str) for x in value):
+                    validated[optional_key] = list(value)
+            elif optional_key == "notes":
+                # Accept only str or None
+                if value is None or isinstance(value, str):
+                    validated[optional_key] = value
 
     return validated
 
 
-def validate_feed_config(config: Any) -> dict[str, Any]:
+from typing import Dict
+
+def validate_feed_config(config: Any) -> Dict[str, Any]:
     """Validate the structure of an RSS feed configuration payload."""
     if not isinstance(config, dict):
         raise ValidationError("Feed config must be a JSON object")
@@ -129,7 +144,7 @@ def validate_feed_config(config: Any) -> dict[str, Any]:
     if not isinstance(feeds, list):
         raise ValidationError("Feed config field 'feeds' must be a list")
 
-    validated_config = dict(config)
+    validated_config = copy.deepcopy(config)
     validated_config["feeds"] = [
         validate_feed_entry(feed, index=i)
         for i, feed in enumerate(feeds, start=1)

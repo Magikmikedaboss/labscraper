@@ -3,61 +3,58 @@ import tempfile
 import hashlib
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Set
+from typing import Set, Union
 import warnings
 
 # ---------------------------------------------------------
 # HASHING
 # ---------------------------------------------------------
-def sha16(s: str) -> str:
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
+def sha16(s: Union[str, bytes]) -> str:
+    if isinstance(s, bytes):
+        data = s
+    else:
+        data = s.encode("utf-8")
+    return hashlib.sha256(data).hexdigest()[:16]
 
-def sha64(s: str) -> str:
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+def sha64(s: Union[str, bytes]) -> str:
+    if isinstance(s, bytes):
+        data = s
+    else:
+        data = s.encode("utf-8")
+    return hashlib.sha256(data).hexdigest()
 
 
 # ---------------------------------------------------------
 # UTILS
 # ---------------------------------------------------------
-def _is_temp_dir(path):
+def is_temp_dir(path):
     try:
         temp_root = Path(tempfile.gettempdir()).resolve()
         path_obj = Path(path).resolve()
         return path_obj == temp_root or temp_root in path_obj.parents
-    except Exception:
+    except (OSError, ValueError, RuntimeError):
         return False
 
 
-# ---------------------------------------------------------
-# LEGACY WRAPPERS
-# ---------------------------------------------------------
-def _get_compound_seeds(SEEDS_DIR=None):
-    return get_compound_seeds(SEEDS_DIR)
-
-def _get_target_seeds(SEEDS_DIR=None):
-    return get_target_seeds(SEEDS_DIR)
-
-def _get_model_seeds(SEEDS_DIR=None):
-    return get_model_seeds(SEEDS_DIR)
 
 
 # ---------------------------------------------------------
 # PUBLIC API
 # ---------------------------------------------------------
 def get_seeds(SEEDS_DIR=None):
-    resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-
-    if SEEDS_DIR is None and _is_temp_dir(Path.cwd()):
+    if SEEDS_DIR is None and is_temp_dir(Path.cwd()):
         return set(), set(), set(), set()
+
+    resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
 
     if not resolved_dir.exists():
         return set(), set(), set(), set()
 
     return (
-        get_compound_seeds(SEEDS_DIR),
-        get_target_seeds(SEEDS_DIR),
-        get_model_seeds(SEEDS_DIR),
-        get_stopword_seeds(SEEDS_DIR),
+        get_compound_seeds(resolved_dir),
+        get_target_seeds(resolved_dir),
+        get_model_seeds(resolved_dir),
+        get_stopword_seeds(resolved_dir),
     )
 
 
@@ -72,8 +69,6 @@ def _normalize_seeds_root(resolved: Path) -> Path:
     return resolved
 
 def _resolve_seeds_dir(SEEDS_DIR=None):
-
-
     if SEEDS_DIR:
         p = Path(SEEDS_DIR)
         if p.exists():
@@ -99,12 +94,11 @@ def _resolve_seeds_dir(SEEDS_DIR=None):
 # ---------------------------------------------------------
 # SEED LOADERS
 # ---------------------------------------------------------
-def get_compound_seeds(SEEDS_DIR=None):
-    resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-    return _get_compound_seeds_resolved(str(resolved_dir))
+def get_compound_seeds(resolved_dir=None):
+    resolved = _resolve_seeds_dir(resolved_dir)
+    return _get_compound_seeds_resolved(str(resolved))
 
 
-@lru_cache(maxsize=32)
 def _get_compound_seeds_resolved(resolved_dir_str):
     f = Path(resolved_dir_str) / "base" / "life_sciences" / "compounds.txt"
     if not f.exists():
@@ -112,12 +106,11 @@ def _get_compound_seeds_resolved(resolved_dir_str):
     return load_seed_file(f, case="upper")
 
 
-def get_target_seeds(SEEDS_DIR=None):
-    resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-    return _get_target_seeds_resolved(str(resolved_dir))
+def get_target_seeds(resolved_dir=None):
+    resolved = _resolve_seeds_dir(resolved_dir)
+    return _get_target_seeds_resolved(str(resolved))
 
 
-@lru_cache(maxsize=32)
 def _get_target_seeds_resolved(resolved_dir_str):
     f = Path(resolved_dir_str) / "base" / "life_sciences" / "targets.txt"
     if not f.exists():
@@ -125,12 +118,11 @@ def _get_target_seeds_resolved(resolved_dir_str):
     return load_seed_file(f, case="upper")
 
 
-def get_model_seeds(SEEDS_DIR=None):
-    resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-    return _get_model_seeds_resolved(str(resolved_dir))
+def get_model_seeds(resolved_dir=None):
+    resolved = _resolve_seeds_dir(resolved_dir)
+    return _get_model_seeds_resolved(str(resolved))
 
 
-@lru_cache(maxsize=32)
 def _get_model_seeds_resolved(resolved_dir_str):
     f = Path(resolved_dir_str) / "base" / "life_sciences" / "models.txt"
     if not f.exists():
@@ -138,12 +130,11 @@ def _get_model_seeds_resolved(resolved_dir_str):
     return load_seed_file(f, case="upper")
 
 
-def get_stopword_seeds(SEEDS_DIR=None):
-    resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
-    return _get_stopword_seeds_resolved(str(resolved_dir))
+def get_stopword_seeds(resolved_dir=None):
+    resolved = _resolve_seeds_dir(resolved_dir)
+    return _get_stopword_seeds_resolved(str(resolved))
 
 
-@lru_cache(maxsize=32)
 def _get_stopword_seeds_resolved(resolved_dir_str):
     # Try base/life_sciences/stopwords.txt first
     f = Path(resolved_dir_str) / "base" / "life_sciences" / "stopwords.txt"
@@ -170,18 +161,22 @@ def load_seed_file(filepath: Path, case: str = None) -> Set[str]:
     seeds = set()
 
     if not filepath.exists():
-        print(f"⚠️ Seed file not found: {filepath}")
+        warnings.warn(f"Seed file not found: {filepath}", stacklevel=2)
         return seeds
 
     with open(filepath, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if line and not line.startswith("#"):
-                if case == "upper":
-                    seeds.add(line.upper())
-                elif case == "lower":
-                    seeds.add(line.lower())
-                else:
-                    seeds.add(line)
+            # Remove inline comments
+            if "#" in line:
+                line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            if case == "upper":
+                seeds.add(line.upper())
+            elif case == "lower":
+                seeds.add(line.lower())
+            else:
+                seeds.add(line)
 
     return seeds

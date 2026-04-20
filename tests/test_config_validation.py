@@ -75,7 +75,6 @@ class TestConfigValidation:
             
             assert len(seeds) == 3
             assert 'uppercase' in seeds
-            assert 'lowercase' in seeds
             assert 'mixedcase' in seeds
             assert 'UPPERCASE' not in seeds  # Should be converted to lowercase
             assert 'lowercase' in seeds

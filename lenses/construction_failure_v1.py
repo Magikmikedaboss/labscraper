@@ -42,7 +42,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         entities.append(make_entity("failure_driver", d, "driver", "cause"))
 
     # Outcome (normalized later to negative/neutral buckets)
-    if mode_hits or contains_any(s_l, ["failed", "collapse", "fracture", "cracking", "buckling"]):
+    if mode_hits:
         outcome = "failed"
     elif has_causal:
         outcome = "negative"

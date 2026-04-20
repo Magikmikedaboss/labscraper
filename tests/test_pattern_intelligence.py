@@ -1,6 +1,6 @@
 
-from utils import pattern_intelligence
 import pytest
+from utils import pattern_intelligence
 
 def test_detect_outcome_signals_basic():
     seeds = {
@@ -28,7 +28,13 @@ def test_detect_pattern_type_param(event_count, expected):
     entity_name = "protein"
     events_data = []
     all_entity_counts = {}
-    result = pattern_intelligence.detect_pattern_type(entity_name, event_count, events_data, all_entity_counts)    # If event_count (12) exceeds HIGH_RECURRENCE threshold (10) in detect_pattern_type,
+    result = pattern_intelligence.detect_pattern_type(
+        entity_name,
+        event_count,
+        events_data,
+        all_entity_counts
+    )
+    # If event_count (12) exceeds HIGH_RECURRENCE threshold (10) in detect_pattern_type,
     # the expected classification is "convergence"; empty events_data and all_entity_counts are valid for this test.
     assert result == expected
 
@@ -55,16 +61,18 @@ def test_determine_confidence_level():
 
 def test_calculate_health_score():
     OutcomeSignals = pattern_intelligence.OutcomeSignals
-    # High score
-    score = pattern_intelligence.calculate_health_score(
+    # High score scenario
+    high_score = pattern_intelligence.calculate_health_score(
         "convergence", OutcomeSignals(positive=3, neutral=2, negative=0, replication=1), "increasing", "high"
     )
-    assert 0 <= score <= 100
-    # Low score
-    score = pattern_intelligence.calculate_health_score(
+    assert 0 <= high_score <= 100
+    # Low score scenario
+    low_score = pattern_intelligence.calculate_health_score(
         "abandonment", OutcomeSignals(positive=0, neutral=0, negative=2, replication=0), "decreasing", "low"
     )
-    assert 0 <= score <= 100
+    assert 0 <= low_score <= 100
+    # Assert high scenario produces a higher score than low scenario
+    assert high_score > low_score, f"Expected high_score ({high_score}) > low_score ({low_score})"
 
 
 def test_generate_interpretation():

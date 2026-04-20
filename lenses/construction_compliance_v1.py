@@ -14,7 +14,6 @@ FAIL_PHRASES = [
     "non-compliant", "noncompliant", "does not meet", "did not comply", "fails to meet", "violation",
     "does not comply", "doesn't comply", "doesn't meet"
 ]
-
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
@@ -34,11 +33,13 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         entities.append(make_entity("code_standard", "STANDARD", "standard", "standard"))
 
     outcome = "neutral"
-    # Pass overrides fail in mixed-signal sentences to treat any affirmative indication as a success.
-    # If both pass and fail phrases are present, pass takes precedence.
-    if contains_any(s_l, PASS_PHRASES):
+    has_pass = contains_any(s_l, PASS_PHRASES)
+    has_fail = contains_any(s_l, FAIL_PHRASES)
+    if has_pass and has_fail:
+        outcome = "mixed"
+    elif has_pass:
         outcome = "successful"
-    elif contains_any(s_l, FAIL_PHRASES):
+    elif has_fail:
         outcome = "failed"
 
     score = 0

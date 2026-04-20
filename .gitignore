@@ -1,15 +1,15 @@
-# Ignore one-off status/progress markdown files (anchored to repo root)
+# Ignore one-off generated markdown files (anchored to repo root)
 # Ignore generated markdown files in .artifacts/
 .artifacts/*.md
 /.artifacts/**/*.md
 # Naming convention: generated files use GEN_*, TEMP_*, or _temp_*.md
-GEN_*.md
-TEMP_*.md
-_temp_*.md
+/GEN_*.md
+/TEMP_*.md
+/_temp_*.md
 # See .artifacts/README.md for details
-# Python
+
 __pycache__/
-*.py[cod]
+__pycache__/*.py[cod]
 *$py.class
 *.so
 .Python

@@ -1,3 +1,4 @@
+import random
 """
 Parallel PDF Scraper - Process multiple PDFs simultaneously
 Uses multiprocessing to speed up scraping by 4-8x (depending on PDF size/IO)
@@ -8,6 +9,7 @@ from multiprocessing import Pool
 import sqlite3
 import argparse
 import re
+import logging
 from pathlib import Path
 import pdfplumber
 from tqdm import tqdm
@@ -29,7 +31,8 @@ from utils.event_classification import (
     classify_event_type,
     evidence_strength,
     confidence_score,
-    FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
+    FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS,
+    ConfidenceInput,
 )
 from utils.db_utils import (
     upsert_source,
@@ -44,6 +47,8 @@ from utils.db_utils import (
 from utils.deduplication import normalize_event_key
 from utils.common import sha16, sha64
 import time
+
+process_logger = logging.getLogger("scrape_pdfs_parallel")
 
 def _connect(db_path: Path) -> sqlite3.Connection:
     """Create a sqlite connection configured for concurrent writes."""
@@ -91,7 +96,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         continue
 
                     section = guess_section(text.lower())
-                    chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
+                    chunk_id = insert_chunk(con, doc_id, page_idx, section, text, source_id)
 
                     for sent in chunk_sentences(text):
                         s_l = sent.lower()
@@ -106,13 +111,19 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         stage = guess_stage(s_l)
                         event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                         strength = evidence_strength(s_l)
-
                         ents = extract_entities(sent, domain)
                         measurements = extract_quantitative_data(sent)
 
                         # Use new confidence_score for filtering
                         conf = confidence_score(
-                            bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l
+                            ConfidenceInput(
+                                has_entity=bool(ents),
+                                method_tags=tags,
+                                failure_reason=failure_reason,
+                                decision_taken=decision_taken,
+                                has_measurements=bool(measurements),
+                                sentence_l=s_l
+                            )
                         )
                         if conf == "low":
                             continue
@@ -132,7 +143,9 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
 
                         # Add retry logic for SQLite writes
                         event_id = None
-                        for _ in range(3):
+                        last_exc = None
+                        base_sleep = 0.1
+                        for attempt in range(3):
                             try:
                                 event_id = insert_event(
                                     con=con,
@@ -154,10 +167,16 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                                     confidence_v=conf,
                                 )
                                 break
-                            except sqlite3.OperationalError:
-                                time.sleep(0.1)
+                            except sqlite3.OperationalError as e:
+                                last_exc = e
+                                sleep_time = base_sleep * (2 ** attempt)
+                                sleep_time += random.uniform(0, 0.05)
+                                time.sleep(sleep_time)
                         else:
-                            # All retries exhausted - skip this event
+                            process_logger.warning(
+                                "Failed to insert event after 3 retries: source_id=%s, doc_id=%s, chunk_id=%s, page_idx=%s, event_type=%s, exc=%r",
+                                source_id, doc_id, chunk_id, page_idx, event_type, last_exc
+                            )
                             continue
 
                         for t in tags:

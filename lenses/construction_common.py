@@ -187,6 +187,7 @@ def build_lens_event(
 ) -> LensEvent:
     """Create a product-ready lens event with normalized analytics fields."""
     s_l = sentence.lower()
+    normalized_raw_outcome = (str(raw_outcome) if raw_outcome is not None else "").strip().lower()
     return LensEvent(
         event_type=event_type,
         outcome=normalize_outcome(raw_outcome),
@@ -199,5 +200,5 @@ def build_lens_event(
         ),
         source_weight=get_source_weight(source_type),
         lens=lens_name,
-        raw_outcome=str(raw_outcome or "unknown").strip().lower() or "unknown",
+        raw_outcome=normalized_raw_outcome or "unknown",
     )

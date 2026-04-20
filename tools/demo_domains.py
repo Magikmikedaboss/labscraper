@@ -21,26 +21,27 @@ test_texts = {
     "stem_cells_regen": "Mesenchymal stem cells showed differentiation into osteoblasts."
 }
 
-print("=" * 60)
-print("TESTING ALL DOMAINS")
-print("=" * 60)
+if __name__ == "__main__":
+    print("=" * 60)
+    print("TESTING ALL DOMAINS")
+    print("=" * 60)
 
-for domain in domains:
-    text = test_texts.get(domain, "Test text for " + domain)
-    print(f"\n--- {domain} ---")
-    print(f"Input: {text}")
-    print("Entities:")
-    for e in extract_entities(text, domain):
-        print(f"  {e['entity_type']}: {e['entity_name']}")
+    for domain in domains:
+        text = test_texts.get(domain, "Test text for " + domain)
+        print(f"\n--- {domain} ---")
+        print(f"Input: {text}")
+        print("Entities:")
+        for e in extract_entities(text, domain):
+            print(f"  {e['entity_type']}: {e['entity_name']}")
 
-# Test lenses
-print("\n" + "=" * 60)
-print("TESTING LENSES")
-print("=" * 60)
-
-try:
-    from lenses import construction_failure_v1
-    print("construction_failure_v1 lens loaded")
-    print(dir(construction_failure_v1))
-except Exception as e:
-    print(f"Error loading lenses: {e}")
+    # Test lenses
+    print("\n" + "=" * 60)
+    print("TESTING LENSES")
+    print("=" * 60)
+    try:
+        from lenses import construction_failure_v1
+    except (ImportError, ModuleNotFoundError) as e:
+        print(f"Error loading lenses: {e}")
+    else:
+        print("construction_failure_v1 lens loaded")
+        print(dir(construction_failure_v1))

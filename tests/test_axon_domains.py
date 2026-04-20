@@ -95,8 +95,7 @@ def test_load_all_domains(tmp_path):
 def test_get_domain_by_id(tmp_path, monkeypatch):
     d1 = tmp_path / "d1.json"
     d1.write_text(json.dumps({"id": "d1", "name": "n1", "description": "desc"}))
-    # Patch search dirs to only tmp_path
-    monkeypatch.setattr(axon_domains, "get_domain_by_id", lambda domain_id, domains_dir=None: axon_domains.load_domain_profile(str(d1)) if domain_id == "d1" else None)
-    prof = axon_domains.get_domain_by_id("d1", str(tmp_path))
-    assert prof.id == "d1"
-    assert axon_domains.get_domain_by_id("badid", str(tmp_path)) is None
+    # Test by passing tmp_path as domains_dir to use real implementation
+    prof = axon_domains.get_domain_by_id("d1", domains_dir=str(tmp_path))
+    assert prof is not None and prof.id == "d1"
+    assert axon_domains.get_domain_by_id("badid", domains_dir=str(tmp_path)) is None

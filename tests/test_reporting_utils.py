@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+import json
 import utils.reporting_utils as reporting_utils
 
 def test_write_run_meta_creates_output_file():
@@ -23,13 +24,8 @@ def test_write_run_meta_creates_output_file():
         meta_path = found[0]
         with open(meta_path, "r", encoding="utf-8") as f:
             data = f.read()
-            assert data.strip(), "run_meta*.json file is empty"
-            meta = None
-            try:
-                import json
-                meta = json.loads(data)
-            except Exception as e:
-                assert False, f"run_meta*.json is not valid JSON: {e}"
+        assert data.strip(), "run_meta*.json file is empty"
+        meta = json.loads(data)
         # Assert on expected structure and key fields
         assert isinstance(meta, dict), "run_meta*.json root is not a dict"
         for key in ["run_id", "timestamp", "engine_version", "counts", "confidence_distribution", "top_entities"]:

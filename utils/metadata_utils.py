@@ -4,9 +4,37 @@ PDF metadata extraction utility
 
 from pathlib import Path
 import pdfplumber
+import logging
 from typing import Dict, Any
 from utils.pdf_metadata_parser import extract_year_from_creation_date, parse_first_page_text
 
+
+
+def _extract_meta_from_pdf(pdf, meta):
+    """
+    Helper to extract metadata from a pdfplumber PDF object and update meta dict.
+    Handles precedence: CreationDate -> parsed year fallback, Subject -> doi detection, fallback to first-page parsed fields.
+    """
+    doc_meta = getattr(pdf, "metadata", {}) or {}
+    meta["title"] = doc_meta.get("Title")
+    meta["authors"] = doc_meta.get("Author")
+    year_from_creation = None
+    if doc_meta.get("CreationDate"):
+        year_from_creation = extract_year_from_creation_date(doc_meta["CreationDate"])
+        meta["year"] = year_from_creation
+    if doc_meta.get("Subject") and "doi" in doc_meta["Subject"].lower():
+        meta["doi"] = doc_meta["Subject"]
+    parsed = None
+    if hasattr(pdf, "pages") and pdf.pages:
+        first_page = pdf.pages[0]
+        text = first_page.extract_text() or ""
+        parsed = parse_first_page_text(text)
+    if parsed:
+        if not year_from_creation and parsed.get("year"):
+            meta["year"] = parsed["year"]
+        for k, v in parsed.items():
+            if k in meta and not meta.get(k) and v:
+                meta[k] = v
 
 def extract_metadata(pdf_path: str | Path, pdf=None) -> Dict[str, Any]:
     """
@@ -18,48 +46,13 @@ def extract_metadata(pdf_path: str | Path, pdf=None) -> Dict[str, Any]:
     try:
         if pdf is None:
             with pdfplumber.open(str(pdf_path)) as pdf_obj:
-                pdf = pdf_obj
-                doc_meta = pdf.metadata or {}
-                meta["title"] = doc_meta.get("Title")
-                meta["authors"] = doc_meta.get("Author")
-                if doc_meta.get("CreationDate"):
-                    meta["year"] = extract_year_from_creation_date(doc_meta["CreationDate"])
-                if doc_meta.get("Subject") and "doi" in doc_meta["Subject"].lower():
-                    meta["doi"] = doc_meta["Subject"]
-                # Fallback to first page text if needed
-                if not meta["title"] or not meta["authors"] or not meta["year"] or not meta["doi"]:
-                    first_page = pdf.pages[0] if pdf.pages else None
-                    if first_page:
-                        text = first_page.extract_text() or ""
-                        parsed = parse_first_page_text(text)
-                        for k, v in parsed.items():
-                            if not meta[k] and v:
-                                meta[k] = v
+                _extract_meta_from_pdf(pdf_obj, meta)
         else:
-            # Use provided pdfplumber PDF object (for testing/mocking)
-            doc_meta = getattr(pdf, "metadata", {}) or {}
-            meta["title"] = doc_meta.get("Title")
-            meta["authors"] = doc_meta.get("Author")
-            if doc_meta.get("CreationDate"):
-                meta["year"] = extract_year_from_creation_date(doc_meta["CreationDate"])
-            if not meta["year"]:
-                # Try to extract year from first page text
-                if hasattr(pdf, "pages") and pdf.pages:
-                    first_page = pdf.pages[0]
-                    text = first_page.extract_text() or ""
-                    parsed = parse_first_page_text(text)
-                    if parsed["year"]:
-                        meta["year"] = parsed["year"]
-            if hasattr(pdf, "pages") and pdf.pages:
-                first_page = pdf.pages[0]
-                text = first_page.extract_text() or ""
-                parsed = parse_first_page_text(text)
-                for k, v in parsed.items():
-                    if not meta[k] and v:
-                        meta[k] = v
+            _extract_meta_from_pdf(pdf, meta)
     except Exception as e:
+        logging.exception(f"Error extracting metadata from {pdf_path}")
         meta["error"] = str(e)
-    # Clean up authors (split if comma-separated)
+    # Clean up authors (strip whitespace)
     if meta["authors"] and isinstance(meta["authors"], str):
         meta["authors"] = meta["authors"].strip()
     return meta

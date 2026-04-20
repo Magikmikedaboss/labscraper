@@ -1,6 +1,7 @@
-
 import types
 import sys
+import pytest
+import json
 from unittest import mock
 from utils.axon_domains import DomainProfile
 from utils import pattern_intelligence
@@ -34,8 +35,8 @@ def test_get_outcome_signals(tmp_path, monkeypatch):
     assert isinstance(signals, dict)
     # Create a file and test loading
     data = {"positive": ["good"], "neutral": [], "negative": [], "replication": []}
-    (tmp_path / "outcome_signals.json").write_text(str(data).replace("'", '"'))
-    pattern_intelligence._OUTCOME_SIGNALS = None  # reset cache
+    (tmp_path / "outcome_signals.json").write_text(json.dumps(data))
+    pattern_intelligence.clear_cache()  # reset cache using public helper
     signals = pattern_intelligence._get_outcome_signals()
     assert "positive" in signals
 
@@ -80,13 +81,11 @@ def test_main_smoke(monkeypatch):
     # Patch argument parser to avoid real CLI
     monkeypatch.setattr(scrape_all_pdfs_recursive, "find_all_pdfs", lambda x: [])
     monkeypatch.setattr(scrape_all_pdfs_recursive, "process_single_pdf", lambda *a, **k: None)
-    monkeypatch.setattr(scrape_all_pdfs_recursive, "Pool", lambda *a, **k: mock.MagicMock())
+    pool_mock = mock.MagicMock()
+    pool_ctx = mock.MagicMock(__enter__=mock.Mock(return_value=pool_mock), __exit__=mock.Mock(return_value=None))
+    monkeypatch.setattr(scrape_all_pdfs_recursive, "Pool", lambda *a, **k: pool_ctx)
     monkeypatch.setattr(scrape_all_pdfs_recursive, "tqdm", lambda x, **k: x)
     # Patch sys.argv
-    import sys
     monkeypatch.setattr(sys, "argv", ["prog", "--root-dirs", "foo", "--domain", "bar", "--output-db", "baz"])
-    # Should not raise
-    try:
-        scrape_all_pdfs_recursive.main()
-    except SystemExit:
-        pass
+    # Should not raise SystemExit; just run and assert output
+    scrape_all_pdfs_recursive.main()

@@ -2,9 +2,9 @@
 PDF metadata parsing and normalization utilities
 """
 import re
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
-def extract_year_from_creation_date(creation_date: str) -> int | None:
+def extract_year_from_creation_date(creation_date: str) -> Optional[int]:
     """Extracts year from PDF creation date string."""
     if not creation_date or not isinstance(creation_date, str):
         return None
@@ -13,30 +13,69 @@ def extract_year_from_creation_date(creation_date: str) -> int | None:
         return int(match.group(0))
     return None
 
-def parse_first_page_text(text: str) -> Dict[str, Any]:
-    """Parse first page text for title, authors, year, and DOI."""
+def parse_first_page_text(text: str, max_header_scan: int = 10) -> Dict[str, Any]:
+    """Parse first page text for title, authors, year, and DOI.
+    Uses heuristics to skip headers/journals and select reasonable title/authors lines.
+    Args:
+        text: First page text.
+        max_header_scan: Number of non-empty lines to scan for title/authors.
+    """
     meta = {"title": None, "authors": None, "year": None, "doi": None}
-    lines = text.splitlines()
-    if lines:
-        meta["title"] = lines[0].strip()
-    if len(lines) > 1:
-        meta["authors"] = lines[1].strip()
+    lines = [line.strip() for line in text.splitlines()]
+    nonempty = [line for line in lines if line]
+    # Heuristics for skipping header/journal lines for title
+    header_keywords = ["journal", "volume", "issue", "copyright", "all rights reserved", "published by", "doi", "preprint", "arxiv", "bioRxiv", "medRxiv", "page", "pages", "issn"]
+    page_volume_re = re.compile(r"(page[s]?|vol(ume)?|issn|doi|copyright|arxiv|medrxiv|biorxiv|preprint|all rights reserved)", re.I)
+    # Find title candidate
+    title_candidate = None
+    for line in nonempty[:max_header_scan]:
+        if len(line) < 5:
+            continue  # skip very short lines
+        if any(kw in line.lower() for kw in header_keywords):
+            continue
+        if page_volume_re.search(line):
+            continue
+        title_candidate = line
+        break
+    if title_candidate:
+        meta["title"] = title_candidate
+    elif nonempty:
+        meta["title"] = nonempty[0]
+    # Heuristics for authors
+    affiliation_keywords = ["university", "institute", "department", "dept", "school", "hospital", "center", "centre", "faculty", "college", "clinic", "laboratory", "lab", "company", "corporation", "inc", "llc", "ltd", "email", "@", ".edu", ".org", ".com", "http://", "https://"]
+    author_candidate = None
+    for line in nonempty[1:max_header_scan]:
+        if any(kw in line.lower() for kw in affiliation_keywords):
+            continue
+        if re.search(r"@|http[s]?://|www\.", line):
+            continue
+        if ("," in line or " and " in line.lower()) and 3 < len(line) < 200:
+            author_candidate = line
+            break
+    if author_candidate:
+        meta["authors"] = author_candidate
+    elif len(nonempty) > 1:
+        meta["authors"] = nonempty[1]
     # DOI extraction: only set if valid regex or clean 'doi:' suffix
     for line in lines:
         if "doi" in line.lower() and not meta["doi"]:
-            doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Z0-9]+", line, re.I)
+            doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Z0-9<>%+,]+", line, re.I)
             if doi_match:
-                meta["doi"] = doi_match.group(0)
+                doi_val = doi_match.group(0).rstrip(".,;:")
+                meta["doi"] = doi_val
             else:
                 # Try to extract after 'doi:' or 'DOI:'
                 parts = re.split(r"doi:\s*", line, flags=re.I)
                 if len(parts) > 1:
                     candidate = parts[1].strip()
-                    if re.match(r"10\.\d{4,9}/[-._;()/:A-Z0-9]+", candidate, re.I):
-                        meta["doi"] = candidate
+                    match = re.match(r"10\.\d{4,9}/[-._;()/:A-Z0-9<>%+,]+", candidate, re.I)
+                    if match:
+                        doi_val = match.group(0).rstrip(".,;:")
+                        meta["doi"] = doi_val
     # Year extraction: scan from end to avoid picking from title
     for line in reversed(lines):
         year_match = re.search(r"(19|20)\d{2}", line)
-        if year_match and not meta["year"]:
+        if year_match:
             meta["year"] = int(year_match.group(0))
+            break
     return meta

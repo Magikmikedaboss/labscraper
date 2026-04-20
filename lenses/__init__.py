@@ -1,30 +1,48 @@
 """Convenience helpers for the construction lens suite."""
 
 from __future__ import annotations
-
-from typing import Iterable, List, Optional
-
+import logging
+from typing import Iterable, List, Optional, Tuple, Dict, Union
 from .construction_building_physics_v1 import detect as detect_building_physics
 from .construction_climate_v1 import detect as detect_climate
 from .construction_compliance_v1 import detect as detect_compliance
 from .construction_failure_v1 import detect as detect_failure
 from .construction_materials_v1 import detect as detect_materials
 
+logger = logging.getLogger(__name__)
+
+
 LENS_REGISTRY = {
-    "failure": detect_failure,
-    "materials": detect_materials,
     "building_physics": detect_building_physics,
     "climate": detect_climate,
     "compliance": detect_compliance,
+    "failure": detect_failure,
+    "materials": detect_materials,
 }
-
 
 def detect_multi_lens(
     sentence: str,
     source_type: str = "research_paper",
     enabled_lenses: Optional[Iterable[str]] = None,
-) -> List[dict]:
-    """Run all enabled construction lenses and return stacked results for one sentence."""
+    raise_on_no_match: bool = False,
+    return_errors: bool = False,
+) -> Union[List[dict], Tuple[List[dict], Dict[str, str]]]:
+    """
+    Run all enabled construction lenses and return stacked results for one sentence.
+
+    Args:
+        sentence: Input sentence to analyze.
+        source_type: Type of source (default: research_paper).
+        enabled_lenses: List of lens names to use (default: all).
+        raise_on_no_match: If True, raise if no results (even if no errors). Default: False.
+        return_errors: If True, return (results, detector_errors) tuple instead of just results.
+
+    Returns:
+        - If return_errors is False (default): List of stacked event dicts (List[dict]).
+        - If return_errors is True: Tuple[List[dict], Dict[str, str]] where the second element is a dict of detector errors.
+        If no results and no errors, returns [] (or ([], {}) if return_errors).
+        Raises RuntimeError only if detector_errors is non-empty or raise_on_no_match is True.
+    """
     results: List[dict] = []
     if isinstance(enabled_lenses, str):
         selected_lenses = [enabled_lenses]
@@ -36,16 +54,14 @@ def detect_multi_lens(
     confidence_rank = {"low": 1, "med": 2, "medium": 2, "high": 3}
     context_rank = {"weak": 1, "moderate": 2, "strong": 3}
 
-
     # Validate selected_lenses
     invalid_lenses = [name for name in selected_lenses if name not in LENS_REGISTRY]
     if invalid_lenses:
         raise ValueError(f"Invalid lens name(s): {invalid_lenses}. Valid options: {list(LENS_REGISTRY.keys())}")
 
-
     detector_errors = {}
     for lens_name in selected_lenses:
-        detector = LENS_REGISTRY.get(lens_name)
+        detector = LENS_REGISTRY[lens_name]
         try:
             event, entities = detector(sentence, source_type=source_type)
         except Exception as e:
@@ -62,8 +78,20 @@ def detect_multi_lens(
         stacked["entities"] = entities
         results.append(stacked)
 
+
     if not results:
-        raise RuntimeError(f"No detector produced results. Errors: {detector_errors}")
+        if detector_errors:
+            raise RuntimeError(f"No detector produced results. Errors: {detector_errors}")
+        if raise_on_no_match:
+            raise RuntimeError("No detector produced results (no match)")
+        # If return_errors, return both (empty) results and errors
+        if not return_errors:
+            logger.warning("No detectors matched and no errors reported.")
+        return ([], detector_errors) if return_errors else []
+
+    # If there are results and also detector_errors, log a warning for partial failures
+    if detector_errors and results:
+        logger.warning("Some detectors failed: %r", detector_errors)
 
     results.sort(
         key=lambda item: (
@@ -73,7 +101,7 @@ def detect_multi_lens(
         ),
         reverse=True,
     )
-    return results
+    return (results, detector_errors) if return_errors else results
 
 
 __all__ = [

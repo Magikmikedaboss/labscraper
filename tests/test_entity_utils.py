@@ -4,8 +4,12 @@ def test_count_entities_by_role_basic():
     s = "protein:TP53; cell:HeLa"
     norm_map = {}
     result = entity_utils.count_entities_by_role(s, norm_map)
-    assert result[0] + result[1] == 2
-    assert "protein:TP53" in result[2] or "cell:HeLa" in result[2] or result[4]
+    # Explicitly check each result element and both entity identifiers regardless of order
+    assert result[0] == 1  # primary count
+    assert result[1] == 1  # context count
+    # result[2] is primary_str, result[3] is context_str
+    assert result[2] == "protein:TP53"
+    assert result[3] == "cell:HeLa"
 
 def test_count_entities_by_role_empty():
     result = entity_utils.count_entities_by_role("", {})
@@ -23,6 +27,7 @@ def test_load_overlay_aliases_safe_none():
     assert entity_utils.load_overlay_aliases_safe() == {}
 
 def test_load_overlay_aliases_safe_importerror(monkeypatch):
-    monkeypatch.setitem(__import__("sys").modules, "entity_normalizer", None)
+    import sys
+    monkeypatch.setitem(sys.modules, "utils.entity_normalizer", None)
     # Should not raise, should return {}
     assert entity_utils.load_overlay_aliases_safe("foo") == {}

@@ -36,12 +36,26 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         entities.append(make_entity("physics_metric", t, "metric", "measurement"))
 
     # outcome heuristic: negative signals take priority
-    pos = contains_any(s_l, ["reduced", "lower", "improved", "decreased", "better"])
+    pos = contains_any(s_l, [
+        "reduced energy", "reduced consumption", "lower u-value", "lower u value",
+        "improved insulation", "improved airtightness", "decreased heat loss",
+        "better insulation", "better airtightness", "reduced heat transfer",
+        "lower heat loss", "lower energy use", "lower energy consumption",
+        "improved r-value", "improved r value", "reduced infiltration"
+    ])
+    # Flexible positive: 'reduced' within 2 words of 'energy consumption' or 'consumption'
+    import re
+    flexible_positive = False
+    # Match 'reduced' and 'energy consumption' (or 'consumption') within 7 words, any order, anywhere
+    pattern1 = r"reduc\w*\b(?:\W+\w+){0,7}\W+(energy consumption|consumption)"
+    pattern2 = r"(energy consumption|consumption)\b(?:\W+\w+){0,7}\W+reduc\w*"
+    if re.search(pattern1, s_l) or re.search(pattern2, s_l):
+        flexible_positive = True
     neg = contains_any(s_l, ["higher energy", "increased leakage", "worsened", "condensation risk", "mold growth", "mold detected"])
     if neg:
         outcome = "degraded"
-    elif pos:
-        outcome = "improved"
+    elif pos or flexible_positive:
+        outcome = "positive"
     else:
         outcome = "neutral"
     score = 0

@@ -54,14 +54,15 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
         token = (name or "").strip()
         if not token:
             return False
+        token_upper = token.upper()
         # Keep canonical peptide sequences only when they are explicitly uppercase.
-        if re.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]{8,100}", token):
+        if re.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]{8,100}", token_upper):
             return True
         known = {
             "ETELCALCETIDE", "PLECANATIDE", "TERIPARATIDE", "OCTREOTIDE",
             "LANREOTIDE", "PASIREOTIDE", "SOMATOSTATIN"
         }
-        return token.upper() in known
+        return token_upper in known
     
     # Connect to database and perform all DB operations; ensure connection is closed explicitly
     events = []
@@ -136,11 +137,13 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
             if get_entity_role({"entity_type": canonical_type, "entity_name": canonical_name}, norm_map) == "context":
                 continue
 
+
             key = (canonical_key, canonical_type)
+            entity_id_str = f"{canonical_type}:{canonical_key}"
 
             if key not in entity_canonical:
                 canonical_entity = dict(entity)
-                canonical_entity['entity_id'] = str(key)
+                canonical_entity['entity_id'] = entity_id_str
                 canonical_entity['entity_name'] = canonical_name
                 canonical_entity['entity_type'] = canonical_type
                 canonical_entity['original_names'] = [name]
@@ -150,7 +153,7 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
                 if name not in canonical_entity['original_names']:
                     canonical_entity['original_names'].append(name)
 
-            entity_id_mapping[entity['entity_id']] = str(key)
+            entity_id_mapping[entity['entity_id']] = entity_id_str
 
         # Update entities list to use canonical entities
         entities = list(entity_canonical.values())
@@ -186,12 +189,10 @@ def export_dual_lens(db_path: str, domain_id: str, output_dir: str = "output"):
         entity_scores = {}  # entity_id -> {overlay_id: {score, bucket}}
 
         for entity in entities:
+
             entity_id = entity['entity_id']
             event_ids = entity_events.get(entity_id, [])
-
-            # Get models associated with this entity
             models_list = list(entity_models_map.get(entity_id, set()))
-
             entity_scores[entity_id] = {}
 
             for overlay_id in overlay_ids:

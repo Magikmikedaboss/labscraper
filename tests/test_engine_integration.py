@@ -12,6 +12,9 @@ from utils.run_engine import main
 from utils.db_init import _init_db_schema
 
 def test_main_function_falsy_domain_uses_default():
+    # NOTE: This test intentionally omits an explicit _init_db_schema() call.
+    # main() internally calls _init_db_schema_if_needed(), which initializes the schema for non-canonical/test DBs.
+    # This ensures the test exercises main()'s fallback DB initialization logic as intended.
     with tempfile.TemporaryDirectory() as temp_dir:
         input_dir = Path(temp_dir) / "input_pdfs"
         input_dir.mkdir()
@@ -97,6 +100,8 @@ def test_main_function_error_handling():
         test_pdf = input_dir / "test.pdf"
         test_pdf.write_text("Mock PDF content")
 
+        # Ensure the DB/schema exists before main is called
+        _init_db_schema(str(output_db))
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open:
             mock_pdf_open.side_effect = Exception("Processing error")
             with pytest.raises(SystemExit) as e:
@@ -120,6 +125,7 @@ def test_main_function_multiple_pdfs():
             test_pdf = input_dir / f"test_{i}.pdf"
             test_pdf.write_text(f"Mock PDF content {i}")
 
+
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open, \
              patch('utils.run_engine.extract_metadata') as mock_metadata, \
              patch('utils.run_engine.chunk_sentences') as mock_sentences:
@@ -139,8 +145,8 @@ def test_main_function_multiple_pdfs():
                 db_path=str(output_db)
             )
 
-        gc.collect()
         assert mock_pdf_open.call_count == 2
+        gc.collect()
         assert output_db.exists()
 
 def test_main_function_domain_specific_processing():

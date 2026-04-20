@@ -28,16 +28,13 @@ CREATE TABLE IF NOT EXISTS documents (
   file_path TEXT NOT NULL,
   file_type TEXT NOT NULL DEFAULT 'pdf', -- pdf/html/xml
   sha256 TEXT,
-  created_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_docs_source ON documents(source_id);
 
 
--- =========================================================
--- 3) CHUNKS (where the evidence came from)
--- =========================================================
 CREATE TABLE IF NOT EXISTS chunks (
   chunk_id TEXT PRIMARY KEY,             -- hash/uuid
   doc_id TEXT NOT NULL,
@@ -54,6 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_chunks_source ON chunks(source_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_doc ON chunks(doc_id);
 
 
+
 -- =========================================================
 -- 4) ENTITIES (what the sentence is about)
 --    This is how you become multi-domain.
@@ -64,8 +62,11 @@ CREATE TABLE IF NOT EXISTS entities (
   entity_name TEXT NOT NULL,             -- sequence, "MSC", "iPSC", "rapamycin", "AAV9", etc
   entity_variant TEXT,                   -- modified/differentiated/donor-type/formulation/etc
   organism TEXT,                         -- human/mouse/rat/etc (optional)
-  created_at TEXT
+  created_at TEXT DEFAULT (datetime('now'))
 );
+
+-- Ensure no duplicate (entity_type, entity_name) pairs
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_entities_type_name ON entities(entity_type, entity_name);
 
 CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(entity_type);
 CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(entity_name);
@@ -110,7 +111,7 @@ CREATE TABLE IF NOT EXISTS research_events (
   page_number INTEGER,
 
   -- housekeeping
-  created_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
 
   FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE,
   FOREIGN KEY (doc_id) REFERENCES documents(doc_id) ON DELETE SET NULL,
@@ -162,14 +163,21 @@ CREATE INDEX IF NOT EXISTS idx_event_tags_tag ON event_tags(tag);
 -- =========================================================
 -- 8) QUANTITATIVE MEASUREMENTS (numerical data extraction)
 -- =========================================================
+
+-- NOTE: value column changed from REAL to TEXT for high-precision decimal storage.
+-- For existing databases, migrate with:
+--   ALTER TABLE quantitative_measurements RENAME TO quantitative_measurements_old;
+--   CREATE TABLE quantitative_measurements (... value TEXT ...);
+--   INSERT INTO quantitative_measurements SELECT ... CAST(value AS TEXT) ... FROM quantitative_measurements_old;
+--   DROP TABLE quantitative_measurements_old;
 CREATE TABLE IF NOT EXISTS quantitative_measurements (
   measurement_id TEXT PRIMARY KEY,
   event_id TEXT NOT NULL,
   measurement_type TEXT NOT NULL,       -- ic50 | ec50 | half_life | stability_percent | kd | ki | etc
-  value REAL NOT NULL,
+  value TEXT NOT NULL,
   unit TEXT NOT NULL,                   -- nM | μM | mM | min | hour | day | percent | etc
   context TEXT,                         -- the phrase where this was found
-  created_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (event_id) REFERENCES research_events(event_id) ON DELETE CASCADE
 );
 
@@ -186,7 +194,7 @@ CREATE TABLE IF NOT EXISTS entity_relationships (
   target_entity_id TEXT NOT NULL,       -- object entity
   relationship_type TEXT NOT NULL,      -- more_stable_than | more_potent_than | analog_of | 
                                         -- derivative_of | less_toxic_than | etc
-  created_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (source_entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE,
   FOREIGN KEY (target_entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE
 );

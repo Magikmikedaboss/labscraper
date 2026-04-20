@@ -1,5 +1,5 @@
 import re
-from utils.common import _get_compound_seeds, _get_target_seeds, _get_model_seeds
+from utils.common import get_compound_seeds, get_target_seeds, get_model_seeds
 
 
 # ---------------------------------------------------------
@@ -27,39 +27,29 @@ NEURAL_CELL_KEYWORDS = [
 # ---------------------------------------------------------
 def extract_compounds(sentence: str, SEEDS_DIR=None) -> list[dict]:
     compounds = []
-    seen = set()
-    for compound in _get_compound_seeds(SEEDS_DIR):
+    for compound in get_compound_seeds(SEEDS_DIR):
         if re.search(r'\b' + re.escape(compound) + r'\b', sentence, re.IGNORECASE):
-            name = compound.upper()
-            if name not in seen:
-                compounds.append({
-                    "entity_type": "compound",
-                    "entity_name": name,
-                    "entity_variant": "drug",
-                    "role": "tested",
-                    "text": sentence
-                })
-                seen.add(name)
+            compounds.append({
+                "entity_type": "compound",
+                "entity_name": compound.upper(),
+                "entity_variant": "small_molecule",
+                "role": "tested",
+                "text": sentence,
+            })
     return compounds
 
 
-# ---------------------------------------------------------
-# TARGETS
-# ---------------------------------------------------------
 def extract_targets(sentence: str, SEEDS_DIR=None) -> list[dict]:
     targets = []
-    seen_target_names = set()
-    for target in _get_target_seeds(SEEDS_DIR):
-        norm_name = target.upper()
-        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE) and norm_name not in seen_target_names:
+    for target in get_target_seeds(SEEDS_DIR):
+        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
             targets.append({
                 "entity_type": "target",
-                "entity_name": norm_name,
+                "entity_name": target.upper(),
                 "entity_variant": "protein",
                 "role": "target",
-                "text": sentence
+                "text": sentence,
             })
-            seen_target_names.add(norm_name)
     return targets
 
 
@@ -67,32 +57,43 @@ def extract_targets(sentence: str, SEEDS_DIR=None) -> list[dict]:
 # MODELS
 # ---------------------------------------------------------
 def extract_models(sentence: str, SEEDS_DIR=None) -> list[dict]:
+    seen = set()
     models = []
-    for model in _get_model_seeds(SEEDS_DIR):
+    for model in get_model_seeds(SEEDS_DIR):
         if re.search(r'\b' + re.escape(model) + r'\b', sentence, re.IGNORECASE):
             variant = "unknown"
             if any(c.isdigit() for c in model) or '-' in model:
                 variant = "cell_line"
-            elif model in ["mouse", "mice", "rat", "human"]:
+            elif model.lower() in {"mouse", "mice", "rat", "human"}:
                 variant = "organism"
-            elif "organoid" in model or "3d" in model:
+            elif "organoid" in model.lower() or "3d" in model.lower():
                 variant = "3d_model"
-            models.append({
-                "entity_type": "model",
-                "entity_name": model.upper(),
-                "entity_variant": variant,
-                "text": sentence
-            })
+            name = model.upper()
+            if name not in seen:
+                models.append({
+                    "entity_type": "model",
+                    "entity_name": name,
+                    "entity_variant": variant,
+                    "text": sentence,
+                })
+                seen.add(name)
+
     fallback_models = ["mouse", "rat", "human", "hela", "hek293"]
     for fm in fallback_models:
         if re.search(r'\b' + re.escape(fm) + r'\b', sentence, re.IGNORECASE):
-            models.append({
-                "entity_type": "model",
-                "entity_name": fm.upper(),
-                "entity_variant": "organism",
-                "text": sentence
-            })
+            name = fm.upper()
+            if name not in seen:
+                variant = "cell_line" if fm in {"hela", "hek293"} else "organism"
+                models.append({
+                    "entity_type": "model",
+                    "entity_name": name,
+                    "entity_variant": variant,
+                    "text": sentence,
+                })
+                seen.add(name)
     return models
+
+
 # ---------------------------------------------------------
 # SEQUENCES / PEPTIDES
 # ---------------------------------------------------------
@@ -128,13 +129,13 @@ def is_probable_peptide(seq: str, sentence: str) -> bool:
 def extract_entities(sentence: str, domain: str = "methods_tooling", SEEDS_DIR=None) -> list[dict]:
     extracted_names = set()
     if domain == "construction_science":
-        return extract_construction_entities(sentence, extracted_names)
+        return extract_construction_entities(sentence, extracted_names, SEEDS_DIR=SEEDS_DIR)
     return extract_biomedical_entities(sentence, extracted_names, SEEDS_DIR=SEEDS_DIR)
 
 
 # ---------------------------------------------------------
 # CONSTRUCTION DOMAIN
-def extract_construction_entities(sentence: str, extracted_names: set) -> list[dict]:
+def extract_construction_entities(sentence: str, extracted_names: set, SEEDS_DIR=None) -> list[dict]:
     ents = []
     s_l = sentence.lower()
 
@@ -142,7 +143,7 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
     groups = [
         ({"concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation", "polymer", "composite", "asphalt", "aluminum", "copper", "gypsum", "plaster", "ceramic", "stone", "aggregate", "fiber", "foam", "bitumen", "PVC", "EPS", "XPS", "HDPE", "LDPE"}, "material"),
         ({"wall", "roof", "foundation", "floor", "column", "beam", "slab", "girder", "truss", "panel", "joint", "window", "door", "façade", "cladding", "insulation system", "partition", "rafter", "stud", "joist", "lintel"}, "system"),
-        ({"crack", "cracking", "shear failure", "buckling", "fatigue", "delamination", "fracture", "rupture", "collapse", "spalling", "yielding", "debonding", "creep", "shrinkage", "corrosion fatigue", "brittle fracture", "ductile fracture", "plastic hinge", "instability", "failure mode", "microcrack", "macrocrack"}, "failure_mode"),
+        ({"crack", "cracking", "shear failure", "buckling", "fatigue", "delamination", "fracture", "rupture", "collapse", "spalling", "yielding", "debonding", "creep", "shrinkage", "corrosion fatigue", "brittle fracture", "ductile fracture", "plastic hinge", "instability", "microcrack", "macrocrack"}, "failure_mode"),
         ({"temperature", "thermal cycling", "humidity", "moisture", "wind", "rain", "fire", "freeze", "frost", "uv", "solar", "environmental stress", "exposure", "condensation", "weather", "climate", "precipitation", "snow", "hail", "thermal shock"}, "environment"),
         ({"compression", "tension", "shear", "bending", "torsion", "impact", "flexure", "creep test", "fatigue test", "tensile test", "load test", "stress test", "thermal analysis", "modulus", "stiffness", "ductility", "hardness", "strength", "yield strength", "ultimate strength", "elasticity", "plasticity"}, "test_method"),
         ({"flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction", "subsidence", "settlement", "liquefaction", "tsunami", "landslide", "storm", "hurricane", "typhoon", "cyclone"}, "hazard"),
@@ -183,9 +184,15 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
     generic_skip = {"failure", "thermal", "stress"}
     for group, entity_type in groups:
         for item in group:
-            if item.lower() in s_l or (len(item) > 4 and any(word in s_l for word in item.lower().split())):
+            item_l = item.lower()
+            # Whole-phrase match (single correct assignment)
+            phrase_match = re.search(r'\b' + re.escape(item_l) + r'\b', s_l)
+            # All tokens as separate words
+            tokens = item_l.split()
+            token_matches = all(re.search(r'\b' + re.escape(tok) + r'\b', s_l) for tok in tokens)
+            if phrase_match or (len(item) > 4 and token_matches):
                 # Allow generic terms if a specific failure was found in the sentence
-                allow_generic = any(g in s_l for g in generic_skip) and any(x in s_l for x in ["crack", "fracture", "collapse", "spalling"])
+                allow_generic = any(re.search(r'\b' + re.escape(g) + r'\b', s_l) for g in generic_skip) and any(re.search(r'\b' + re.escape(x) + r'\b', s_l) for x in ["crack", "fracture", "collapse", "spalling"])
                 if item in generic_skip and not allow_generic:
                     continue
                 name = item.upper()
@@ -206,24 +213,16 @@ def extract_construction_entities(sentence: str, extracted_names: set) -> list[d
 # ---------------------------------------------------------
 def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=None) -> list[dict]:
     ents = []
-    # 1. COMPOUNDS
-    for compound in _get_compound_seeds(SEEDS_DIR):
-        pattern = r'\b' + re.escape(compound) + r'\b'
-        if re.search(pattern, sentence, re.IGNORECASE):
-            name = compound.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "compound",
-                    "entity_name": name,
-                    "entity_variant": "drug",
-                    "role": "tested",
-                    "text": sentence
-                })
-                extracted_names.add(norm)
+    # 1. COMPOUNDS (use extract_compounds to avoid duplication)
+    compounds = extract_compounds(sentence, SEEDS_DIR)
+    for c in compounds:
+        norm = normalize_name(c["entity_name"])
+        if norm not in extracted_names:
+            ents.append(c)
+            extracted_names.add(norm)
 
     # 2. TARGETS
-    for target in _get_target_seeds(SEEDS_DIR):
+    for target in get_target_seeds(SEEDS_DIR):
         pattern = r'\b' + re.escape(target) + r'\b'
         if re.search(pattern, sentence, re.IGNORECASE):
             name = target.upper()
@@ -260,7 +259,7 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
 
     # 5. MODELS — after stem/neural cells so dedup blocks their overlap terms
     models = []
-    for model in _get_model_seeds(SEEDS_DIR):
+    for model in get_model_seeds(SEEDS_DIR):
         if re.search(r'\b' + re.escape(model) + r'\b', sentence, re.IGNORECASE):
             variant = "unknown"
             if any(c.isdigit() for c in model) or '-' in model:
@@ -268,15 +267,17 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
             elif model.lower() in {"mouse", "mice", "rat", "human"}:
                 variant = "organism"
             elif "organoid" in model.lower() or "3d" in model.lower():
-                pass  # No special variant, keep as unknown
+                variant = "3d_model"  # Explicitly annotate 3D/organoid models
             models.append({"entity_type": "model", "entity_name": model.upper(),
                            "entity_variant": variant, "text": sentence})
 
-    for fm in ["mouse", "rat", "human", "hela", "hek293"]:
-        if re.search(r'\b' + re.escape(fm) + r'\b', sentence, re.IGNORECASE):
-            variant = "cell_line" if fm in ["hela", "hek293"] else "organism"
-            models.append({"entity_type": "model", "entity_name": fm.upper(),
-                           "entity_variant": variant, "text": sentence})
+    # Fallback for common models if not already matched: assign correct variant
+    # (Handled by _get_model_seeds, but if needed, uncomment and use below logic)
+    # for fm in ["mouse", "rat", "human", "hela", "hek293"]:
+    #     if re.search(r'\b' + re.escape(fm) + r'\b', sentence, re.IGNORECASE):
+    #         variant = "cell_line" if fm in ["hela", "hek293"] else "organism"
+    #         models.append({"entity_type": "model", "entity_name": fm.upper(),
+    #                        "entity_variant": variant, "text": sentence})
     for m in models:
         norm = normalize_name(m["entity_name"])
         if norm not in extracted_names:
@@ -288,7 +289,6 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
         norm = normalize_name(seq)
         if is_probable_peptide(seq, sentence) and norm not in extracted_names:
             ents.append({"entity_type": "peptide", "entity_name": seq,
-                         "role": "tested", "text": sentence})
+                         "entity_variant": "sequence", "role": "tested", "text": sentence})
             extracted_names.add(norm)
-
     return ents

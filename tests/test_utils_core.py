@@ -1,6 +1,7 @@
 import sqlite3
 import tempfile
 from utils import db_utils, event_classification, data_extractors, entities, common, text_utils
+from utils.event_classification import ConfidenceInput
 
 def test_connect_db_and_get_tables(tmp_path):
     # Create a temp db
@@ -35,7 +36,16 @@ def test_event_classification_basic():
     strength = event_classification.evidence_strength(s)
     assert isinstance(strength, str)
     # Confidence
-    conf = event_classification.confidence_score(True, tags, reason, dec, True, s)
+    conf = event_classification.confidence_score(
+        ConfidenceInput(
+            has_entity=True,
+            method_tags=tags,
+            failure_reason=reason,
+            decision_taken=dec[0] if isinstance(dec, tuple) else dec,
+            has_measurements=True,
+            sentence_l=s
+        )
+    )
     assert isinstance(conf, str)
 
 def test_data_extractors_quantitative():
@@ -45,9 +55,9 @@ def test_data_extractors_quantitative():
     assert any(m['measurement_type'] == 'half_life' for m in measurements)
 
 def test_entities_extract_compounds_targets(monkeypatch):
-    # Patch _get_compound_seeds and _get_target_seeds
-    monkeypatch.setattr(entities, '_get_compound_seeds', lambda SEEDS_DIR=None: ['aspirin'])
-    monkeypatch.setattr(entities, '_get_target_seeds', lambda SEEDS_DIR=None: ['mtor'])
+    # Patch get_compound_seeds and get_target_seeds
+    monkeypatch.setattr(entities, 'get_compound_seeds', lambda resolved_dir=None: ['aspirin'])
+    monkeypatch.setattr(entities, 'get_target_seeds', lambda resolved_dir=None: ['mtor'])
     s = "Aspirin inhibits mTOR."
     compounds = entities.extract_compounds(s)
     targets = entities.extract_targets(s)
@@ -58,9 +68,9 @@ def test_common_sha_and_temp():
     s = "test string"
     assert len(common.sha16(s)) == 16
     assert len(common.sha64(s)) == 64
-    # _is_temp_dir should work for temp and non-temp
-    assert isinstance(common._is_temp_dir(tempfile.gettempdir()), bool)
-    assert isinstance(common._is_temp_dir("/"), bool)
+    # is_temp_dir should work for temp and non-temp
+    assert isinstance(common.is_temp_dir(tempfile.gettempdir()), bool)
+    assert isinstance(common.is_temp_dir("/"), bool)
 
 def test_text_utils_chunk_and_guess():
     text = "This is a sentence. This is another! And a third?"

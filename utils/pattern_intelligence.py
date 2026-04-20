@@ -41,6 +41,11 @@ def _get_outcome_signals():
             }
     return _OUTCOME_SIGNALS
 
+def clear_cache():
+    """Reset the cached outcome signals (for testing or reload)."""
+    global _OUTCOME_SIGNALS
+    _OUTCOME_SIGNALS = None
+
 
 @dataclass
 class OutcomeSignals:

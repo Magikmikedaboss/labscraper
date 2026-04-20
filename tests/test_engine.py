@@ -1,15 +1,14 @@
-
 import tempfile
 import sqlite3
 from pathlib import Path
 from unittest.mock import patch, Mock
-import gc
 
 from utils.run_engine import main
 from utils.db_init import _init_db_schema
 
 
 def test_main_function_database_creation():
+    import gc
     with tempfile.TemporaryDirectory() as temp_dir:
         input_dir = Path(temp_dir) / "input_pdfs"
         input_dir.mkdir()
@@ -18,7 +17,7 @@ def test_main_function_database_creation():
         _init_db_schema(str(output_db))
 
         test_pdf = input_dir / "test.pdf"
-        test_pdf.write_text("Mock PDF content")
+        test_pdf.write_bytes(b"Mock PDF content")
 
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open, \
              patch('utils.run_engine.extract_metadata') as mock_metadata, \
@@ -43,9 +42,8 @@ def test_main_function_database_creation():
                 input_dir=str(input_dir),
                 db_path=str(output_db)
             )
+            gc.collect()
 
-        # Force release of SQLite handles before file cleanup
-        gc.collect()
 
         assert output_db.exists()
 
@@ -55,6 +53,7 @@ def test_main_function_database_creation():
             tables = [row[0] for row in cursor.fetchall()]
             assert 'sources' in tables
             assert 'documents' in tables
-            cursor.close()
         finally:
             conn.close()
+
+

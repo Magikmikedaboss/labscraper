@@ -212,12 +212,12 @@ def load_all_domains(domains_dir: str) -> Dict[str, DomainProfile]:
     return domains
 
 
-def get_domain_by_id(domain_id: str, domains_dir: str = "seeds/domains") -> Optional[DomainProfile]:
+def get_domain_by_id(domain_id: str, domains_dir: str = "config/domains") -> Optional[DomainProfile]:
     """
     Get a specific domain profile by ID.
 
-    Supports both the legacy `seeds/domains` layout and the current
-    production `config/domains` layout.
+    Canonical location is `config/domains` (default). Also supports legacy `seeds/domains` for backward compatibility.
+    The search order is: domains_dir (default: config/domains), then 'config/domains', then 'seeds/domains'.
     """
     if not domain_id or not isinstance(domain_id, str):
         return None
@@ -259,7 +259,7 @@ def get_domain_by_id(domain_id: str, domains_dir: str = "seeds/domains") -> Opti
 # Example usage
 if __name__ == "__main__":
     # Load all domains
-    domains = load_all_domains("seeds/domains")
+    domains = load_all_domains("config/domains")
     
     print("="*70)
     print("AXON LABS DOMAIN PROFILES")

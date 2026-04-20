@@ -18,13 +18,19 @@ def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
 def get_tables(conn: sqlite3.Connection) -> List[str]:
     """Get list of all tables"""
     cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-    return [row[0] for row in cursor.fetchall()]
+    try:
+        return [row[0] for row in cursor.fetchall()]
+    finally:
+        cursor.close()
 
 def get_table_stats(conn: sqlite3.Connection, table: str) -> Dict:
     """Get row count and columns for a table"""
     # First validate that the table exists to prevent SQL injection
     cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-    existing_tables = [row[0] for row in cursor.fetchall()]
+    try:
+        existing_tables = [row[0] for row in cursor.fetchall()]
+    finally:
+        cursor.close()
     
     if table not in existing_tables:
         raise ValueError(f"Table '{table}' does not exist in database")
@@ -39,12 +45,18 @@ def get_table_stats(conn: sqlite3.Connection, table: str) -> Dict:
     # Use string formatting that Bandit recognizes as safe
     count_query = 'SELECT COUNT(*) FROM "{}"'.format(table)
     cursor = conn.execute(count_query)
-    count = cursor.fetchone()[0]
-    
+    try:
+        count = cursor.fetchone()[0]
+    finally:
+        cursor.close()
+
     pragma_query = 'PRAGMA table_info("{}")'.format(table)
     cursor = conn.execute(pragma_query)
-    columns = [row[1] for row in cursor.fetchall()]
-    
+    try:
+        columns = [row[1] for row in cursor.fetchall()]
+    finally:
+        cursor.close()
+
     return {'count': count, 'columns': columns}
 
 def inspect_database(db_path: str = 'db/runs.sqlite', detailed: bool = False):
@@ -55,14 +67,14 @@ def inspect_database(db_path: str = 'db/runs.sqlite', detailed: bool = False):
         db_path: Path to SQLite database
         detailed: If True, show detailed stats for each table
     """
-    print(f"\n{'='*60}")
-    print(f"DATABASE INSPECTION: {db_path}")
-    logger.info('%s', '='*60)
+    logger.info('\n%s', '='*60)
     logger.info('DATABASE INSPECTION: %s', db_path)
     logger.info('%s\n', '='*60)
+    result = {"db_path": db_path, "tables": []}
     try:
         conn = connect_db(db_path)
         tables = get_tables(conn)
+        result["tables"] = tables
         logger.info("📊 Tables found: %d", len(tables))
         logger.info("")
         for table in tables:
@@ -73,10 +85,13 @@ def inspect_database(db_path: str = 'db/runs.sqlite', detailed: bool = False):
                 logger.info("   Columns: %s", ', '.join(stats['columns']))
             logger.info("")
         conn.close()
+        return result
     except FileNotFoundError as e:
         logger.error("❌ %s", e)
+        return result
     except sqlite3.Error as e:
         logger.error("❌ Database error: %s", e)
+        return result
 
 def show_recent_events(conn: sqlite3.Connection, limit: int = 5):
     """Show recent research events"""
@@ -91,12 +106,14 @@ def show_recent_events(conn: sqlite3.Connection, limit: int = 5):
             LIMIT ?
         """
         cursor = conn.execute(query, (limit,))
-        
-        for row in cursor:
-            confidence = row[2] if row[2] is not None else "unknown"
-            logger.info("  • %s | %s | confidence: %s", row[0], row[1], confidence)
-            logger.info("    %s", row[3])
-            logger.info("")
+        try:
+            for row in cursor:
+                confidence = row[2] if row[2] is not None else "unknown"
+                logger.info("  • %s | %s | confidence: %s", row[0], row[1], confidence)
+                logger.info("    %s", row[3])
+                logger.info("")
+        finally:
+            cursor.close()
     except sqlite3.OperationalError as e:
         logger.error("  ⚠️  Database table not found: %s", e)
 
@@ -114,14 +131,18 @@ def show_top_sources(conn: sqlite3.Connection, limit: int = 5):
             ORDER BY event_count DESC
             LIMIT ?
         """
-        cursor = conn.execute(query, (limit,))
-        
-        for row in cursor:
-            logger.info(f"  {row[1]}")
-            logger.info(f"    Events: {row[2]}")
-            logger.info("")
+        cursor = None
+        try:
+            cursor = conn.execute(query, (limit,))
+            for row in cursor:
+                logger.info("  %s", row[1])
+                logger.info("    Events: %s", row[2])
+                logger.info("")
+        finally:
+            if cursor is not None:
+                cursor.close()
     except sqlite3.OperationalError as e:
-        logger.error(f"  ⚠️  Database table not found: {e}")
+        logger.error("  ⚠️  Database table not found: %s", e)
 
 def show_pdf_cache(cache_dir: str = 'input/rss_cache'):
     """Show PDF cache contents"""
@@ -130,31 +151,16 @@ def show_pdf_cache(cache_dir: str = 'input/rss_cache'):
     logger.info("\n📁 PDF CACHE:")
     logger.info("-" * 60)
     
+
     if not cache_dir.exists():
         logger.error("  ⚠️  Cache directory not found")
         return
-    
-    pdfs = list(cache_dir.glob('*.pdf'))
-    logger.info(f"  PDFs: {len(pdfs)}")
-    if pdfs:
-        total_size = sum(p.stat().st_size for p in pdfs)
-        if total_size >= 1024 * 1024:
-            total_str = f"{total_size / 1024 / 1024:.2f} MB"
-        elif total_size >= 1024:
-            total_str = f"{total_size / 1024:.2f} KB"
-        else:
-            total_str = f"{total_size} bytes"
-        logger.info(f"  Total size: {total_str}")
-        logger.info("\n  Recent files:")
-        for pdf in sorted(pdfs, key=lambda p: p.stat().st_mtime, reverse=True)[:5]:
-            size_bytes = pdf.stat().st_size
-            if size_bytes >= 1024 * 1024:
-                size_str = f"{size_bytes / 1024 / 1024:.2f} MB"
-            elif size_bytes >= 1024:
-                size_str = f"{size_bytes / 1024:.2f} KB"
-            else:
-                size_str = f"{size_bytes} bytes"
-            logger.info(f"    • {pdf.name} ({size_str})")
+
+    # Enumerate files in the cache directory and log their details
+    for f in cache_dir.iterdir():
+        if f.is_file():
+            st = f.stat()
+            logger.info("  %s | %d bytes | modified: %s", f.name, st.st_size, st.st_mtime)
 
 def get_entity_distribution(conn: sqlite3.Connection):
     """Show entity distribution across types"""
@@ -171,9 +177,9 @@ def get_entity_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            logger.info(f"  {row[0]} : {row[1]} entities")
+            logger.info("  %s : %s entities", row[0], row[1])
     except sqlite3.OperationalError as e:
-        logger.error(f"  ⚠️  Database table not found: {e}")
+        logger.error("  ⚠️  Database table not found: %s", e)
 
 def get_event_type_distribution(conn: sqlite3.Connection):
     """Show event type distribution"""
@@ -190,9 +196,9 @@ def get_event_type_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            logger.info(f"  {row[0]} : {row[1]} events")
+            logger.info("  %s : %s events", row[0], row[1])
     except sqlite3.OperationalError as e:
-        logger.error(f"  ⚠️  Database table not found: {e}")
+        logger.error("  ⚠️  Database table not found: %s", e)
 
 def get_domain_distribution(conn: sqlite3.Connection):
     """Show research domain distribution"""
@@ -209,11 +215,11 @@ def get_domain_distribution(conn: sqlite3.Connection):
         cursor = conn.execute(query)
         
         for row in cursor:
-            logger.info(f"  {row[0]} : {row[1]} events")
+            logger.info("  %s : %s events", row[0], row[1])
     except sqlite3.OperationalError as e:
-        logger.error(f"  ⚠️  Database table not found: {e}")
+        logger.error("  ⚠️  Database table not found: %s", e)
 
-def upsert_source(con, source_id: str, pdf_file: str, metadata: dict):
+def upsert_source(con: sqlite3.Connection, source_id: str, pdf_file: str, metadata: dict):
     """Updated to include metadata"""
     con.execute(
         """INSERT OR IGNORE INTO sources(source_id, pdf_file, title, authors, year, doi, imported_at)
@@ -231,7 +237,7 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
     )
     return doc_id
 
-def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
+def insert_chunk(con, doc_id: str, page_number: int, section_guess: str, chunk_text: str, source_id: str) -> str:
     chunk_id = sha16(f"{doc_id}|{page_number}|{chunk_text[:200]}")
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
@@ -242,10 +248,7 @@ def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_gue
 
 def upsert_tag(con, tag: str):
     con.execute("INSERT OR IGNORE INTO tags(tag) VALUES(?)", (tag,))
-    # Get tag for further use
-    cur = con.execute("SELECT tag FROM tags WHERE tag=?", (tag,))
-    row = cur.fetchone()
-    return row[0] if row else None
+    return tag
 
 def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str | None, organism: str | None) -> str:
     key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
@@ -257,10 +260,26 @@ def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str |
     )
     return entity_id
 
-def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: int,
-                 domain: str, event_type: str, study_stage: str, biological_system: str | None, application_area: str | None,
-                 outcome: str, failure_reason: str, decision_taken: str, decision_driver: str | None,
-                 evidence_snippet: str, evidence_strength_v: str, confidence_v: str) -> str:
+def insert_event(
+    *,
+    con,
+    source_id: str,
+    doc_id: str,
+    chunk_id: str,
+    page_number: int,
+    domain: str,
+    event_type: str,
+    study_stage: str,
+    biological_system: str | None,
+    application_area: str | None,
+    outcome: str,
+    failure_reason: str,
+    decision_taken: str,
+    decision_driver: str | None,
+    evidence_snippet: str,
+    evidence_strength_v: str,
+    confidence_v: str,
+) -> str:
     base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
     event_id = sha16(base)
     con.execute(
@@ -287,14 +306,20 @@ def link_event_entity(con, event_id: str, entity_id: str, role: str):
     )
 
 def insert_measurement(con, event_id: str, measurement: dict):
-    """Insert quantitative measurement"""
-    measurement_id = sha16(f"{event_id}|{measurement['measurement_type']}|{measurement['value']}|{measurement['unit']}")
+    """Insert quantitative measurement. Tolerates missing fields and raises ValueError for required ones."""
+    mtype = measurement.get('measurement_type')
+    value = measurement.get('value')
+    unit = measurement.get('unit')
+    context = measurement.get('context', None)
+    # measurement_type, value, and unit are required for a valid measurement
+    if mtype is None or value is None or unit is None:
+        raise ValueError(f"Missing required measurement fields: measurement_type={mtype}, value={value}, unit={unit}")
+    measurement_id = sha16(f"{event_id}|{mtype}|{value}|{unit}")
     con.execute(
         """INSERT OR IGNORE INTO quantitative_measurements(
              measurement_id, event_id, measurement_type, value, unit, context, created_at
            ) VALUES (?,?,?,?,?,?,?)""",
-        (measurement_id, event_id, measurement['measurement_type'], 
-         measurement['value'], measurement['unit'], measurement['context'], now_iso()),
+        (measurement_id, event_id, mtype, value, unit, context, now_iso()),
     )
 
 def insert_relationship(con, entity_id_1: str, entity_id_2: str, relationship_type: str):

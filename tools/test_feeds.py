@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--keywords', nargs='+', 
                        help='Keywords to search for in entries')
     parser.add_argument('--save-working', action='store_true',
-                       help='Save working feeds back to config')
+                       help='Save working feeds to config/feeds.json (always writes to canonical path, not --config)')
     args = parser.parse_args()
 
     config = None
@@ -85,13 +85,16 @@ def main():
                 for r in working
             ]
         }
-        Path('config').mkdir(exist_ok=True)
+        # Save validated working feeds to canonical config location (always writes to config/feeds.json, not the --config path)
+        save_path = Path("config") / "feeds.json"
+        save_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             output = validate_feed_config(output)
-            with open('config/feeds.json', 'w', encoding='utf-8') as f:
+            with open(save_path, 'w', encoding='utf-8') as f:
                 json.dump(output, f, indent=2)
-            print(f"\n💾 Saved {len(working)} working feeds to config/feeds.json")
+            print(f"\n💾 Saved {len(working)} working feeds to {save_path}")
         except ValidationError as e:
             print(f"⚠️  Failed to validate output config: {e}")
+            sys.exit(1)
 if __name__ == "__main__":
     main()

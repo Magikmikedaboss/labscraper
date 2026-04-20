@@ -1,28 +1,21 @@
-"""
-Entity Normalization Module
 
-Collapses entity variants into canonical forms and identifies context-only entities.
-Now supports domain overlay aliases for MSC→mesenchymal stem cell, etc.
-
-Usage:
-    from entity_normalizer import normalize_entity, is_context_entity, load_overlay_aliases
-    
-    norm_map = load_normalization_map()
-    overlay_aliases = load_overlay_aliases("stem_cells_regen")  # Optional
-    
-    normalized = normalize_entity(entity, norm_map, overlay_aliases)
-    if not is_context_entity(normalized):
-        # Include in top entities ranking
-"""
-
+import logging
 import json
 from pathlib import Path
 from typing import Dict, Optional
 
+# Central set of primary entity types
+PRIMARY_TYPES = {
+    'gene', 'protein', 'compound', 'cell_type', 'assay', 'test_method',
+    'stem_cell', 'neural_cell', 'model', 'peptide', 'failure_mode', 'target',
+    'organism', 'disease', 'phenotype', 'mutation', 'variant', 'tissue', 'pathway',
+    'biomarker', 'receptor', 'enzyme', 'transcription_factor', 'rna', 'metabolite',
+    'drug', 'chemical', 'exposure', 'treatment', 'intervention', 'outcome', 'measurement'
+}
+
 
 def load_normalization_map(path: str = "seeds/normalization.json") -> dict:
     """Load the normalization map from JSON file"""
-    import logging
     try:
         text = Path(path).read_text(encoding="utf-8")
         return json.loads(text)
@@ -37,44 +30,52 @@ def load_normalization_map(path: str = "seeds/normalization.json") -> dict:
         raise
 
 
+
+# Module-level import and flag for seed_overlay_loader
+try:
+    from utils import seed_overlay_loader
+    _SEED_OVERLAY_LOADER_AVAILABLE = True
+except (ImportError, ModuleNotFoundError, SyntaxError) as e:
+    logging.getLogger(__name__).warning(f"seed_overlay_loader could not be imported: {e}")
+    seed_overlay_loader = None
+    _SEED_OVERLAY_LOADER_AVAILABLE = False
+
 def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "seeds/overlays") -> Dict[str, str]:
     """
-    Load alias→canonical mappings from domain overlay.
-    
+    Load alias→canonical mappings from domain overlay using seed_overlay_loader if available.
+
     Args:
         domain_id: Domain identifier (e.g., "stem_cells_regen")
         overlays_dir: Path to overlays directory
-        
+
     Returns:
-        Dictionary mapping alias (lowercase) to canonical name
-        
+        Dictionary mapping alias (lowercase) to canonical name. Empty if unavailable or error.
+
     Example:
         {"msc": "mesenchymal stem cell", "ipsc": "induced pluripotent stem cell"}
+
+    Notes:
+        - If seed_overlay_loader is not present or fails, returns an empty dict and logs a warning.
+        - If neither get_overlay_aliases nor OVERLAY_ALIASES is present, logs a warning.
     """
-    # Dynamically import seed_overlay_loader if present and get alias map
-    import importlib.util
-    import importlib
-    import logging
-    loader_name = 'seed_overlay_loader'
     overlay_map = {}
+    logger = logging.getLogger(__name__)
+    if not _SEED_OVERLAY_LOADER_AVAILABLE or seed_overlay_loader is None:
+        logger.warning(f"seed_overlay_loader not available, overlay aliases unavailable for {domain_id}")
+        return overlay_map
     try:
-        spec = importlib.util.find_spec(loader_name)
-        if spec is not None:
-            module = importlib.import_module(loader_name)
-            if hasattr(module, 'get_overlay_aliases'):
-                overlay_map = module.get_overlay_aliases(domain_id, overlays_dir)
-            elif hasattr(module, 'OVERLAY_ALIASES'):
-                overlay_map = module.OVERLAY_ALIASES.get(domain_id, {})
-            else:
-                logging.getLogger(__name__).warning(f"seed_overlay_loader found but no loader function or alias map present for {domain_id}")
+        if hasattr(seed_overlay_loader, 'get_overlay_aliases'):
+            overlay_map = seed_overlay_loader.get_overlay_aliases(domain_id, overlays_dir)
+        elif hasattr(seed_overlay_loader, 'OVERLAY_ALIASES'):
+            overlay_map = seed_overlay_loader.OVERLAY_ALIASES.get(domain_id, {})
         else:
-            logging.getLogger(__name__).warning(f"seed_overlay_loader not found, overlay aliases unavailable for {domain_id}")
+            logger.warning(f"seed_overlay_loader found but no loader function or alias map present for {domain_id}")
     except Exception as e:
-        logging.getLogger(__name__).warning(f"Error loading overlay aliases for {domain_id}: {e}")
+        logger.error(f"Error loading overlay aliases for {domain_id}: {e}")
     return overlay_map
 
 
-def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: dict = None) -> dict:
+def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dict] = None) -> dict:
     """
     Normalize an entity using the normalization map and overlay aliases.
     Args:
@@ -89,30 +90,106 @@ def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: dict = None)
     copy = dict(entity)
     name = (entity.get('entity_name') or '').strip().lower()
     etype = (entity.get('entity_type') or '').strip().lower()
-    variant = (entity.get('entity_variant') or '').strip().lower()
+    # TODO: implement entity_variant normalization
     # Overlay alias normalization (mapped values are lowercased)
     if overlay_aliases and name in overlay_aliases:
         name = overlay_aliases[name].lower()
-    # Normalization map (mapped values are lowercased)
-    if etype in norm_map and name in norm_map[etype]:
-        name = norm_map[etype][name].lower()
+    # Normalization map: match input name to any variant in norm_map[etype] and set to canonical_name
+    if etype in norm_map:
+        for canonical_name, variants_entry in norm_map[etype].items():
+            # Handle list, dict, or tuple for variants_entry
+            if isinstance(variants_entry, list):
+                variants = variants_entry
+            elif isinstance(variants_entry, dict):
+                # Flatten all values (assume lists)
+                variants = [v for sublist in variants_entry.values() for v in (sublist if isinstance(sublist, list) else [sublist])]
+            elif isinstance(variants_entry, tuple):
+                variants = variants_entry[0]
+            else:
+                variants = []
+            if any(name == v.lower() for v in variants):
+                name = canonical_name.lower()
+                break
     copy['entity_type'] = etype
     copy['entity_name'] = name
-    copy['entity_variant'] = variant
+    # Do not return a string; always return a dict
+    # Role assignment is handled by get_entity_role
     return copy
 
 
-def get_entity_role(entity: dict, norm_map: dict) -> str:
+from typing import Dict, List, Tuple, Union
+
+def get_entity_role(
+    entity: dict,
+    norm_map: Dict[str, Dict[str, Union[List[str], Dict[str, object], Tuple[List[str], str]]]]
+) -> str:
     """
     Assign a role to the entity based on type and normalization map.
-    Returns 'primary' for main entities, 'context' for context-only, or 'unknown'.
+
+    Args:
+        entity (dict): Entity dictionary with at least 'entity_type' and 'entity_name'.
+        norm_map (dict): Normalization map of the form:
+            norm_map[etype][canonical_name] = variants_entry
+            where variants_entry can be one of:
+                - list[str]: List of variant names (legacy format)
+                  Example: ['rapamycin', 'sirolimus']
+                - dict: {'variants': list[str], 'role': str}
+                  Example: {'variants': ['rapamycin', 'sirolimus'], 'role': 'primary'}
+                - tuple: (list[str], str)
+                  Example: (['rapamycin', 'sirolimus'], 'primary')
+            The function will check if the entity name matches canonical_name or any variant, and return the associated role.
+
+    Returns:
+        str: 'primary' for main entities, 'context' for context-only, or 'unknown'.
+
+    Symbol references:
+        - norm_map: normalization mapping as described above
+        - etype: entity type (lowercased)
+        - canonical_name: canonical entity name (lowercased)
+        - variants_entry: one of the accepted formats above
+        - role: string role, e.g. 'primary' or 'context'
+
+    Example norm_map usage:
+        norm_map = {
+            'compound': {
+                'rapamycin': ['rapamycin', 'sirolimus'],
+                'metformin': {'variants': ['metformin', 'glucophage'], 'role': 'primary'},
+                'everolimus': (['everolimus', 'afinitor'], 'context'),
+            }
+        }
     """
     etype = (entity.get('entity_type') or '').strip().lower()
     name = (entity.get('entity_name') or '').strip().lower()
-    # Example logic: context entities are marked in norm_map under a 'context' key
+
+    # 1. Try new-style norm_map[etype][canonical_name] supporting role metadata
+    if etype in norm_map:
+        for canonical_name, variants_entry in norm_map[etype].items():
+            # Support legacy: variants_entry is a list
+            role = 'primary'
+            if isinstance(variants_entry, list):
+                variants = variants_entry
+            # Support dict: {'variants': [...], 'role': ...}
+            elif isinstance(variants_entry, dict):
+                variants = variants_entry.get('variants', [])
+                role = variants_entry.get('role', 'primary')
+            # Support tuple: ([...], 'role')
+            elif isinstance(variants_entry, tuple) and len(variants_entry) == 2:
+                variants, role = variants_entry
+            else:
+                variants = []
+            all_variants = [canonical_name] + list(variants)
+            if any(name == v.lower() for v in all_variants):
+                return role
+
+    # 2. Fallback: old top-level norm_map['context'] and norm_map['primary']
     if 'context' in norm_map and etype in norm_map['context'] and name in norm_map['context'][etype]:
         return 'context'
-    # Default: primary for known types
-    if etype in {'gene', 'protein', 'compound', 'cell_type', 'assay', 'test_method'}:
+    if 'primary' in norm_map:
+        if etype in norm_map['primary']:
+            if not norm_map['primary'][etype] or name in norm_map['primary'][etype]:
+                return 'primary'
+
+    # 3. Expanded set of primary types
+    if etype in PRIMARY_TYPES:
         return 'primary'
     return 'unknown'

@@ -3,14 +3,16 @@ import re
 import feedparser
 from typing import List, Dict, Optional
 
-DOC_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.(?:pdf|PDF|docx?|DOCX?|html|HTML)(?:\?[^&\s]*)?(?:&[^&\s]*)?', re.IGNORECASE)
+DOC_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.(?:pdf|docx?|html)(?:\?[^\s<>"\']*)?', re.IGNORECASE)
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
-def parse_feed(url: str):
+def parse_feed(url: str, raise_on_error: bool = False):
     """Parse an RSS/Atom feed"""
     try:
         return feedparser.parse(url)
     except Exception:
+        if raise_on_error:
+            raise
         # Return empty dict on error (matches test expectation)
         return {}
 
@@ -30,8 +32,12 @@ def extract_pdf_links(entry: Dict) -> List[str]:
         if href:
             doc_links.extend(DOC_LINK_REGEX.findall(href))
     # Only keep links ending with .pdf (case-insensitive)
-    pdf_links = [url for url in set(doc_links) if url.lower().endswith('.pdf')]
+    pdf_links = [
+        url for url in set(doc_links)
+        if url.lower().split('?')[0].endswith('.pdf')
+    ]
     return pdf_links
+
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
     """
@@ -48,7 +54,7 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) 
     print(f"Testing {name}: {url}")
     
     try:
-        feed = parse_feed(url)
+        feed = parse_feed(url, raise_on_error=True)
         
         # Handle both dict and feedparser object for compatibility
         if isinstance(feed, dict):

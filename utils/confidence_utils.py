@@ -2,12 +2,20 @@
 Scoring and confidence logic for export pipeline
 """
 
+
+import logging
+from typing import Optional
+
 MODEL_CONTEXT_TERMS = frozenset([
+    # Biomedical context terms
     "in vivo", "in vitro", "human", "rat", "mouse", "plasma", "serum",
-    "blood", "tissue", "cell culture", "fbs"
+    "blood", "tissue", "cell culture", "fbs",
+    # Construction science context terms
+    "site test", "load test", "structural analysis", "field trial", "field test",
+    "lab test", "material test", "failure analysis", "environmental exposure", "hazard assessment"
 ])
 
-def safe_confidence_boost(entities_str: str, current_conf: str, domain_id: str = None) -> str:
+def safe_confidence_boost(entities_str: str, current_conf: str, domain_id: Optional[str] = None) -> str:
     """
     Safe confidence promotion rule:
     Promote to HIGH if event has:
@@ -24,7 +32,9 @@ def safe_confidence_boost(entities_str: str, current_conf: str, domain_id: str =
         "": "low",
         "none": "low"
     }
-    conf_normalized = conf_map.get(conf_normalized, "other")
+    if conf_normalized not in conf_map:
+        return "other"
+    conf_normalized = conf_map[conf_normalized]
     if conf_normalized == "high":
         return "high"
     if not entities_str:
@@ -37,6 +47,11 @@ def safe_confidence_boost(entities_str: str, current_conf: str, domain_id: str =
             etype, ename = e.split(":", 1)
             entity_types.add(etype.lower())
             entity_names_lower.add(ename.lower())
+        else:
+            logging.warning(
+                "Malformed entity entry (missing ':'): '%s' in entities_str='%s'",
+                e, entities_str
+            )
     if domain_id == "construction_science":
         has_high_value = bool(entity_types & {"material", "system", "failure_mode", "environment", "hazard"})
     else:

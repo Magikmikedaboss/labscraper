@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Export construction science results from db/rss.sqlite
+Export construction science results from db/construction_science.sqlite
 """
+
 import sqlite3
 import csv
 import json
@@ -9,14 +10,23 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 
-DB_PATH = Path("db/rss.sqlite")
+# Helper to truncate outcome strings with ellipsis, None-safe
+def truncate_outcome(outcome, max_len=100):
+    outcome = outcome or ""
+    if len(outcome) > max_len:
+        return outcome[:max_len] + "..."
+    return outcome
+
+DB_PATH = Path("db/runs.sqlite")
 OUTPUT_DIR = Path("output")
 DOMAIN_ID = "construction_science"
 
 def export_events():
     """Export research events from construction database"""
     print("🏗️  Exporting construction science events...")
-    
+    if not DB_PATH.exists():
+        print(f"❌ Database file not found: {DB_PATH}")
+        raise SystemExit(1)
     with sqlite3.connect(DB_PATH) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
@@ -254,18 +264,13 @@ def write_run_meta(events, entities, relationships, sources):
     
     # Top events by confidence using priority mapping
     confidence_priority = {'high': 3, 'med': 2, 'low': 1}
-    def truncate_outcome(outcome, max_len=100):
-        outcome = outcome or ""
-        if len(outcome) > max_len:
-            return outcome[:max_len] + "..."
-        return outcome
 
     meta["top_events"] = [
         {
             "event_id": event['event_id'],
             "type": event['event_type'],
             "confidence": event['confidence'],
-            "outcome": truncate_outcome(event['outcome'])
+            "outcome": event['outcome']
         }
         for event in sorted(events, key=lambda x: confidence_priority.get(x['confidence'], 0), reverse=True)[:10]
     ]
@@ -310,10 +315,8 @@ def main():
     print("\n🎯 Top 5 Events by Confidence:")
     for i, event in enumerate(meta["top_events"][:5], 1):
         print(f"   {i}. Event {event['event_id']} - {event['confidence']} confidence")
-        outcome = event['outcome'] or ""
-        if outcome and len(outcome) > 80:
-            print(f"      Outcome: {outcome[:80]}...")
-        elif outcome:
+        outcome = truncate_outcome(event['outcome'], max_len=80)
+        if outcome:
             print(f"      Outcome: {outcome}")
         else:
             print("      Outcome: <empty>")
@@ -326,5 +329,7 @@ def main():
     print(f"   - {DOMAIN_ID}_event_entities.csv")
     print(f"   - {DOMAIN_ID}_sources.csv")
     print(f"   - run_meta_{DOMAIN_ID}.json")
+
+
 if __name__ == "__main__":
     main()

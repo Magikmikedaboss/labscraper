@@ -41,24 +41,6 @@ Transforms unstructured scientific PDFs into structured, queryable research inte
 - **43.6% medium confidence** events (high-quality extractions)
 - **137 unique entities** extracted and normalized to 125 canonical forms
 
-### 📁 Export Formats
-- **SQLite database** for complex queries
-- **4 CSV files** for different use cases:
-  - `candidates_primary.csv` - For rankings/dashboards (114 entities)
-  - `candidates_context.csv` - For filters only (11 entities)
-  - `candidates_export_v3.csv` - Complete data (125 entities)
-  - `events_export_v3.csv` - All events with normalized entities (647 events)
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.8+
-- pip
-
-### Installation
-
 ```bash
 # Clone the repository
 git clone https://github.com/Magikmikedaboss/labscraper.git
@@ -68,18 +50,55 @@ cd labscraper
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-
-# Install dependencies
+# Install dependencies (development)
 pip install -r requirements.txt
 
-# Initialize database
+# For reproducible installs (production/CI):
+pip install -r requirements-lock.txt
+
+# To update the lock file after editing requirements.txt:
+pip install -r requirements.txt
+pip freeze > requirements-lock.txt
+```
+
+## 📦 Dependency Management
+
+- **requirements.txt**: List direct dependencies with loose version constraints. Edit this file to add or update packages.
+- **requirements-lock.txt**: Fully pinned, auto-generated manifest for reproducible installs. Always use this file for CI, production, or sharing exact environments.
+- **How to update**: After editing requirements.txt, run:
+  ```bash
+  pip install -r requirements.txt
+  pip freeze > requirements-lock.txt
+  ```
+  Commit both files if dependencies change.
+
+## Initialize database
+
+```bash
 python init_db.py
 ```
 
+## Usage
 
-### Usage
+### Modular Pipeline (Development/Debug)
 
-#### Modular Pipeline (Development/Debug)
+The modular pipeline is orchestrated by `utils/scrape_pdfs_phase1_full.py`. This script demonstrates the core PDF-to-database logic using only the new modular utility functions, and is ideal for debugging, development, or as a template for further customization.
+
+```bash
+# Run the modular pipeline (default input and db paths):
+python utils/scrape_pdfs_phase1_full.py
+
+# Specify custom input and database paths:
+python utils/scrape_pdfs_phase1_full.py --input-dir input/pdfs --db-path db/dev.sqlite
+```
+
+- All logic is delegated to modular utilities in `utils/`.
+- Use this script to test new entity extractors, event logic, or database schema changes.
+- Output: Populates the specified SQLite database with parsed research events, entities, and measurements.
+
+#### Basic Processing
+```bash
+# Single-threaded processing
 
 The modular pipeline is orchestrated by `utils/scrape_pdfs_phase1_full.py`. This script demonstrates the core PDF-to-database logic using only the new modular utility functions, and is ideal for debugging, development, or as a template for further customization.
 
@@ -149,22 +168,12 @@ labscraper/
 │   ├── entity_extractor.py         # (legacy) Entity extraction logic
 │   ├── entity_normalizer.py        # (legacy) Variant normalization
 │   ├── init_db.py                  # Database initialization (run root init_db.py to create db/runs.sqlite)
-
-│   ├── schema.sql                  # Database schema
 │   └── scrape_pdfs_phase1.py       # Base scraper functions
-```
-
-## 🛠️ Development & Debugging
-
-- To test or extend the modular pipeline, use `utils/scrape_pdfs_phase1_full.py`.
-- All core logic is now modularized in `utils/` for easy reuse and testing.
-- For production/parallel runs, use `utils/run_engine.py` or `utils/scrape_pdfs_parallel.py`.
-
+├── schema.sql                  # Database schema
 ├── config/                     # Configuration files
 │   ├── domains/               # Domain-specific configurations
 │   ├── lenses/                # Overlay configurations
 │   └── feeds.json             # RSS feed configurations
-│
 ├── seeds/                      # Entity seed files
 │   ├── compounds.txt          # 75 compound names
 │   ├── targets.txt            # 153 biological targets
@@ -174,26 +183,28 @@ labscraper/
 │   ├── indications.json       # 88 disease indications
 │   ├── normalization.json     # Variant mapping rules
 │   └── README.md              # Seed file documentation
-│
 ├── input/                      # Input directories
 │   ├── pdfs/                  # Default PDF input
 │   └── pdfs/{domain}/         # Domain-specific PDF input
-│
 ├── db/                        # Database files
 │   ├── runs.sqlite           # Main processing database
 │   └── all_pdfs.sqlite       # Combined database
-│
 ├── exports/                   # Exported data
 │   ├── candidates_export.csv # Entity-focused export
 │   ├── events_export.csv     # Event export with metadata
 │   ├── measurements_export.csv # Quantitative measurements
 │   ├── relationships_export.csv # Entity relationships
 │   └── latest/               # Latest export with metadata
-│
 ├── logs/                      # Processing logs
 ├── output/                    # Legacy output directory
 └── requirements.txt           # Python dependencies
 ```
+
+## 🛠️ Development & Debugging
+
+- To test or extend the modular pipeline, use `utils/scrape_pdfs_phase1_full.py`.
+- All core logic is now modularized in `utils/` for easy reuse and testing.
+- For production/parallel runs, use `utils/run_engine.py` or `utils/scrape_pdfs_parallel.py`.
 
 ---
 

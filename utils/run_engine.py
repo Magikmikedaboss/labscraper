@@ -1,3 +1,4 @@
+from utils.scrape_pdfs_parallel import _db_has_all_tables
 # Re-export for test imports
 from utils.common import get_seeds, load_seed_file, sha16, sha64
 
@@ -15,6 +16,8 @@ import logging
 import argparse
 from utils.db_init import _init_db_schema
 import pdfplumber
+from pdfminer.pdfparser import PDFSyntaxError
+from pdfminer.pdfexceptions import PDFNotImplementedError
 from tqdm import tqdm
 from utils.metadata_utils import extract_metadata
 
@@ -32,6 +35,7 @@ from utils.event_classification import (
     classify_event_type,
     evidence_strength,
     confidence_score,
+    ConfidenceInput,
 )
 from utils.db_utils import (
     upsert_source,
@@ -55,7 +59,14 @@ def _init_db_schema_if_needed(db_path):
     """
     canonical_path = str(Path("db/runs.sqlite").resolve())
     db_path_resolved = str(Path(db_path).resolve())
-    if db_path_resolved != canonical_path:
+    logger = logging.getLogger(__name__)
+    if db_path_resolved == canonical_path:
+        if not _db_has_all_tables(db_path):
+            logger.info(f"Canonical DB at {canonical_path} missing schema; initializing with _init_db_schema.")
+            _init_db_schema(str(db_path))
+        else:
+            logger.info(f"Canonical DB at {canonical_path} already initialized; skipping schema init.")
+    else:
         _init_db_schema(str(db_path))
 
 
@@ -113,7 +124,8 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
     if not pdfs:
         raise SystemExit("No PDFs found.")
 
-    with sqlite3.connect(db_path) as con:
+    con = sqlite3.connect(str(db_path), timeout=30.0)
+    try:
         success_count = 0
         for pdf_path in tqdm(pdfs, desc="PDFs"):
             print(f"Processing: {pdf_path.name}")
@@ -121,12 +133,13 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                 with open(pdf_path, "rb") as f:
                     file_bytes = f.read()
 
-                content_hash = sha16(file_bytes.hex())
-                source_id = sha16(str(pdf_path) + content_hash)
-                file_hash = sha64(str(pdf_path) + content_hash)
+                # Hash file bytes directly
+                content_hash = sha16(file_bytes)
+                source_id = content_hash
+                file_hash = sha64(file_bytes)
 
                 with pdfplumber.open(str(pdf_path)) as pdf:
-                    metadata = extract_metadata(pdf_path)
+                    metadata = extract_metadata(pdf_path, pdf)
                     upsert_source(con, source_id, pdf_path.name, metadata)
                     doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                     for page_idx, page in enumerate(pdf.pages, start=1):
@@ -135,7 +148,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                             continue
                         section = guess_section(text.lower())
                         chunk_id = insert_chunk(
-                            con, source_id, doc_id, page_idx, section, text
+                            con, doc_id, page_idx, section, text, source_id
                         )
                         for sent in chunk_sentences(text):
                             s_l = sent.lower()
@@ -158,31 +171,33 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                             strength = evidence_strength(s_l)
                             entities = extract_entities(sent, research_domain, SEEDS_DIR)
                             conf = confidence_score(
-                                bool(entities),
-                                tags,
-                                failure_reason,
-                                decision_taken,
-                                bool(quantitative),
-                                s_l,
+                                ConfidenceInput(
+                                    has_entity=bool(entities),
+                                    method_tags=tags,
+                                    failure_reason=failure_reason,
+                                    decision_taken=decision_taken,
+                                    has_measurements=bool(quantitative),
+                                    sentence_l=s_l,
+                                )
                             )
                             event_id = insert_event(
-                                con,
-                                source_id,
-                                doc_id,
-                                chunk_id,
-                                page_idx,
-                                research_domain,
-                                event_type,
-                                stage,
-                                None,
-                                None,
-                                outcome,
-                                failure_reason,
-                                decision_taken,
-                                decision_driver,
-                                sent,
-                                strength,
-                                conf,
+                                con=con,
+                                source_id=source_id,
+                                doc_id=doc_id,
+                                chunk_id=chunk_id,
+                                page_number=page_idx,
+                                domain=research_domain,
+                                event_type=event_type,
+                                study_stage=stage,
+                                biological_system=None,
+                                application_area=None,
+                                outcome=outcome,
+                                failure_reason=failure_reason,
+                                decision_taken=decision_taken,
+                                decision_driver=decision_driver,
+                                evidence_snippet=sent,
+                                evidence_strength_v=strength,
+                                confidence_v=conf,
                             )
                             print(f"[EVENT] {event_type} | conf={conf} | {sent[:60]}")
                             for ent in entities:
@@ -194,17 +209,26 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                     ent.get("organism"),
                                 )
                                 link_event_entity(
-                                    con, event_id, entity_id, ent.get("role", "")
+                                    con, event_id, entity_id, ent.get("role", "unknown")
                                 )
                             for tag in tags:
                                 link_event_tag(con, event_id, tag)
                             for m in quantitative:
                                 insert_measurement(con, event_id, m)
                     success_count += 1
+            except KeyboardInterrupt:
+                raise
+            except (PDFSyntaxError, PDFNotImplementedError, sqlite3.Error, OSError, ValueError) as e:
+                logging.exception("⚠️ %s processing %s: %s", type(e).__name__, pdf_path, e)
+                continue
             except Exception:
-                logging.exception("⚠️ Error processing %s", pdf_path)
+                logging.exception("Unexpected error processing %s", pdf_path)
+                raise
+        con.commit()
         if success_count == 0:
             sys.exit(1)
+    finally:
+        con.close()
 
 
 # ---------------------------------------------------------

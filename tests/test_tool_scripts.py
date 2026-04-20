@@ -3,9 +3,11 @@
 import json
 import sys
 
+
 import utils.db_utils as db_utils
 import tools.inspect_db as inspect_db_module
 import tools.test_feeds as test_feeds_module
+from tools.test_feeds import default_feeds
 
 
 def test_test_feeds_main_uses_validated_config(tmp_path, monkeypatch):
@@ -55,7 +57,7 @@ def test_test_feeds_main_falls_back_on_invalid_config(tmp_path, monkeypatch, cap
 
     calls = []
     def fake_probe_feed(url, name, check_keywords=None):
-        calls.append((url, name))
+        calls.append((url, name, check_keywords))
         return {"success": True, "pdfs": 0}
     monkeypatch.setattr(
         test_feeds_module,
@@ -68,11 +70,7 @@ def test_test_feeds_main_falls_back_on_invalid_config(tmp_path, monkeypatch, cap
     out = capsys.readouterr().out
 
     assert "Validation error" in out
-    # Access default_feeds from main's globals if not directly available
-    if hasattr(test_feeds_module, "default_feeds"):
-        expected_len = len(test_feeds_module.default_feeds)
-    else:
-        expected_len = len(test_feeds_module.main.__globals__["default_feeds"])
+    expected_len = len(default_feeds)
     assert len(calls) == expected_len
 
 
@@ -90,10 +88,13 @@ def test_inspect_db_main_invokes_helpers(monkeypatch):
         "inspect_database",
         lambda db, detailed=False: calls.append(("inspect", db, detailed)),
     )
+    def fake_connect(db):
+        calls.append(("connect", db))
+        return dummy_conn
     monkeypatch.setattr(
         inspect_db_module,
         "connect_db",
-        lambda db: calls.append(("connect", db)) or dummy_conn,
+        fake_connect,
     )
     monkeypatch.setattr(inspect_db_module, "show_pdf_cache", lambda: calls.append("cache"))
     monkeypatch.setattr(db_utils, "show_recent_events", lambda conn, count: calls.append(("events", count)))

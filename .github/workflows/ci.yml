@@ -32,9 +32,6 @@ jobs:
         bandit -r utils/ tools/ -ll || true
         safety check --json || true
     
-    - name: Initialize test database
-      run: |
-        python utils/init_test_db.py test.db
     
     - name: Run tests and check coverage
       run: |

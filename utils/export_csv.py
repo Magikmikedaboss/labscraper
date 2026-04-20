@@ -42,30 +42,20 @@ def export_candidates_domain_aware(domain_id: str = None):
             if event_count == 0:
                 entities_data = []
             else:
+                # canonical_name is currently just entity_name; if normalization/aliasing is added, update here
                 entities_data = cur.execute("""
                     SELECT 
                         MIN(e.entity_id) as entity_id,
                         e.entity_type,
-                        n.canonical_name as canonical_name,
+                        e.entity_name as canonical_name,
                         GROUP_CONCAT(DISTINCT e.entity_variant) as entity_variant,
                         COUNT(DISTINCT ee.event_id) as event_count,
-                        GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
-                        MIN(re.created_at) as first_seen,
-                        MAX(re.created_at) as last_seen
-                    FROM (
-                        SELECT entity_id, entity_type, entity_name,
-                               -- Use normalization in Python, so just pass through
-                               entity_variant
-                        FROM entities
-                    ) e
+                        GROUP_CONCAT(DISTINCT re.source_id) as source_ids
+                    FROM entities e
                     JOIN event_entities ee ON e.entity_id = ee.entity_id
                     JOIN research_events re ON ee.event_id = re.event_id
-                    JOIN (
-                        SELECT entity_type, entity_name as canonical_name
-                        FROM entities
-                    ) n ON n.entity_type = e.entity_type AND n.canonical_name = e.entity_name
                     WHERE re.research_domain = ?
-                    GROUP BY e.entity_type, n.canonical_name
+                    GROUP BY e.entity_type, e.entity_name
                     ORDER BY event_count DESC
                 """, (domain_id,)).fetchall()
         else:
@@ -76,16 +66,13 @@ def export_candidates_domain_aware(domain_id: str = None):
                     e.entity_name,
                     e.entity_variant,
                     COUNT(DISTINCT ee.event_id) as event_count,
-                    GROUP_CONCAT(DISTINCT re.source_id) as source_ids,
-                    MIN(re.created_at) as first_seen,
-                    MAX(re.created_at) as last_seen
+                    GROUP_CONCAT(DISTINCT re.source_id) as source_ids
                 FROM entities e
                 JOIN event_entities ee ON e.entity_id = ee.entity_id
                 JOIN research_events re ON ee.event_id = re.event_id
                 GROUP BY e.entity_id
                 ORDER BY event_count DESC
-            """).fetchall()  # ✅ FIXED HERE
-
+            """).fetchall()
         canonical_entities = defaultdict(lambda: {
             "entity_type": None,
             "entity_variant": set(),
@@ -95,7 +82,7 @@ def export_candidates_domain_aware(domain_id: str = None):
             "role": None
         })
 
-        for entity_id, etype, ename, evariant, event_count, source_ids, first_seen, last_seen in entities_data:
+        for entity_id, etype, ename, evariant, event_count, source_ids in entities_data:
             entity_dict = {
                 "entity_type": etype,
                 "entity_name": ename,
@@ -155,9 +142,9 @@ if __name__ == "__main__":
     parser.add_argument("--domain", type=str, required=True)
     args = parser.parse_args()
 
+
     canonical_entities = export_candidates_domain_aware(args.domain)
-    # Only write real confidence counters if available; do not write synthetic fields
-    # If you have real counters, pass them here; otherwise, omit confidence_changes
+    # TODO: Compute and pass real confidence counters if/when available
     write_run_meta({}, canonical_entities, args.domain)
 
     print("✅ Export complete!")

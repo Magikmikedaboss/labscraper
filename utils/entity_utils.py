@@ -12,11 +12,14 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
     Also demotes process words to tags.
     Returns: (primary_count, context_count, primary_str, context_str, all_str)
     """
+    import re
     if not entities_str:
         return (0, 0, "", "", "")
-    entity_pairs = [e.split(':', 1) for e in entities_str.split('; ') if ':' in e]
+    tokens = [t.strip() for t in re.split(r'\s*;\s*', entities_str) if t.strip()]
+    entity_pairs = [e.split(':', 1) for e in tokens if ':' in e]
+    # Store both original and normalized forms
     entity_dicts = [
-        {"entity_type": etype, "entity_name": ename}
+        {"entity_type": etype, "entity_name": ename, "orig_entity_type": etype, "orig_entity_name": ename}
         for etype, ename in entity_pairs
     ]
     normalized = []
@@ -26,18 +29,18 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
         normalized.append(norm_e)
     primary = []
     context = []
-    for idx, e in enumerate(normalized):
+    for e in normalized:
         if e['entity_type'] == 'assay' and is_process_word(e['entity_name']):
-            normalized[idx]['role'] = 'context'
             e['role'] = 'context'
-        entity_str = f"{e['entity_type']}:{e['entity_name']}"
+        # Use original casing for output
+        entity_str = f"{e['orig_entity_type']}:{e['orig_entity_name']}"
         if e['role'] == 'primary':
             primary.append(entity_str)
         else:
             context.append(entity_str)
     primary_str = "; ".join(primary) if primary else ""
     context_str = "; ".join(context) if context else ""
-    all_str = "; ".join([f"{e['entity_type']}:{e['entity_name']}" for e in normalized])
+    all_str = "; ".join([f"{e['orig_entity_type']}:{e['orig_entity_name']}" for e in normalized])
     return (len(primary), len(context), primary_str, context_str, all_str)
 
 def load_overlay_aliases_safe(domain_id: str = None) -> Dict[str, str]:
@@ -50,8 +53,11 @@ def load_overlay_aliases_safe(domain_id: str = None) -> Dict[str, str]:
         aliases = load_overlay_aliases_safe("stem_cells_regen")
         # aliases will be {} if domain_id is None or import fails
     """
+    if not domain_id:
+        return {}
     try:
-        from entity_normalizer import load_overlay_aliases
-        return load_overlay_aliases(domain_id) if domain_id else {}
-    except ImportError:
+        from utils.entity_normalizer import load_overlay_aliases
+        return load_overlay_aliases(domain_id)
+    except Exception as e:
+        # Optionally log e here if needed
         return {}

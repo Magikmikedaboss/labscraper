@@ -143,7 +143,7 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
             # Process abstract as a single "page"
             page_idx = 1
             section = "abstract"
-            chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, abstract_text)
+            chunk_id = insert_chunk(con, doc_id, page_idx, section, abstract_text, source_id)
             
             for sent in chunk_sentences(abstract_text):
                 s_l = sent.lower()

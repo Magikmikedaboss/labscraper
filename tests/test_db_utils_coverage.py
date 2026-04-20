@@ -1,4 +1,3 @@
-
 from utils.db_utils import connect_db, get_tables, get_table_stats
 
 def test_connect_db_and_get_tables(init_test_schema):
@@ -12,5 +11,10 @@ def test_connect_db_and_get_tables(init_test_schema):
     finally:
         conn.close()
 
-# Add more tests for show_recent_events, show_top_sources, show_pdf_cache, and all insert/upsert/link functions
-# to cover lines 34, 72–74, 78–81, 97–101, 121–124, 130–148, 164–165, 183–184, 202–203, 209, 217–223, 226–232, 235, 238–245, 251–267, 270, 277–278, 286–287, 298–299
+# TODO: Add more tests for the following functions to improve coverage:
+#   - show_recent_events
+#   - show_top_sources
+#   - show_pdf_cache
+#   - insert_document, insert_chunk, insert_event, link_event_entity, link_event_tag, insert_measurement, upsert_entity
+#   - Any other insert/upsert/link utility functions in utils.db_utils
+# This ensures coverage for all major DB utility operations and reporting helpers.

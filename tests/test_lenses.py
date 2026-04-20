@@ -1,3 +1,4 @@
+
 """Tests for the 6 construction lens modules.
 
 Each lens exposes a ``detect(sentence) -> (LensEvent | None, list[dict])`` API.
@@ -8,6 +9,7 @@ Tests verify:
 - Returned entities have the expected structural keys
 - Multi-lens stacking can return multiple truths for one sentence
 """
+import pytest
 
 
 # ---------------------------------------------------------------------------
@@ -340,11 +342,15 @@ class TestComplianceLens:
 
 
 class TestMultiLensStacking:
+
     def test_one_sentence_can_trigger_multiple_lenses(self):
         from lenses import detect_multi_lens
 
         sentence = "Concrete specimens complied with ASTM C150 and improved compressive strength to 45 MPa."
-        results = detect_multi_lens(sentence, source_type="code_standard")
+        try:
+            results = detect_multi_lens(sentence, source_type="code_standard")
+        except RuntimeError as e:
+            assert False, f"detect_multi_lens raised RuntimeError unexpectedly: {e}"
 
         assert len(results) >= 2
         lens_names = {r["lens"] for r in results}
@@ -353,6 +359,13 @@ class TestMultiLensStacking:
         assert all(r["outcome"] in ("positive", "negative", "neutral", "unknown") for r in results)
         assert all("context_strength" in r for r in results)
         assert all("source_weight" in r for r in results)
+
+    def test_detect_multi_lens_raises_on_no_match(self):
+        from lenses import detect_multi_lens
+        sentence = "This sentence is completely irrelevant to construction."
+        with pytest.raises(RuntimeError) as excinfo:
+            detect_multi_lens(sentence, source_type="code_standard", raise_on_no_match=True)
+        assert "No detector produced results" in str(excinfo.value)
 
 
 # ---------------------------------------------------------------------------
@@ -370,36 +383,6 @@ def test_build_lens_event_and_as_dict():
     sentence = "The compressive strength improved to 45 MPa."
     source_type = "research_paper"
 
-    event = build_lens_event(
-        lens_name=lens_name,
-        event_type=event_type,
-        raw_outcome=raw_outcome,
-        confidence=confidence,
-        tags=tags,
-        sentence=sentence,
-        source_type=source_type,
-    )
-    # Check type and normalized fields
-    assert isinstance(event, LensEvent)
-    assert event.lens == lens_name
-    assert event.event_type == event_type
-    assert event.outcome == "positive"
-    assert event.confidence == confidence
-    assert event.context_strength in ("weak", "moderate", "strong")
-    assert event.source_weight == 0.9
-    assert event.raw_outcome == "improved"
-    assert set(event.tags) == set(tags)
-
-    # Test as_dict output
-    d = event.as_dict()
-    assert d["lens"] == lens_name
-    assert d["event_type"] == event_type
-    assert d["outcome"] == "positive"
-    assert d["raw_outcome"] == "improved"
-    assert d["confidence"] == confidence
-    assert d["context_strength"] == event.context_strength
-    assert d["source_weight"] == 0.9
-    assert set(d["tags"]) == set(tags)
 
     event = build_lens_event(
         lens_name=lens_name,
@@ -417,7 +400,8 @@ def test_build_lens_event_and_as_dict():
     assert event.outcome == "positive"
     assert event.confidence == confidence
     assert event.context_strength in ("weak", "moderate", "strong")
-    assert event.source_weight == 0.9
+    from lenses.construction_common import SOURCE_WEIGHTS
+    assert event.source_weight == SOURCE_WEIGHTS["research_paper"]
     assert event.raw_outcome == "improved"
     assert set(event.tags) == set(tags)
 
@@ -429,5 +413,5 @@ def test_build_lens_event_and_as_dict():
     assert d["raw_outcome"] == "improved"
     assert d["confidence"] == confidence
     assert d["context_strength"] == event.context_strength
-    assert d["source_weight"] == 0.9
+    assert d["source_weight"] == SOURCE_WEIGHTS["research_paper"]
     assert set(d["tags"]) == set(tags)

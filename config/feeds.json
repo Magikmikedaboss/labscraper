@@ -9,7 +9,7 @@
     {
       "name": "Science Magazine",
       "url": "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science",
-      "domain": "science",
+      "domain": "methods_tooling",
       "enabled": false
     },
     {

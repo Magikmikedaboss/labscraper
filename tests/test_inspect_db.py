@@ -1,7 +1,6 @@
 from utils.db_utils import inspect_database
 
-# Test for lines 38–46, 52–53, 55, 59 in tools/inspect_db.py
-
+# Test for inspect_database function in utils/db_utils.py
 def test_inspect_database_basic(init_test_schema, caplog):
     # Use the shared schema fixture to create a DB
     db_path = init_test_schema
@@ -13,4 +12,10 @@ def test_inspect_database_basic(init_test_schema, caplog):
     assert "Tables found" in log_output
     assert "sources" in log_output
 
-# Add more tests for error handling and edge cases as needed
+# TODOs for error handling and edge cases:
+# - test_missing_db: Should handle missing DB file gracefully
+# - test_corrupt_db: Should handle corrupted DB/schema
+# - test_permission_error: Should handle permission denied on DB file
+# - test_empty_tables: Should handle DBs with empty tables
+# - test_invalid_params: Should handle invalid query params
+# - test_large_result_set: Should handle very large result sets
