@@ -3,7 +3,6 @@ branch = True
 
 [report]
 omit =
-    */__init__.py
     run_rss_ingest.py
     tools/demo_output.py
     tools/demo_domains.py

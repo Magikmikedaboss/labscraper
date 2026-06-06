@@ -25,7 +25,7 @@ LENS_REGISTRY = {
 def detect_multi_lens(
     sentence: str,
     source_type: str = "research_paper",
-    enabled_lenses: Optional[Iterable[str]] = None,
+    enabled_lenses: Optional[Union[str, Iterable[str]]] = None,
     raise_on_no_match: bool = False,
     return_errors: bool = False,
     raise_on_detector_errors: bool = False,
