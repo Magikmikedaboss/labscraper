@@ -1,6 +1,5 @@
 import types
 import sys
-import pytest
 import json
 from unittest import mock
 from utils.axon_domains import DomainProfile
@@ -31,14 +30,19 @@ def test_get_outcome_signals(tmp_path, monkeypatch):
     # Patch SEEDS_DIR to tmp_path
     monkeypatch.setattr(pattern_intelligence, "SEEDS_DIR", tmp_path)
     # No file: should warn and return empty signals
-    signals = pattern_intelligence._get_outcome_signals()
+    pattern_intelligence.clear_cache()  # reset cache using public helper
+    signals = pattern_intelligence.load_outcome_signals()
     assert isinstance(signals, dict)
     # Create a file and test loading
     data = {"positive": ["good"], "neutral": [], "negative": [], "replication": []}
     (tmp_path / "outcome_signals.json").write_text(json.dumps(data))
     pattern_intelligence.clear_cache()  # reset cache using public helper
-    signals = pattern_intelligence._get_outcome_signals()
-    assert "positive" in signals
+    # Use the public API that consumes outcome signals
+    loaded_signals = pattern_intelligence.load_outcome_signals()
+    # The public API: detect_outcome_signals
+    result = pattern_intelligence.detect_outcome_signals("This is a good result.", loaded_signals)
+    # Assert that the positive signal was detected
+    assert result.positive > 0
 
 def test_outcome_signals_class():
     s = pattern_intelligence.OutcomeSignals(positive=1, neutral=2, negative=3, replication=4)
@@ -75,7 +79,9 @@ def test_find_all_pdfs(tmp_path):
     (d2 / "f2.PDF").write_bytes(b"%PDF-1.4")
     (d2 / "not_a_pdf.txt").write_text("hi")
     pdfs = scrape_all_pdfs_recursive.find_all_pdfs([str(tmp_path)])
-    assert any(str(p).endswith(".pdf") or str(p).endswith(".PDF") for p in pdfs)
+    basenames = {p.name for p in pdfs}
+    assert len(pdfs) == 2
+    assert {"f1.pdf", "f2.PDF"} == basenames
 
 def test_main_smoke(monkeypatch):
     # Patch argument parser to avoid real CLI

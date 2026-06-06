@@ -24,7 +24,7 @@ def temp_db():
         db_path = tmp.name
     try:
         conn = connect_db(db_path)
-        yield conn
+        yield conn, db_path
         conn.close()
     finally:
         os.unlink(db_path)
@@ -34,13 +34,16 @@ def temp_db():
 # SCHEMA HELPER
 # ---------------------------------------------------------
 def apply_schema(conn):
-    project_root = Path(__file__).resolve().parents[1]
-    schema_path = project_root / "schema.sql"
-
-    if not schema_path.exists():
-        raise FileNotFoundError(f"Missing schema.sql at {schema_path}")
-
-    conn.executescript(schema_path.read_text(encoding="utf-8"))
+    current = Path(__file__).resolve().parent
+    while True:
+        schema_path = current / "schema.sql"
+        if schema_path.exists():
+            conn.executescript(schema_path.read_text(encoding="utf-8"))
+            return
+        if current.parent == current:
+            break
+        current = current.parent
+    raise FileNotFoundError(f"Could not find schema.sql searching upward from {Path(__file__).resolve().parent}")
 
 
 # ---------------------------------------------------------
@@ -50,7 +53,8 @@ class TestConnectDB:
 
 
     def test_connect_db_valid_path(self, temp_db):
-        assert isinstance(temp_db, sqlite3.Connection)
+        conn, db_path = temp_db
+        assert isinstance(conn, sqlite3.Connection)
 
     def test_connect_db_nonexistent_path(self):
         with pytest.raises(FileNotFoundError):
@@ -64,15 +68,17 @@ class TestGetTables:
 
 
     def test_empty_database(self, temp_db):
-        tables = get_tables(temp_db)
+        conn, db_path = temp_db
+        tables = get_tables(conn)
         assert tables == []
 
 
     def test_with_tables(self, temp_db):
-        temp_db.execute("CREATE TABLE test1 (id INTEGER)")
-        temp_db.execute("CREATE TABLE test2 (name TEXT)")
-        temp_db.commit()
-        tables = get_tables(temp_db)
+        conn, db_path = temp_db
+        conn.execute("CREATE TABLE test1 (id INTEGER)")
+        conn.execute("CREATE TABLE test2 (name TEXT)")
+        conn.commit()
+        tables = get_tables(conn)
         assert "test1" in tables
         assert "test2" in tables
 
@@ -84,21 +90,23 @@ class TestGetTableStats:
 
 
     def test_valid_table(self, temp_db):
-        temp_db.execute("CREATE TABLE test (id INTEGER, name TEXT)")
-        temp_db.execute("INSERT INTO test VALUES (1, 'a')")
-        temp_db.execute("INSERT INTO test VALUES (2, 'b')")
-        temp_db.commit()
-        stats = get_table_stats(temp_db, "test")
+        conn, db_path = temp_db
+        conn.execute("CREATE TABLE test (id INTEGER, name TEXT)")
+        conn.execute("INSERT INTO test VALUES (1, 'a')")
+        conn.execute("INSERT INTO test VALUES (2, 'b')")
+        conn.commit()
+        stats = get_table_stats(conn, "test")
         assert stats["count"] == 2
         assert "id" in stats["columns"]
         assert "name" in stats["columns"]
 
 
     def test_nonexistent_table(self, temp_db):
-        temp_db.execute("CREATE TABLE test (id INTEGER)")
-        temp_db.commit()
+        conn, db_path = temp_db
+        conn.execute("CREATE TABLE test (id INTEGER)")
+        conn.commit()
         with pytest.raises(ValueError):
-            get_table_stats(temp_db, "fake_table")
+            get_table_stats(conn, "fake_table")
 
 
 # ---------------------------------------------------------
@@ -108,8 +116,8 @@ class TestInspectDatabase:
 
 
     def test_runs_without_crash(self, temp_db):
-        db_path = temp_db.execute('PRAGMA database_list').fetchone()[2]
-        # Do not close temp_db here; open a new connection for inspect_database if needed
+        conn, db_path = temp_db
+        # Do not close conn here; open a new connection for inspect_database if needed
         result = inspect_database(db_path, detailed=False)
         assert isinstance(result, (dict, list, type(None)))
 
@@ -120,14 +128,57 @@ class TestInspectDatabase:
 class TestDisplayFunctions:
 
 
-    def test_recent_events(self, temp_db):
-        apply_schema(temp_db)
-        show_recent_events(temp_db)
+    def test_recent_events(self, temp_db, caplog):
+        conn, db_path = temp_db
+        apply_schema(conn)
+        # Insert a test event and required source
+        conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC1", "Test Source"))
+        conn.execute("""
+            INSERT INTO research_events (
+                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                outcome, failure_reason, decision_taken, decision_driver,
+                evidence_snippet, evidence_strength, confidence,
+                source_id, doc_id, chunk_id, page_number, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "EVT1", "test_domain", "test_type", "stage1", "system1", "area1",
+            "outcome1", "fail1", "decision1", "driver1",
+            "evidence1", "strong", "high",
+            "SRC1", None, None, 1, "2024-01-01T00:00:00"
+        ))
+        conn.commit()
+        with caplog.at_level("INFO"):
+            show_recent_events(conn)
+        # Assert output contains expected event type and domain
+        output = " ".join([r.getMessage() for r in caplog.records])
+        assert "RECENT EVENTS" in output
+        assert "test_type" in output
+        assert "test_domain" in output
 
-
-    def test_top_sources(self, temp_db):
-        apply_schema(temp_db)
-        show_top_sources(temp_db)
+    def test_top_sources(self, temp_db, caplog):
+        conn, db_path = temp_db
+        apply_schema(conn)
+        # Insert a test source and event
+        conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC2", "Source Title"))
+        conn.execute("""
+            INSERT INTO research_events (
+                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                outcome, failure_reason, decision_taken, decision_driver,
+                evidence_snippet, evidence_strength, confidence,
+                source_id, doc_id, chunk_id, page_number, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "EVT2", "domain2", "type2", "stage2", "system2", "area2",
+            "outcome2", "fail2", "decision2", "driver2",
+            "evidence2", "moderate", "med",
+            "SRC2", None, None, 2, "2024-01-02T00:00:00"
+        ))
+        conn.commit()
+        with caplog.at_level("INFO"):
+            show_top_sources(conn)
+        output = " ".join([r.getMessage() for r in caplog.records])
+        assert "TOP SOURCES" in output
+        assert "Source Title" in output
 
 
 # ---------------------------------------------------------
@@ -137,14 +188,54 @@ class TestDistributions:
 
 
 
-    def test_event_type_distribution(self, temp_db):
-        apply_schema(temp_db)
-        result = get_event_type_distribution(temp_db)
-        assert result is None
+    def test_event_type_distribution(self, temp_db, caplog):
+        conn, db_path = temp_db
+        apply_schema(conn)
+        # Insert a test event
+        conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC3", "Source3"))
+        conn.execute("""
+            INSERT INTO research_events (
+                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                outcome, failure_reason, decision_taken, decision_driver,
+                evidence_snippet, evidence_strength, confidence,
+                source_id, doc_id, chunk_id, page_number, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "EVT3", "domain3", "etype", "stage3", "system3", "area3",
+            "outcome3", "fail3", "decision3", "driver3",
+            "evidence3", "weak", "low",
+            "SRC3", None, None, 3, "2024-01-03T00:00:00"
+        ))
+        conn.commit()
+        with caplog.at_level("INFO"):
+            get_event_type_distribution(conn)
+        output = " ".join([r.getMessage() for r in caplog.records])
+        assert "EVENT TYPE DISTRIBUTION" in output
+        assert "etype" in output
 
 
 
-    def test_domain_distribution(self, temp_db):
-        apply_schema(temp_db)
-        result = get_domain_distribution(temp_db)
-        assert result is None
+    def test_domain_distribution(self, temp_db, caplog):
+        conn, db_path = temp_db
+        apply_schema(conn)
+        # Insert a test event
+        conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC4", "Source4"))
+        conn.execute("""
+            INSERT INTO research_events (
+                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                outcome, failure_reason, decision_taken, decision_driver,
+                evidence_snippet, evidence_strength, confidence,
+                source_id, doc_id, chunk_id, page_number, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "EVT4", "domain4", "type4", "stage4", "system4", "area4",
+            "outcome4", "fail4", "decision4", "driver4",
+            "evidence4", "strong", "high",
+            "SRC4", None, None, 4, "2024-01-04T00:00:00"
+        ))
+        conn.commit()
+        with caplog.at_level("INFO"):
+            get_domain_distribution(conn)
+        output = " ".join([r.getMessage() for r in caplog.records])
+        assert "DOMAIN DISTRIBUTION" in output
+        assert "domain4" in output

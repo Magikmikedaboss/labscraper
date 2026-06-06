@@ -1,12 +1,9 @@
 #!/usr/bin/env python
-"""Test script to show entity extraction output for all domains"""
+"""Demo script to show entity extraction output for all domains"""
 
-from utils.run_engine import (
-    extract_entities,
-    detect_failure_reason,
-    detect_method_tags,
-    extract_quantitative_data
-)
+from utils.entities import extract_entities
+from utils.event_classification import detect_failure_reason, detect_method_tags
+from utils.data_extractors import extract_quantitative_data
 
 def render_case(domain, text, show_measurements=False):
     print("=" * 60)

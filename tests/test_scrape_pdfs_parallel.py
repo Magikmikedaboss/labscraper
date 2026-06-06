@@ -1,6 +1,7 @@
 import sqlite3
 from utils import scrape_pdfs_parallel
 import types
+from unittest.mock import MagicMock
 
 # Patch for multiprocessing and pdfplumber
 
@@ -21,8 +22,10 @@ class DummyPage:
 def test__connect(tmp_path):
     db = tmp_path / "test.sqlite"
     con = scrape_pdfs_parallel._connect(db)
-    assert isinstance(con, sqlite3.Connection)
-    con.close()
+    try:
+        assert isinstance(con, sqlite3.Connection)
+    finally:
+        con.close()
 
 def test__db_has_all_tables(tmp_path):
     db = tmp_path / "test.sqlite"
@@ -41,13 +44,8 @@ def test__db_has_all_tables(tmp_path):
     con.close()
     assert scrape_pdfs_parallel._db_has_all_tables(db)
 
-def test__ensure_db_schema(tmp_path, monkeypatch):
-    db = tmp_path / "test.sqlite"
-    # Patch _ensure_db_schema to raise SystemExit directly
-    monkeypatch.setattr(scrape_pdfs_parallel, "_ensure_db_schema", lambda db: (_ for _ in ()).throw(SystemExit(1)))
-    import pytest
-    with pytest.raises(SystemExit):
-        scrape_pdfs_parallel._ensure_db_schema(db)
+
+# The failure path for _ensure_db_schema is tested elsewhere. This redundant test is removed.
 
 def test_process_single_pdf(monkeypatch, tmp_path):
     """
@@ -57,7 +55,6 @@ def test_process_single_pdf(monkeypatch, tmp_path):
     # Ensure at least one sentence and signal
     monkeypatch.setattr(scrape_pdfs_parallel, "chunk_sentences", lambda text: ["This is a test sentence."])
     monkeypatch.setattr(scrape_pdfs_parallel, "_has_signal", lambda s: True)
-    from unittest.mock import MagicMock
     dummy_pdf = DummyPDF([DummyPage("test text")])
     monkeypatch.setattr(scrape_pdfs_parallel, "pdfplumber", types.SimpleNamespace(open=lambda *a, **k: dummy_pdf))
     monkeypatch.setattr(scrape_pdfs_parallel, "_connect", lambda db: sqlite3.connect(db))

@@ -1,8 +1,6 @@
 import pytest
 import json
 from utils.validators import validate_feed_config, validate_file_path, ValidationError
-import io
-import builtins
 import feedparser
 import os
 from utils.feed_utils import probe_feed
@@ -73,43 +71,49 @@ def test_probe_feed_exception(monkeypatch):
     assert 'network error' in result['error']
 
 def test_save_working_logic(tmp_path, monkeypatch):
-    import sys
-    import builtins
     import io
+    import builtins
     from tools import test_feeds
-    feeds = [
-        {'name': 'Feed1', 'url': 'http://example.com/rss', 'domain': 'test', 'enabled': True},
-        {'name': 'Feed2', 'url': 'http://example2.com/rss', 'domain': 'test', 'enabled': True},
-    ]
-    output = {'feeds': feeds}
+    # output variable removed (was unused)
     save_path = tmp_path / "feeds.json"
-    # Patch Path to use tmp_path
-    monkeypatch.setattr(test_feeds, "Path", lambda *a, **k: tmp_path)
     # Patch open to simulate atomic write
     orig_open = builtins.open
     written = {}
+    class FakeWriteHandle(io.StringIO):
+        def close(self):
+            # Save content to written['content'] on close
+            written['content'] = self.getvalue()
+            super().close()
     def fake_open(file, mode='r', encoding=None):
         if 'w' in mode:
             written['file'] = file
-            return io.StringIO()
-        return orig_open(file, mode, encoding=encoding) if os.path.exists(file) else io.StringIO()
+            handle = FakeWriteHandle()
+            written['handle'] = handle
+            return handle
+        if os.path.exists(file):
+            return orig_open(file, mode, encoding=encoding)
+        # For read mode, return the preserved content if available
+        if 'content' in written:
+            return io.StringIO(written['content'])
+        return io.StringIO()
     monkeypatch.setattr(builtins, "open", fake_open)
     # Patch validate_feed_config to pass through
     monkeypatch.setattr(test_feeds, "validate_feed_config", lambda x: x)
     # Patch probe_feed to avoid network I/O
     monkeypatch.setattr(test_feeds, "probe_feed", lambda *a, **k: {'success': True, 'url': 'mock'})
-    # Patch sys.argv to simulate --save-working
-    monkeypatch.setattr(sys, "argv", ["test_feeds.py", "--save-working", str(save_path)])
-    # Actually call the save logic
+    # Provide clean CLI args so argparse won’t see pytest’s argv
+    argv = ["--config", str(save_path), "--save-working"]
     try:
-        test_feeds.main()
+        test_feeds.main(argv)
     finally:
         monkeypatch.setattr(builtins, "open", orig_open)
-    assert written['file'] == save_path
+    # Compare absolute paths as strings for cross-platform compatibility
+    expected_written = save_path.with_name(save_path.stem + "_working.json")
+    assert os.path.abspath(str(written['file'])) == os.path.abspath(str(expected_written))
 
-def test_probe_feed_with_invalid_config(monkeypatch, tmp_path):
-    # Integration: invalid config causes probe to be skipped or error path taken
-    from utils.validators import validate_feed_config, ValidationError
-    config = {"feeds": [{"name": "feed1"}]}  # missing required 'url'
-    with pytest.raises(ValidationError):
-        validate_feed_config(config)
+def test_probe_feed_with_invalid_config(monkeypatch):
+    # probe_feed should return failure when config is missing 'url'
+    result = probe_feed(None, "Test Feed")
+    assert result['success'] is False
+    assert 'error' in result and bool(result['error'])
+    assert "url" in result['error'].lower()

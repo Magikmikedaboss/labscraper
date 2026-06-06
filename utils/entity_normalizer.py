@@ -2,7 +2,7 @@
 import logging
 import json
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple, Union
 
 # Central set of primary entity types
 PRIMARY_TYPES = {
@@ -90,34 +90,54 @@ def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dic
     copy = dict(entity)
     name = (entity.get('entity_name') or '').strip().lower()
     etype = (entity.get('entity_type') or '').strip().lower()
-    # TODO: implement entity_variant normalization
+    variant = (entity.get('entity_variant') or '').strip().lower()
     # Overlay alias normalization (mapped values are lowercased)
     if overlay_aliases and name in overlay_aliases:
         name = overlay_aliases[name].lower()
+    if overlay_aliases and variant in overlay_aliases:
+        variant = overlay_aliases[variant].lower()
     # Normalization map: match input name to any variant in norm_map[etype] and set to canonical_name
+    # Supported shapes for variants_entry:
+    #   list:  ["a", "b"]
+    #   dict:  {"key": ["a", "b"], "other": ["c"]}
+    #   tuple: (["a", "b"], metadata)  # only first element (list) is used
+    #   else:  falls back to empty list
+    # This logic maps any matching variant (case-insensitive) to canonical_name.
+    # Role assignment is handled by get_entity_role.
     if etype in norm_map:
+        name_resolved = False
+        variant_resolved = not bool(variant)
         for canonical_name, variants_entry in norm_map[etype].items():
-            # Handle list, dict, or tuple for variants_entry
             if isinstance(variants_entry, list):
+                # e.g. ["a", "b"]
                 variants = variants_entry
             elif isinstance(variants_entry, dict):
-                # Flatten all values (assume lists)
-                variants = [v for sublist in variants_entry.values() for v in (sublist if isinstance(sublist, list) else [sublist])]
+                # e.g. {"variants": ["a", "b"], "role": "primary"}
+                variants = variants_entry.get('variants', [])
             elif isinstance(variants_entry, tuple):
+                # e.g. (["a", "b"], metadata)
                 variants = variants_entry[0]
             else:
                 variants = []
-            if any(name == v.lower() for v in variants):
+
+            if (not name_resolved) and any(name == v.lower() for v in variants):
                 name = canonical_name.lower()
+                name_resolved = True
+
+            if (not variant_resolved) and variant and any(variant == v.lower() for v in variants):
+                variant = canonical_name.lower()
+                variant_resolved = True
+
+            if name_resolved and variant_resolved:
                 break
     copy['entity_type'] = etype
     copy['entity_name'] = name
+    copy['entity_variant'] = variant
     # Do not return a string; always return a dict
     # Role assignment is handled by get_entity_role
     return copy
 
 
-from typing import Dict, List, Tuple, Union
 
 def get_entity_role(
     entity: dict,
@@ -186,7 +206,7 @@ def get_entity_role(
         return 'context'
     if 'primary' in norm_map:
         if etype in norm_map['primary']:
-            if not norm_map['primary'][etype] or name in norm_map['primary'][etype]:
+            if name in norm_map['primary'][etype]:
                 return 'primary'
 
     # 3. Expanded set of primary types

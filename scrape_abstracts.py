@@ -39,6 +39,7 @@ try:
         extract_entities, extract_quantitative_data,
         detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
         classify_event_type, evidence_strength, confidence_score,
+        ConfidenceInput,
         suggested_keep, normalize_event_key,
         upsert_source, insert_document, insert_chunk, insert_event,
         link_event_entity, link_event_tag, insert_measurement, upsert_entity,
@@ -134,16 +135,18 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
                 "title": f"ASCE Abstract: {abstract_url.split('/')[-1][:50]}",
                 "authors": ["ASCE Journal"],
                 "year": "2023",
-                "url": abstract_url
+                "url": abstract_url,
+                "domain": domain,
+                "publication_date": "2023",
             }
             
-            upsert_source(con, source_id, abstract_url, metadata)
+            source_id = upsert_source(con, source_id, abstract_url, metadata)
             doc_id = insert_document(con, source_id, abstract_url, file_hash)
             
             # Process abstract as a single "page"
             page_idx = 1
             section = "abstract"
-            chunk_id = insert_chunk(con, doc_id, page_idx, section, abstract_text, source_id)
+            chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, abstract_text)
             
             for sent in chunk_sentences(abstract_text):
                 s_l = sent.lower()
@@ -169,7 +172,16 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
                 ents = extract_entities(sent, domain)
                 measurements = extract_quantitative_data(sent)
                 
-                conf = confidence_score(bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l)
+                conf = confidence_score(
+                    ConfidenceInput(
+                        has_entity=bool(ents),
+                        method_tags=tags,
+                        failure_reason=failure_reason,
+                        decision_taken=decision_taken,
+                        has_measurements=bool(measurements),
+                        sentence_l=s_l,
+                    )
+                )
                 keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
                 
                 if keep == 0 and event_type == "other":

@@ -1,61 +1,16 @@
-"""
-Event classification rules and helpers for PDF scraping pipeline.
-Includes: METHOD_TAGS, FAILURE_PHRASES, DECISION_PHRASES, OUTCOME_PHRASES, detect_method_tags, detect_failure_reason, detect_decision, detect_outcome, classify_event_type, evidence_strength, confidence_score, suggested_keep.
-"""
+"""Core event classification utilities used by scraping pipelines and tests."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
 import re
-from dataclasses import dataclass, field
-from typing import Optional, List, Tuple, Any
-@dataclass
-class ConfidenceInput:
-    has_entity: bool = False
-    method_tags: list[str] = field(default_factory=list)
-    failure_reason: str = ""
-    decision_taken: str = ""
-    has_measurements: bool = False
-    sentence_l: str = ""
-
-@dataclass
-class ConfidenceConfig:
-    HIGH_CONF_THRESHOLD: int = 6
-    MED_CONF_THRESHOLD: int = 3
-    high_signal_terms: list = field(default_factory=lambda: [
-        'lc-ms', 'mass spectrometry', 'in vivo', 'in vitro', 'clinical',
-        'sequence', 'residues', 'ic50', 'ec50', 'half-life',
-        'degraded', 'stable', 'potent', 'toxic', 'efficacy',
-        'optimized', 'modified', 'abandoned', 'continued'
-    ])
-# Canonical keyword sets for event type classification (no duplicates, context-specific where needed)
-DEGRADATION_KEYWORDS = [
-    "degradation", "degraded", "corrosion", "rust", "oxidation", "deterioration", "decay", "weathering", "aging",
-    "short half-life", "poor stability", "unstable", "instability"  # Only chemical/temporal instability
-]
-STRUCTURAL_KEYWORDS = [
-    "crack", "cracking", "buckling", "delamination", "fracture", "rupture", "collapse", "shear failure", "yielding",
-    "spalling", "failure mode", "microcrack", "macrocrack", "brittle fracture", "ductile fracture", "plastic hinge",
-    # Only structural instability (use word-boundary or phrase)
-    "structural instability"
-]
-ENVIRONMENTAL_KEYWORDS = [
-    "temperature", "thermal", "moisture", "humidity", "freeze", "thaw", "uv", "solar", "environmental stress", "exposure",
-    "weather", "climate", "precipitation", "snow", "hail", "thermal shock"
-]
-LOAD_KEYWORDS = [
-    "impact", "load", "loading", "stress", "strain", "pressure", "force", "torsion", "bending", "compression", "tension",
-    "modulus", "stiffness", "ductility", "hardness", "strength", "yield strength", "ultimate strength", "elasticity", "plasticity"
-]
-FATIGUE_KEYWORDS = ["fatigue", "creep", "shrinkage"]
-EFFICACY_KEYWORDS = ["activity", "efficacy", "potent", "ic50", "ec50", "performance", "effectiveness", "output", "result"]
-MANUFACTURING_KEYWORDS = ["manufacturing", "scale-up", "yield", "production", "fabrication", "assembly", "costly to produce", "process", "costly"]
-COST_TRADEOFF_KEYWORDS = ["cost-intensive", "expensive", "time-consuming", "fast", "cost-effective", "affordable", "cheap", "efficient", "resource-intensive"]
-HAZARD_KEYWORDS = [
-    "flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion",
-    "freeze-thaw", "alkali-silica reaction", "subsidence", "settlement", "liquefaction", "tsunami", "landslide", "storm", "hurricane", "typhoon", "cyclone"
-]
-
+import warnings
+from typing import Any, List, Tuple
 
 
 METHOD_TAGS = {
-    "lc-ms/ms": ["lc-ms/ms", "lc ms/ms", "lc-ms", "mass spectrometry", "ms/ms"],
+    "lc-ms/ms": ["lc-ms/ms", "lc ms/ms", "lc-ms", "mass spectrometry", "ms/ms", "mass spec"],
+    "mass_spec": ["mass spectrometry", "mass spec", "ms", "ms/ms"],
     "fluorescent": ["fluorescent", "fluorescence", "fluorophore", "label"],
     "serum": ["serum", "plasma", "biological fluids"],
     "incubation": ["incubation", "long incubation"],
@@ -63,16 +18,22 @@ METHOD_TAGS = {
     "gmp": ["gmp", "good manufacturing practice"],
 }
 
+
 FAILURE_PHRASES = {
     "stability_failure": ["rapidly degraded", "degraded", "unstable", "poor stability", "short half-life"],
     "no_activity": ["no significant", "no measurable", "did not show", "no activity", "inactive"],
-    "toxicity_flag": ["cytotoxic", "toxicity", "cell death"],
+    "toxicity_flag": ["cytotoxic", "toxicity", "cell death", "toxic"],
     "reproducibility": [
-        "not reproducible", "poor reproducibility", "lack of reproducibility", "irreproducible", "failed reproducibility"
+        "not reproducible",
+        "poor reproducibility",
+        "lack of reproducibility",
+        "irreproducible",
+        "failed reproducibility",
     ],
     "scalability": ["scale-up", "scalable", "manufacturing", "yield", "process", "costly to produce"],
     "regulatory": ["regulatory", "guideline", "compliance", "safety concern", "risk assessment"],
 }
+
 
 DECISION_PHRASES = {
     "abandoned": ["not pursued", "not pursued further", "excluded", "discarded", "abandoned", "dropped"],
@@ -83,176 +44,201 @@ DECISION_PHRASES = {
     "escalated": ["advanced to", "moved to", "progressed to"],
 }
 
+
 OUTCOME_PHRASES = {
     "negative": [
-        "no significant", "no measurable", "inactive", "excluded", "not pursued", "did not",
-        "failed to", "no improvement", "worsened", "decreased", "declined", "degradation",
-        "toxic", "toxicity", "adverse"
+        "no significant",
+        "no measurable",
+        "inactive",
+        "excluded",
+        "not pursued",
+        "did not",
+        "failed to",
+        "no improvement",
+        "worsened",
+        "decreased",
+        "declined",
+        "degradation",
+        "toxic",
+        "toxicity",
+        "adverse",
     ],
     "positive": [
-        "improved", "increased", "enhanced", "more stable", "longer half-life", "better",
-        "higher", "greater", "successful", "showed activity", "demonstrated", "significant"
+        "improved",
+        "increased",
+        "enhanced",
+        "more stable",
+        "longer half-life",
+        "better",
+        "higher",
+        "greater",
+        "successful",
+        "showed activity",
+        "demonstrated",
+        "significant",
     ],
     "neutral": ["moderate", "marginal", "partial", "mixed", "limited", "trend"],
 }
 
+
+HIGH_CONF_THRESHOLD = 6
+MED_CONF_THRESHOLD = 3
+_OLD_CONFIDENCE_SIGNATURE_WARNED = False
+
+
+@dataclass(frozen=True)
+class ConfidenceInput:
+    has_entity: bool
+    method_tags: List[str]
+    failure_reason: str
+    decision_taken: str
+    has_measurements: bool
+    sentence_l: str = ""
+
+
 def detect_method_tags(sentence_l: str) -> List[str]:
-    # Normalize input to lowercase string for robust matching
-    norm = sentence_l.lower().strip() if isinstance(sentence_l, str) else ""
-    tags = []
+    def _contains_phrase(text: str, phrase: str) -> bool:
+        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
+
+    tags: List[str] = []
     for tag, phrases in METHOD_TAGS.items():
-        for p in phrases:
-            if re.fullmatch(r"\w+", p):
-                # Match not surrounded by word characters (handles punctuation/end)
-                pat = re.compile(rf"(?<!\w){re.escape(p)}(?!\w)", re.IGNORECASE)
-                if pat.search(norm):                    tags.append(tag)
-            else:
-                if p.lower() in norm:
-                    tags.append(tag)
-    # Remove duplicates, preserve order
-    return list(dict.fromkeys(tags))
+        if any(_contains_phrase(sentence_l, p) for p in phrases):
+            tags.append(tag)
+    return tags
+
 
 def detect_failure_reason(sentence_l: str) -> str:
-    norm = sentence_l.lower().strip() if isinstance(sentence_l, str) else ""
+    def _contains_phrase(text: str, phrase: str) -> bool:
+        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
+
     for reason, phrases in FAILURE_PHRASES.items():
-        for p in phrases:
-            if re.fullmatch(r"\w+", p):
-                pat = re.compile(rf"(?<!\w){re.escape(p)}(?!\w)", re.IGNORECASE)
-                if pat.search(norm):
-                    return reason
-            else:
-                if p.lower() in norm:
-                    return reason
+        if any(_contains_phrase(sentence_l, p) for p in phrases):
+            return reason
     return "unknown"
+
 
 def detect_decision(sentence_l: str) -> Tuple[str, Any]:
-    norm = sentence_l.lower().strip() if isinstance(sentence_l, str) else ""
+    def _contains_phrase(text: str, phrase: str) -> bool:
+        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
+
     for decision, phrases in DECISION_PHRASES.items():
-        for p in phrases:
-            if re.fullmatch(r"\w+", p):
-                pat = re.compile(rf"(?<!\w){re.escape(p)}(?!\w)", re.IGNORECASE)
-                if pat.search(norm):
-                    return decision, None
-            else:
-                if p.lower() in norm:
-                    return decision, None
+        if any(_contains_phrase(sentence_l, p) for p in phrases):
+            return decision, None
     return "unknown", None
 
+
 def detect_outcome(sentence_l: str) -> str:
-    norm = sentence_l.lower().strip() if isinstance(sentence_l, str) else ""
-    for outcome in ["negative", "positive", "neutral"]:
-        for p in OUTCOME_PHRASES[outcome]:
-            if re.fullmatch(r"\w+", p):
-                pat = re.compile(rf"(?<!\w){re.escape(p)}(?!\w)", re.IGNORECASE)
-                if pat.search(norm):
-                    return outcome
-            else:
-                if p.lower() in norm:
-                    return outcome
+    def _contains_phrase(text: str, phrase: str) -> bool:
+        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
+
+    for outcome in ("negative", "positive", "neutral"):
+        if any(_contains_phrase(sentence_l, p) for p in OUTCOME_PHRASES[outcome]):
+            return outcome
     return "unknown"
 
+
 def classify_event_type(sentence_l: str, method_tags: List[str], failure_reason: str, decision_taken: str) -> str:
-    """
-    Classifies event type from sentence and context.
-    Priority order (first match wins):
-      1. regulatory_risk
-      2. toxicity_flag
-      3. stability_issue
-      4. degradation_event (chemical/temporal instability, not structural)
-      5. structural_failure (structural instability, cracks, etc.)
-      6. environmental_stress
-      7. load_event
-      8. fatigue_event
-      9. efficacy_result
-     10. manufacturing_constraint
-     11. cost_tradeoff/method_evaluation
-     12. hazard_event
-     13. decision_point
-     14. other
-    Keyword sets are canonical and disambiguated; e.g., "instability" is only degradation unless "structural instability" is present.
-    """
-    s = sentence_l.lower().strip() if isinstance(sentence_l, str) else ""
-    # 1. Regulatory
+    def _contains_phrase(text: str, phrase: str) -> bool:
+        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
+
+    s = sentence_l
     if "nitrosamine" in method_tags or failure_reason == "regulatory":
         return "regulatory_risk"
-    # 2. Toxicity
-    if failure_reason == "toxicity_flag" or any(k in s for k in ["toxic", "toxicity", "cytotoxic"]):
+    if failure_reason == "toxicity_flag" or any(_contains_phrase(s, k) for k in ("toxic", "toxicity", "cytotoxic")):
         return "toxicity_flag"
-    # 3. Stability issue
     if failure_reason == "stability_failure":
         return "stability_issue"
-    # 4. Degradation (chemical/temporal instability, not structural)
-    # Only match "instability" if not part of "structural instability"
-    if any(k in s for k in DEGRADATION_KEYWORDS) and "structural instability" not in s:
+    if any(_contains_phrase(s, k) for k in ("degradation", "degraded", "corrosion", "instability", "unstable", "poor stability")):
         return "degradation_event"
-    # 5. Structural failure (structural instability, cracks, etc.)
-    if any(k in s for k in STRUCTURAL_KEYWORDS):
-        # 6. Environmental stress
-        return "structural_failure"
-    if any(k in s for k in ENVIRONMENTAL_KEYWORDS):
-        return "environmental_stress"
-    # 7. Load event
-    if any(k in s for k in LOAD_KEYWORDS):
-        return "load_event"
-    # 8. Fatigue
-    if any(k in s for k in FATIGUE_KEYWORDS):
-        return "fatigue_event"
-    # 9. Efficacy
-    if failure_reason == "no_activity" or any(k in s for k in EFFICACY_KEYWORDS):
+    if failure_reason == "no_activity" or any(_contains_phrase(s, k) for k in ("activity", "efficacy", "potent", "ic50", "ec50")):
         return "efficacy_result"
-    # 10. Manufacturing constraint
-    if failure_reason == "scalability" or any(k in s for k in MANUFACTURING_KEYWORDS):
+    if failure_reason == "scalability" or any(_contains_phrase(s, k) for k in ("manufacturing", "scale-up", "yield", "production")):
         return "manufacturing_constraint"
-    # 11. Cost tradeoff/method evaluation
     if method_tags:
-        if any(k in s for k in COST_TRADEOFF_KEYWORDS):
+        if any(_contains_phrase(s, k) for k in ("cost-intensive", "expensive", "time-consuming", "efficient", "cost-effective")):
             return "cost_tradeoff"
         return "method_evaluation"
-    # 12. Hazard event
-    if any(k in s for k in HAZARD_KEYWORDS):
-        return "hazard_event"
-    # 13. Decision point
     if decision_taken != "unknown":
         return "decision_point"
-    # 14. Fallback
     return "other"
 
+
 def evidence_strength(sentence_l: str) -> str:
-    if any(k in sentence_l for k in ["we conclude", "demonstrate", "significant", "robust", "strong"]):
+    if any(k in sentence_l for k in ("we conclude", "demonstrate", "significant", "robust", "strong")):
         return "strong"
-    if any(k in sentence_l for k in ["suggest", "may", "might", "could", "trend"]):
+    if any(k in sentence_l for k in ("suggest", "may", "might", "could", "trend")):
         return "weak"
     return "moderate"
 
-def confidence_score(conf_input: ConfidenceInput, config: Optional[ConfidenceConfig] = None) -> str:
-    if config is None:
-        config = ConfidenceConfig()
+
+def confidence_score(input_data: ConfidenceInput) -> str:
+    """Return low/med/high confidence.
+
+    Deprecated legacy signature:
+      - confidence_score(has_entity, method_tags, failure_reason, decision_taken, has_measurements, sentence_l="")
+    Use:
+      - confidence_score(ConfidenceInput(...))
+    """
+    global _OLD_CONFIDENCE_SIGNATURE_WARNED
+    if not isinstance(input_data, ConfidenceInput):
+        if not _OLD_CONFIDENCE_SIGNATURE_WARNED:
+            warnings.warn(
+                "confidence_score old signature is deprecated; pass ConfidenceInput",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            _OLD_CONFIDENCE_SIGNATURE_WARNED = True
+        raise TypeError("confidence_score requires a ConfidenceInput instance")
+    ci = input_data
+
     score = 0
-    if conf_input.has_entity:
+    if ci.has_entity:
         score += 2
-    if conf_input.method_tags:
+    if ci.method_tags:
         score += 1
-    if conf_input.failure_reason != "unknown":
+    if ci.failure_reason != "unknown":
         score += 2
-    if conf_input.decision_taken != "unknown":
+    if ci.decision_taken != "unknown":
         score += 1
-    if conf_input.has_measurements:
+    if ci.has_measurements:
         score += 2
-    signal_count = sum(1 for term in config.high_signal_terms if term in conf_input.sentence_l)
+
+    high_signal_terms = [
+        "lc-ms",
+        "mass spectrometry",
+        "in vivo",
+        "in vitro",
+        "clinical",
+        "ic50",
+        "ec50",
+        "half-life",
+        "degraded",
+        "stable",
+        "toxic",
+        "efficacy",
+        "optimized",
+        "modified",
+        "abandoned",
+        "continued",
+    ]
+    signal_count = sum(1 for term in high_signal_terms if term in ci.sentence_l)
     if signal_count >= 3:
         score += 2
     elif signal_count >= 2:
         score += 1
-    if score >= config.HIGH_CONF_THRESHOLD:
+
+    if score >= HIGH_CONF_THRESHOLD:
         return "high"
-    elif score >= config.MED_CONF_THRESHOLD:
+    if score >= MED_CONF_THRESHOLD:
         return "med"
-    else:
-        return "low"
+    return "low"
+
 
 def suggested_keep(conf: str, event_type: str, failure_reason: str, decision_taken: str, tags: List[str]) -> int:
     if conf in ("med", "high"):
         return 1
-    if event_type not in ("other",) and (failure_reason != "unknown" or decision_taken != "unknown" or tags):
+    if event_type != "other" and (
+        failure_reason != "unknown" or decision_taken != "unknown" or bool(tags)
+    ):
         return 1
     return 0

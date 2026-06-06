@@ -32,7 +32,9 @@ if __name__ == "__main__":
         print(f"Input: {text}")
         print("Entities:")
         for e in extract_entities(text, domain):
-            print(f"  {e['entity_type']}: {e['entity_name']}")
+            entity_type = e.get('entity_type', '<unknown>')
+            entity_name = e.get('entity_name', '<unknown>')
+            print(f"  {entity_type}: {entity_name}")
 
     # Test lenses
     print("\n" + "=" * 60)

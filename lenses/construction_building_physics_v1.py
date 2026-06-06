@@ -43,7 +43,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         "lower heat loss", "lower energy use", "lower energy consumption",
         "improved r-value", "improved r value", "reduced infiltration"
     ])
-    # Flexible positive: 'reduced' within 2 words of 'energy consumption' or 'consumption'
+    # Flexible positive: 'reduced' within 7 words of 'energy consumption' or 'consumption'
     import re
     flexible_positive = False
     # Match 'reduced' and 'energy consumption' (or 'consumption') within 7 words, any order, anywhere

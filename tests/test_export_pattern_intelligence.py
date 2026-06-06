@@ -1,3 +1,6 @@
+import csv
+import io
+import pytest
 from utils import export_pattern_intelligence
 
 class DummySignals:
@@ -28,8 +31,6 @@ def test_export_to_csv(tmp_path):
     out_file = tmp_path / "test_export.csv"
     export_pattern_intelligence.export_to_csv(results, out_file)
     # Check file exists and has correct columns
-    import csv
-    import io
     csv_text = out_file.read_text()
     reader = csv.reader(io.StringIO(csv_text))
     rows = list(reader)
@@ -54,4 +55,8 @@ def test_export_to_csv(tmp_path):
 # Optionally, test main() just for coverage (does not assert output)
 def test_main_runs(monkeypatch):
     monkeypatch.setattr("builtins.print", lambda *a, **k: None)
-    export_pattern_intelligence.main()
+    try:
+        result = export_pattern_intelligence.main()
+    except Exception as e:
+        pytest.fail(f"main() raised an exception: {e}")
+    assert result is None

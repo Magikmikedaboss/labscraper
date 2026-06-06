@@ -45,7 +45,8 @@ def test_load_overlay(tmp_path):
     overlay_data = {"entities": {"foo": ["bar"]}, "overlay_id": "id", "domain": "d"}
     overlays_dir = tmp_path / "overlays"
     overlays_dir.mkdir()
-    f = overlays_dir / "stem_cells_overlay_v1.json"
+    fname = seed_overlay_loader.OVERLAY_MAPPING["stem_cells_regen"]
+    f = overlays_dir / fname
     f.write_text(json.dumps(overlay_data), encoding="utf-8")
     result = seed_overlay_loader.load_overlay("stem_cells_regen", str(overlays_dir))
     assert result["entities"]["foo"] == ["bar"]

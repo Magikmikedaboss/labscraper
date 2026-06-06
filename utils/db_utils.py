@@ -1,9 +1,30 @@
 """Shared utilities for database inspection"""
+
+from difflib import SequenceMatcher
 import logging
 import sqlite3
+from datetime import datetime
 from pathlib import Path
-from typing import List, Dict
+from typing import Any, Dict, List, Optional
+
 from utils.common import now_iso, sha16
+
+
+def db_has_all_tables(con, required_tables=None):
+    """Check if all required tables exist in the database connection."""
+    if required_tables is None:
+        required_tables = [
+            "sources", "documents", "chunks", "entities", "research_events",
+            "event_entities", "event_tags", "quantitative_measurements", "entity_relationships", "tags"
+        ]
+    cursor = con.cursor()
+    try:
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        existing = {row[0] for row in cursor.fetchall()}
+        return all(t in existing for t in required_tables)
+    finally:
+        cursor.close()
+
 
 logger = logging.getLogger(__name__)
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
@@ -160,13 +181,15 @@ def show_pdf_cache(cache_dir: str = 'input/rss_cache'):
     for f in cache_dir.iterdir():
         if f.is_file():
             st = f.stat()
-            logger.info("  %s | %d bytes | modified: %s", f.name, st.st_size, st.st_mtime)
+            mod_time = datetime.fromtimestamp(st.st_mtime).isoformat(sep=' ', timespec='seconds')
+            logger.info("  %s | %d bytes | modified: %s", f.name, st.st_size, mod_time)
 
 def get_entity_distribution(conn: sqlite3.Connection):
     """Show entity distribution across types"""
     logger.info("\n🏗️  ENTITY DISTRIBUTION:")
     logger.info("-" * 60)
     
+    cursor = None
     try:
         query = """
             SELECT entity_type, COUNT(*) as count
@@ -175,17 +198,20 @@ def get_entity_distribution(conn: sqlite3.Connection):
             ORDER BY count DESC
         """
         cursor = conn.execute(query)
-        
         for row in cursor:
             logger.info("  %s : %s entities", row[0], row[1])
     except sqlite3.OperationalError as e:
         logger.error("  ⚠️  Database table not found: %s", e)
+    finally:
+        if cursor is not None:
+            cursor.close()
 
 def get_event_type_distribution(conn: sqlite3.Connection):
     """Show event type distribution"""
     logger.info("\n📈 EVENT TYPE DISTRIBUTION:")
     logger.info("-" * 60)
     
+    cursor = None
     try:
         query = """
             SELECT event_type, COUNT(*) as count
@@ -194,17 +220,20 @@ def get_event_type_distribution(conn: sqlite3.Connection):
             ORDER BY count DESC
         """
         cursor = conn.execute(query)
-        
         for row in cursor:
             logger.info("  %s : %s events", row[0], row[1])
     except sqlite3.OperationalError as e:
         logger.error("  ⚠️  Database table not found: %s", e)
+    finally:
+        if cursor is not None:
+            cursor.close()
 
 def get_domain_distribution(conn: sqlite3.Connection):
     """Show research domain distribution"""
     logger.info("\n🔬 DOMAIN DISTRIBUTION:")
     logger.info("-" * 60)
     
+    cursor = None
     try:
         query = """
             SELECT research_domain, COUNT(*) as count
@@ -213,23 +242,167 @@ def get_domain_distribution(conn: sqlite3.Connection):
             ORDER BY count DESC
         """
         cursor = conn.execute(query)
-        
         for row in cursor:
             logger.info("  %s : %s events", row[0], row[1])
     except sqlite3.OperationalError as e:
         logger.error("  ⚠️  Database table not found: %s", e)
+    finally:
+        if cursor is not None:
+            cursor.close()
 
-def upsert_source(con: sqlite3.Connection, source_id: str, pdf_file: str, metadata: dict):
-    """Updated to include metadata"""
+def _normalize_text(value: Any) -> str:
+    if not value:
+        return ""
+    return " ".join(str(value).strip().lower().split())
+
+
+def _normalize_doi(value: Any) -> str:
+    doi = _normalize_text(value)
+    if not doi:
+        return ""
+    for prefix in (
+        "https://doi.org/",
+        "http://doi.org/",
+        "https://dx.doi.org/",
+        "http://dx.doi.org/",
+        "doi:",
+    ):
+        if doi.startswith(prefix):
+            doi = doi[len(prefix):]
+            break
+    return doi.strip("/ ")
+
+
+def _table_columns(con: sqlite3.Connection, table_name: str) -> set[str]:
+    rows = con.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return {row[1] for row in rows}
+
+
+def _ensure_source_tracking_schema(con: sqlite3.Connection) -> None:
+    columns = _table_columns(con, "sources")
+    if "publication_date" not in columns:
+        con.execute("ALTER TABLE sources ADD COLUMN publication_date TEXT")
+    if "domain" not in columns:
+        con.execute("ALTER TABLE sources ADD COLUMN domain TEXT")
     con.execute(
-        """INSERT OR IGNORE INTO sources(source_id, pdf_file, title, authors, year, doi, imported_at)
-           VALUES (?,?,?,?,?,?,?)""",
-        (source_id, pdf_file, metadata.get('title'), metadata.get('authors'), 
-         metadata.get('year'), metadata.get('doi'), now_iso()),
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS uniq_sources_doi
+        ON sources(doi)
+        WHERE doi IS NOT NULL AND trim(doi) <> ''
+        """
+    )
+    con.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS uniq_documents_sha256
+        ON documents(sha256)
+        WHERE sha256 IS NOT NULL AND trim(sha256) <> ''
+        """
     )
 
+
+def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadata: dict) -> str:
+    doi = _normalize_doi(metadata.get("doi"))
+    if doi:
+        row = con.execute(
+            """
+            SELECT source_id
+            FROM sources
+            WHERE lower(trim(replace(replace(replace(replace(replace(doi,
+                'https://doi.org/', ''),
+                'http://doi.org/', ''),
+                'https://dx.doi.org/', ''),
+                'http://dx.doi.org/', ''),
+                'doi:', ''))) = ?
+            LIMIT 1
+            """,
+            (doi,),
+        ).fetchone()
+        if row:
+            return row[0]
+
+    title = _normalize_text(metadata.get("title"))
+    if not title:
+        return source_id
+
+    exact = con.execute(
+        "SELECT source_id FROM sources WHERE lower(trim(title)) = ? LIMIT 1",
+        (title,),
+    ).fetchone()
+    if exact:
+        return exact[0]
+
+    candidates = con.execute(
+        "SELECT source_id, title FROM sources WHERE title IS NOT NULL LIMIT 1000"
+    ).fetchall()
+    for candidate_id, candidate_title in candidates:
+        if not candidate_title:
+            continue
+        score = SequenceMatcher(None, title, _normalize_text(candidate_title)).ratio()
+        if score >= 0.97:
+            return candidate_id
+
+    return source_id
+
+
+def upsert_source(con: sqlite3.Connection, source_id: str, pdf_file: str, metadata: dict) -> str:
+    """Upsert source with provenance metadata and DOI/title dedup checks."""
+    _ensure_source_tracking_schema(con)
+    metadata = metadata or {}
+    source_id = _resolve_existing_source_id(con, source_id, metadata)
+
+    authors = metadata.get("authors")
+    if isinstance(authors, (list, tuple)):
+        authors = ", ".join(str(a) for a in authors if a)
+
+    year = metadata.get("year")
+    if isinstance(year, str) and year.isdigit():
+        year = int(year)
+
+    publication_date = metadata.get("publication_date")
+    if not publication_date and year:
+        publication_date = str(year)
+
+    values = {
+        "source_id": source_id,
+        "pdf_file": pdf_file,
+        "title": metadata.get("title"),
+        "authors": authors,
+        "year": year,
+        "publication_date": publication_date,
+        "venue": metadata.get("venue") or metadata.get("journal"),
+        "doi": _normalize_doi(metadata.get("doi")) or None,
+        "url": metadata.get("url"),
+        "domain": metadata.get("domain"),
+        "imported_at": now_iso(),
+    }
+
+    source_columns = _table_columns(con, "sources")
+    insert_cols = [k for k in values if k in source_columns]
+    placeholders = ",".join("?" for _ in insert_cols)
+    update_cols = [k for k in insert_cols if k != "source_id"]
+    update_sql = ", ".join(f"{k}=excluded.{k}" for k in update_cols)
+    params = tuple(values[col] for col in insert_cols)
+
+    con.execute(
+        f"""
+        INSERT INTO sources({','.join(insert_cols)})
+        VALUES ({placeholders})
+        ON CONFLICT(source_id) DO UPDATE SET {update_sql}
+        """,
+        params,
+    )
+    return source_id
+
 def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
-    doc_id = sha16(f"{source_id}|{file_path}|{sha256}")
+    if sha256:
+        existing = con.execute(
+            "SELECT doc_id FROM documents WHERE sha256 = ? LIMIT 1",
+            (sha256,),
+        ).fetchone()
+        if existing:
+            return existing[0]
+
+    doc_id = sha16(sha256 or f"{source_id}|{file_path}")
     con.execute(
         """INSERT OR IGNORE INTO documents(doc_id, source_id, file_path, file_type, sha256, created_at)
            VALUES (?,?,?,?,?,?)""",
@@ -237,20 +410,20 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
     )
     return doc_id
 
-def insert_chunk(con, doc_id: str, page_number: int, section_guess: str, chunk_text: str, source_id: str) -> str:
-    chunk_id = sha16(f"{doc_id}|{page_number}|{chunk_text[:200]}")
+def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
+    # Use full chunk text to avoid collisions from identical prefixes.
+    chunk_id = sha16(f"{doc_id}|{page_number}|{chunk_text}")
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
            VALUES (?,?,?,?,?,?,?)""",
         (chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, now_iso()),
     )
     return chunk_id
-
-def upsert_tag(con, tag: str):
+def upsert_tag(con, tag: str) -> str:
     con.execute("INSERT OR IGNORE INTO tags(tag) VALUES(?)", (tag,))
     return tag
 
-def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str | None, organism: str | None) -> str:
+def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: Optional[str], organism: Optional[str]) -> str:
     key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
     entity_id = sha16(key)
     con.execute(
@@ -270,12 +443,12 @@ def insert_event(
     domain: str,
     event_type: str,
     study_stage: str,
-    biological_system: str | None,
-    application_area: str | None,
+    biological_system: Optional[str],
+    application_area: Optional[str],
     outcome: str,
     failure_reason: str,
     decision_taken: str,
-    decision_driver: str | None,
+    decision_driver: Optional[str],
     evidence_snippet: str,
     evidence_strength_v: str,
     confidence_v: str,
@@ -339,3 +512,26 @@ def link_event_tag(con, event_id: str, tag: str):
         "INSERT OR IGNORE INTO event_tags (event_id, tag) VALUES (?, ?)",
         (event_id, tag)
     )
+
+
+def _db_has_all_tables(db_path: Path) -> bool:
+    """Check if all required tables exist in the DB."""
+    required_tables = {
+        "sources",
+        "documents",
+        "chunks",
+        "entities",
+        "research_events",
+        "event_entities",
+        "tags",
+        "event_tags",
+        "quantitative_measurements",
+        "entity_relationships",
+    }
+    try:
+        with sqlite3.connect(db_path, timeout=30.0) as con:
+            tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+            table_names = {t[0] for t in tables}
+            return required_tables.issubset(table_names)
+    except Exception:
+        return False

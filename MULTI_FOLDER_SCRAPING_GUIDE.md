@@ -1,15 +1,15 @@
-# Multi-Folder Scraping Guide
+﻿# Multi-Folder Scraping Guide
 
 ## What's Happening Now
 
 We're scraping **two folders** into **one combined database**:
 
-### Folder 1: `input_pdfs/` ⏳ RUNNING
+### Folder 1: `input_pdfs/`  RUNNING
 - **65 PDFs** (stem cell, peptide, longevity research)
 - **Status:** Currently processing (2% complete)
 - **ETA:** ~20-30 minutes
 
-### Folder 2: `input_pdfs/biohacking/` ⏸️ WAITING
+### Folder 2: `input_pdfs/biohacking/`  WAITING
 - **Unknown count** of PDFs
 - **Status:** Will start after Folder 1 completes
 - **ETA:** TBD
@@ -19,10 +19,10 @@ We're scraping **two folders** into **one combined database**:
 ## Why This Works
 
 The scraper uses `INSERT OR IGNORE` in the database, which means:
-- ✅ **Same database path** = data gets combined
-- ✅ **Automatic deduplication** = no duplicate events
-- ✅ **Safe to run multiple times** = idempotent
-- ✅ **Incremental updates** = can add more folders later
+-  **Same database path** = data gets combined
+-  **Automatic deduplication** = no duplicate events
+-  **Safe to run multiple times** = idempotent
+-  **Incremental updates** = can add more folders later
 
 ---
 
@@ -30,7 +30,7 @@ The scraper uses `INSERT OR IGNORE` in the database, which means:
 
 ### Step 1: Scrape Folder 1 (CURRENT)
 ```bash
-python scrape_pdfs_phase1.py \
+python utils/scrape_pdfs_phase1.py \
   --domain biohacking_longevity \
   --input-dir input_pdfs \
   --output-db output/combined_biohacking_all.sqlite
@@ -44,7 +44,7 @@ python scrape_pdfs_phase1.py \
 
 ### Step 2: Scrape Folder 2 (NEXT)
 ```bash
-python scrape_pdfs_phase1.py \
+python utils/scrape_pdfs_phase1.py \
   --domain biohacking_longevity \
   --input-dir input_pdfs/biohacking \
   --output-db output/combined_biohacking_all.sqlite
@@ -58,7 +58,7 @@ python scrape_pdfs_phase1.py \
 
 ### Step 3: Apply Dual-Lens Export (FINAL)
 ```bash
-python export_dual_lens.py \
+python utils/export/export_dual_lens.py \
   output/combined_biohacking_all.sqlite \
   biohacking_longevity
 ```
@@ -96,9 +96,9 @@ Different perspectives on the same data:
 - Assays de-emphasized
 
 **Example Ranking Shifts:**
-- RAPAMYCIN: #12 → #2 (Science → Curiosity)
-- METFORMIN: #15 → #4 (Science → Curiosity)
-- HUMAN (model): #4 → #8 (Science → Curiosity)
+- RAPAMYCIN: #12  #2 (Science  Curiosity)
+- METFORMIN: #15  #4 (Science  Curiosity)
+- HUMAN (model): #4  #8 (Science  Curiosity)
 
 ---
 
@@ -145,13 +145,13 @@ Contains:
 
 ## Current Status
 
-### ⏳ Folder 1: IN PROGRESS
+###  Folder 1: IN PROGRESS
 - Processing: 1/65 PDFs (2%)
 - Time per PDF: ~18 seconds
 - Estimated completion: ~20-30 minutes
 
 
-### ⏸️ Folder 2: WAITING
+###  Folder 2: WAITING
 
 - Processing: 0 / N PDFs (waiting for Folder 1 to finish)
 - Time per PDF: N/A (queue is paused)
@@ -176,10 +176,10 @@ Same data, different insights:
 Can add more folders anytime:
 ```bash
 # Add folder 3
-python scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdfs/new_batch --output-db output/combined_biohacking_all.sqlite
+python utils/scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdfs/new_batch --output-db output/combined_biohacking_all.sqlite
 
 # Add folder 4
-python scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdfs/another_batch --output-db output/combined_biohacking_all.sqlite
+python utils/scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdfs/another_batch --output-db output/combined_biohacking_all.sqlite
 ```
 
 ### 4. Deduplication
@@ -191,10 +191,10 @@ python scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdf
 
 ## Next Steps
 
-1. ✅ **Wait for Folder 1 to complete** (~20-30 min)
-2. ⏸️ **Run Folder 2 scrape** (manual or automatic)
-3. 📊 **Apply dual-lens export**
-4. 📈 **Analyze results**
+1.  **Wait for Folder 1 to complete** (~20-30 min)
+2.  **Run Folder 2 scrape** (manual or automatic)
+3.  **Apply dual-lens export**
+4.  **Analyze results**
 
 ---
 
@@ -202,7 +202,7 @@ python scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdf
 
 The scraper shows:
 ```text
-PDFs:   2%|█ | 1/65 [00:18<19:32, 18.32s/it]
+PDFs:   2%| | 1/65 [00:18<19:32, 18.32s/it]
 ```
 
 - `2%` = Progress percentage
@@ -213,6 +213,8 @@ PDFs:   2%|█ | 1/65 [00:18<19:32, 18.32s/it]
 
 ---
 
-## Status: 🔄 SCRAPING IN PROGRESS
+## Status:  SCRAPING IN PROGRESS
 
 Folder 1 is being processed. Please wait for completion before proceeding to Folder 2.
+
+

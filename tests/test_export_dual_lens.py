@@ -1,4 +1,4 @@
-from utils import export_dual_lens
+from utils.export import export_dual_lens
 
 class DummyScorer:
     def __init__(self, dual=True):
@@ -25,8 +25,10 @@ class DummyCon:
 
 
 def test_export_dual_lens_smoke(monkeypatch, tmp_path):
-    monkeypatch.setattr(export_dual_lens, "load_domain_config", lambda domain_id: {"name": "Test Domain", "overlays": {"overlay1": {}, "overlay2": {}}})
-    monkeypatch.setattr(export_dual_lens, "OverlayScorer", lambda config: DummyScorer())
+    import importlib
+    module = importlib.import_module("utils.export.export_dual_lens")
+    monkeypatch.setattr(module, "load_domain_config", lambda domain_id: {"name": "Test Domain", "overlays": {"overlay1": {}, "overlay2": {}}})
+    monkeypatch.setattr(module, "OverlayScorer", lambda config: DummyScorer())
 
     class DummySqlite3:
         @staticmethod
@@ -34,9 +36,10 @@ def test_export_dual_lens_smoke(monkeypatch, tmp_path):
             return DummyCon()
         Row = object
 
-    monkeypatch.setattr(export_dual_lens, "sqlite3", DummySqlite3)
+    import utils.export.aggregation
+    monkeypatch.setattr(utils.export.aggregation, "sqlite3", DummySqlite3)
     # Should not raise
-    export_dual_lens.export_dual_lens("fake.db", "test_domain", output_dir=str(tmp_path))
+    export_dual_lens("fake.db", "test_domain", output_dir=str(tmp_path))
 
     # Assert expected output files are created and non-empty
     output_files = list(tmp_path.glob("*"))

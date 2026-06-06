@@ -61,7 +61,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         outcome = "degraded"
     elif contains_any(s_l, ["reduced", "mitigated", "improved", "enhanced"]):
         outcome = "improved"
-    elif outcome == "neutral" and haz:
+    elif haz:
         outcome = "negative"
 
     score = 0

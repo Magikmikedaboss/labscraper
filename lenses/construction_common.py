@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -112,6 +113,10 @@ def infer_context_strength(sentence: str, *, has_numbers: Optional[bool] = None,
 def get_source_weight(source_type: Optional[str]) -> float:
     """Assign higher trust to more authoritative sources."""
     key = str(source_type or "research_paper").strip().lower()
+    if key not in SOURCE_WEIGHTS:
+        logging.getLogger(__name__).warning(
+            f"Unknown source_type '{source_type}' (normalized key: '{key}'); using default weight {SOURCE_WEIGHTS['research_paper']}"
+        )
     return SOURCE_WEIGHTS.get(key, SOURCE_WEIGHTS["research_paper"])
 
 
@@ -190,7 +195,7 @@ def build_lens_event(
     normalized_raw_outcome = (str(raw_outcome) if raw_outcome is not None else "").strip().lower()
     return LensEvent(
         event_type=event_type,
-        outcome=normalize_outcome(raw_outcome),
+        outcome=normalize_outcome(normalized_raw_outcome),
         confidence=confidence,
         tags=tags,
         context_strength=infer_context_strength(

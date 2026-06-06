@@ -35,6 +35,7 @@ class PeptideScraperUI:
         self.seeds_dir = Path("seeds")
         self.lenses_dir = Path("lenses")
         self.output_dir = Path("output")
+        self.default_input_dir = Path("data/documents") if Path("data/documents").exists() else Path("input/pdfs")
         
         # Data storage
         self.domains = {}
@@ -76,7 +77,7 @@ class PeptideScraperUI:
         
         # Input Directory
         ttk.Label(config_frame, text="Input PDFs:").grid(row=1, column=0, sticky=tk.W, padx=(0, 10), pady=(10, 0))
-        self.input_dir_var = tk.StringVar(value="input/pdfs")
+        self.input_dir_var = tk.StringVar(value=str(self.default_input_dir))
         self.input_dir_entry = ttk.Entry(config_frame, textvariable=self.input_dir_var, width=50)
         self.input_dir_entry.grid(row=1, column=1, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
         ttk.Button(config_frame, text="Browse", command=self.browse_input_dir).grid(row=1, column=3, sticky=tk.W, pady=(10, 0))
@@ -235,7 +236,7 @@ class PeptideScraperUI:
     
     def browse_input_dir(self):
         """Browse for input directory"""
-        directory = filedialog.askdirectory(initialdir="input/pdfs")
+        directory = filedialog.askdirectory(initialdir=self.input_dir_var.get() or str(self.default_input_dir))
         if directory:
             try:
                 validated = validate_directory(directory, must_exist=True)
@@ -349,9 +350,9 @@ class PeptideScraperUI:
                 messagebox.showwarning("Warning", "Please specify a database path")
                 return
             
-            # Run export script with selected domain
-            result = subprocess.run([sys.executable, "utils/export_dual_lens.py", 
-                                   str(db_path), domain_id], 
+            # Run dual-lens export script with selected domain
+            result = subprocess.run([sys.executable, "utils/export/export_dual_lens.py",
+                                   str(db_path), domain_id],
                                   capture_output=True, text=True)
             
             if result.returncode == 0:
@@ -368,10 +369,18 @@ class PeptideScraperUI:
     def run_rss_ingest(self):
         """Run RSS feed ingestion"""
         try:
-            # Run RSS ingest script
-            result = subprocess.run([sys.executable, "run_rss_ingest.py", 
-                                   "--feeds-config", str(self.config_dir / "feeds.json"),
-                                   "--db-path", str(self.db_var.get())], 
+            feeds_path = self.config_dir / "feeds.json"
+            db_path = self.db_var.get()
+
+            # Run RSS ingest script with UI-configured feeds and DB paths
+            result = subprocess.run([
+                sys.executable,
+                "run_rss_ingest.py",
+                "--feeds",
+                str(feeds_path),
+                "--db",
+                str(db_path),
+            ],
                                   capture_output=True, text=True)
             
             if result.returncode == 0:

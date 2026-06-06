@@ -1,351 +1,214 @@
-# 🧪 Testing Guide - Seed File System
+﻿# AXON Testing Guide
 
-## 📋 Simple Step-by-Step Instructions
+This guide describes the current testing workflow for AXON as a multi-domain research intelligence engine.
 
-### ✅ Step 1: Check Your Current Setup
+## Scope
 
-First, let's see what you have:
+This guide covers:
+1. Database initialization and schema checks
+2. PDF ingestion testing
+3. RSS discovery testing
+4. Entity extraction validation
+5. Event extraction validation
+6. Export validation
+7. Multi-domain testing
+8. Source provenance testing
 
-```bash
-# Open PowerShell in your project folder
-# You should be in: D:\myrepo\peptide-scraper
+## Prerequisites
 
-# Check if seed files exist
-ls seeds/
-
-# You should see:
-# - compounds.txt
-# - targets.txt
-# - models.txt
-# - stopwords.txt
-# - README.md
-```
-
----
-
-### ✅ Step 2: Clean Start (Recommended for Testing)
-
-**Why?** Starting fresh ensures you see the new seed system working without old data interfering.
+- Run commands from repository root: C:\projects\labscraper
+- Activate your virtual environment
+- Install dependencies:
 
 ```bash
-# Delete the old database (don't worry, we'll recreate it)
-Remove-Item output/peptide_intel.sqlite -ErrorAction SilentlyContinue
-
-# Delete old CSV exports
-Remove-Item output/*.csv -ErrorAction SilentlyContinue
-
-# Recreate the database with fresh schema
-python init_db.py
-```
-
-**Expected Output:**
-```
-✅ Database initialized: output\peptide_intel.sqlite
-   Created 10 tables
-```
-
----
-
-### ✅ Step 3: Test Seed File Loading
-
-Run the scraper to see if seed files load:
-
-```bash
-python scrape_pdfs.py
-```
-
-**Expected Output (First Few Lines):**
-```
-📋 Loaded seeds:
-   Compounds: 50
-   Targets: 70
-   Models: 100
-   Stopwords: 120
-
-PDFs: 100%|████████████████████| 13/13 [01:00<00:00,  4.62s/it]
-
-✅ Done!
-   Inserted: ~442 research events
-   Measurements: 0
-   Relationships: 0
-   DB: D:\myrepo\peptide-scraper\output\peptide_intel.sqlite
-```
-
-**✅ Success Indicators:**
-- You see "📋 Loaded seeds:" with counts
-- No errors about missing seed files
-- Scraper processes all 13 PDFs
-- Creates events in database
-
-**❌ If You See Errors:**
-- "Seed file not found" → Check that `seeds/` folder exists
-- "No PDFs found" → Check that `input_pdfs/` has PDF files
-- Python errors → Make sure you're in the right directory
-
----
-
-### ✅ Step 4: Export and Check Results
-
-```bash
-# Export data to CSV files
-python export_csv.py
-```
-
-**Expected Output:**
-```
-Exported 16 entities to output/candidates_export.csv
-Exported 442 events to output/events_export.csv
-Exported 0 measurements to output/measurements_export.csv
-Exported 0 relationships to output/relationships_export.csv
-
-Database Summary:
-==================
-Sources: 13
-Events: 442
-Entities: 16
-Event-Entity Links: 71
-Tags: 6
-```
-
----
-
-### ✅ Step 5: Verify Entity Extraction
-
-Check what entities were extracted:
-
-```bash
-# Quick check of entities
-python check_entity_types.py
-```
-
-**Expected Output:**
-```
-Total entities: 16
-
-Compounds: 5
-- LIRAGLUTIDE (6 events)
-- SEMAGLUTIDE (2 events)
-- ETELCALCETIDE (1 events)
-- LINACLOTIDE (1 events)
-- PLECANATIDE (1 events)
-
-Models: 4
-- SERUM (18 events)
-- HUMAN (16 events)
-- PLASMA (4 events)
-- MICE (1 events)
-
-Peptides: 3
-Stem Cells: 4
-```
-
-**✅ Success Indicators:**
-- You see compounds from `seeds/compounds.txt` (liraglutide, semaglutide, etc.)
-- You see models from `seeds/models.txt` (serum, human, plasma, mice)
-- Total entities: ~16 (may vary slightly)
-
----
-
-### ✅ Step 6: Test Adding a New Entity
-
-Let's test that you can add entities without editing Python code:
-
-```bash
-# Add a new compound to the seed file
-echo "ozempic" >> seeds/compounds.txt
-
-# Re-run scraper (it will load the new seed)
-python scrape_pdfs.py
-
-# Export again
-python export_csv.py
-
-# Check if "ozempic" was extracted
-python check_entity_types.py
-```
-
-**Expected Result:**
-- If "ozempic" appears in any of your PDFs, it will now be extracted
-- If not in PDFs, it won't appear (which is correct!)
-
----
-
-## 🔍 Troubleshooting
-
-### Problem: "Seed file not found"
-
-**Solution:**
-```bash
-# Check if seeds folder exists
-ls seeds/
-
-# If missing, create it:
-mkdir seeds -Force
-
-# Then create the seed files (see SEED_SYSTEM_IMPLEMENTED.md for contents)
-```
-
-### Problem: "No PDFs found"
-
-**Solution:**
-```bash
-# Check if input_pdfs folder has PDFs
-ls input_pdfs/
-
-# Should show 13 PDF files
-# If empty, add your PDF files to this folder
-```
-
-### Problem: "Module not found" errors
-
-**Solution:**
-```bash
-# Install required packages
 pip install -r requirements.txt
 ```
 
-### Problem: Database is locked
+## 1. Database Initialization
 
-**Solution:**
+Use a local test database for explicit schema-init tests:
+
 ```bash
-# Close any programs that might be using the database
-# Then delete and recreate:
-Remove-Item output/peptide_intel.sqlite -Force
-python init_db.py
-python scrape_pdfs.py
+python utils/init_db.py db/local.sqlite
 ```
 
----
+Important:
+- The explicit init script is guarded against direct initialization of db/runs.sqlite.
+- Production-style runs usually initialize schema through pipeline scripts.
 
-## 📊 What to Look For (Success Checklist)
+Verify expected tables exist:
 
-### ✅ Seed Loading
-- [ ] Scraper shows "📋 Loaded seeds:" with counts
-- [ ] Compounds: ~50
-- [ ] Targets: ~70
-- [ ] Models: ~100
-- [ ] Stopwords: ~120
-
-### ✅ Entity Extraction
-- [ ] Compounds extracted (5 expected: liraglutide, semaglutide, etc.)
-- [ ] Models extracted (4 expected: Serum, Human, Plasma, Mice)
-- [ ] Peptides extracted (3 expected)
-- [ ] Stem cells extracted (4 expected)
-- [ ] Total entities: ~16
-
-### ✅ CSV Exports
-- [ ] `candidates_export.csv` created (16 entities)
-- [ ] `events_export.csv` created (442 events)
-- [ ] Files can be opened in Excel
-- [ ] Entity names match seed file contents
-
-### ✅ Seed File Modifications
-- [ ] Can add new entities to seed files
-- [ ] Re-running scraper picks up new entities
-- [ ] No Python code editing required
-
----
-
-## 🎯 Quick Test Commands (Copy-Paste)
-
-### Full Clean Test
 ```bash
-# Clean everything
-Remove-Item output/peptide_intel.sqlite -ErrorAction SilentlyContinue
-Remove-Item output/*.csv -ErrorAction SilentlyContinue
-
-# Rebuild
-python init_db.py
-python scrape_pdfs.py
-python export_csv.py
-python check_entity_types.py
+python -c "import sqlite3; con=sqlite3.connect('db/local.sqlite'); cur=con.cursor(); print([r[0] for r in cur.execute(\"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\").fetchall()])"
 ```
 
-### Quick Re-run (Keep Database)
+## 2. PDF Ingestion Testing
+
+Single-domain ingestion:
+
 ```bash
-# Just re-run scraper and export
-python scrape_pdfs.py
-python export_csv.py
-python check_entity_types.py
+python utils/run_engine.py --domain construction_science --input-dir input/pdfs/construction_science --output-db db/local.sqlite
 ```
 
-### View Results in Excel
+Parallel ingestion:
+
 ```bash
-# Open CSV files
-start output/candidates_export.csv
-start output/events_export.csv
+python utils/scrape_pdfs_parallel.py --domain construction_science --input-dir input/pdfs/construction_science --output-db db/local.sqlite --workers 4
 ```
 
----
+Validation checks:
+- Command exits without traceback
+- Events are inserted into research_events
+- Entities are inserted and linked via event_entities
 
-## 🚀 Next Steps After Testing
+Quick DB sanity:
 
-Once testing is successful:
-
-1. **Review Results**
-   - Open `candidates_export.csv` in Excel
-   - Check if entities look correct
-   - Look for any false positives
-
-2. **Add Domain-Specific Entities**
-   - Edit `seeds/compounds.txt` to add compounds relevant to your research
-   - Edit `seeds/targets.txt` to add targets you care about
-   - Edit `seeds/models.txt` to add experimental models you use
-
-3. **Remove False Positives**
-   - If you see incorrect entities, add them to `seeds/stopwords.txt`
-   - Re-run scraper
-
-4. **Use the Data**
-   - Import CSVs into Excel for analysis
-   - Use database for queries
-   - Build a website (Next.js + TypeScript + Tailwind)
-
----
-
-## ❓ FAQ
-
-**Q: Do I need to delete the database every time?**
-A: No! Only delete it when:
-- Testing major changes
-- You want a completely fresh start
-- Database seems corrupted
-
-For normal use, just run `python scrape_pdfs.py` and it will update the existing database.
-
-**Q: What if I don't see any compounds extracted?**
-A: This is normal if your PDFs don't mention the compounds in `seeds/compounds.txt`. The seed system only extracts entities that:
-1. Are in the seed file
-2. Actually appear in your PDFs
-
-**Q: Can I have multiple seed files for different projects?**
-A: Yes! Future enhancement will support:
 ```bash
-python scrape_pdfs.py --domain peptide
-python scrape_pdfs.py --domain stem_cell
+python -c "import sqlite3; con=sqlite3.connect('db/local.sqlite'); cur=con.cursor(); print('events', cur.execute('select count(*) from research_events').fetchone()[0]); print('entities', cur.execute('select count(*) from entities').fetchone()[0])"
 ```
 
-**Q: How do I know if seed files are being used vs hardcoded lists?**
-A: Look for "📋 Loaded seeds:" in the output. If you see this, seed files are being used!
+## 3. RSS Discovery Testing
 
----
+Probe feed health:
 
-## 📞 Need Help?
+```bash
+python tools/test_feeds.py --config config/feeds.json --save-working
+```
 
-If you run into issues:
+Dry-run ingest (discovery only, no writes):
 
-1. Check the error message carefully
-2. Look at the "Troubleshooting" section above
-3. Make sure you're in the right directory: `D:\myrepo\peptide-scraper`
-4. Check that all files exist:
-   - `seeds/compounds.txt`
-   - `seeds/targets.txt`
-   - `seeds/models.txt`
-   - `seeds/stopwords.txt`
-   - `input_pdfs/*.pdf` (13 PDFs)
+```bash
+python run_rss_ingest.py --dry-run
+```
 
----
+Full ingest to RSS database:
 
-**Happy Testing! 🎉**
+```bash
+python run_rss_ingest.py
+```
 
-Remember: The seed file system is designed to be simple. If something seems complicated, it probably shouldn't be - let me know and we can simplify it!
+Validation checks:
+- Feed links are discovered
+- PDF links are resolved when available
+- Dry-run does not commit extracted records
+
+## 4. Entity Extraction Validation
+
+Run ingestion, then inspect entity distribution:
+
+```bash
+python utils/check_entity_types.py
+```
+
+What to validate:
+- Entity types align with selected domain
+- High-noise tokens are not dominating
+- Canonical names and variants are reasonable
+
+Do not rely on fixed counts. Counts vary with corpus, seeds, and extraction logic.
+
+## 5. Event Extraction Validation
+
+After ingestion, validate event quality:
+
+```bash
+python validate_db_results.py
+```
+
+What to validate:
+- event_type is populated for extracted events
+- confidence distribution is plausible
+- evidence snippets are non-empty and traceable
+
+Optional quick query:
+
+```bash
+python -c "import sqlite3; con=sqlite3.connect('db/local.sqlite'); cur=con.cursor(); print(cur.execute(\"select event_type, count(*) from research_events group by event_type order by 2 desc\").fetchmany(10))"
+```
+
+## 6. Export Validation
+
+Domain-aware export:
+
+```bash
+python utils/export_csv.py --domain construction_science
+```
+
+Dual-lens export:
+
+```bash
+python utils/export/export_dual_lens.py db/local.sqlite construction_science
+```
+
+Validate output files:
+
+```bash
+python utils/check_output_files.py
+```
+
+Expected locations:
+- exports/latest/<domain>/entities.csv
+- exports/entities_dual_lens_<domain>.csv
+- exports/events_dual_lens_<domain>.csv
+- exports/dual_lens_report_<domain>.txt
+
+## 7. Multi-Domain Testing
+
+Run at least two domains to confirm separation:
+
+```bash
+python utils/run_engine.py --domain construction_science --input-dir input/pdfs/construction_science --output-db db/local.sqlite
+python utils/run_engine.py --domain neuroscience_cognition --input-dir input/pdfs/neuroscience_cognition --output-db db/local.sqlite
+```
+
+Validate:
+- research_domain values are present and correct
+- exports generated per requested domain
+- no single-domain assumptions in outputs
+
+## 8. Source Provenance Testing
+
+AXON schema includes provenance tables:
+- sources
+- documents
+- chunks
+
+Validate linkage integrity:
+
+```bash
+python -c "import sqlite3; con=sqlite3.connect('db/local.sqlite'); cur=con.cursor(); print('sources', cur.execute('select count(*) from sources').fetchone()[0]); print('documents', cur.execute('select count(*) from documents').fetchone()[0]); print('chunks', cur.execute('select count(*) from chunks').fetchone()[0]); print('events_with_source', cur.execute('select count(*) from research_events where source_id is not null').fetchone()[0])"
+```
+
+## Recommended Regression Set
+
+Run before merges:
+
+```bash
+python -m ruff check .
+python -m pytest -q
+python tools/test_feeds.py --config config/feeds.json
+python run_rss_ingest.py --dry-run
+```
+
+## Troubleshooting
+
+No PDFs found:
+- Verify input path exists and contains .pdf files
+- Verify selected domain folder matches command path
+
+Schema/init errors:
+- Use db/local.sqlite for explicit init tests
+- Recreate test DB and rerun ingestion
+
+Export looks empty:
+- Confirm ingestion inserted events for target domain
+- Confirm export command domain matches ingested domain
+
+RSS finds few PDFs:
+- This is normal for some feeds
+- RSS is discovery-first; PDF availability depends on source pages
+
+## Legacy Guide
+
+The prior seed-system-focused guide has been preserved at:
+- LEGACY_SEED_SYSTEM_TESTING.md

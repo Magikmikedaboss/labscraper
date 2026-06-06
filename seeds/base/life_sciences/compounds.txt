@@ -18,8 +18,8 @@ linaclotide
 plecanatide
 
 # mtor inhibitors
-rapamycin
-sirolimus
+rapamycin  # synonym of sirolimus; both included for literature coverage
+sirolimus  # INN; synonym of rapamycin
 everolimus
 temsirolimus
 

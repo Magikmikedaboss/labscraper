@@ -1,8 +1,8 @@
-# Peptide Scraper UI Control Panel
+# AXON UI Control Panel
 
 ## Overview
 
-The UI Control Panel provides a graphical interface for managing and running the Peptide Scraper system. It allows users to easily configure domains, lenses, and processing options without needing to use command-line tools.
+The UI Control Panel provides a graphical interface for managing and running the AXON pipeline. It allows users to configure domains, lenses, and processing options without needing command-line tools.
 
 ## Features
 
@@ -19,7 +19,7 @@ The UI Control Panel provides a graphical interface for managing and running the
 ### Processing Controls
 - **PDF Processing**: Run the main scraper on PDF documents
 - **RSS Ingestion**: Process RSS feeds for new content
-- **Results Export**: Export processed data to various formats
+- **Results Export**: Run dual-lens export for the selected domain
 - **Progress Monitoring**: Real-time progress bars and status updates
 
 ### Configuration Management
@@ -30,8 +30,8 @@ The UI Control Panel provides a graphical interface for managing and running the
 ## Installation
 
 ### Prerequisites
-- Python 3.8 or higher
-- Existing Peptide Scraper installation
+- Python 3.10 or higher
+- Existing AXON repository checkout
 
 ### Dependencies
 The UI works with Python's standard library modules:
@@ -98,7 +98,7 @@ python ui_control_panel.py
 ## Configuration Files
 
 ### Domain Configuration
-Domains are loaded from `seeds/domains/` directory:
+Domains are loaded from `config/domains/` first, with `seeds/domains/` as a legacy fallback:
 - Each domain has a JSON configuration file
 - Defines domain-specific rules and preferences
 - Controls pattern emphasis and entity types
@@ -129,7 +129,7 @@ RSS feeds configured in `config/feeds.json`:
 ### Common Issues
 
 #### "Domain not found"
-- Ensure domain JSON files exist in `seeds/domains/`
+- Ensure domain JSON files exist in `config/domains/` (or `seeds/domains/` for legacy setups)
 - Check file format and required fields
 - Verify domain ID matches configuration
 
@@ -188,7 +188,7 @@ The UI provides detailed error messages for:
 ## Development
 
 ### Adding New Domains
-1. Create JSON configuration in `seeds/domains/`
+1. Create JSON configuration in `config/domains/`
 2. Define domain ID, name, and rules
 3. Restart UI to load new domain
 

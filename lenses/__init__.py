@@ -1,6 +1,6 @@
-"""Convenience helpers for the construction lens suite."""
 
 from __future__ import annotations
+import traceback
 import logging
 from typing import Iterable, List, Optional, Tuple, Dict, Union
 from .construction_building_physics_v1 import detect as detect_building_physics
@@ -8,6 +8,8 @@ from .construction_climate_v1 import detect as detect_climate
 from .construction_compliance_v1 import detect as detect_compliance
 from .construction_failure_v1 import detect as detect_failure
 from .construction_materials_v1 import detect as detect_materials
+
+"""Convenience helpers for the construction lens suite."""
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,8 @@ def detect_multi_lens(
     enabled_lenses: Optional[Iterable[str]] = None,
     raise_on_no_match: bool = False,
     return_errors: bool = False,
+    raise_on_detector_errors: bool = False,
+    warn_on_no_match: bool = False,
 ) -> Union[List[dict], Tuple[List[dict], Dict[str, str]]]:
     """
     Run all enabled construction lenses and return stacked results for one sentence.
@@ -36,12 +40,14 @@ def detect_multi_lens(
         enabled_lenses: List of lens names to use (default: all).
         raise_on_no_match: If True, raise if no results (even if no errors). Default: False.
         return_errors: If True, return (results, detector_errors) tuple instead of just results.
+        raise_on_detector_errors: If True, raise if any detector errors. Default: False.
 
     Returns:
         - If return_errors is False (default): List of stacked event dicts (List[dict]).
         - If return_errors is True: Tuple[List[dict], Dict[str, str]] where the second element is a dict of detector errors.
         If no results and no errors, returns [] (or ([], {}) if return_errors).
-        Raises RuntimeError only if detector_errors is non-empty or raise_on_no_match is True.
+        Raises RuntimeError only if detector_errors is non-empty and raise_on_detector_errors is True, or raise_on_no_match is True.
+        If warn_on_no_match is True, logs a warning when no detectors match; otherwise logs at debug level.
     """
     results: List[dict] = []
     if isinstance(enabled_lenses, str):
@@ -64,8 +70,10 @@ def detect_multi_lens(
         detector = LENS_REGISTRY[lens_name]
         try:
             event, entities = detector(sentence, source_type=source_type)
-        except Exception as e:
-            detector_errors[lens_name] = str(e)
+        except Exception:
+            tb = traceback.format_exc()
+            logger.error("Exception in detector '%s':\n%s", lens_name, tb)
+            detector_errors[lens_name] = tb
             continue
         # Only record as error if event is None and entities is not empty (unexpected),
         # or if there is an explicit error signal. Normal no-match (None, []) is not an error.
@@ -78,15 +86,20 @@ def detect_multi_lens(
         stacked["entities"] = entities
         results.append(stacked)
 
-
     if not results:
         if detector_errors:
-            raise RuntimeError(f"No detector produced results. Errors: {detector_errors}")
+            if raise_on_detector_errors:
+                raise RuntimeError(f"No detector produced results. Errors: {detector_errors}")
+            else:
+                logger.error("No detector produced results. Errors: %s", detector_errors)
         if raise_on_no_match:
             raise RuntimeError("No detector produced results (no match)")
         # If return_errors, return both (empty) results and errors
         if not return_errors:
-            logger.warning("No detectors matched and no errors reported.")
+            if warn_on_no_match:
+                logger.warning("No detectors matched and no errors reported.")
+            else:
+                logger.debug("No detectors matched and no errors reported.")
         return ([], detector_errors) if return_errors else []
 
     # If there are results and also detector_errors, log a warning for partial failures

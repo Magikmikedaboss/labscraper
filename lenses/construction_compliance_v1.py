@@ -54,10 +54,13 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
 
     conf = "high" if score >= 6 else "med" if score >= 3 else "low"
 
+
     tags = ["code_compliance"]
     if outcome == "successful":
         tags.append("pass")
     if outcome == "failed":
         tags.append("fail")
+    if outcome == "mixed":
+        tags.append("mixed")
 
     return build_lens_event("compliance", "code_compliance", outcome, conf, tags, sentence, source_type), dedupe_entities(entities)

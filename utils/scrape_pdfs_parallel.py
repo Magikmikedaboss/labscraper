@@ -1,9 +1,5 @@
-import random
-"""
-Parallel PDF Scraper - Process multiple PDFs simultaneously
-Uses multiprocessing to speed up scraping by 4-8x (depending on PDF size/IO)
-"""
 
+import random
 import multiprocessing as mp
 from multiprocessing import Pool
 import sqlite3
@@ -14,10 +10,10 @@ from pathlib import Path
 import pdfplumber
 from tqdm import tqdm
 from typing import List, Tuple
-
 import sys
-sys.path.insert(0, str(Path(__file__).parent))
+import time
 
+sys.path.insert(0, str(Path(__file__).parent))
 
 from utils.metadata_utils import extract_metadata
 from utils.text_utils import chunk_sentences, guess_stage, guess_section
@@ -35,6 +31,7 @@ from utils.event_classification import (
     ConfidenceInput,
 )
 from utils.db_utils import (
+    _db_has_all_tables,
     upsert_source,
     insert_document,
     insert_chunk,
@@ -46,7 +43,6 @@ from utils.db_utils import (
 )
 from utils.deduplication import normalize_event_key
 from utils.common import sha16, sha64
-import time
 
 process_logger = logging.getLogger("scrape_pdfs_parallel")
 
@@ -81,13 +77,15 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
             source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
             file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
 
+            # Track number of events inserted; partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
             events_count = 0
             seen_events = set()
 
             with pdfplumber.open(str(pdf_path)) as pdf:
                 metadata = extract_metadata(pdf_path, pdf)
-
-                upsert_source(con, source_id, pdf_path.name, metadata)
+                metadata.setdefault("domain", domain)
+                metadata.setdefault("publication_date", metadata.get("year"))
+                source_id = upsert_source(con, source_id, pdf_path.name, metadata)
                 doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
 
                 for page_idx, page in enumerate(pdf.pages, start=1):
@@ -96,7 +94,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         continue
 
                     section = guess_section(text.lower())
-                    chunk_id = insert_chunk(con, doc_id, page_idx, section, text, source_id)
+                    chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
 
                     for sent in chunk_sentences(text):
                         s_l = sent.lower()
@@ -196,26 +194,25 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                             insert_measurement(con, event_id, m)
 
                         events_count += 1
-            con.commit()
+                        # Periodically commit every 50 events for durability
+                        # Partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
+                        if events_count % 50 == 0:
+                            try:
+                                con.commit()
+                            except sqlite3.Error as commit_exc:
+                                con.rollback()
+                                return (pdf_path.name, events_count, False, f"Commit failed: {commit_exc}")
+            # Final commit after all events for this PDF
+            # Partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
+            try:
+                con.commit()
+            except sqlite3.Error as commit_exc:
+                con.rollback()
+                return (pdf_path.name, events_count, False, f"Final commit failed: {commit_exc}")
             return (pdf_path.name, events_count, True, "")
     except Exception as e:
         return (pdf_path.name, 0, False, str(e))
 
-
-def _db_has_all_tables(db_path: Path) -> bool:
-    """Check if all required tables exist in the DB."""
-    required_tables = {
-        'sources', 'documents', 'chunks', 'entities',
-        'research_events', 'event_entities', 'tags', 'event_tags',
-        'quantitative_measurements', 'entity_relationships'
-    }
-    try:
-        with sqlite3.connect(db_path, timeout=30.0) as con:
-            tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-            table_names = {t[0] for t in tables}
-            return required_tables.issubset(table_names)
-    except Exception:
-        return False
 
 def _ensure_db_schema(db_path: Path) -> None:
     """Ensure the database has the required schema initialized."""

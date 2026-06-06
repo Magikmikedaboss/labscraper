@@ -4,7 +4,6 @@ import json
 import sys
 
 
-import utils.db_utils as db_utils
 import tools.inspect_db as inspect_db_module
 import tools.test_feeds as test_feeds_module
 from tools.test_feeds import default_feeds
@@ -47,7 +46,7 @@ def test_test_feeds_main_uses_validated_config(tmp_path, monkeypatch):
     test_feeds_module.main()
 
     assert calls == [("https://example.com/feed.xml", "Example Feed", ["concrete"])]
-    saved_config = json.loads((tmp_path / "config" / "feeds.json").read_text(encoding="utf-8"))
+    saved_config = json.loads((tmp_path / "feeds_working.json").read_text(encoding="utf-8"))
     assert saved_config["feeds"][0]["url"] == "https://example.com/feed.xml"
 
 
@@ -97,6 +96,7 @@ def test_inspect_db_main_invokes_helpers(monkeypatch):
         fake_connect,
     )
     monkeypatch.setattr(inspect_db_module, "show_pdf_cache", lambda: calls.append("cache"))
+    import utils.db_utils as db_utils
     monkeypatch.setattr(db_utils, "show_recent_events", lambda conn, count: calls.append(("events", count)))
     monkeypatch.setattr(db_utils, "show_top_sources", lambda conn, count: calls.append(("sources", count)))
     monkeypatch.setattr(db_utils, "get_entity_distribution", lambda conn: calls.append("entities"))

@@ -6,7 +6,52 @@ from __future__ import annotations
 
 import sqlite3
 from functools import wraps
+import logging
 # ...existing imports...
+
+
+# ---------------------------------------------------------
+# IMPORTS AND SYMBOLS (moved above function definitions)
+# ---------------------------------------------------------
+import re
+import argparse
+import hashlib
+import json
+## Removed duplicate import of sqlite3
+import time
+from pathlib import Path
+from typing import Any
+import feedparser
+import pdfplumber
+import requests
+from urllib.parse import urlparse
+from utils.common import sha16
+from utils.text_utils import chunk_sentences, guess_stage, guess_section
+from utils.data_extractors import extract_quantitative_data
+from utils.entities import extract_entities
+from utils.event_classification import (
+    detect_method_tags,
+    detect_failure_reason,
+    detect_decision,
+    detect_outcome,
+    classify_event_type,
+    evidence_strength,
+    confidence_score,
+    FAILURE_PHRASES,
+    DECISION_PHRASES,
+    METHOD_TAGS,
+    ConfidenceInput,
+)
+from utils.db_utils import (
+    upsert_source,
+    insert_document,
+    insert_chunk,
+    insert_event,
+    link_event_entity,
+    link_event_tag,
+    insert_measurement,
+    upsert_entity,
+)
 
 # ---------------------------------------------------------
 # DB ERROR HANDLING DECORATOR
@@ -45,7 +90,7 @@ def _link_event_tag(con, event_id, tag):
 def _insert_measurement(con, event_id, m):
     insert_measurement(con, event_id, m)
 
-def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, i, sent, section, seen):
+def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sent, section, seen):
     s_l = sent.lower()
     if not has_signal(s_l):
         return False
@@ -72,7 +117,7 @@ def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, i, 
     # SMART FILTER: Only keep if at least one signal
     if not (entities or tags or measurements):
         return False
-    key = normalize_event_key(event_type, entities, i, sent)
+    key = normalize_event_key(event_type, entities, page_number, sent)
     if key in seen:
         return False
     seen.add(key)
@@ -81,7 +126,7 @@ def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, i, 
         source_id=source_id,
         doc_id=doc_id,
         chunk_id=chunk_id,
-        page_number=i,
+        page_number=page_number,
         domain=domain,
         event_type=event_type,
         study_stage=stage,
@@ -102,44 +147,6 @@ def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, i, 
     for m in measurements:
         _insert_measurement(con, event_id, m)
     return True
-import re
-import argparse
-import hashlib
-import json
-import sqlite3
-import time
-from pathlib import Path
-from typing import Any
-import feedparser
-import pdfplumber
-import requests
-from urllib.parse import urlparse
-from utils.common import sha16, sha64
-from utils.text_utils import chunk_sentences, guess_stage, guess_section
-from utils.data_extractors import extract_quantitative_data
-from utils.entities import extract_entities
-from utils.event_classification import (
-    detect_method_tags,
-    detect_failure_reason,
-    detect_decision,
-    detect_outcome,
-    classify_event_type,
-    evidence_strength,
-    confidence_score,
-    FAILURE_PHRASES,
-    DECISION_PHRASES,
-    METHOD_TAGS,
-    ConfidenceInput,
-)
-from utils.db_utils import (
-    insert_document,
-    insert_chunk,
-    insert_event,
-    link_event_entity,
-    link_event_tag,
-    insert_measurement,
-    upsert_entity,
-)
 
 DOC_LINK_REGEX = re.compile(r"https?://[^\s<>\"']+\.pdf(?:\?[^\s<>\"']*)?", re.IGNORECASE)
 
@@ -149,7 +156,9 @@ DOC_LINK_REGEX = re.compile(r"https?://[^\s<>\"']+\.pdf(?:\?[^\s<>\"']*)?", re.I
 PROJECT_ROOT = Path(__file__).resolve().parent
 FEEDS_CONFIG = PROJECT_ROOT / "config/feeds.json"
 DB_PATH = PROJECT_ROOT / "db/rss.sqlite"
-RSS_CACHE_DIR = PROJECT_ROOT / "cache/rss"
+DATA_ROOT = PROJECT_ROOT / "data"
+RSS_CACHE_DIR = (DATA_ROOT / "cache" / "rss") if DATA_ROOT.exists() else (PROJECT_ROOT / "cache" / "rss")
+SEEDS_DIR = PROJECT_ROOT / "input" / "seeds"  # Add SEEDS_DIR definition for entity extraction consistency
 
 # ---------------------------------------------------------
 # IMPORT PIPELINE
@@ -297,42 +306,60 @@ def get_pdf_links_from_feed(feed_url: str):
 # DOWNLOAD
 # ---------------------------------------------------------
 def download_pdf(url: str, cache_dir: Path):
-    import logging
     from requests.exceptions import Timeout, ConnectionError, HTTPError
-    cache_dir.mkdir(parents=True, exist_ok=True)
 
+    cache_dir.mkdir(parents=True, exist_ok=True)
     file_path = cache_dir / f"{hashlib.sha256(url.encode()).hexdigest()}.pdf"
 
     if file_path.exists():
         return file_path
 
-    headers = {'User-Agent': 'LabScraper/1.0 (+https://github.com/labscraper/labscraper; contact: maintainer@labscraper.org)'}
+    headers = {
+        "User-Agent": "LabScraper/1.0 (+https://github.com/labscraper/labscraper)"
+    }
+
     max_attempts = 3
     backoff = 1
+
     for attempt in range(1, max_attempts + 1):
         try:
             r = requests.get(url, timeout=20, headers=headers)
             r.raise_for_status()
             file_path.write_bytes(r.content)
             return file_path
+
         except (Timeout, ConnectionError) as e:
             if attempt == max_attempts:
                 logging.error(f"❌ Download failed after {attempt} attempts: {e}")
                 return None
-            logging.warning(f"Download attempt {attempt} failed (network): {e}. Retrying in {backoff}s...")
+
+            logging.warning(
+                f"Network error (attempt {attempt}): {e}. Retrying in {backoff}s..."
+            )
             time.sleep(backoff)
             backoff *= 2
+
         except HTTPError as e:
-            if r.status_code >= 500 and attempt < max_attempts:
-                logging.warning(f"Download attempt {attempt} failed (HTTP {r.status_code}): {e}. Retrying in {backoff}s...")
+            status_code = getattr(e.response, "status_code", "unknown")
+
+            if status_code != "unknown" and status_code >= 500 and attempt < max_attempts:
+                logging.warning(
+                    f"Server error {status_code} (attempt {attempt}). Retrying in {backoff}s..."
+                )
                 time.sleep(backoff)
                 backoff *= 2
                 continue
-            logging.error(f"❌ Download failed after {attempt} attempts (HTTP {r.status_code}): {e}")
+
+            logging.error(
+                f"❌ HTTP error after {attempt} attempts ({status_code}): {e}"
+            )
             return None
+
         except Exception as e:
-            logging.error(f"❌ Download failed after {attempt} attempts (unexpected error): {e}")
-            return None
+            logging.error(f"❌ Unexpected error after {attempt} attempts: {e}")
+            if attempt == max_attempts:
+                return None
+            continue
 
 # ---------------------------------------------------------
 # PROCESS
@@ -348,7 +375,13 @@ def is_valid_pdf(path):
     except Exception:
         return False
 
-def process_pdf(pdf_path: Path, domain: str, db_path: Path):
+def process_pdf(
+    pdf_path: Path,
+    domain: str,
+    db_path: Path,
+    source_url: str | None = None,
+    source_title: str | None = None,
+):
     events = 0
     seen = set()
 
@@ -374,25 +407,38 @@ def process_pdf(pdf_path: Path, domain: str, db_path: Path):
             print(f"❌ Database schema is missing required tables: {', '.join(missing_tables)}.\n       Please run ensure_db_schema or check your schema migrations.")
             return 0
         try:
-            # Use a content-based hash for source_id (fast version)
-            file_bytes = pdf_path.read_bytes()
-            source_id = sha16(file_bytes)
-            # file_hash = sha64(file_bytes)            # metadata = extract_metadata(str(pdf_path))  # Uncomment if needed
+            # Stream file hashing to avoid high memory use for large PDFs.
+            h = hashlib.sha256()
+            with open(pdf_path, "rb") as f:
+                for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                    h.update(chunk)
+            file_hash = h.hexdigest()
+            source_id = file_hash[:16]
+            metadata = {
+                "title": source_title or pdf_path.stem,
+                "url": source_url,
+                "domain": domain,
+            }
+            if source_url:
+                doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Z0-9<>%+,]+", source_url, re.I)
+                if doi_match:
+                    metadata["doi"] = doi_match.group(0).rstrip(".,;:")
+            source_id = upsert_source(con, source_id, str(pdf_path), metadata)
 
             with pdfplumber.open(str(pdf_path)) as pdf:
                 try:
-                    doc_id = insert_document(con, source_id, str(pdf_path), sha64(file_bytes))
+                    doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                     for i, page in enumerate(pdf.pages, start=1):
                         text = page.extract_text() or ""
                         if not text.strip():
                             continue
 
                         section = guess_section(text.lower())
-                        chunk_id = insert_chunk(con, doc_id, i, section, text, source_id)
+                        chunk_id = insert_chunk(con, source_id, doc_id, i, section, text)
 
                         for sent in chunk_sentences(text):
                             added = _process_sentence(
-                                con, source_id, doc_id, chunk_id, i, domain, i, sent, section, seen
+                                con, source_id, doc_id, chunk_id, i, domain, sent, section, seen
                             )
                             if added:
                                 events += 1
@@ -404,8 +450,6 @@ def process_pdf(pdf_path: Path, domain: str, db_path: Path):
         except Exception as e:
             print(f"❌ Failed to process PDF {pdf_path}: {e}")
             return 0
-    import gc
-    gc.collect()
     return events
 
 # ---------------------------------------------------------
@@ -414,15 +458,20 @@ def process_pdf(pdf_path: Path, domain: str, db_path: Path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--feeds", default=str(FEEDS_CONFIG), help="Path to feeds.json")
+    parser.add_argument("--db", default=str(DB_PATH), help="Path to SQLite database")
     args = parser.parse_args()
 
+    feeds_config_path = Path(args.feeds)
+    db_path = Path(args.db)
 
-    ensure_db_schema(DB_PATH)
+
+    ensure_db_schema(db_path)
 
     try:
-        feeds = load_feeds_config(FEEDS_CONFIG)
+        feeds = load_feeds_config(feeds_config_path)
     except FileNotFoundError:
-        print(f"❌ Feeds config file not found: {FEEDS_CONFIG}")
+        print(f"❌ Feeds config file not found: {feeds_config_path}")
         feeds = {"feeds": []}
     except RuntimeError as e:
         print(f"❌ Error loading feeds config: {e}")
@@ -455,7 +504,13 @@ def main():
                 print("⚠️ Skipping invalid PDF")
                 continue
 
-            count = process_pdf(pdf, feed.get("domain", "methods_tooling"), DB_PATH)
+            count = process_pdf(
+                pdf,
+                feed.get("domain", "methods_tooling"),
+                db_path,
+                source_url=item.get("url"),
+                source_title=item.get("title"),
+            )
             print(f"   ✅ {count} events")
 
             time.sleep(1)

@@ -46,7 +46,6 @@ class FakeConn:
         return self
 
 
-FakeCon = FakeConn
 
 
 def fake_connect(*a, **kw):
@@ -64,7 +63,7 @@ def test_main_no_pdfs_found(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr("builtins.input", lambda _: "n")
 
     # Patch sqlite3.connect to avoid real DB work
-    monkeypatch.setattr(scrape_all_pdfs_recursive.sqlite3, "connect", lambda *a, **kw: FakeCon())
+    monkeypatch.setattr(scrape_all_pdfs_recursive.sqlite3, "connect", lambda *a, **kw: FakeConn())
 
     # Run main and capture output
     scrape_all_pdfs_recursive.main()
@@ -79,7 +78,7 @@ def test_main_user_cancels(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(sys, "argv", test_args)
     monkeypatch.setattr(scrape_all_pdfs_recursive, "find_all_pdfs", lambda dirs: [tmp_path/"a.pdf"])
     monkeypatch.setattr("builtins.input", lambda _: "n")
-    monkeypatch.setattr(scrape_all_pdfs_recursive.sqlite3, "connect", lambda *a, **kw: FakeCon())
+    monkeypatch.setattr(scrape_all_pdfs_recursive.sqlite3, "connect", lambda *a, **kw: FakeConn())
     scrape_all_pdfs_recursive.main()
     out = capsys.readouterr().out
     assert "Cancelled" in out
@@ -91,21 +90,17 @@ def test_main_db_init(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(sys, "argv", test_args)
     monkeypatch.setattr(scrape_all_pdfs_recursive, "find_all_pdfs", lambda dirs: [tmp_path/"a.pdf"])
     monkeypatch.setattr("builtins.input", lambda _: "y")
-    import pathlib
-    PathBase = type(pathlib.Path())
-    class PathStub(PathBase):
-        def exists(self):
-            s = str(self)
-            if "test.sqlite" in s or "schema" in s:
-                return False
-            return super().exists()
-        def read_text(self, encoding=None):
-            s = str(self)
-            if "schema" in s:
-                return ""
-            return super().read_text(encoding=encoding)
-    monkeypatch.setattr(scrape_all_pdfs_recursive, "Path", PathStub)
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: False)
+    monkeypatch.setattr("pathlib.Path.read_text", lambda self, encoding=None: "" if "schema" in str(self) else "file contents")
     monkeypatch.setattr(scrape_all_pdfs_recursive.sqlite3, "connect", fake_connect)
+    # Patch Pool to a dummy context manager that runs sequentially
+    class DummyPool:
+        def __init__(self, *args, **kwargs): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def imap_unordered(self, func, iterable):
+            return map(func, iterable)
+    monkeypatch.setattr(scrape_all_pdfs_recursive, "Pool", DummyPool)
     scrape_all_pdfs_recursive.main()
     out = capsys.readouterr().out
     assert "Schema file not found" in out or "Initializing database schema" in out
@@ -143,7 +138,7 @@ def test_main_parallel_and_db_stats(monkeypatch, tmp_path, capsys):
         "COUNT(DISTINCT entity_id) FROM entities": (7,),
         "COUNT(DISTINCT source_id) FROM sources": (3,)
     }
-    monkeypatch.setattr(scrape_all_pdfs_recursive.sqlite3, "connect", lambda *a, **kw: FakeCon(response_map=response_map))
+    monkeypatch.setattr(scrape_all_pdfs_recursive.sqlite3, "connect", lambda *a, **kw: FakeConn(response_map=response_map))
     # Patch Pool and tqdm to avoid real parallelism
     class FakePool:
         def __enter__(self): return self
@@ -155,8 +150,6 @@ def test_main_parallel_and_db_stats(monkeypatch, tmp_path, capsys):
             ])
     monkeypatch.setattr(scrape_all_pdfs_recursive, "Pool", lambda processes: FakePool())
     monkeypatch.setattr(scrape_all_pdfs_recursive, "tqdm", lambda x, **kw: x)
-    # Patch process_single_pdf
-    monkeypatch.setattr(scrape_all_pdfs_recursive, "process_single_pdf", lambda args: (args[0], 10, True, None))
     scrape_all_pdfs_recursive.main()
     out = capsys.readouterr().out
     assert "SCRAPING COMPLETE" in out

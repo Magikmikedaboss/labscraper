@@ -1,12 +1,33 @@
-"""
-Analytics and output utilities for export pipeline
-"""
+"""Analytics and output utilities for export pipeline"""
 import json
+import logging
+import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple, Any, Optional
-from utils.entity_utils import load_overlay_aliases_safe
+from typing import Tuple, Dict, Any, Optional
 from utils.process_words import PROCESS_WORDS_TO_DEMOTE
+from utils.entity_normalizer import load_normalization_map, normalize_entity
+from utils.entity_utils import load_overlay_aliases_safe
+
+def get_overlay_version(domain) -> str:
+    """Resolve overlay version from domain object, checking multiple sources in order."""
+    if not domain:
+        return "v1"
+    # Try direct attribute
+    version = getattr(domain, 'overlay_version', None)
+    if version:
+        return version
+    # Try metadata dict if present
+    if hasattr(domain, 'metadata') and isinstance(domain.metadata, dict):
+        version = domain.metadata.get('overlay_version')
+        if version:
+            return version
+    # Try domain_profile_version
+    version = getattr(domain, 'domain_profile_version', None)
+    if version:
+        return version
+    return "v1"
 
 def _ensure_set(value):
     if value is None:
@@ -18,10 +39,13 @@ def _ensure_set(value):
 def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[Tuple[str, str], Dict[str, Any]], 
                   domain_id: Optional[str] = None, output_dir: Path = Path("output"), suffix: str = "") -> None:
     """Write run metadata for reproducibility"""
-    from utils.entity_normalizer import load_normalization_map, normalize_entity
     overlay_aliases = load_overlay_aliases_safe(domain_id) if domain_id else {}
     overlay_aliases_count = len(overlay_aliases)
-    norm_map = load_normalization_map()
+    try:
+        norm_map = load_normalization_map()
+    except ValueError as e:
+        norm_map = {}
+        logging.warning("Failed to load normalization map; proceeding with empty map: %s", e)
     normalized_entities = {}
     for (etype, ename), data in canonical_entities.items():
         norm_e = normalize_entity({"entity_type": etype, "entity_name": ename}, norm_map, overlay_aliases)
@@ -52,11 +76,12 @@ def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[
     # Use get_domain_info to get domain_name and overlay_id
     domain_name, overlay_id = get_domain_info(domain_id)
     now = datetime.now()
+
     meta = {
         "run_id": now.strftime("%Y%m%d_%H%M%S"),
         "engine_version": "v5_domain_aware",
         "timestamp": now.isoformat(),
-        "seeds_version": "2026-01-22",
+        "seeds_version": resolve_seeds_version(),
         "domain_id": domain_id,
         "domain_name": domain_name,
         "overlay_id": overlay_id,
@@ -91,17 +116,57 @@ def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[
         "process_words_demoted": list(PROCESS_WORDS_TO_DEMOTE),
         "confidence_boost_rule": "Domain-specific: construction_science uses (material|system|failure_mode|environment|hazard) + assay + model_context; biomedical domains use (compound|target|stem_cell) + assay + model_context"
     }
-    # Keep exports under an "output" folder for consistency with tests and tooling.
-    target_dir = output_dir / "output" if output_dir.name != "output" else output_dir
+    target_dir = output_dir
     target_dir.mkdir(parents=True, exist_ok=True)
     meta_path = target_dir / f"run_meta{suffix}.json"
+
+    def convert_sets(obj):
+        if isinstance(obj, dict):
+            return {k: convert_sets(v) for k, v in obj.items()}
+        if isinstance(obj, set):
+            return sorted(obj)
+        if isinstance(obj, list):
+            return [convert_sets(v) for v in obj]
+        return obj
+
     with open(meta_path, 'w', encoding='utf-8') as f:
-        json.dump(meta, f, indent=2)
+        json.dump(convert_sets(meta), f, indent=2)
     print(f"✅ Wrote run metadata: {meta_path}")
 
-def get_domain_info(domain_id: str = None) -> Tuple[str, Optional[str]]:
+# Module-level, testable seeds version resolver
+def resolve_seeds_version(run_cmd=None):
+    """
+    Resolve the SEEDS version string from environment, config, or git.
+    run_cmd: Optional callable for running the git command (for test injection).
+    """
+    env_version = os.environ.get("SEEDS_VERSION")
+    if env_version:
+        return env_version
+    # 2. Config fallback (add here if you have a config module)
+    # try:
+    #     import config
+    #     if hasattr(config, "SEEDS_VERSION"):
+    #         return config.SEEDS_VERSION
+    # except ImportError:
+    #     pass
+    # 3. Git tag/commit fallback
+    if run_cmd is None:
+        run_cmd = subprocess.check_output
+    try:
+        version = run_cmd([
+            "git", "describe", "--tags", "--always"
+        ], stderr=subprocess.DEVNULL, text=True, timeout=5).strip()
+        if version:
+            return version
+    except subprocess.TimeoutExpired:
+        # Optionally log timeout here
+        pass
+    except Exception:
+        pass
+    return "unknown"
+
+def get_domain_info(domain_id: Optional[str] = None) -> Tuple[str, Optional[str]]:
     from utils.axon_domains import get_domain_by_id
     domain = get_domain_by_id(domain_id) if domain_id else None
     domain_name = domain.name if domain else "All Domains"
-    overlay_id = f"{domain_id}_v1" if domain_id else None
-    return domain_name, overlay_id
+    return domain_name, getattr(domain, 'overlay_id', None)

@@ -1,9 +1,15 @@
 """
 Initialize the main db.sqlite database using the schema.sql file.
 
-Note: This script does NOT enable PRAGMA foreign_keys by default. Downstream callers should use the provided
-get_connection_with_foreign_keys(db_path) helper to obtain a connection with foreign key enforcement enabled.
+Foreign key enforcement:
+- The main() function in this module enables PRAGMA foreign_keys when initializing the database from schema.sql.
+- For all other database usage, downstream callers should use get_connection_with_foreign_keys(db_path) to obtain a connection with foreign key enforcement enabled.
 """
+
+import sqlite3
+from pathlib import Path
+
+
 def get_connection_with_foreign_keys(db_path):
     """
     Return a sqlite3.Connection to db_path with PRAGMA foreign_keys enabled.
@@ -13,8 +19,6 @@ def get_connection_with_foreign_keys(db_path):
     con.execute("PRAGMA foreign_keys = ON")
     return con
 
-import sqlite3
-from pathlib import Path
 
 def main(db_path="db.sqlite"):
     # Always use the canonical root-level schema.sql
@@ -22,7 +26,7 @@ def main(db_path="db.sqlite"):
     canonical_db_path = (project_root / "db" / "runs.sqlite").resolve()
     db_path_resolved = Path(db_path).resolve()
     if db_path_resolved == canonical_db_path:
-        raise ValueError(f"Refusing to initialize the canonical root DB at {canonical_db_path}. Choose a different path or modify this guardrail if intentional.")
+        raise RuntimeError(f"Refusing to initialize the canonical root DB at {canonical_db_path}. Choose a different path or modify this guardrail if intentional.")
     schema_path = project_root / "schema.sql"
     if not schema_path.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")

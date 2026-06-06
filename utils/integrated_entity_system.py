@@ -46,7 +46,8 @@ class IntegratedEntitySystem:
             'total_extractions': 0,
             'fallback_used': 0,
             'coverage_improvements': [],
-            'confidence_scores': []
+            'confidence_scores': [],
+            'entity_type_counts': defaultdict(int),
         }
     
     def extract_entities(self, text: str, title: str = "") -> List[Dict]:
@@ -81,6 +82,8 @@ class IntegratedEntitySystem:
         self.stats['total_extractions'] += 1
         self.stats['coverage_improvements'].append(coverage_stats.get('coverage_improvement', 0))
         self.stats['confidence_scores'].extend([e['confidence'] for e in final_entities])
+        for entity in final_entities:
+            self.stats['entity_type_counts'][entity.get('entity_type', 'unknown')] += 1
         
         return final_entities
     
@@ -172,15 +175,17 @@ class IntegratedEntitySystem:
     
     def _get_type_coverage_breakdown(self) -> Dict:
         """Get coverage breakdown by entity type"""
-        # TODO: Implement actual coverage tracking by entity type
-        # Currently returns placeholder structure - do not rely on these values
+        type_counts = dict(self.stats.get('entity_type_counts', {}))
+        total = sum(type_counts.values())
+        if total == 0:
+            return {}
+
         return {
-            'material': {'count': 0, 'coverage': 0},
-            'system': {'count': 0, 'coverage': 0},
-            'environment': {'count': 0, 'coverage': 0},
-            'compound': {'count': 0, 'coverage': 0},
-            'target': {'count': 0, 'coverage': 0},
-            'assay': {'count': 0, 'coverage': 0}
+            entity_type: {
+                'count': count,
+                'coverage': round((count / total) * 100, 2),
+            }
+            for entity_type, count in sorted(type_counts.items(), key=lambda item: item[1], reverse=True)
         }
 
     def validate_entity_quality(self, entities: List[Dict]) -> Dict:

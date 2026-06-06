@@ -1,6 +1,6 @@
-
 from utils import common, text_utils, event_classification, data_extractors
 from utils.event_classification import ConfidenceInput
+
 
 def test_sha16_and_sha64():
     s = "test string"
@@ -93,5 +93,5 @@ def test_suggested_keep():
 def test_extract_quantitative_data():
     s = "IC50 was 50nm. Half-life was 2 hours."
     results = data_extractors.extract_quantitative_data(s)
-    assert any(r["measurement_type"] == "ic50" and r["value"] == 50 for r in results)
-    assert any(r["measurement_type"] == "half_life" and r["value"] == 2 for r in results)
+    assert any(r["measurement_type"] == "ic50" and float(r["value"]) == 50 for r in results)
+    assert any(r["measurement_type"] == "half_life" and float(r["value"]) == 2 for r in results)

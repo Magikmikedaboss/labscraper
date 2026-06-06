@@ -1,0 +1,217 @@
+{
+  "run_id": "20260417_202631",
+  "engine_version": "construction_science_export_v1",
+  "timestamp": "2026-04-17T20:26:31.565629",
+  "database": "db/rss.sqlite",
+  "domain": "construction_science",
+  "counts": {
+    "total_events": 39215,
+    "total_entities": 116,
+    "total_relationships": 12783,
+    "total_sources": 0,
+    "entity_types": {
+      "environment": 19,
+      "failure_mode": 36,
+      "test_method": 20,
+      "system": 16,
+      "hazard": 7,
+      "material": 18
+    }
+  },
+  "entity_type_breakdown": {
+    "environment": 19,
+    "failure_mode": 36,
+    "test_method": 20,
+    "system": 16,
+    "hazard": 7,
+    "material": 18
+  },
+  "date_range": {
+    "earliest_event": "2026-04-18T02:07:27Z",
+    "latest_event": "2026-04-18T03:08:03Z"
+  },
+  "top_entities": [
+    {
+      "name": "TEMPERATURE",
+      "type": "environment",
+      "event_count": 1588,
+      "paper_count": 48
+    },
+    {
+      "name": "FAILURE MODE",
+      "type": "failure_mode",
+      "event_count": 1512,
+      "paper_count": 56
+    },
+    {
+      "name": "HUMIDITY",
+      "type": "environment",
+      "event_count": 921,
+      "paper_count": 3
+    },
+    {
+      "name": "THERMAL ANALYSIS",
+      "type": "test_method",
+      "event_count": 905,
+      "paper_count": 53
+    },
+    {
+      "name": "INSULATION SYSTEM",
+      "type": "system",
+      "event_count": 761,
+      "paper_count": 58
+    },
+    {
+      "name": "RAIN",
+      "type": "environment",
+      "event_count": 701,
+      "paper_count": 49
+    },
+    {
+      "name": "THERMAL CYCLING",
+      "type": "environment",
+      "event_count": 622,
+      "paper_count": 44
+    },
+    {
+      "name": "THERMAL SHOCK",
+      "type": "environment",
+      "event_count": 621,
+      "paper_count": 45
+    },
+    {
+      "name": "STUD",
+      "type": "system",
+      "event_count": 430,
+      "paper_count": 56
+    },
+    {
+      "name": "YIELD STRENGTH",
+      "type": "test_method",
+      "event_count": 295,
+      "paper_count": 48
+    },
+    {
+      "name": "CHEMICAL ATTACK",
+      "type": "hazard",
+      "event_count": 288,
+      "paper_count": 37
+    },
+    {
+      "name": "LOAD TEST",
+      "type": "test_method",
+      "event_count": 278,
+      "paper_count": 43
+    },
+    {
+      "name": "STRESS TEST",
+      "type": "test_method",
+      "event_count": 270,
+      "paper_count": 43
+    },
+    {
+      "name": "TENSILE TEST",
+      "type": "test_method",
+      "event_count": 235,
+      "paper_count": 43
+    },
+    {
+      "name": "BEAM",
+      "type": "system",
+      "event_count": 228,
+      "paper_count": 29
+    },
+    {
+      "name": "FATIGUE TEST",
+      "type": "test_method",
+      "event_count": 214,
+      "paper_count": 40
+    },
+    {
+      "name": "CREEP TEST",
+      "type": "test_method",
+      "event_count": 210,
+      "paper_count": 40
+    },
+    {
+      "name": "POLYMER",
+      "type": "material",
+      "event_count": 171,
+      "paper_count": 14
+    },
+    {
+      "name": "ULTIMATE STRENGTH",
+      "type": "test_method",
+      "event_count": 155,
+      "paper_count": 36
+    },
+    {
+      "name": "PANEL",
+      "type": "system",
+      "event_count": 146,
+      "paper_count": 27
+    }
+  ],
+  "top_events": [
+    {
+      "event_id": "f8eff94e217145dd",
+      "type": "efficacy_result",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "75bed24f40ce5080",
+      "type": "efficacy_result",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "55aa536f2527c6e5",
+      "type": "efficacy_result",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "5a28da4b0cdbcd1d",
+      "type": "environmental_stress",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "c2ca8cb64f711071",
+      "type": "load_event",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "53dd9693398cbac6",
+      "type": "load_event",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "9e59e2f7d4c7e7e0",
+      "type": "efficacy_result",
+      "confidence": "med",
+      "outcome": "unknown"
+    },
+    {
+      "event_id": "f5f37c3cfe7057e5",
+      "type": "load_event",
+      "confidence": "med",
+      "outcome": "positive"
+    },
+    {
+      "event_id": "017248bca77a5715",
+      "type": "load_event",
+      "confidence": "med",
+      "outcome": "positive"
+    },
+    {
+      "event_id": "d2744664b3a60d4b",
+      "type": "efficacy_result",
+      "confidence": "med",
+      "outcome": "unknown"
+    }
+  ]
+}

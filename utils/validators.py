@@ -118,19 +118,27 @@ def validate_feed_entry(feed: Dict[str, Any], index: Optional[int] = None) -> Di
     for optional_key in ("keywords", "notes"):
         if optional_key in feed:
             value = feed[optional_key]
+            feed_name = feed.get('name', f'<unknown#{index}>' if index is not None else '<unknown>')
             if optional_key == "keywords":
                 # Accept only list/tuple of strings
-                if isinstance(value, (list, tuple)) and all(isinstance(x, str) for x in value):
-                    validated[optional_key] = list(value)
+                if not isinstance(value, (list, tuple)):
+                    msg = f"{prefix}Feed '{feed_name}' has invalid type for 'keywords': {type(value).__name__}"
+                    raise ValidationError(msg)
+                if not all(isinstance(x, str) for x in value):
+                    bad_types = [type(x).__name__ for x in value if not isinstance(x, str)]
+                    msg = f"{prefix}Feed '{feed_name}' has non-string elements in 'keywords': {bad_types}"
+                    raise ValidationError(msg)
+                validated[optional_key] = list(value)
             elif optional_key == "notes":
                 # Accept only str or None
-                if value is None or isinstance(value, str):
-                    validated[optional_key] = value
+                if value is not None and not isinstance(value, str):
+                    msg = f"{prefix}Feed '{feed_name}' has invalid type for 'notes': {type(value).__name__}"
+                    raise ValidationError(msg)
+                validated[optional_key] = value
 
     return validated
 
 
-from typing import Dict
 
 def validate_feed_config(config: Any) -> Dict[str, Any]:
     """Validate the structure of an RSS feed configuration payload."""

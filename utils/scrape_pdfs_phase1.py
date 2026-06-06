@@ -22,8 +22,8 @@ def confidence_score_phase1(has_entity: bool, method_tags: list[str], failure_re
         )
     )
 
-def extract_all_entities(sentence: str, title: str, domain: str) -> list[dict]:
-    """Extract all entities from a sentence based on domain"""
+def extract_all_entities(sentence: str, _title: str, domain: str) -> list[dict]:
+    """Extract all entities from a sentence based on domain. _title is unused (API compatibility)."""
     return extract_entities(sentence, domain)
 
 def main():

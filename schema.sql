@@ -8,15 +8,19 @@ CREATE TABLE IF NOT EXISTS sources (
   title TEXT,
   authors TEXT,
   year INTEGER,
+  publication_date TEXT,                 -- YYYY-MM-DD when available
   venue TEXT,                            -- journal / preprint / conference
   doi TEXT,
   url TEXT,
+  domain TEXT,
   pdf_file TEXT,                         -- local file name
   imported_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_sources_year ON sources(year);
-CREATE INDEX IF NOT EXISTS idx_sources_doi ON sources(doi);
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_sources_doi
+ON sources(doi)
+WHERE doi IS NOT NULL AND trim(doi) <> '';
 
 
 -- =========================================================
@@ -33,6 +37,9 @@ CREATE TABLE IF NOT EXISTS documents (
 );
 
 CREATE INDEX IF NOT EXISTS idx_docs_source ON documents(source_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_documents_sha256
+ON documents(sha256)
+WHERE sha256 IS NOT NULL AND trim(sha256) <> '';
 
 
 CREATE TABLE IF NOT EXISTS chunks (

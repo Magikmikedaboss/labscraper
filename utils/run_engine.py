@@ -1,15 +1,8 @@
-from utils.scrape_pdfs_parallel import _db_has_all_tables
-# Re-export for test imports
-from utils.common import get_seeds, load_seed_file, sha16, sha64
-
-# Explicitly declare public API for re-exports
-__all__ = ["sha16", "sha64", "get_seeds", "load_seed_file"]
 # ---------------------------------------------------------
 # IMPORTS
 # ---------------------------------------------------------
-
+from utils.common import get_seeds, load_seed_file, sha16, sha64
 from pathlib import Path
-
 import sqlite3
 import sys
 import logging
@@ -18,6 +11,9 @@ from utils.db_init import _init_db_schema
 import pdfplumber
 from pdfminer.pdfparser import PDFSyntaxError
 from pdfminer.pdfexceptions import PDFNotImplementedError
+
+# Re-export for test imports
+__all__ = ["sha16", "sha64", "get_seeds", "load_seed_file"]
 from tqdm import tqdm
 from utils.metadata_utils import extract_metadata
 
@@ -38,6 +34,7 @@ from utils.event_classification import (
     ConfidenceInput,
 )
 from utils.db_utils import (
+    _db_has_all_tables,
     upsert_source,
     insert_document,
     insert_chunk,
@@ -54,13 +51,26 @@ from utils.db_utils import (
 def _init_db_schema_if_needed(db_path):
     """
     Ensure the database at db_path is initialized with the schema.
+    For the canonical DB (Path("db/runs.sqlite")), this function checks if required tables are present using _db_has_all_tables;
+    if any are missing, it initializes the schema by calling _init_db_schema. For non-canonical/test DBs, it always initializes the schema.
     Delegates to utils.db_init._init_db_schema for actual initialization logic.
-    Only initialize schema for non-canonical/test DBs.
+    This conditional behavior ensures that the canonical DB is only initialized if needed, while test/non-canonical DBs are always initialized.
     """
-    canonical_path = str(Path("db/runs.sqlite").resolve())
-    db_path_resolved = str(Path(db_path).resolve())
+    canonical_db_path = Path("db/runs.sqlite")
+    db_path_obj = Path(db_path)
+    canonical_path = str(canonical_db_path.resolve())
     logger = logging.getLogger(__name__)
-    if db_path_resolved == canonical_path:
+
+    # Use samefile when possible to handle symlinks/casing/platform differences.
+    try:
+        if canonical_db_path.exists() and db_path_obj.exists():
+            is_canonical_db = db_path_obj.samefile(canonical_db_path)
+        else:
+            is_canonical_db = db_path_obj.resolve() == canonical_db_path.resolve()
+    except OSError:
+        is_canonical_db = db_path_obj.resolve() == canonical_db_path.resolve()
+
+    if is_canonical_db:
         if not _db_has_all_tables(db_path):
             logger.info(f"Canonical DB at {canonical_path} missing schema; initializing with _init_db_schema.")
             _init_db_schema(str(db_path))
@@ -88,11 +98,18 @@ else:
 # ---------------------------------------------------------
 # MAIN ENGINE
 # ---------------------------------------------------------
+def _default_input_dir() -> Path:
+    data_documents = Path("data/documents")
+    if data_documents.exists():
+        return data_documents
+    return Path("input/pdfs")
+
+
 def main(domain=None, input_dir=None, db_path=None, lenses=None):
 
     parser = argparse.ArgumentParser(description="Scrape PDFs for research intelligence")
     parser.add_argument("--domain", default="methods_tooling")
-    parser.add_argument("--input-dir", type=Path, default=Path("input/pdfs"))
+    parser.add_argument("--input-dir", type=Path, default=_default_input_dir())
     parser.add_argument("--output-db", type=Path, default=Path("db/runs.sqlite"))
 
     if domain is None and input_dir is None and db_path is None:
@@ -102,7 +119,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
         db_path = args.output_db
     else:
         research_domain = domain or "methods_tooling"
-        input_dir = input_dir or Path("input/pdfs")
+        input_dir = input_dir or _default_input_dir()
         db_path = db_path or Path("db/runs.sqlite")
 
     # Normalize paths
@@ -124,8 +141,8 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
     if not pdfs:
         raise SystemExit("No PDFs found.")
 
-    con = sqlite3.connect(str(db_path), timeout=30.0)
-    try:
+
+    with sqlite3.connect(str(db_path), timeout=30.0) as con:
         success_count = 0
         for pdf_path in tqdm(pdfs, desc="PDFs"):
             print(f"Processing: {pdf_path.name}")
@@ -140,7 +157,9 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
 
                 with pdfplumber.open(str(pdf_path)) as pdf:
                     metadata = extract_metadata(pdf_path, pdf)
-                    upsert_source(con, source_id, pdf_path.name, metadata)
+                    metadata.setdefault("domain", research_domain)
+                    metadata.setdefault("publication_date", metadata.get("year"))
+                    source_id = upsert_source(con, source_id, pdf_path.name, metadata)
                     doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                     for page_idx, page in enumerate(pdf.pages, start=1):
                         text = page.extract_text() or ""
@@ -148,7 +167,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                             continue
                         section = guess_section(text.lower())
                         chunk_id = insert_chunk(
-                            con, doc_id, page_idx, section, text, source_id
+                            con, source_id, doc_id, page_idx, section, text
                         )
                         for sent in chunk_sentences(text):
                             s_l = sent.lower()
@@ -216,6 +235,8 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                             for m in quantitative:
                                 insert_measurement(con, event_id, m)
                     success_count += 1
+                # Commit after each PDF is fully processed
+                con.commit()
             except KeyboardInterrupt:
                 raise
             except (PDFSyntaxError, PDFNotImplementedError, sqlite3.Error, OSError, ValueError) as e:
@@ -227,8 +248,6 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
         con.commit()
         if success_count == 0:
             sys.exit(1)
-    finally:
-        con.close()
 
 
 # ---------------------------------------------------------

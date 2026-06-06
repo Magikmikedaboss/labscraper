@@ -347,10 +347,7 @@ class TestMultiLensStacking:
         from lenses import detect_multi_lens
 
         sentence = "Concrete specimens complied with ASTM C150 and improved compressive strength to 45 MPa."
-        try:
-            results = detect_multi_lens(sentence, source_type="code_standard")
-        except RuntimeError as e:
-            assert False, f"detect_multi_lens raised RuntimeError unexpectedly: {e}"
+        results = detect_multi_lens(sentence, source_type="code_standard")
 
         assert len(results) >= 2
         lens_names = {r["lens"] for r in results}
@@ -366,6 +363,94 @@ class TestMultiLensStacking:
         with pytest.raises(RuntimeError) as excinfo:
             detect_multi_lens(sentence, source_type="code_standard", raise_on_no_match=True)
         assert "No detector produced results" in str(excinfo.value)
+
+    def test_detect_multi_lens_detector_error_handling_modes(self, monkeypatch):
+        import lenses
+        from lenses import detect_multi_lens
+
+        class _FakeEvent:
+            def as_dict(self):
+                return {
+                    "lens": "good",
+                    "event_type": "test_event",
+                    "outcome": "neutral",
+                    "confidence": "med",
+                    "context_strength": "moderate",
+                    "source_weight": 0.5,
+                    "tags": [],
+                }
+
+        def bad_detector(_sentence, source_type="research_paper"):
+            raise ValueError("boom")
+
+        def good_detector(_sentence, source_type="research_paper"):
+            return _FakeEvent(), []
+
+        def no_match_detector(_sentence, source_type="research_paper"):
+            return None, []
+
+        monkeypatch.setattr(
+            lenses,
+            "LENS_REGISTRY",
+            {
+                "bad": bad_detector,
+                "none": no_match_detector,
+            },
+        )
+
+        with pytest.raises(RuntimeError):
+            detect_multi_lens(
+                "any sentence",
+                enabled_lenses=["bad", "none"],
+                raise_on_detector_errors=True,
+            )
+
+        monkeypatch.setattr(
+            lenses,
+            "LENS_REGISTRY",
+            {
+                "bad": bad_detector,
+                "good": good_detector,
+            },
+        )
+
+        results, errors = detect_multi_lens(
+            "any sentence",
+            enabled_lenses=["bad", "good"],
+            raise_on_detector_errors=False,
+            return_errors=True,
+        )
+        assert len(results) == 1
+        assert results[0]["lens"] == "good"
+        assert "bad" in errors
+        assert "ValueError" in errors["bad"]
+
+    def test_detect_multi_lens_warn_on_no_match_emits_warning(self, monkeypatch, caplog):
+        import lenses
+        from lenses import detect_multi_lens
+
+        def no_match_detector(_sentence, source_type="research_paper"):
+            return None, []
+
+        monkeypatch.setattr(
+            lenses,
+            "LENS_REGISTRY",
+            {
+                "a": no_match_detector,
+                "b": no_match_detector,
+            },
+        )
+
+        with caplog.at_level("WARNING"):
+            results = detect_multi_lens("irrelevant", warn_on_no_match=True)
+        assert results == []
+        assert any("No detectors matched and no errors reported." in m for m in caplog.messages)
+
+        caplog.clear()
+        with caplog.at_level("WARNING"):
+            results_default = detect_multi_lens("irrelevant")
+        assert results_default == []
+        assert not any("No detectors matched and no errors reported." in m for m in caplog.messages)
 
 
 # ---------------------------------------------------------------------------

@@ -3,9 +3,11 @@ neuroscience_cognition, biohacking_longevity, drug_discovery, stem_cells_regen
 """
 
 
-from utils.entities import extract_entities
+
 from pathlib import Path
 import pytest
+from utils.entities import extract_entities
+
 SEEDS_DIR = Path(__file__).parent.parent / "seeds"
 
 # Skip all tests if SEEDS_DIR does not exist

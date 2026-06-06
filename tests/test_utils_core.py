@@ -30,7 +30,7 @@ def test_event_classification_basic():
     out = event_classification.detect_outcome(s)
     assert isinstance(out, str)
     # Classify
-    etype = event_classification.classify_event_type(s, tags, reason, dec)
+    etype = event_classification.classify_event_type(s, tags, reason, dec[0])
     assert isinstance(etype, str)
     # Evidence strength
     strength = event_classification.evidence_strength(s)
@@ -41,7 +41,7 @@ def test_event_classification_basic():
             has_entity=True,
             method_tags=tags,
             failure_reason=reason,
-            decision_taken=dec[0] if isinstance(dec, tuple) else dec,
+            decision_taken=dec[0],
             has_measurements=True,
             sentence_l=s
         )
@@ -75,7 +75,22 @@ def test_common_sha_and_temp():
 def test_text_utils_chunk_and_guess():
     text = "This is a sentence. This is another! And a third?"
     chunks = text_utils.chunk_sentences(text)
+    # Should return exactly 3 chunks (one per sentence)
     assert len(chunks) == 3
+    # Check that each chunk ends with sentence punctuation
+    for i, chunk in enumerate(chunks):
+        assert chunk, "Empty chunk returned by chunk_sentences"
+        assert chunk[-1] in ".!?", f"Chunk does not end with punctuation: {chunk!r}"
+        # If not last chunk, next chunk should start with uppercase letter
+        if i < len(chunks) - 1:
+            next_chunk = chunks[i+1]
+            assert next_chunk, "Empty next_chunk returned by chunk_sentences"
+            assert next_chunk[0].isupper(), f"Next chunk does not start with uppercase: {next_chunk!r}"
+    # Check that joining chunks (with single spaces) matches the original text (ignoring multiple spaces)
+    joined = " ".join(chunks)
+    def normalize_spaces(s):
+        return " ".join(s.split())
+    assert normalize_spaces(joined) == normalize_spaces(text)
     assert text_utils.guess_stage("in vivo mouse study") == "in_vivo"
     assert text_utils.guess_section("methods and results") == "mixed"
     assert text_utils.guess_section("methods only") == "methods"

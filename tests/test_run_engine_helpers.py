@@ -18,7 +18,7 @@ from utils.run_engine import (
     sha16,
     sha64,
 )
-from utils.event_classification import ConfidenceInput
+from utils.event_classification import ConfidenceInput, DECISION_PHRASES
 from utils.data_extractors import extract_relationships
 from utils.common import now_iso
 from utils.deduplication import normalize_event_key
@@ -96,7 +96,6 @@ def test_detection_classification_and_confidence_helpers_work_together():
     assert failure_reason == "stability_failure"
     # The sentence contains both "decided to" (continued) and "optimize" (modified).
     # Check that the detected decision is one of the allowed decision types.
-    from utils.event_classification import DECISION_PHRASES
     allowed = set(DECISION_PHRASES.keys())
     assert decision_taken in allowed
     assert decision_driver is None
@@ -116,6 +115,7 @@ def test_detection_classification_and_confidence_helpers_work_together():
     assert {"ic50", "half_life"}.issubset(measurement_types)
     assert len(relationships) > 0, "Expected at least one relationship to be extracted"
     assert relationships[0]["relationship_type"] == "more_stable_than"
+    # event_key format is 'event_type|ENTITY1|page|snippet_hash'
     assert event_key.startswith("efficacy_result|COMPOUNDA|1|")
 
 def test_init_db_schema_if_needed(monkeypatch, tmp_path):

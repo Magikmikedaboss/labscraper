@@ -1,0 +1,16 @@
+{
+  "feeds": [
+    {
+      "name": "Building Science - Building Science Corporation",
+      "url": "https://buildingscience.com/rss.xml",
+      "enabled": true,
+      "domain": "construction_science"
+    },
+    {
+      "name": "NREL News (National Renewable Energy Laboratory)",
+      "url": "https://www.nrel.gov/news/rss.xml",
+      "enabled": true,
+      "domain": "construction_science"
+    }
+  ]
+}

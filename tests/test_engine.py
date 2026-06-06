@@ -2,19 +2,17 @@ import tempfile
 import sqlite3
 from pathlib import Path
 from unittest.mock import patch, Mock
+import gc
 
 from utils.run_engine import main
-from utils.db_init import _init_db_schema
 
 
 def test_main_function_database_creation():
-    import gc
     with tempfile.TemporaryDirectory() as temp_dir:
         input_dir = Path(temp_dir) / "input_pdfs"
         input_dir.mkdir()
 
         output_db = Path(temp_dir) / "test_output.sqlite"
-        _init_db_schema(str(output_db))
 
         test_pdf = input_dir / "test.pdf"
         test_pdf.write_bytes(b"Mock PDF content")
@@ -30,6 +28,7 @@ def test_main_function_database_creation():
             mock_pdf.metadata = {}
 
             mock_pdf_open.return_value.__enter__.return_value = mock_pdf
+            mock_pdf_open.return_value.__exit__.return_value = False
             mock_metadata.return_value = {
                 'title': 'Test',
                 'authors': 'Test Author',
@@ -42,8 +41,6 @@ def test_main_function_database_creation():
                 input_dir=str(input_dir),
                 db_path=str(output_db)
             )
-            gc.collect()
-
 
         assert output_db.exists()
 
@@ -55,5 +52,8 @@ def test_main_function_database_creation():
             assert 'documents' in tables
         finally:
             conn.close()
+
+        # Run garbage collection after all context managers and connection cleanup
+        gc.collect()
 
 

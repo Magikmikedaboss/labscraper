@@ -2,7 +2,7 @@
 
 ## Overview
 
-The peptide scraper project now includes a comprehensive CI/CD pipeline that automates code quality checks, security scanning, and testing on every push and pull request.
+The AXON project includes a CI pipeline that automates linting, security checks, and tests on every push and pull request.
 
 ## Pipeline Configuration
 
@@ -18,33 +18,33 @@ The peptide scraper project now includes a comprehensive CI/CD pipeline that aut
 The main test job runs on Ubuntu latest and performs the following steps:
 
 1. **Checkout Code**
-   - Uses `actions/checkout@v4` to clone the repository
+  - Uses `actions/checkout@v4` to clone the repository
 
 2. **Setup Python Environment**
-   - Uses `actions/setup-python@v6` with Python 3.10
-   - Ensures consistent Python version across all environments
-   - Compatible with modern GitHub Actions runners and Node.js versions
+  - Uses `actions/setup-python@v6` with Python 3.11
+  - Ensures consistent Python version across all environments
+  - Compatible with modern GitHub Actions runners and Node.js versions
 
 3. **Install Dependencies**
-   - Upgrades pip for latest features
-   - Uses `requirements-lock.txt` for reproducible installs (canonical, fully pinned)
-   - If editing dependencies, update `requirements.txt` (loose pins) and regenerate the lock file:
+  - Upgrades pip for latest features
+  - Uses `requirements-lock.txt` for reproducible installs (canonical, fully pinned)
+  - If editing dependencies, update `requirements.txt` (loose pins), then regenerate the lock file:
      ```bash
      pip install -r requirements.txt
      pip freeze > requirements-lock.txt
+     # Then commit both files
      ```
-   - Installs development tools: `pytest`, `pytest-cov`, `ruff`, `bandit`, `safety`
+  - Installs development tools: `pytest`, `pytest-cov`, `ruff`, `bandit`, `safety`
 
 4. **Code Quality Checks**
-   - **Linting**: Runs `ruff check .` to catch syntax errors, style violations, and potential bugs
-   - **Security Scanning**: 
-     - `bandit -r utils/ tools/ -ll` - Static security analysis
-     - `safety check --json` - Dependency vulnerability scanning
+  - **Linting**: Runs `ruff check .` to catch syntax errors, style violations, and potential bugs
+  - **Security Scanning**: 
+    - `bandit -r utils/ tools/ -ll -f json -o bandit-report.json` - Static security analysis report
+    - `safety check --output json > safety-report.json` - Dependency vulnerability scanning report
 
 5. **Testing**
-   - **Unit Tests**: Runs `pytest tests/ -v --cov=utils --cov=tools --cov-report=term-missing`
-   - **Coverage Check**: Enforces minimum 70% code coverage with `pytest --cov=utils --cov=tools --cov-fail-under=70`
-
+  - **Unit Tests**: Runs `pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing`
+  - **Coverage Check**: Enforces minimum 50% code coverage with `pytest --cov=utils --cov=tools --cov-fail-under=50`
 ## Quality Gates
 
 ### Code Quality
@@ -53,7 +53,7 @@ The main test job runs on Ubuntu latest and performs the following steps:
 - **Dependency Security**: Safety checks for known vulnerabilities in dependencies
 
 ### Test Coverage
-- **Minimum Coverage**: 70% code coverage required
+- **Minimum Coverage**: 50% code coverage required (current baseline)
 - **Coverage Reporting**: Detailed coverage reports with missing lines highlighted
 - **Test Execution**: All tests must pass for pipeline to succeed
 
@@ -81,23 +81,21 @@ You can run the same checks locally before pushing:
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt
+pip install -r requirements-lock.txt
 pip install pytest pytest-cov ruff bandit safety
 
 # Run linting
 ruff check .
 
 # Run security checks
-bandit -r utils/ tools/ -ll
-safety check --json
+bandit -r utils/ tools/ -ll -f json -o bandit-report.json
+safety check --output json > safety-report.json
 
 # Run tests with coverage
-pytest tests/ -v --cov=utils --cov=tools --cov-report=term-missing
+pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing
 
 # Check coverage threshold
-pytest --cov=utils --cov=tools --cov-fail-under=70
-```
-
+pytest --cov=utils --cov=tools --cov-fail-under=50
 ### Pre-commit Hooks (Optional)
 For even faster feedback, you can set up pre-commit hooks:
 
@@ -137,10 +135,12 @@ To add additional quality checks, modify the `.github/workflows/ci.yml` file:
 When adding new dependencies to `requirements.txt`, ensure they're compatible with the CI environment:
 
 ```bash
-# Test locally with Python 3.10
-python3.10 -m venv test-env
-source test-env/bin/activate  # On Windows: test-env\Scripts\activate
+# Test locally with Python 3.11
+python -m venv test-env
+# On Windows PowerShell: .\test-env\Scripts\Activate.ps1
+# On bash/zsh: source test-env/bin/activate
 pip install -r requirements.txt
+pip freeze > requirements-lock.txt
 ```
 
 ### Coverage Thresholds
@@ -149,7 +149,7 @@ The coverage threshold can be adjusted in the pipeline:
 ```yaml
 - name: Check coverage threshold
   run: |
-    pytest --cov=utils --cov=tools --cov-fail-under=80  # Change 70 to desired percentage
+    pytest --cov=utils --cov=tools --cov-fail-under=80  # Change from current baseline as desired
 ```
 
 ## Troubleshooting

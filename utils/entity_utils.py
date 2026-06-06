@@ -1,9 +1,13 @@
 """
 Entity normalization, role assignment, and counting utilities
 """
+
+
+import logging
 from typing import Tuple, Dict
 from utils.entity_normalizer import normalize_entity, get_entity_role
 from utils.process_words import is_process_word
+import re
 
 def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: dict = None) -> Tuple[int, int, str, str, str]:
     """
@@ -12,7 +16,6 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
     Also demotes process words to tags.
     Returns: (primary_count, context_count, primary_str, context_str, all_str)
     """
-    import re
     if not entities_str:
         return (0, 0, "", "", "")
     tokens = [t.strip() for t in re.split(r'\s*;\s*', entities_str) if t.strip()]
@@ -30,7 +33,7 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
     primary = []
     context = []
     for e in normalized:
-        if e['entity_type'] == 'assay' and is_process_word(e['entity_name']):
+        if e['entity_type'] == 'assay' and is_process_word(e['orig_entity_name']):
             e['role'] = 'context'
         # Use original casing for output
         entity_str = f"{e['orig_entity_type']}:{e['orig_entity_name']}"
@@ -59,5 +62,6 @@ def load_overlay_aliases_safe(domain_id: str = None) -> Dict[str, str]:
         from utils.entity_normalizer import load_overlay_aliases
         return load_overlay_aliases(domain_id)
     except Exception as e:
-        # Optionally log e here if needed
+        logger = logging.getLogger(__name__)
+        logger.debug("Failed to load overlay aliases for domain_id '%s': %s", domain_id, e, exc_info=True)
         return {}

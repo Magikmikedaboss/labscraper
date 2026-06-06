@@ -18,7 +18,17 @@ STEM_CELL_KEYWORDS = [
 ]
 
 NEURAL_CELL_KEYWORDS = [
-    "neuron", "neurons", "dopaminergic", "glutamatergic", "gabaergic", "astrocyte", "astrocytes", "oligodendrocyte", "oligodendrocytes", "microglia", "microglial"
+    "neuron",
+    "neurons",
+    "dopaminergic",
+    "glutamatergic",
+    "gabaergic",
+    "astrocyte",
+    "astrocytes",
+    "oligodendrocyte",
+    "oligodendrocytes",
+    "microglia",
+    "microglial",
 ]
 
 
@@ -141,12 +151,24 @@ def extract_construction_entities(sentence: str, extracted_names: set, SEEDS_DIR
 
     # Expanded and more specific groups (boosted with more keywords)
     groups = [
-        ({"concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation", "polymer", "composite", "asphalt", "aluminum", "copper", "gypsum", "plaster", "ceramic", "stone", "aggregate", "fiber", "foam", "bitumen", "PVC", "EPS", "XPS", "HDPE", "LDPE"}, "material"),
-        ({"wall", "roof", "foundation", "floor", "column", "beam", "slab", "girder", "truss", "panel", "joint", "window", "door", "façade", "cladding", "insulation system", "partition", "rafter", "stud", "joist", "lintel"}, "system"),
-        ({"crack", "cracking", "shear failure", "buckling", "fatigue", "delamination", "fracture", "rupture", "collapse", "spalling", "yielding", "debonding", "creep", "shrinkage", "corrosion fatigue", "brittle fracture", "ductile fracture", "plastic hinge", "instability", "microcrack", "macrocrack"}, "failure_mode"),
-        ({"temperature", "thermal cycling", "humidity", "moisture", "wind", "rain", "fire", "freeze", "frost", "uv", "solar", "environmental stress", "exposure", "condensation", "weather", "climate", "precipitation", "snow", "hail", "thermal shock"}, "environment"),
-        ({"compression", "tension", "shear", "bending", "torsion", "impact", "flexure", "creep test", "fatigue test", "tensile test", "load test", "stress test", "thermal analysis", "modulus", "stiffness", "ductility", "hardness", "strength", "yield strength", "ultimate strength", "elasticity", "plasticity"}, "test_method"),
-        ({"flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction", "subsidence", "settlement", "liquefaction", "tsunami", "landslide", "storm", "hurricane", "typhoon", "cyclone"}, "hazard"),
+        (set(x.lower() for x in [
+            "concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation", "polymer", "composite", "asphalt", "aluminum", "copper", "gypsum", "plaster", "ceramic", "stone", "aggregate", "fiber", "foam", "bitumen", "PVC", "EPS", "XPS", "HDPE", "LDPE"
+        ]), "material"),
+        (set(x.lower() for x in [
+            "wall", "roof", "foundation", "floor", "column", "beam", "slab", "girder", "truss", "panel", "joint", "window", "door", "façade", "cladding", "insulation system", "partition", "rafter", "stud", "joist", "lintel"
+        ]), "system"),
+        (set(x.lower() for x in [
+            "crack", "cracking", "shear failure", "buckling", "fatigue", "delamination", "fracture", "rupture", "collapse", "spalling", "yielding", "debonding", "creep", "shrinkage", "corrosion fatigue", "brittle fracture", "ductile fracture", "plastic hinge", "instability", "microcrack", "macrocrack"
+        ]), "failure_mode"),
+        (set(x.lower() for x in [
+            "temperature", "thermal cycling", "humidity", "moisture", "wind", "rain", "fire", "freeze", "frost", "uv", "solar", "environmental stress", "exposure", "condensation", "weather", "climate", "precipitation", "snow", "hail", "thermal shock"
+        ]), "environment"),
+        (set(x.lower() for x in [
+            "compression", "tension", "shear", "bending", "torsion", "impact", "flexure", "creep test", "fatigue test", "tensile test", "load test", "stress test", "thermal analysis", "modulus", "stiffness", "ductility", "hardness", "strength", "yield strength", "ultimate strength", "elasticity", "plasticity"
+        ]), "test_method"),
+        (set(x.lower() for x in [
+            "flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction", "subsidence", "settlement", "liquefaction", "tsunami", "landslide", "storm", "hurricane", "typhoon", "cyclone"
+        ]), "hazard"),
     ]
 
     # Helper: look for multi-word descriptors near generic terms
@@ -190,7 +212,8 @@ def extract_construction_entities(sentence: str, extracted_names: set, SEEDS_DIR
             # All tokens as separate words
             tokens = item_l.split()
             token_matches = all(re.search(r'\b' + re.escape(tok) + r'\b', s_l) for tok in tokens)
-            if phrase_match or (len(item) > 4 and token_matches):
+            # Only allow multi-word partial matches for true multi-token phrases and enforce minimum phrase length
+            if phrase_match or (len(tokens) > 1 and len(item_l) > 4 and token_matches):
                 # Allow generic terms if a specific failure was found in the sentence
                 allow_generic = any(re.search(r'\b' + re.escape(g) + r'\b', s_l) for g in generic_skip) and any(re.search(r'\b' + re.escape(x) + r'\b', s_l) for x in ["crack", "fracture", "collapse", "spalling"])
                 if item in generic_skip and not allow_generic:
@@ -221,30 +244,26 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
             ents.append(c)
             extracted_names.add(norm)
 
-    # 2. TARGETS
-    for target in get_target_seeds(SEEDS_DIR):
-        pattern = r'\b' + re.escape(target) + r'\b'
-        if re.search(pattern, sentence, re.IGNORECASE):
-            name = target.upper()
-            norm = normalize_name(name)
-            if norm not in extracted_names:
-                ents.append({
-                    "entity_type": "target",
-                    "entity_name": name,
-                    "entity_variant": "protein",
-                    "role": "target",
-                    "text": sentence
-                })
-                extracted_names.add(norm)
+    # 2. TARGETS (use extract_targets to avoid duplication)
+    targets = extract_targets(sentence, SEEDS_DIR)
+    for t in targets:
+        norm = normalize_name(t["entity_name"])
+        if norm not in extracted_names:
+            ents.append(t)
+            extracted_names.add(norm)
 
     # 3. STEM CELLS — must run BEFORE models to win deduplication for MSC/iPSC/HSC etc.
     for k in STEM_CELL_KEYWORDS:
         if re.search(r'\b' + re.escape(k) + r'\b', sentence, re.IGNORECASE):
-            name = k.upper() if len(k) <= 5 or k.lower() in {"msc", "ipsc", "hsc", "esc", "nsc"} else k
+            name = k.upper()
             norm = normalize_name(name)
             if norm not in extracted_names:
-                ents.append({"entity_type": "stem_cell", "entity_name": name,
-                             "entity_variant": norm, "text": sentence})
+                ents.append({
+                    "entity_type": "stem_cell",
+                    "entity_name": name,
+                    "entity_variant": norm,
+                    "text": sentence
+                })
                 extracted_names.add(norm)
 
     # 4. NEURAL CELLS — must run BEFORE models to win deduplication for neuron/neurons/microglia
@@ -258,27 +277,7 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
                 extracted_names.add(norm)
 
     # 5. MODELS — after stem/neural cells so dedup blocks their overlap terms
-    models = []
-    for model in get_model_seeds(SEEDS_DIR):
-        if re.search(r'\b' + re.escape(model) + r'\b', sentence, re.IGNORECASE):
-            variant = "unknown"
-            if any(c.isdigit() for c in model) or '-' in model:
-                variant = "cell_line"
-            elif model.lower() in {"mouse", "mice", "rat", "human"}:
-                variant = "organism"
-            elif "organoid" in model.lower() or "3d" in model.lower():
-                variant = "3d_model"  # Explicitly annotate 3D/organoid models
-            models.append({"entity_type": "model", "entity_name": model.upper(),
-                           "entity_variant": variant, "text": sentence})
-
-    # Fallback for common models if not already matched: assign correct variant
-    # (Handled by _get_model_seeds, but if needed, uncomment and use below logic)
-    # for fm in ["mouse", "rat", "human", "hela", "hek293"]:
-    #     if re.search(r'\b' + re.escape(fm) + r'\b', sentence, re.IGNORECASE):
-    #         variant = "cell_line" if fm in ["hela", "hek293"] else "organism"
-    #         models.append({"entity_type": "model", "entity_name": fm.upper(),
-    #                        "entity_variant": variant, "text": sentence})
-    for m in models:
+    for m in extract_models(sentence, SEEDS_DIR=SEEDS_DIR):
         norm = normalize_name(m["entity_name"])
         if norm not in extracted_names:
             ents.append(m)

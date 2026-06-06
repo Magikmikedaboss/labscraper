@@ -56,12 +56,13 @@ def check_files():
     }
     all_ok = True
     for filename, description in required_files.items():
-        path = Path(filename)
+        path = filename  # filename is already a Path object
+        short_name = path.name
         if path.exists():
             size = path.stat().st_size
-            print(f"  ✅ {filename:20} - {description} ({size:,} bytes)")
+            print(f"  ✅ {short_name:20} - {description} ({size:,} bytes)")
         else:
-            print(f"  ❌ {filename:20} - {description} (MISSING)")
+            print(f"  ❌ {short_name:20} - {description} (MISSING)")
             all_ok = False
     return all_ok
 

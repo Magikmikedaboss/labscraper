@@ -1,6 +1,6 @@
 """Tests for entity extraction functionality using pytest"""
 
-from utils.run_engine import extract_entities
+from utils.entities import extract_entities
 from utils.entities import extract_compounds
 from utils.entities import extract_targets, extract_models
 
@@ -68,7 +68,7 @@ class TestEntityExtraction:
         compounds = extract_compounds(text)
         assert isinstance(compounds, list)
         # Assert expected compounds are present
-        assert any("ASPIRIN" == c.get("entity_name") for c in compounds)
+        assert any((c.get("entity_name") or "").lower() == "aspirin" for c in compounds)
 
     def test_extract_targets(self):
         """Test target extraction"""
@@ -166,6 +166,11 @@ class TestBiomedicalEntities:
 
         peptide_entities = [e for e in entities if e["entity_type"] == "peptide"]
         assert len(peptide_entities) > 0
+        # Assert the expected peptide sequence is present in the extracted entity
+        assert any(
+            "GGGSGGGSGGG" in (e.get("entity_name", "") or e.get("entity_text", ""))
+            for e in peptide_entities
+        )
 
     def test_extract_biomedical_targets(self):
         """Test extraction of biological targets"""
@@ -173,7 +178,11 @@ class TestBiomedicalEntities:
         entities = extract_entities(text, "methods_tooling")
         target_entities = [e for e in entities if e["entity_type"] == "target"]
         assert len(target_entities) > 0
-        assert any("mtor" in (e.get("entity_name", "") + e.get("text", "")).lower() or "akt" in (e.get("entity_name", "") + e.get("text", "")).lower() for e in target_entities)
+        def matches_target(e):
+            combined = (e.get("entity_name", "") + e.get("text", "")).lower()
+            return "mtor" in combined or "akt" in combined
+        found_target = any(matches_target(e) for e in target_entities)
+        assert found_target
 
     def test_extract_biomedical_models(self):
         """Test extraction of experimental models"""
@@ -186,7 +195,7 @@ class TestBiomedicalEntities:
             if "hek293" in (e.get("entity_name", "") + e.get("text", "")).lower()
             or "mouse" in (e.get("entity_name", "") + e.get("text", "")).lower()
         ]
-        assert any(matched_entities)
+        assert matched_entities
 
     def test_extract_biomedical_stem_cells(self):
         """Test extraction of stem cell keywords"""

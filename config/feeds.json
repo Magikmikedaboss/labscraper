@@ -28,22 +28,22 @@
       "name": "NREL News (National Renewable Energy Laboratory)",
       "url": "https://www.nrel.gov/news/rss.xml",
       "domain": "construction_science",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "USGS Maps",
       "url": "https://www.usgs.gov/maps/rss.xml",
       "domain": "construction_science",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "NIST News",
       "url": "https://www.nist.gov/news-events/cms-rss.xml",
       "domain": "construction_science",
-      "enabled": true
+      "enabled": false
     },
     {
-      "name": "arXiv Civil Engineering",
+      "name": "arXiv Applied Physics",
       "url": "https://export.arxiv.org/rss/physics.app-ph",
       "domain": "construction_science",
       "enabled": true

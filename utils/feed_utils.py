@@ -3,7 +3,7 @@ import re
 import feedparser
 from typing import List, Dict, Optional
 
-DOC_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.(?:pdf|docx?|html)(?:\?[^\s<>"\']*)?', re.IGNORECASE)
+PDF_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.pdf(?:\?[^\s<>"\']*)?', re.IGNORECASE)
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
 def parse_feed(url: str, raise_on_error: bool = False):
@@ -18,26 +18,22 @@ def parse_feed(url: str, raise_on_error: bool = False):
 
 def extract_pdf_links(entry: Dict) -> List[str]:
     """Extract PDF links from a feed entry"""
-    doc_links = []
+    pdf_links = []
     # Check summary
     summary = entry.get('summary', '')
-    doc_links.extend(DOC_LINK_REGEX.findall(summary))
+    pdf_links.extend(PDF_LINK_REGEX.findall(summary))
     # Check content blocks
     for content in entry.get('content', []):
         content_value = content.get('value', '')
-        doc_links.extend(DOC_LINK_REGEX.findall(content_value))
+        pdf_links.extend(PDF_LINK_REGEX.findall(content_value))
     # Check direct links
     for link in entry.get('links', []):
         href = link.get('href', '')
         if href:
-            doc_links.extend(DOC_LINK_REGEX.findall(href))
-    # Only keep links ending with .pdf (case-insensitive)
-    pdf_links = [
-        url for url in set(doc_links)
-        if url.lower().split('?')[0].endswith('.pdf')
-    ]
-    return pdf_links
-
+            match = PDF_LINK_REGEX.search(href)
+            if match:
+                pdf_links.append(match.group(0))
+    return list(set(pdf_links))
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
     """
@@ -51,8 +47,10 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) 
     Returns:
         Dict with feed stats and PDF links
     """
+    if not url or not isinstance(url, str) or not url.strip():
+        return {'success': False, 'error': 'Missing or invalid url'}
+
     print(f"Testing {name}: {url}")
-    
     try:
         feed = parse_feed(url, raise_on_error=True)
         

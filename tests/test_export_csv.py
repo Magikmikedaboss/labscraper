@@ -9,9 +9,10 @@ def test_export_candidates_domain_aware_smoke(monkeypatch):
     mock_con = MagicMock()
     mock_cursor = MagicMock()
     mock_con.__enter__.return_value = mock_con
+    mock_con.__exit__.return_value = None
     mock_con.cursor.return_value = mock_cursor
     mock_cursor.execute.return_value = mock_cursor  # Real sqlite3 returns cursor from execute
-    mock_cursor.fetchone.return_value = [0]
+    mock_cursor.fetchone.return_value = (0,)
     mock_cursor.fetchall.return_value = []
     monkeypatch.setattr(export_csv.sqlite3, "connect", lambda *a, **k: mock_con)
     # Should not raise

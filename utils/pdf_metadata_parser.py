@@ -24,23 +24,25 @@ def parse_first_page_text(text: str, max_header_scan: int = 10) -> Dict[str, Any
     lines = [line.strip() for line in text.splitlines()]
     nonempty = [line for line in lines if line]
     # Heuristics for skipping header/journal lines for title
-    header_keywords = ["journal", "volume", "issue", "copyright", "all rights reserved", "published by", "doi", "preprint", "arxiv", "bioRxiv", "medRxiv", "page", "pages", "issn"]
-    page_volume_re = re.compile(r"(page[s]?|vol(ume)?|issn|doi|copyright|arxiv|medrxiv|biorxiv|preprint|all rights reserved)", re.I)
+    HEADER_PATTERN = re.compile(
+        r"("  # Start group
+        r"journal|vol(ume)?|issue|page[s]?|issn|doi|copyright|published by|all rights reserved|arxiv|biorxiv|medrxiv|preprint"
+        r")",
+        re.I,
+    )
     # Find title candidate
     title_candidate = None
     for line in nonempty[:max_header_scan]:
         if len(line) < 5:
             continue  # skip very short lines
-        if any(kw in line.lower() for kw in header_keywords):
-            continue
-        if page_volume_re.search(line):
+        if HEADER_PATTERN.search(line):
             continue
         title_candidate = line
         break
     if title_candidate:
         meta["title"] = title_candidate
-    elif nonempty:
-        meta["title"] = nonempty[0]
+    else:
+        meta["title"] = None
     # Heuristics for authors
     affiliation_keywords = ["university", "institute", "department", "dept", "school", "hospital", "center", "centre", "faculty", "college", "clinic", "laboratory", "lab", "company", "corporation", "inc", "llc", "ltd", "email", "@", ".edu", ".org", ".com", "http://", "https://"]
     author_candidate = None

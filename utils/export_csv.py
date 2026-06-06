@@ -5,19 +5,12 @@ CSV Export v5 - Domain-Aware with Overlay Support
 import sqlite3
 import csv
 import argparse
-from pathlib import Path
+from pathlib import Path, PurePath
 from collections import defaultdict
-import sys
 import os
-
 import re
-from pathlib import PurePath
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
-from process_words import is_process_word
-from utils.reporting_utils import write_run_meta
+from utils.entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
+from utils.process_words import is_process_word
 
 DB_PATH = Path("db") / "runs.sqlite"
 OUTPUT_DIR = Path("output")
@@ -143,8 +136,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    canonical_entities = export_candidates_domain_aware(args.domain)
-    # TODO: Compute and pass real confidence counters if/when available
-    write_run_meta({}, canonical_entities, args.domain)
 
+    canonical_entities = export_candidates_domain_aware(args.domain)
     print("✅ Export complete!")

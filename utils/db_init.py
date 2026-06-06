@@ -40,5 +40,5 @@ def _init_db_schema(db_path):
 
     schema_sql = schema_path.read_text(encoding='utf-8')
 
-    with closing(sqlite3.connect(db_path)) as con:
+    with closing(sqlite3.connect(db_path_resolved)) as con:
         con.executescript(schema_sql)

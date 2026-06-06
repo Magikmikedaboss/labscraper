@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""
+Dual-Lens Export - Phase 2
+Applies overlay scoring to existing extraction results and exports
+with dual perspectives.
+"""
+
+import sys
+from pathlib import Path
+
+from utils.export.filters import should_skip_entity, should_suppress_entity_for_csv
+from utils.export.normalization import build_canonical_entities
+from utils.export.aggregation import (
+    load_events_and_entities,
+    build_event_overlay_scores,
+    build_entity_event_map,
+    build_event_models,
+    build_entity_models_map,
+    build_entity_scores,
+)
+from utils.export.reporting import (
+    export_entities_csv,
+    publish_latest_entities,
+    export_events_csv,
+    publish_latest_events,
+    write_dual_lens_report,
+)
+from utils.overlay_scorer import OverlayScorer, load_domain_config
+from utils.entity_normalizer import (
+    load_normalization_map,
+    load_overlay_aliases,
+    normalize_entity,
+    get_entity_role,
+)
+
+
+VALID_DOMAIN_IDS = [
+    "biohacking_longevity",
+    "drug_discovery",
+    "methods_tooling",
+    "neuroscience_cognition",
+    "stem_cells_regen",
+    "peptide",
+    "construction_science",
+]
+
+def export_dual_lens(db_path, domain_id="construction_science", output_dir="exports"):
+    print("\n" + "=" * 70)
+    print("DUAL-LENS EXPORT - PHASE 2")
+    print("=" * 70)
+
+    db_path_obj = Path(db_path)
+    if not db_path_obj.exists() or not db_path_obj.is_file():
+        print(f"⚠️  Database file not found on disk: {db_path_obj}. Continuing; downstream loader may handle alternate backends.")
+
+    db_path = str(db_path_obj)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    domain_config = load_domain_config(domain_id)
+    scorer = OverlayScorer(domain_config)
+
+    if not scorer.is_dual_lens():
+        print("⚠️  Dual-lens mode not enabled in domain config")
+        return
+
+    overlay_ids = scorer.get_overlay_ids()
+    print(f"\n📋 Overlays: {', '.join(overlay_ids)}")
+
+    norm_map = load_normalization_map()
+    overlay_aliases = load_overlay_aliases(domain_id)
+
+    print("\n📊 Step 1: Loading and scoring events...")
+    try:
+        events, entities, event_entities, model_rows = load_events_and_entities(db_path)
+    except Exception as e:
+        raise RuntimeError(f"Failed loading export input data from {db_path}: {e}") from e
+    event_overlay_scores = build_event_overlay_scores(events, scorer)
+    print(f"   ✅ Scored {len(events)} events")
+
+    print("\n🎯 Step 2: Normalizing entities...")
+    canonical_entities, entity_id_mapping = build_canonical_entities(
+        entities=entities,
+        domain_id=domain_id,
+        norm_map=norm_map,
+        overlay_aliases=overlay_aliases,
+        normalize_entity=normalize_entity,
+        get_entity_role=get_entity_role,
+        should_skip_entity=should_skip_entity,
+    )
+    print(f"   ✅ Canonical entities: {len(canonical_entities)}")
+
+    print("\n🧩 Step 3: Building relationships...")
+    entity_events = build_entity_event_map(event_entities, entity_id_mapping)
+    event_models = build_event_models(model_rows)
+    entity_models_map = build_entity_models_map(entity_events, event_models)
+
+    print("\n🧠 Step 4: Scoring entities...")
+    entity_scores = build_entity_scores(
+        entities=canonical_entities,
+        overlay_ids=overlay_ids,
+        entity_events=entity_events,
+        entity_models_map=entity_models_map,
+        event_overlay_scores=event_overlay_scores,
+        scorer=scorer,
+    )
+    print(f"   ✅ Calculated scores for {len(canonical_entities)} entities")
+
+    print("\n📝 Step 5: Exporting entities CSV...")
+    entities_file, filtered_entities = export_entities_csv(
+        entities=canonical_entities,
+        entity_events=entity_events,
+        entity_scores=entity_scores,
+        overlay_ids=overlay_ids,
+        domain_id=domain_id,
+        output_path=output_path,
+        should_suppress_entity_for_csv=should_suppress_entity_for_csv,
+    )
+    print(f"   ✅ Exported: {entities_file}")
+
+    latest_entities_file, publish_error = publish_latest_entities(entities_file, domain_id)
+    if publish_error:
+        print(f"   ❌ Failed to atomically publish latest dual-lens entities: {publish_error}")
+    else:
+        print(f"   ↳ Published latest dual-lens entities: {latest_entities_file}")
+
+    print("\n📝 Step 6: Exporting events CSV...")
+
+    events_file = export_events_csv(
+        events=events,
+        event_overlay_scores=event_overlay_scores,
+        overlay_ids=overlay_ids,
+        domain_id=domain_id,
+        output_path=output_path,
+    )
+    print(f"   ✅ Exported: {events_file}")
+
+    latest_events_file, publish_error = publish_latest_events(events_file, domain_id)
+    if publish_error:
+        print(f"   ❌ Failed to atomically publish latest dual-lens events: {publish_error}")
+    else:
+        print(f"   ↳ Published latest dual-lens events: {latest_events_file}")
+
+    print("\n📊 Step 7: Generating comparison report...")
+    report_file = output_path / f"dual_lens_report_{domain_id}.txt"
+    write_dual_lens_report(
+        report_file=report_file,
+        domain_config=domain_config,
+        overlay_ids=overlay_ids,
+        events=events,
+        entities=canonical_entities,
+        filtered_entities=filtered_entities,
+        entity_scores=entity_scores,
+        entity_events=entity_events,
+    )
+    print(f"   ✅ Report: {report_file}")
+
+    print("\n" + "=" * 70)
+    print("✅ DUAL-LENS EXPORT COMPLETE")
+    print("=" * 70)
+    print("\nOutput files:")
+    print(f"  📊 {entities_file}")
+    print(f"  📋 {events_file}")
+    print(f"  📄 {report_file}")
+    print()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python export_dual_lens.py <database_path> [domain_id]")
+        print("\nExample:")
+        print("  python export_dual_lens.py db/runs.sqlite construction_science")
+        sys.exit(1)
+
+    db_path = sys.argv[1]
+    domain_id = sys.argv[2] if len(sys.argv) > 2 else "construction_science"
+
+    if domain_id not in VALID_DOMAIN_IDS:
+        print(f"❌ Invalid domain_id: {domain_id}")
+        print(f"Valid domains: {', '.join(VALID_DOMAIN_IDS)}")
+        sys.exit(1)
+
+
+    export_dual_lens(db_path, domain_id)

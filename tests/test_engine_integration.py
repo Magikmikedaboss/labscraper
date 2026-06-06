@@ -44,8 +44,10 @@ def test_main_function_falsy_domain_uses_default():
                 db_path=str(output_db)
             )
 
-        gc.collect()
         assert output_db.exists()
+
+        # Ensure all connections are closed and garbage collected (Windows fix)
+        gc.collect()
 
 def test_main_function_database_creation():
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -76,7 +78,6 @@ def test_main_function_database_creation():
                 db_path=str(output_db)
             )
 
-        gc.collect()
         assert output_db.exists()
 
         conn = sqlite3.connect(str(output_db))
@@ -90,6 +91,7 @@ def test_main_function_database_creation():
         assert 'quantitative_measurements' in tables
         assert 'entity_relationships' in tables
         conn.close()
+        gc.collect()
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Windows file locking issue with SQLite")
 def test_main_function_error_handling():

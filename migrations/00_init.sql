@@ -1,17 +1,18 @@
+PRAGMA foreign_keys = ON;
 -- Added to ensure all foreign key references are valid
 CREATE TABLE IF NOT EXISTS sources (
     source_id TEXT PRIMARY KEY,
-    source_name TEXT,
-    source_type TEXT,
     title TEXT,
     authors TEXT,
     year INTEGER,
+    publication_date TEXT,
     venue TEXT,
     doi TEXT,
     url TEXT,
+    domain TEXT,
     pdf_file TEXT,
-    imported_at TEXT DEFAULT (datetime('now')),
-    created_at TEXT DEFAULT (datetime('now'))
+    imported_at TEXT,
+    last_seen_at TEXT
 );
 CREATE TABLE IF NOT EXISTS documents (
     doc_id TEXT PRIMARY KEY,
@@ -22,6 +23,14 @@ CREATE TABLE IF NOT EXISTS documents (
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_sources_doi
+ON sources(doi)
+WHERE doi IS NOT NULL AND trim(doi) <> '';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_documents_sha256
+ON documents(sha256)
+WHERE sha256 IS NOT NULL AND trim(sha256) <> '';
 
 CREATE TABLE IF NOT EXISTS chunks (
     chunk_id TEXT PRIMARY KEY,
@@ -91,6 +100,7 @@ CREATE TABLE IF NOT EXISTS tags (
     tag TEXT PRIMARY KEY
 );
 
+
 CREATE TABLE IF NOT EXISTS event_tags (
     event_id TEXT NOT NULL,
     tag TEXT NOT NULL,
@@ -98,6 +108,8 @@ CREATE TABLE IF NOT EXISTS event_tags (
     FOREIGN KEY (event_id) REFERENCES research_events (event_id) ON DELETE CASCADE,
     FOREIGN KEY (tag) REFERENCES tags (tag) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_event_tags_tag ON event_tags(tag);
 
 CREATE TABLE IF NOT EXISTS quantitative_measurements (
     measurement_id TEXT PRIMARY KEY,

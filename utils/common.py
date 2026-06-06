@@ -2,25 +2,27 @@ from pathlib import Path
 import tempfile
 import hashlib
 from datetime import datetime, timezone
-from functools import lru_cache
 from typing import Set, Union
 import warnings
 
 # ---------------------------------------------------------
 # HASHING
 # ---------------------------------------------------------
-def sha16(s: Union[str, bytes]) -> str:
+
+def _to_bytes(s: Union[str, bytes]) -> bytes:
+    """Convert input to bytes for hashing."""
     if isinstance(s, bytes):
-        data = s
-    else:
-        data = s.encode("utf-8")
+        return s
+    return s.encode("utf-8")
+
+def sha16(s: Union[str, bytes]) -> str:
+    """Return first 16 hex digits of sha256 hash of input."""
+    data = _to_bytes(s)
     return hashlib.sha256(data).hexdigest()[:16]
 
 def sha64(s: Union[str, bytes]) -> str:
-    if isinstance(s, bytes):
-        data = s
-    else:
-        data = s.encode("utf-8")
+    """Return full sha256 hex digest of input."""
+    data = _to_bytes(s)
     return hashlib.sha256(data).hexdigest()
 
 
@@ -95,7 +97,15 @@ def _resolve_seeds_dir(SEEDS_DIR=None):
 # SEED LOADERS
 # ---------------------------------------------------------
 def get_compound_seeds(resolved_dir=None):
-    resolved = _resolve_seeds_dir(resolved_dir)
+    if resolved_dir is not None:
+        if isinstance(resolved_dir, Path) and resolved_dir.exists():
+            resolved = resolved_dir
+        elif isinstance(resolved_dir, str) and Path(resolved_dir).exists():
+            resolved = Path(resolved_dir)
+        else:
+            resolved = _resolve_seeds_dir(resolved_dir)
+    else:
+        resolved = _resolve_seeds_dir()
     return _get_compound_seeds_resolved(str(resolved))
 
 

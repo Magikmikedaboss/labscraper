@@ -80,22 +80,24 @@ def test_load_domain_profile(tmp_path):
         axon_domains.load_domain_profile(str(f2))
 
 def test_load_all_domains(tmp_path):
+    # Minimal fields are intentional here to test defaulting behavior
     d1 = tmp_path / "d1.json"
     d2 = tmp_path / "d2.json"
     d1.write_text(json.dumps({"id": "d1", "name": "n1", "description": "desc"}))
     d2.write_text(json.dumps({"id": "d2", "name": "n2", "description": "desc"}))
     result = axon_domains.load_all_domains(str(tmp_path))
     assert set(result.keys()) == {"d1", "d2"}
-    # Duplicate id
+    # Duplicate id (also minimal fields)
     d3 = tmp_path / "d3.json"
     d3.write_text(json.dumps({"id": "d1", "name": "n3", "description": "desc"}))
     with pytest.raises(ValueError):
         axon_domains.load_all_domains(str(tmp_path))
 
-def test_get_domain_by_id(tmp_path, monkeypatch):
+def test_get_domain_by_id(tmp_path):
     d1 = tmp_path / "d1.json"
     d1.write_text(json.dumps({"id": "d1", "name": "n1", "description": "desc"}))
     # Test by passing tmp_path as domains_dir to use real implementation
     prof = axon_domains.get_domain_by_id("d1", domains_dir=str(tmp_path))
-    assert prof is not None and prof.id == "d1"
+    assert prof is not None, "profile not found"
+    assert prof.id == "d1"
     assert axon_domains.get_domain_by_id("badid", domains_dir=str(tmp_path)) is None
