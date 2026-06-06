@@ -61,6 +61,17 @@ MODERATE_CONTEXT_TERMS = [
     "due to", "caused by", "resulted from", "requirements", "standard", "specimens"
 ]
 
+"""Generic placeholders filtered from extracted entities after lowercase normalization.
+
+These terms are broad analytical words (for example, 'result', 'method', 'study')
+that are rarely useful as concrete entities in lens outputs.
+"""
+GENERIC_ENTITY_BLACKLIST = {
+    "indirect", "direct", "positive", "negative", "control", "test", "sample",
+    "result", "data", "method", "analysis", "study", "research", "paper",
+    "article", "report",
+}
+
 
 def has_unit_signal(s_l: str) -> bool:
     return any(p.search(s_l) for p in UNIT_REGEXES)
@@ -102,10 +113,13 @@ def infer_context_strength(sentence: str, *, has_numbers: Optional[bool] = None,
 
     has_strong_terms = any(wordhit(s_l, term) for term in STRONG_RESULT_TERMS)
     has_context_terms = any(wordhit(s_l, term) for term in MODERATE_CONTEXT_TERMS)
+    has_numbers_and_units = numbers and units
+    has_strong_and_numeric = has_strong_terms and (numbers or units)
+    has_numeric_or_context = numbers or units or has_context_terms
 
-    if (numbers and units) or (has_strong_terms and (numbers or units)):
+    if has_numbers_and_units or has_strong_and_numeric:
         return "strong"
-    if numbers or units or has_context_terms:
+    if has_numeric_or_context:
         return "moderate"
     return "weak"
 
@@ -149,7 +163,7 @@ def dedupe_entities(entities: List[Dict]) -> List[Dict]:
         if all(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in entity_name):
             continue  # Skip entities that are only punctuation/symbols
 
-        if entity_name in {"indirect", "direct", "positive", "negative", "control", "test", "sample", "result", "data", "method", "analysis", "study", "research", "paper", "article", "report"}:
+        if entity_name in GENERIC_ENTITY_BLACKLIST:
             continue  # Skip generic terms that aren't specific entities
 
         k = (e["entity_type"], entity_name, e.get("entity_variant") or "", e.get("role") or "")

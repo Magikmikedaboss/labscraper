@@ -171,7 +171,7 @@ class TestBiomedicalEntities:
         assert len(peptide_entities) > 0
         # Assert the expected peptide sequence is present in the extracted entity
         assert any(
-            "GGGSGGGSGGG" in (e.get("entity_name", "") or e.get("entity_text", ""))
+            "GGGSGGGSGGG" in (e.get("entity_name", "") or e.get("text", ""))
             for e in peptide_entities
         )
 

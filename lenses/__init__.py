@@ -14,6 +14,10 @@ from .construction_materials_v1 import detect as detect_materials
 logger = logging.getLogger(__name__)
 
 
+DEFAULT_CONFIDENCE_RANK = {"low": 1, "med": 2, "medium": 2, "high": 3}
+DEFAULT_CONTEXT_RANK = {"weak": 1, "moderate": 2, "strong": 3}
+
+
 LENS_REGISTRY = {
     "building_physics": detect_building_physics,
     "climate": detect_climate,
@@ -22,15 +26,27 @@ LENS_REGISTRY = {
     "materials": detect_materials,
 }
 
+
+def set_rankings(
+    confidence_rank: Optional[Dict[str, int]] = None,
+    context_rank: Optional[Dict[str, int]] = None,
+) -> Tuple[Dict[str, int], Dict[str, int]]:
+    """Return ranking maps for detect_multi_lens sorting.
+
+    Pass None for either map to get a copy of that default map.
+    """
+    return (
+        dict(DEFAULT_CONFIDENCE_RANK if confidence_rank is None else confidence_rank),
+        dict(DEFAULT_CONTEXT_RANK if context_rank is None else context_rank),
+    )
+
 def detect_multi_lens(
     sentence: str,
     source_type: str = "research_paper",
     enabled_lenses: Optional[Union[str, Iterable[str]]] = None,
-    raise_on_no_match: bool = False,
-    return_errors: bool = False,
-    raise_on_detector_errors: bool = False,
-    warn_on_no_match: bool = False,
-) -> Union[List[dict], Tuple[List[dict], Dict[str, str]]]:
+    confidence_rank: Optional[Dict[str, int]] = None,
+    context_rank: Optional[Dict[str, int]] = None,
+) -> List[dict]:
     """
     Run all enabled construction lenses and return stacked results for one sentence.
 
@@ -38,17 +54,41 @@ def detect_multi_lens(
         sentence: Input sentence to analyze.
         source_type: Type of source (default: research_paper).
         enabled_lenses: List of lens names to use (default: all).
-        raise_on_no_match: If True, raise if no results (even if no errors). Default: False.
-        return_errors: If True, return (results, detector_errors) tuple instead of just results.
-        raise_on_detector_errors: If True, raise if any detector errors. Default: False.
+        confidence_rank: Optional ranking map for confidence sort order.
+        context_rank: Optional ranking map for context-strength sort order.
 
     Returns:
-        - If return_errors is False (default): List of stacked event dicts (List[dict]).
-        - If return_errors is True: Tuple[List[dict], Dict[str, str]] where the second element is a dict of detector errors.
-        If no results and no errors, returns [] (or ([], {}) if return_errors).
-        Raises RuntimeError only if detector_errors is non-empty and raise_on_detector_errors is True, or raise_on_no_match is True.
-        If warn_on_no_match is True, logs a warning when no detectors match; otherwise logs at debug level.
+        List of stacked event dicts.
+
+    Notes:
+        This core API is intentionally minimal and deterministic.
+        Use wrappers for alternate handling modes:
+        - detect_multi_lens_raise_on_no_match
+        - detect_multi_lens_raise_on_detector_errors
+        - detect_multi_lens_return_errors
+        - detect_multi_lens_warn_on_no_match
     """
+    return _detect_multi_lens_internal(
+        sentence=sentence,
+        source_type=source_type,
+        enabled_lenses=enabled_lenses,
+        confidence_rank=confidence_rank,
+        context_rank=context_rank,
+    )
+
+
+def _detect_multi_lens_internal(
+    sentence: str,
+    source_type: str = "research_paper",
+    enabled_lenses: Optional[Union[str, Iterable[str]]] = None,
+    *,
+    raise_on_no_match: bool = False,
+    return_errors: bool = False,
+    raise_on_detector_errors: bool = False,
+    warn_on_no_match: bool = False,
+    confidence_rank: Optional[Dict[str, int]] = None,
+    context_rank: Optional[Dict[str, int]] = None,
+) -> Union[List[dict], Tuple[List[dict], Dict[str, str]]]:
     results: List[dict] = []
     if isinstance(enabled_lenses, str):
         selected_lenses = [enabled_lenses]
@@ -57,8 +97,8 @@ def detect_multi_lens(
     else:
         selected_lenses = list(LENS_REGISTRY.keys())
 
-    confidence_rank = {"low": 1, "med": 2, "medium": 2, "high": 3}
-    context_rank = {"weak": 1, "moderate": 2, "strong": 3}
+    active_confidence_rank = dict(DEFAULT_CONFIDENCE_RANK if confidence_rank is None else confidence_rank)
+    active_context_rank = dict(DEFAULT_CONTEXT_RANK if context_rank is None else context_rank)
 
     # Validate selected_lenses
     invalid_lenses = [name for name in selected_lenses if name not in LENS_REGISTRY]
@@ -106,15 +146,95 @@ def detect_multi_lens(
     if detector_errors and results:
         logger.warning("Some detectors failed: %r", detector_errors)
 
-    results.sort(
-        key=lambda item: (
+    def _ranking_key(item: dict) -> tuple[float, int, int]:
+        conf = item.get("confidence", "low")
+        if conf not in active_confidence_rank:
+            logger.warning(
+                "Unexpected confidence value %r for item event_id=%r event_type=%r; defaulting confidence rank to 0",
+                conf,
+                item.get("event_id"),
+                item.get("event_type"),
+            )
+        return (
             item.get("source_weight", 0.0),
-            confidence_rank.get(item.get("confidence", "low"), 0),
-            context_rank.get(item.get("context_strength", "weak"), 0),
-        ),
+            active_confidence_rank.get(conf, 0),
+            active_context_rank.get(item.get("context_strength", "weak"), 0),
+        )
+
+    results.sort(
+        key=_ranking_key,
         reverse=True,
     )
     return (results, detector_errors) if return_errors else results
+
+
+def detect_multi_lens_raise_on_no_match(
+    sentence: str,
+    source_type: str = "research_paper",
+    enabled_lenses: Optional[Union[str, Iterable[str]]] = None,
+    confidence_rank: Optional[Dict[str, int]] = None,
+    context_rank: Optional[Dict[str, int]] = None,
+) -> List[dict]:
+    return _detect_multi_lens_internal(
+        sentence=sentence,
+        source_type=source_type,
+        enabled_lenses=enabled_lenses,
+        raise_on_no_match=True,
+        confidence_rank=confidence_rank,
+        context_rank=context_rank,
+    )
+
+
+def detect_multi_lens_raise_on_detector_errors(
+    sentence: str,
+    source_type: str = "research_paper",
+    enabled_lenses: Optional[Union[str, Iterable[str]]] = None,
+    confidence_rank: Optional[Dict[str, int]] = None,
+    context_rank: Optional[Dict[str, int]] = None,
+) -> List[dict]:
+    return _detect_multi_lens_internal(
+        sentence=sentence,
+        source_type=source_type,
+        enabled_lenses=enabled_lenses,
+        raise_on_detector_errors=True,
+        confidence_rank=confidence_rank,
+        context_rank=context_rank,
+    )
+
+
+def detect_multi_lens_return_errors(
+    sentence: str,
+    source_type: str = "research_paper",
+    enabled_lenses: Optional[Union[str, Iterable[str]]] = None,
+    confidence_rank: Optional[Dict[str, int]] = None,
+    context_rank: Optional[Dict[str, int]] = None,
+) -> Tuple[List[dict], Dict[str, str]]:
+    results, detector_errors = _detect_multi_lens_internal(
+        sentence=sentence,
+        source_type=source_type,
+        enabled_lenses=enabled_lenses,
+        return_errors=True,
+        confidence_rank=confidence_rank,
+        context_rank=context_rank,
+    )
+    return results, detector_errors
+
+
+def detect_multi_lens_warn_on_no_match(
+    sentence: str,
+    source_type: str = "research_paper",
+    enabled_lenses: Optional[Union[str, Iterable[str]]] = None,
+    confidence_rank: Optional[Dict[str, int]] = None,
+    context_rank: Optional[Dict[str, int]] = None,
+) -> List[dict]:
+    return _detect_multi_lens_internal(
+        sentence=sentence,
+        source_type=source_type,
+        enabled_lenses=enabled_lenses,
+        warn_on_no_match=True,
+        confidence_rank=confidence_rank,
+        context_rank=context_rank,
+    )
 
 
 __all__ = [
@@ -124,6 +244,11 @@ __all__ = [
     "detect_compliance",
     "detect_failure",
     "detect_materials",
+    "set_rankings",
     "detect_multi_lens",
+    "detect_multi_lens_raise_on_no_match",
+    "detect_multi_lens_raise_on_detector_errors",
+    "detect_multi_lens_return_errors",
+    "detect_multi_lens_warn_on_no_match",
 ]
 

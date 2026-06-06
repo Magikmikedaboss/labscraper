@@ -79,7 +79,7 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
     now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO research_events(
-             event_id, research_domain, event_type, study_stage, biological_system, application_area,
+             event_id, research_domain, event_type, stage, system_context, application_context,
              outcome, failure_reason, decision_taken, decision_driver,
              evidence_snippet, evidence_strength, confidence,
              source_id, doc_id, chunk_id, page_number, created_at
@@ -231,7 +231,10 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                 print(f"❌ Error processing {pdf_path}: {e}")
                 # Optionally record failure status in DB for this source
                 try:
-                    fail_source_id = sha64(pdf_path.read_bytes()) if pdf_path.exists() else sha64(str(pdf_path))
+                    try:
+                        fail_source_id = sha64(pdf_path.read_bytes()) if pdf_path.exists() else sha64(str(pdf_path))
+                    except Exception:
+                        fail_source_id = sha64(str(pdf_path))
                     upsert_source(
                         con,
                         fail_source_id,

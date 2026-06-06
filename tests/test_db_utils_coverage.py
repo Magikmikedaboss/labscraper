@@ -23,7 +23,7 @@ def test_show_recent_events_and_top_sources(init_test_schema, caplog):
         conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC1", "Test Source"))
         conn.execute("""
             INSERT INTO research_events (
-                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                event_id, research_domain, event_type, stage, system_context, application_context,
                 outcome, failure_reason, decision_taken, decision_driver,
                 evidence_snippet, evidence_strength, confidence,
                 source_id, doc_id, chunk_id, page_number, created_at

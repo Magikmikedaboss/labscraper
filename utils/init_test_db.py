@@ -31,5 +31,9 @@ def init_test_db(db_path="test.db"):
 
 if __name__ == "__main__":
     import sys
-    db_path = sys.argv[1] if len(sys.argv) > 1 else "test.db"
-    init_test_db(db_path)
+    try:
+        db_path = sys.argv[1] if len(sys.argv) > 1 else "test.db"
+        init_test_db(db_path)
+    except Exception as e:
+        print(f"[init_test_db.py] Error: {e}", file=sys.stderr)
+        sys.exit(1)

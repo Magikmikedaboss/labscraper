@@ -54,5 +54,5 @@ def validate_db_results(db_path):
 
 if __name__ == "__main__":
     # Test the database from the user's command
-    db_path = 'runs/construction_test_final.sqlite'
+    db_path = 'db/runs.sqlite'
     validate_db_results(db_path)

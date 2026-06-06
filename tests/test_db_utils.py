@@ -23,7 +23,7 @@ def temp_db():
     with tempfile.NamedTemporaryFile(suffix=".sqlite", delete=False) as tmp:
         db_path = tmp.name
     try:
-        conn = connect_db(db_path)
+        conn = sqlite3.connect(db_path)
         yield conn, db_path
         conn.close()
     finally:
@@ -135,7 +135,7 @@ class TestDisplayFunctions:
         conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC1", "Test Source"))
         conn.execute("""
             INSERT INTO research_events (
-                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                event_id, research_domain, event_type, stage, system_context, application_context,
                 outcome, failure_reason, decision_taken, decision_driver,
                 evidence_snippet, evidence_strength, confidence,
                 source_id, doc_id, chunk_id, page_number, created_at
@@ -162,7 +162,7 @@ class TestDisplayFunctions:
         conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC2", "Source Title"))
         conn.execute("""
             INSERT INTO research_events (
-                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                event_id, research_domain, event_type, stage, system_context, application_context,
                 outcome, failure_reason, decision_taken, decision_driver,
                 evidence_snippet, evidence_strength, confidence,
                 source_id, doc_id, chunk_id, page_number, created_at
@@ -195,7 +195,7 @@ class TestDistributions:
         conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC3", "Source3"))
         conn.execute("""
             INSERT INTO research_events (
-                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                event_id, research_domain, event_type, stage, system_context, application_context,
                 outcome, failure_reason, decision_taken, decision_driver,
                 evidence_snippet, evidence_strength, confidence,
                 source_id, doc_id, chunk_id, page_number, created_at
@@ -222,7 +222,7 @@ class TestDistributions:
         conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC4", "Source4"))
         conn.execute("""
             INSERT INTO research_events (
-                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                event_id, research_domain, event_type, stage, system_context, application_context,
                 outcome, failure_reason, decision_taken, decision_driver,
                 evidence_snippet, evidence_strength, confidence,
                 source_id, doc_id, chunk_id, page_number, created_at

@@ -74,8 +74,10 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
 
     try:
         with _connect(db_path) as con:
-            source_id = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
-            file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
+            # Keep hashing strategy consistent with run_engine.py: hash file bytes.
+            file_bytes = pdf_path.read_bytes()
+            source_id = sha64(file_bytes)
+            file_hash = sha64(file_bytes)
 
             # Track number of events inserted; partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
             events_count = 0
@@ -85,7 +87,15 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                 metadata = extract_metadata(pdf_path, pdf)
                 metadata.setdefault("domain", domain)
                 metadata.setdefault("publication_date", metadata.get("year"))
-                source_id = upsert_source(con, source_id, pdf_path.name, metadata)
+                resolved_source_id = upsert_source(con, source_id, pdf_path.name, metadata)
+                if resolved_source_id != source_id:
+                    process_logger.warning(
+                        "Source ID remapped for %s: computed=%s resolved=%s",
+                        pdf_path.name,
+                        source_id,
+                        resolved_source_id,
+                    )
+                source_id = resolved_source_id
                 doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
 
                 for page_idx, page in enumerate(pdf.pages, start=1):

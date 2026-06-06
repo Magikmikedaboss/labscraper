@@ -43,6 +43,7 @@ def main(argv=None):
     # Default feeds fallback
     feeds = default_feeds
     config = None
+    feed_domains = {}
 
     print("\n📡 Testing feeds...")
     print("=" * 60)
@@ -57,6 +58,10 @@ def main(argv=None):
             config = validate_feed_config(json.load(f))
 
         feeds = [(feed["url"], feed["name"]) for feed in config.get("feeds", [])]
+        feed_domains = {
+            (feed.get("url"), feed.get("name")): feed.get("domain")
+            for feed in config.get("feeds", [])
+        }
 
     except (json.JSONDecodeError, ValidationError) as e:
         print(f"⚠️ Validation error in {args.config}: {e}")
@@ -77,7 +82,12 @@ def main(argv=None):
     results = []
 
     for url, name in feeds:
-        result = probe_feed(url, name, check_keywords=args.keywords)
+        try:
+            result = probe_feed(url, name, check_keywords=args.keywords)
+        except Exception as e:
+            error_msg = f"{type(e).__name__}: {e}"
+            print(f"⚠️ Probe failed for '{name}' ({url}): {error_msg}")
+            result = {"success": False, "error": error_msg}
         result["url"] = url
         result["name"] = name
         results.append(result)
@@ -100,7 +110,7 @@ def main(argv=None):
                 {
                     "name": r["name"],
                     "url": r["url"],
-                    "domain": "construction_science",
+                    "domain": r.get("domain") or feed_domains.get((r.get("url"), r.get("name"))) or "construction_science",
                     "enabled": True,
                 }
                 for r in working

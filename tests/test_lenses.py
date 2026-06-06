@@ -42,6 +42,59 @@ def _assert_entities(entities):
         assert not missing, f"Entity missing keys: {missing} in {e}"
 
 
+def test_detect_multi_lens_uses_configurable_rankings(monkeypatch):
+    import lenses
+
+    class _Event:
+        def __init__(self, event_type, confidence, context_strength):
+            self._payload = {
+                "event_type": event_type,
+                "outcome": "neutral",
+                "confidence": confidence,
+                "context_strength": context_strength,
+                "source_weight": 1.0,
+            }
+
+        def as_dict(self):
+            return dict(self._payload)
+
+    def detector_a(_sentence, source_type="research_paper"):
+        return _Event("a", "med", "weak"), []
+
+    def detector_b(_sentence, source_type="research_paper"):
+        return _Event("b", "high", "weak"), []
+
+    monkeypatch.setattr(
+        lenses,
+        "LENS_REGISTRY",
+        {"a": detector_a, "b": detector_b},
+    )
+
+    # Default ranking favors high > med.
+    out_default = lenses.detect_multi_lens("x", enabled_lenses=["a", "b"])
+    assert out_default[0]["event_type"] == "b"
+
+    # Injected ranking flips priority for this call only.
+    out_injected = lenses.detect_multi_lens(
+        "x",
+        enabled_lenses=["a", "b"],
+        confidence_rank={"low": 1, "med": 10, "medium": 10, "high": 3},
+    )
+    assert out_injected[0]["event_type"] == "a"
+
+    # set_rankings returns explicit maps that callers can pass through.
+    confidence_rank, context_rank = lenses.set_rankings(
+        confidence_rank={"low": 1, "med": 9, "medium": 9, "high": 3}
+    )
+    out_global = lenses.detect_multi_lens(
+        "x",
+        enabled_lenses=["a", "b"],
+        confidence_rank=confidence_rank,
+        context_rank=context_rank,
+    )
+    assert out_global[0]["event_type"] == "a"
+
+
 # ---------------------------------------------------------------------------
 # construction_common helpers (directly imported)
 # ---------------------------------------------------------------------------
@@ -74,10 +127,14 @@ class TestConstructionCommon:
 
     def test_list_hits_word_boundary(self):
         from lenses.construction_common import list_hits
-        # "steel" should NOT match inside "steelyard" unless the word boundary regex allows it
-        hits = list_hits("reinforced concrete beam", ["concrete", "steel"])
+        # "steel" should not match when only present as a substring.
+        hits = list_hits("reinforced concrete steelyard beam", ["concrete", "steel"])
         assert "concrete" in hits
         assert "steel" not in hits
+
+        # But standalone token should match.
+        hits2 = list_hits("reinforced concrete and steel beam", ["concrete", "steel"])
+        assert "steel" in hits2
 
     def test_dedupe_entities_removes_duplicates(self):
         from lenses.construction_common import dedupe_entities, make_entity
@@ -358,15 +415,15 @@ class TestMultiLensStacking:
         assert all("source_weight" in r for r in results)
 
     def test_detect_multi_lens_raises_on_no_match(self):
-        from lenses import detect_multi_lens
+        from lenses import detect_multi_lens_raise_on_no_match
         sentence = "This sentence is completely irrelevant to construction."
         with pytest.raises(RuntimeError) as excinfo:
-            detect_multi_lens(sentence, source_type="code_standard", raise_on_no_match=True)
+            detect_multi_lens_raise_on_no_match(sentence, source_type="code_standard")
         assert "No detector produced results" in str(excinfo.value)
 
     def test_detect_multi_lens_detector_error_handling_modes(self, monkeypatch):
         import lenses
-        from lenses import detect_multi_lens
+        from lenses import detect_multi_lens_raise_on_detector_errors, detect_multi_lens_return_errors
 
         class _FakeEvent:
             def as_dict(self):
@@ -399,10 +456,9 @@ class TestMultiLensStacking:
         )
 
         with pytest.raises(RuntimeError):
-            detect_multi_lens(
+            detect_multi_lens_raise_on_detector_errors(
                 "any sentence",
                 enabled_lenses=["bad", "none"],
-                raise_on_detector_errors=True,
             )
 
         monkeypatch.setattr(
@@ -414,11 +470,9 @@ class TestMultiLensStacking:
             },
         )
 
-        results, errors = detect_multi_lens(
+        results, errors = detect_multi_lens_return_errors(
             "any sentence",
             enabled_lenses=["bad", "good"],
-            raise_on_detector_errors=False,
-            return_errors=True,
         )
         assert len(results) == 1
         assert results[0]["lens"] == "good"
@@ -427,7 +481,7 @@ class TestMultiLensStacking:
 
     def test_detect_multi_lens_warn_on_no_match_emits_warning(self, monkeypatch, caplog):
         import lenses
-        from lenses import detect_multi_lens
+        from lenses import detect_multi_lens, detect_multi_lens_warn_on_no_match
 
         def no_match_detector(_sentence, source_type="research_paper"):
             return None, []
@@ -442,7 +496,7 @@ class TestMultiLensStacking:
         )
 
         with caplog.at_level("WARNING"):
-            results = detect_multi_lens("irrelevant", warn_on_no_match=True)
+            results = detect_multi_lens_warn_on_no_match("irrelevant")
         assert results == []
         assert any("No detectors matched and no errors reported." in m for m in caplog.messages)
 

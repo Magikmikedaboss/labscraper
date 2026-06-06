@@ -44,13 +44,39 @@ CREATE TABLE IF NOT EXISTS chunks (
     FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE
 );
 
+CREATE TRIGGER IF NOT EXISTS trg_chunks_source_id_consistency_insert
+BEFORE INSERT ON chunks
+FOR EACH ROW
+WHEN EXISTS (
+    SELECT 1
+    FROM documents d
+    WHERE d.doc_id = NEW.doc_id
+      AND d.source_id <> NEW.source_id
+)
+BEGIN
+    SELECT RAISE(ABORT, 'chunks.source_id must match documents.source_id for doc_id');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_chunks_source_id_consistency_update
+BEFORE UPDATE OF doc_id, source_id ON chunks
+FOR EACH ROW
+WHEN EXISTS (
+    SELECT 1
+    FROM documents d
+    WHERE d.doc_id = NEW.doc_id
+      AND d.source_id <> NEW.source_id
+)
+BEGIN
+    SELECT RAISE(ABORT, 'chunks.source_id must match documents.source_id for doc_id');
+END;
+
 CREATE TABLE IF NOT EXISTS research_events (
     event_id TEXT PRIMARY KEY,
     research_domain TEXT NOT NULL,
     event_type TEXT NOT NULL,
-    study_stage TEXT,
-    biological_system TEXT,
-    application_area TEXT,
+    stage TEXT,
+    system_context TEXT,
+    application_context TEXT,
     outcome TEXT NOT NULL DEFAULT 'unknown',
     failure_reason TEXT NOT NULL DEFAULT 'unknown',
     decision_taken TEXT NOT NULL DEFAULT 'unknown',
@@ -64,6 +90,7 @@ CREATE TABLE IF NOT EXISTS research_events (
     page_number INTEGER,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE,
+    -- Keep events for audit/history when document artifacts are removed; null doc/chunk references are expected.
     FOREIGN KEY (doc_id) REFERENCES documents(doc_id) ON DELETE SET NULL,
     FOREIGN KEY (chunk_id) REFERENCES chunks(chunk_id) ON DELETE SET NULL
 );

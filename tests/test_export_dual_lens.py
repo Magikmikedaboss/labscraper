@@ -39,7 +39,7 @@ def test_export_dual_lens_smoke(monkeypatch, tmp_path):
     import utils.export.aggregation
     monkeypatch.setattr(utils.export.aggregation, "sqlite3", DummySqlite3)
     # Should not raise
-    export_dual_lens("fake.db", "test_domain", output_dir=str(tmp_path))
+    export_dual_lens("fake.db", "construction_science", output_dir=str(tmp_path))
 
     # Assert expected output files are created and non-empty
     output_files = list(tmp_path.glob("*"))

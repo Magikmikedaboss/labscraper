@@ -30,7 +30,7 @@ The UI Control Panel provides a graphical interface for managing and running the
 ## Installation
 
 ### Prerequisites
-- Python 3.10 or higher
+- Python 3.11+
 - Existing AXON repository checkout
 
 ### Dependencies

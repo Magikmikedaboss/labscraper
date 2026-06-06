@@ -104,10 +104,10 @@ def analyze_construction_results():
         # Get study stages
         print("🔬 Study Stages Distribution:")
         cursor.execute('''
-        SELECT re.study_stage, COUNT(*) as count
+        SELECT re.stage, COUNT(*) as count
         FROM research_events re
         WHERE re.research_domain = 'construction'
-        GROUP BY re.study_stage
+        GROUP BY re.stage
         ORDER BY count DESC
         ''')
         stage_stats = cursor.fetchall()
@@ -118,10 +118,10 @@ def analyze_construction_results():
         # Get biological systems (should be construction systems)
         print("🏗️  Biological Systems (Construction Context):")
         cursor.execute('''
-        SELECT re.biological_system, COUNT(*) as count
+        SELECT re.system_context, COUNT(*) as count
         FROM research_events re
-        WHERE re.research_domain = 'construction' AND re.biological_system IS NOT NULL
-        GROUP BY re.biological_system
+        WHERE re.research_domain = 'construction' AND re.system_context IS NOT NULL
+        GROUP BY re.system_context
         ORDER BY count DESC
         LIMIT 10
         ''')

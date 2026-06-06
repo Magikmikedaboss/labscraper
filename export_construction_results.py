@@ -5,6 +5,7 @@ Export construction science results from db/runs.sqlite
 
 import sqlite3
 import csv
+import sys
 from pathlib import Path
 
 DB_PATH = Path("db/runs.sqlite")
@@ -18,7 +19,8 @@ DOMAIN_ID = "construction_science"
 def ensure_db_exists():
     if not DB_PATH.exists():
         print(f"❌ Database file not found: {DB_PATH}")
-        raise SystemExit(1)
+        sys.exit(1)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 
@@ -38,7 +40,7 @@ def export_events():
                 re.event_id,
                 re.research_domain,
                 re.event_type,
-                re.study_stage,
+                re.stage AS study_stage,
                 re.outcome,
                 re.decision_driver,
                 re.evidence_snippet,
@@ -54,7 +56,6 @@ def export_events():
             ORDER BY re.created_at DESC
         """, (DOMAIN_ID,)).fetchall()
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     events_path = OUTPUT_DIR / f"events_export_{DOMAIN_ID}.csv"
 
     with open(events_path, 'w', newline='', encoding='utf-8') as f:
@@ -82,7 +83,6 @@ def export_events():
 # ---------------------------------------------------------
 def export_entities():
     print("🏗️  Exporting construction science entities...")
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     with sqlite3.connect(DB_PATH) as con:
         con.row_factory = sqlite3.Row
@@ -129,7 +129,6 @@ def export_entities():
 # ---------------------------------------------------------
 def export_event_entities():
     print("🏗️  Exporting event-entity relationships...")
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     with sqlite3.connect(DB_PATH) as con:
         con.row_factory = sqlite3.Row

@@ -246,11 +246,15 @@ pip install -r requirements.txt
 
 ## Initialize database
 
+The engine auto-initializes the canonical production/dev database at `db/runs.sqlite` on first run.
+
+For manual or isolated local/CI testing, use the explicit initializer with a non-canonical target path:
+
 ```bash
-python init_db.py
+python utils/init_db.py db/local.sqlite
 ```
 
-This initializes the canonical database at `db/runs.sqlite`.
+Note: `utils/init_db.py` is guarded against direct initialization of the canonical `db/runs.sqlite`.
 
 ## Daily Resume (PowerShell)
 
@@ -531,7 +535,7 @@ See `README_UI.md` for the current UI/control-panel integration entry points.
 ### Adding New Seed Terms
 ```bash
 # Edit seed files with your preferred editor (example)
-code seeds/assays.json
+code seeds/base/life_sciences/assays.txt
 
 # Validate (prevents crashes from ambiguous abbreviations)
 python utils/lint_seeds.py

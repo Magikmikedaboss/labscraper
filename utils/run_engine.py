@@ -8,6 +8,7 @@ import sys
 import logging
 import argparse
 from utils.db_init import init_db_schema
+from utils.axon_domains import get_domain_by_id
 import pdfplumber
 from pdfminer.pdfparser import PDFSyntaxError
 from pdfminer.pdfexceptions import PDFNotImplementedError
@@ -122,6 +123,12 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
         input_dir = input_dir or _default_input_dir()
         db_path = db_path or Path("db/runs.sqlite")
 
+    if get_domain_by_id(research_domain) is None:
+        logging.getLogger(__name__).warning(
+            "Unknown domain '%s'; proceeding with fallback behavior.",
+            research_domain,
+        )
+
     # Normalize paths
     input_dir = Path(input_dir)
     db_path = Path(db_path)
@@ -153,7 +160,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                 # Hash file bytes directly
                 content_hash = sha64(file_bytes)
                 source_id = content_hash
-                file_hash = sha64(file_bytes)
+                file_hash = content_hash
 
                 with pdfplumber.open(str(pdf_path)) as pdf:
                     metadata = extract_metadata(pdf_path, pdf)

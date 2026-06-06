@@ -5,21 +5,13 @@ import shutil
 from pathlib import Path
 from collections import defaultdict
 
+from utils.path_validation import validate_domain_id
 
 logger = logging.getLogger(__name__)
 
 
 def _validate_domain_id(domain_id: str) -> str:
-    if not isinstance(domain_id, str) or not domain_id.strip():
-        raise ValueError("domain_id must be a non-empty string")
-    if ".." in domain_id:
-        raise ValueError("Invalid domain_id: parent path traversal is not allowed")
-    if any(sep in domain_id for sep in ("/", "\\")):
-        raise ValueError("Invalid domain_id: path separators are not allowed")
-    p = Path(domain_id)
-    if p.is_absolute() or any(part != domain_id for part in p.parts):
-        raise ValueError("Invalid domain_id: must be a single safe path segment")
-    return domain_id
+    return validate_domain_id(domain_id)
 
 
 def _publish_latest_file(source_file: Path, latest_file: Path):

@@ -11,7 +11,6 @@ omit =
     utils/show_v4_exports.py
     utils/lint_seeds.py
     utils/overlay_scorer.py
-    utils/integrated_entity_system.py
     utils/verify_setup.py
     */test_*.py
 show_missing = True

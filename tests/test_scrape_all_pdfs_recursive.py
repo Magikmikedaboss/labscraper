@@ -90,8 +90,8 @@ def test_main_db_init(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(sys, "argv", test_args)
     monkeypatch.setattr(scrape_all_pdfs_recursive, "find_all_pdfs", lambda dirs: [tmp_path/"a.pdf"])
     monkeypatch.setattr("builtins.input", lambda _: "y")
-    monkeypatch.setattr("pathlib.Path.exists", lambda self: False)
-    monkeypatch.setattr("pathlib.Path.read_text", lambda self, encoding=None: "" if "schema" in str(self) else "file contents")
+    monkeypatch.setattr(scrape_all_pdfs_recursive.Path, "exists", lambda self: False)
+    monkeypatch.setattr(scrape_all_pdfs_recursive.Path, "read_text", lambda self, encoding=None: "" if "schema" in str(self) else "file contents")
     monkeypatch.setattr(scrape_all_pdfs_recursive.sqlite3, "connect", fake_connect)
     # Patch Pool to a dummy context manager that runs sequentially
     class DummyPool:

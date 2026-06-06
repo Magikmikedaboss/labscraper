@@ -11,7 +11,7 @@ First, let's see what you have:
 # You should be in: C:\projects\labscraper
 
 # Check if seed files exist
-ls seeds/base/life_sciences/
+Get-ChildItem seeds/base/life_sciences/
 
 # You should see:
 # - compounds.txt

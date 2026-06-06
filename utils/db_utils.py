@@ -481,7 +481,7 @@ def insert_event(
     event_id = sha64(base)
     con.execute(
         """INSERT OR IGNORE INTO research_events(
-             event_id, research_domain, event_type, study_stage, biological_system, application_area,
+             event_id, research_domain, event_type, stage, system_context, application_context,
              outcome, failure_reason, decision_taken, decision_driver,
              evidence_snippet, evidence_strength, confidence,
              source_id, doc_id, chunk_id, page_number, created_at
@@ -557,5 +557,12 @@ def _db_has_all_tables(db_path: Path) -> bool:
             tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
             table_names = {t[0] for t in tables}
             return required_tables.issubset(table_names)
-    except Exception:
+    except Exception as e:
+        logger.debug(
+            "_db_has_all_tables failed for db_path=%s required_tables=%s: %s",
+            db_path,
+            sorted(required_tables),
+            e,
+            exc_info=True,
+        )
         return False

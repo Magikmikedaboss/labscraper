@@ -45,7 +45,6 @@ Available domain configs are in:
 - `config/domains/*.json`
 
 Current domains:
-- `peptide`
 - `biohacking_longevity`
 - `construction_science`
 - `drug_discovery`

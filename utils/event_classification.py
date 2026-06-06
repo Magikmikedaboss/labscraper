@@ -94,10 +94,11 @@ class ConfidenceInput:
     sentence_l: str = ""
 
 
-def detect_method_tags(sentence_l: str) -> List[str]:
-    def _contains_phrase(text: str, phrase: str) -> bool:
-        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
+def _contains_phrase(text: str, phrase: str) -> bool:
+    return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
 
+
+def detect_method_tags(sentence_l: str) -> List[str]:
     tags: List[str] = []
     for tag, phrases in METHOD_TAGS.items():
         if any(_contains_phrase(sentence_l, p) for p in phrases):
@@ -106,9 +107,6 @@ def detect_method_tags(sentence_l: str) -> List[str]:
 
 
 def detect_failure_reason(sentence_l: str) -> str:
-    def _contains_phrase(text: str, phrase: str) -> bool:
-        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
-
     for reason, phrases in FAILURE_PHRASES.items():
         if any(_contains_phrase(sentence_l, p) for p in phrases):
             return reason
@@ -116,9 +114,6 @@ def detect_failure_reason(sentence_l: str) -> str:
 
 
 def detect_decision(sentence_l: str) -> Tuple[str, Any]:
-    def _contains_phrase(text: str, phrase: str) -> bool:
-        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
-
     for decision, phrases in DECISION_PHRASES.items():
         if any(_contains_phrase(sentence_l, p) for p in phrases):
             return decision, None
@@ -126,9 +121,6 @@ def detect_decision(sentence_l: str) -> Tuple[str, Any]:
 
 
 def detect_outcome(sentence_l: str) -> str:
-    def _contains_phrase(text: str, phrase: str) -> bool:
-        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
-
     for outcome in ("negative", "positive", "neutral"):
         if any(_contains_phrase(sentence_l, p) for p in OUTCOME_PHRASES[outcome]):
             return outcome
@@ -136,9 +128,6 @@ def detect_outcome(sentence_l: str) -> str:
 
 
 def classify_event_type(sentence_l: str, method_tags: List[str], failure_reason: str, decision_taken: str) -> str:
-    def _contains_phrase(text: str, phrase: str) -> bool:
-        return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
-
     s = sentence_l
     if "nitrosamine" in method_tags or failure_reason == "regulatory":
         return "regulatory_risk"
@@ -162,9 +151,16 @@ def classify_event_type(sentence_l: str, method_tags: List[str], failure_reason:
 
 
 def evidence_strength(sentence_l: str) -> str:
-    if any(k in sentence_l for k in ("we conclude", "demonstrate", "significant", "robust", "strong")):
+    sentence_lower = sentence_l.lower()
+    strong_terms = ("we conclude", "demonstrate", "significant", "robust", "strong")
+    weak_terms = ("suggest", "may", "might", "could", "trend")
+
+    strong_pattern = r"\b(?:" + "|".join(re.escape(term) for term in strong_terms) + r")\b"
+    weak_pattern = r"\b(?:" + "|".join(re.escape(term) for term in weak_terms) + r")\b"
+
+    if re.search(strong_pattern, sentence_lower):
         return "strong"
-    if any(k in sentence_l for k in ("suggest", "may", "might", "could", "trend")):
+    if re.search(weak_pattern, sentence_lower):
         return "weak"
     return "moderate"
 
