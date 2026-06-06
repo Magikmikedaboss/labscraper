@@ -18,30 +18,32 @@ def test_connect_db_and_get_tables(init_test_schema):
 def test_show_recent_events_and_top_sources(init_test_schema, caplog):
     db_path = init_test_schema
     conn = db_utils.connect_db(str(db_path))
-    # Insert minimal required data
-    conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC1", "Test Source"))
-    conn.execute("""
-        INSERT INTO research_events (
-            event_id, research_domain, event_type, study_stage, biological_system, application_area,
-            outcome, failure_reason, decision_taken, decision_driver,
-            evidence_snippet, evidence_strength, confidence,
-            source_id, doc_id, chunk_id, page_number, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        "EVT1", "domain", "etype", "stage", "system", "area",
-        "outcome", "fail", "decision", "driver",
-        "evidence", "strong", "high",
-        "SRC1", None, None, 1, "2024-01-01T00:00:00"
-    ))
-    conn.commit()
-    with caplog.at_level(logging.INFO):
-        db_utils.show_recent_events(conn)
-        db_utils.show_top_sources(conn)
-    output = " ".join([r.getMessage() for r in caplog.records])
-    assert "RECENT EVENTS" in output
-    assert "TOP SOURCES" in output
-    assert "Test Source" in output
-    conn.close()
+    try:
+        # Insert minimal required data
+        conn.execute("INSERT INTO sources (source_id, title) VALUES (?, ?)", ("SRC1", "Test Source"))
+        conn.execute("""
+            INSERT INTO research_events (
+                event_id, research_domain, event_type, study_stage, biological_system, application_area,
+                outcome, failure_reason, decision_taken, decision_driver,
+                evidence_snippet, evidence_strength, confidence,
+                source_id, doc_id, chunk_id, page_number, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "EVT1", "domain", "etype", "stage", "system", "area",
+            "outcome", "fail", "decision", "driver",
+            "evidence", "strong", "high",
+            "SRC1", None, None, 1, "2024-01-01T00:00:00"
+        ))
+        conn.commit()
+        with caplog.at_level(logging.INFO):
+            db_utils.show_recent_events(conn)
+            db_utils.show_top_sources(conn)
+        output = " ".join([r.getMessage() for r in caplog.records])
+        assert "RECENT EVENTS" in output
+        assert "TOP SOURCES" in output
+        assert "Test Source" in output
+    finally:
+        conn.close()
 
 def test_show_pdf_cache(tmp_path, caplog, init_test_schema):
     cache_dir = tmp_path / "rss_cache"

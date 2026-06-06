@@ -129,7 +129,7 @@ def test_init_db_schema_if_needed(monkeypatch, tmp_path):
 
     # Patch the imported symbol in utils.run_engine, not the definition site
     import utils.run_engine
-    monkeypatch.setattr(utils.run_engine, "_init_db_schema", fake_init_db_schema)
+    monkeypatch.setattr(utils.run_engine, "init_db_schema", fake_init_db_schema)
     monkeypatch.setattr(utils.run_engine, "_db_has_all_tables", lambda _: True, raising=False)
 
     # Should NOT call for canonical path

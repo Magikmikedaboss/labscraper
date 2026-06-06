@@ -6,20 +6,23 @@
 
 First, let's see what you have:
 
-```bash
+```powershell
 # Open PowerShell in your project folder
 # You should be in: C:\projects\labscraper
 
 # Check if seed files exist
-ls seeds/
+ls seeds/base/life_sciences/
 
 # You should see:
 # - compounds.txt
 # - targets.txt
 # - models.txt
-# - stopwords.txt
-# - README.md
+# - assays.txt
+# - indications.json
+# - pathways.json
 ```
+
+Legacy root seed files have been removed from active use. Edit all seed files under `seeds/base/life_sciences/`.
 
 ---
 
@@ -27,7 +30,7 @@ ls seeds/
 
 **Why?** Starting fresh ensures you see the new seed system working without old data interfering.
 
-```bash
+```powershell
 # Delete the old database (don't worry, we'll recreate it)
 Remove-Item db/runs.sqlite -ErrorAction SilentlyContinue
 
@@ -35,12 +38,12 @@ Remove-Item db/runs.sqlite -ErrorAction SilentlyContinue
 Remove-Item output/*.csv -ErrorAction SilentlyContinue
 
 # Recreate the database with fresh schema
-python utils/init_db.py db/local.sqlite
+python init_db.py
 ```
 
 **Expected Output:**
 ```
- Database initialized: output\peptide_intel.sqlite
+ Database initialized: db/runs.sqlite
    Created 10 tables
 ```
 
@@ -50,7 +53,7 @@ python utils/init_db.py db/local.sqlite
 
 Run the scraper to see if seed files load:
 
-```bash
+```powershell
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
 ```
 
@@ -68,7 +71,7 @@ PDFs: 100%|| 13/13 [01:00<00:00,  4.62s/it]
    Inserted: ~442 research events
    Measurements: 0
    Relationships: 0
-   DB: D:\myrepo\peptide-scraper\output\peptide_intel.sqlite
+    DB: C:\projects\labscraper\db\runs.sqlite
 ```
 
 ** Success Indicators:**
@@ -140,8 +143,8 @@ Stem Cells: 4
 ```
 
 ** Success Indicators:**
-- You see compounds from `seeds/compounds.txt` (liraglutide, semaglutide, etc.)
-- You see models from `seeds/models.txt` (serum, human, plasma, mice)
+- You see compounds from `seeds/base/life_sciences/compounds.txt` (liraglutide, semaglutide, etc.)
+- You see models from `seeds/base/life_sciences/models.txt` (serum, human, plasma, mice)
 - Total entities: ~16 (may vary slightly)
 
 ---
@@ -152,7 +155,7 @@ Let's test that you can add entities without editing Python code:
 
 ```bash
 # Add a new compound to the seed file
-echo "ozempic" >> seeds/compounds.txt
+echo "ozempic" >> seeds/base/life_sciences/compounds.txt
 
 # Re-run scraper (it will load the new seed)
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
@@ -177,10 +180,10 @@ python utils/check_entity_types.py
 **Solution:**
 ```bash
 # Check if seeds folder exists
-ls seeds/
+ls seeds/base/life_sciences/
 
 # If missing, create it:
-mkdir seeds -Force
+mkdir seeds/base/life_sciences -Force
 
 # Then create the seed files (see SEED_SYSTEM_IMPLEMENTED.md for contents)
 ```
@@ -211,7 +214,7 @@ pip install -r requirements.txt
 # Close any programs that might be using the database
 # Then delete and recreate:
 Remove-Item db/runs.sqlite -Force
-python utils/init_db.py db/local.sqlite
+python init_db.py
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
 ```
 
@@ -249,13 +252,13 @@ python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/metho
 ##  Quick Test Commands (Copy-Paste)
 
 ### Full Clean Test
-```bash
+```powershell
 # Clean everything
 Remove-Item db/runs.sqlite -ErrorAction SilentlyContinue
 Remove-Item output/*.csv -ErrorAction SilentlyContinue
 
 # Rebuild
-python utils/init_db.py db/local.sqlite
+python init_db.py
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
 python utils/export_csv.py --domain methods_tooling
 python utils/check_entity_types.py
@@ -288,12 +291,12 @@ Once testing is successful:
    - Look for any false positives
 
 2. **Add Domain-Specific Entities**
-   - Edit `seeds/compounds.txt` to add compounds relevant to your research
-   - Edit `seeds/targets.txt` to add targets you care about
-   - Edit `seeds/models.txt` to add experimental models you use
+   - Edit `seeds/base/life_sciences/compounds.txt` to add compounds relevant to your research
+   - Edit `seeds/base/life_sciences/targets.txt` to add targets you care about
+   - Edit `seeds/base/life_sciences/models.txt` to add experimental models you use
 
 3. **Remove False Positives**
-   - If you see incorrect entities, add them to `seeds/stopwords.txt`
+   - If you see incorrect entities, add them to `seeds/base/life_sciences/stopwords.txt`
    - Re-run scraper
 
 4. **Use the Data**
@@ -314,7 +317,7 @@ A: No! Only delete it when:
 For normal use, just run `python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling` and it will update the existing database.
 
 **Q: What if I don't see any compounds extracted?**
-A: This is normal if your PDFs don't mention the compounds in `seeds/compounds.txt`. The seed system only extracts entities that:
+A: This is normal if your PDFs don't mention the compounds in `seeds/base/life_sciences/compounds.txt`. The seed system only extracts entities that:
 1. Are in the seed file
 2. Actually appear in your PDFs
 
@@ -338,10 +341,10 @@ If you run into issues:
 2. Look at the "Troubleshooting" section above
 3. Make sure you're in the right directory: `C:\projects\labscraper`
 4. Check that all files exist:
-   - `seeds/compounds.txt`
-   - `seeds/targets.txt`
-   - `seeds/models.txt`
-   - `seeds/stopwords.txt`
+   - `seeds/base/life_sciences/compounds.txt`
+   - `seeds/base/life_sciences/targets.txt`
+   - `seeds/base/life_sciences/models.txt`
+   - `seeds/base/life_sciences/stopwords.txt`
    - `input/pdfs/methods_tooling/*.pdf` (13 PDFs)
 
 ---

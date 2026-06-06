@@ -45,6 +45,7 @@ Available domain configs are in:
 - `config/domains/*.json`
 
 Current domains:
+- `peptide`
 - `biohacking_longevity`
 - `construction_science`
 - `drug_discovery`
@@ -52,7 +53,8 @@ Current domains:
 - `neuroscience_cognition`
 - `stem_cells_regen`
 
-Notes:
+This list matches `VALID_DOMAIN_IDS` in `utils/export/export_dual_lens.py`.
+
 Notes:
 - `utils/export_csv.py` requires `--domain`
 - Execute once per domain when publishing multiple domains

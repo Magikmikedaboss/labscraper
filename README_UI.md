@@ -98,7 +98,7 @@ python ui_control_panel.py
 ## Configuration Files
 
 ### Domain Configuration
-Domains are loaded from `config/domains/` first, with `seeds/domains/` as a legacy fallback:
+Each domain has a JSON configuration file in `config/domains/`.
 - Each domain has a JSON configuration file
 - Defines domain-specific rules and preferences
 - Controls pattern emphasis and entity types
@@ -129,7 +129,7 @@ RSS feeds configured in `config/feeds.json`:
 ### Common Issues
 
 #### "Domain not found"
-- Ensure domain JSON files exist in `config/domains/` (or `seeds/domains/` for legacy setups)
+- Ensure domain JSON files exist in `config/domains/`
 - Check file format and required fields
 - Verify domain ID matches configuration
 

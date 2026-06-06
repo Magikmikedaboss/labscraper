@@ -16,7 +16,8 @@ This guide covers:
 
 ## Prerequisites
 
-- Run commands from repository root: C:\projects\labscraper
+- Run commands from repository root: <repo-root>
+- `<repo-root>` means the directory where you cloned this repository
 - Activate your virtual environment
 - Install dependencies:
 

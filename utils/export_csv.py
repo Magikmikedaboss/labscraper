@@ -15,6 +15,7 @@ from utils.process_words import is_process_word
 DB_PATH = Path("db") / "runs.sqlite"
 OUTPUT_DIR = Path("output")
 LATEST_DIR = Path("exports") / "latest"
+ENTITY_VARIANT_DELIM = "|||"
 
 
 
@@ -41,7 +42,20 @@ def export_candidates_domain_aware(domain_id: str = None):
                         MIN(e.entity_id) as entity_id,
                         e.entity_type,
                         e.entity_name as canonical_name,
-                        GROUP_CONCAT(DISTINCT e.entity_variant) as entity_variant,
+                        (
+                            SELECT GROUP_CONCAT(v.entity_variant, '|||')
+                            FROM (
+                                SELECT DISTINCT e2.entity_variant AS entity_variant
+                                FROM entities e2
+                                JOIN event_entities ee2 ON e2.entity_id = ee2.entity_id
+                                JOIN research_events re2 ON ee2.event_id = re2.event_id
+                                WHERE re2.research_domain = ?
+                                  AND e2.entity_type = e.entity_type
+                                  AND e2.entity_name = e.entity_name
+                                  AND e2.entity_variant IS NOT NULL
+                                  AND TRIM(e2.entity_variant) <> ''
+                            ) v
+                        ) as entity_variant,
                         COUNT(DISTINCT ee.event_id) as event_count,
                         GROUP_CONCAT(DISTINCT re.source_id) as source_ids
                     FROM entities e
@@ -50,7 +64,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                     WHERE re.research_domain = ?
                     GROUP BY e.entity_type, e.entity_name
                     ORDER BY event_count DESC
-                """, (domain_id,)).fetchall()
+                """, (domain_id, domain_id)).fetchall()
         else:
             entities_data = cur.execute("""
                 SELECT 
@@ -91,9 +105,13 @@ def export_candidates_domain_aware(domain_id: str = None):
 
             key = (etype, canonical_name)
             canonical_entities[key]["entity_type"] = etype
-            # Split evariant on commas, deduplicate, and add each
+            # Domain query uses a custom delimiter to preserve commas in values.
             if evariant:
-                for v in (s.strip() for s in evariant.split(",") if s.strip()):
+                if domain_id:
+                    variants = (s.strip() for s in evariant.split(ENTITY_VARIANT_DELIM) if s.strip())
+                else:
+                    variants = [evariant.strip()]
+                for v in variants:
                     canonical_entities[key]["entity_variant"].add(v)
             # Use event_count directly (it's an integer)
             if event_count:

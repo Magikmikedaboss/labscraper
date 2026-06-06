@@ -1,6 +1,7 @@
 # lenses/construction_building_physics_v1.py
 from __future__ import annotations
 
+import re
 from typing import List, Tuple, Optional
 from .construction_common import (
     LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
@@ -44,7 +45,6 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         "improved r-value", "improved r value", "reduced infiltration"
     ])
     # Flexible positive: 'reduced' within 7 words of 'energy consumption' or 'consumption'
-    import re
     flexible_positive = False
     # Match 'reduced' and 'energy consumption' (or 'consumption') within 7 words, any order, anywhere
     pattern1 = r"reduc\w*\b(?:\W+\w+){0,7}\W+(energy consumption|consumption)"

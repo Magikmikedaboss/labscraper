@@ -9,10 +9,10 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from utils.run_engine import main
-from utils.db_init import _init_db_schema
+from utils.db_init import init_db_schema
 
 def test_main_function_falsy_domain_uses_default():
-    # NOTE: This test intentionally omits an explicit _init_db_schema() call.
+    # NOTE: This test intentionally omits an explicit init_db_schema() call.
     # main() internally calls _init_db_schema_if_needed(), which initializes the schema for non-canonical/test DBs.
     # This ensures the test exercises main()'s fallback DB initialization logic as intended.
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -54,7 +54,7 @@ def test_main_function_database_creation():
         input_dir = Path(temp_dir) / "input_pdfs"
         input_dir.mkdir()
         output_db = Path(temp_dir) / "test_output.sqlite"
-        _init_db_schema(str(output_db))
+        init_db_schema(str(output_db))
 
         test_pdf = input_dir / "test.pdf"
         test_pdf.write_text("Mock PDF content")
@@ -103,7 +103,7 @@ def test_main_function_error_handling():
         test_pdf.write_text("Mock PDF content")
 
         # Ensure the DB/schema exists before main is called
-        _init_db_schema(str(output_db))
+        init_db_schema(str(output_db))
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open:
             mock_pdf_open.side_effect = Exception("Processing error")
             with pytest.raises(SystemExit) as e:
@@ -121,7 +121,7 @@ def test_main_function_multiple_pdfs():
         input_dir = Path(temp_dir) / "input_pdfs"
         input_dir.mkdir()
         output_db = Path(temp_dir) / "test_output.sqlite"
-        _init_db_schema(str(output_db))
+        init_db_schema(str(output_db))
 
         for i in range(2):
             test_pdf = input_dir / f"test_{i}.pdf"
@@ -160,7 +160,7 @@ def test_main_function_domain_specific_processing():
         domains = ['methods_tooling', 'drug_discovery', 'construction_science']
         for domain in domains:
             output_db = Path(temp_dir) / f"test_output_{domain}.sqlite"
-            _init_db_schema(str(output_db))
+            init_db_schema(str(output_db))
             with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open, \
                  patch('utils.run_engine.extract_metadata') as mock_metadata, \
                  patch('utils.run_engine.chunk_sentences') as mock_sentences:

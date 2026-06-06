@@ -43,7 +43,7 @@ try:
         suggested_keep, normalize_event_key,
         upsert_source, insert_document, insert_chunk, insert_event,
         link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-        sha16, sha64,
+        sha64,
         FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
     )
     print("✅ Successfully imported run_engine functions")
@@ -123,7 +123,7 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
     """Process abstract using the existing engine functions"""
     try:
         # Create stable source ID based on URL
-        source_id = sha16(abstract_url)
+        source_id = sha64(abstract_url)
         file_hash = sha64(abstract_url)
         
         events_count = 0

@@ -7,7 +7,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from utils.common import now_iso, sha16
+from utils.common import now_iso, sha64
+
+
+def _quote_sql_identifier(identifier: str) -> str:
+    """Quote a SQLite identifier after strict validation."""
+    allowed_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
+    if not identifier or not all(c in allowed_chars for c in identifier):
+        raise ValueError(f"Invalid SQL identifier: {identifier!r}")
+    return f'"{identifier}"'
 
 
 def db_has_all_tables(con, required_tables=None):
@@ -56,22 +64,17 @@ def get_table_stats(conn: sqlite3.Connection, table: str) -> Dict:
     if table not in existing_tables:
         raise ValueError(f"Table '{table}' does not exist in database")
     
-    # Use a whitelist approach - only allow known safe table names
-    # This prevents SQL injection while allowing dynamic table queries
-    allowed_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_')
-    if not all(c in allowed_chars for c in table):
-        raise ValueError(f"Table name '{table}' contains invalid characters")
-    
-    # Now safely query the table using dynamic SQL with proper quoting
-    # Use string formatting that Bandit recognizes as safe
-    count_query = 'SELECT COUNT(*) FROM "{}"'.format(table)
+    # Identifiers cannot be parameterized in sqlite3, so validate and quote first.
+    quoted_table = _quote_sql_identifier(table)
+    # Table name is validated by _quote_sql_identifier before interpolation.
+    count_query = f"SELECT COUNT(*) FROM {quoted_table}"  # nosec B608
     cursor = conn.execute(count_query)
     try:
         count = cursor.fetchone()[0]
     finally:
         cursor.close()
 
-    pragma_query = 'PRAGMA table_info("{}")'.format(table)
+    pragma_query = f"PRAGMA table_info({quoted_table})"
     cursor = conn.execute(pragma_query)
     try:
         columns = [row[1] for row in cursor.fetchall()]
@@ -274,7 +277,8 @@ def _normalize_doi(value: Any) -> str:
 
 
 def _table_columns(con: sqlite3.Connection, table_name: str) -> set[str]:
-    rows = con.execute(f"PRAGMA table_info({table_name})").fetchall()
+    safe_table_name = _quote_sql_identifier(table_name)
+    rows = con.execute(f"PRAGMA table_info({safe_table_name})").fetchall()
     return {row[1] for row in rows}
 
 
@@ -376,18 +380,38 @@ def upsert_source(con: sqlite3.Connection, source_id: str, pdf_file: str, metada
         "imported_at": now_iso(),
     }
 
-    source_columns = _table_columns(con, "sources")
-    insert_cols = [k for k in values if k in source_columns]
-    placeholders = ",".join("?" for _ in insert_cols)
-    update_cols = [k for k in insert_cols if k != "source_id"]
-    update_sql = ", ".join(f"{k}=excluded.{k}" for k in update_cols)
-    params = tuple(values[col] for col in insert_cols)
+    params = (
+        values["source_id"],
+        values["pdf_file"],
+        values["title"],
+        values["authors"],
+        values["year"],
+        values["publication_date"],
+        values["venue"],
+        values["doi"],
+        values["url"],
+        values["domain"],
+        values["imported_at"],
+    )
 
     con.execute(
-        f"""
-        INSERT INTO sources({','.join(insert_cols)})
-        VALUES ({placeholders})
-        ON CONFLICT(source_id) DO UPDATE SET {update_sql}
+        """
+        INSERT INTO sources(
+            source_id, pdf_file, title, authors, year, publication_date,
+            venue, doi, url, domain, imported_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(source_id) DO UPDATE SET
+            pdf_file=excluded.pdf_file,
+            title=excluded.title,
+            authors=excluded.authors,
+            year=excluded.year,
+            publication_date=excluded.publication_date,
+            venue=excluded.venue,
+            doi=excluded.doi,
+            url=excluded.url,
+            domain=excluded.domain,
+            imported_at=excluded.imported_at
         """,
         params,
     )
@@ -402,7 +426,7 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
         if existing:
             return existing[0]
 
-    doc_id = sha16(sha256 or f"{source_id}|{file_path}")
+    doc_id = sha64(sha256 or f"{source_id}|{file_path}")
     con.execute(
         """INSERT OR IGNORE INTO documents(doc_id, source_id, file_path, file_type, sha256, created_at)
            VALUES (?,?,?,?,?,?)""",
@@ -412,7 +436,7 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
 
 def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
     # Use full chunk text to avoid collisions from identical prefixes.
-    chunk_id = sha16(f"{doc_id}|{page_number}|{chunk_text}")
+    chunk_id = sha64(f"{doc_id}|{page_number}|{chunk_text}")
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
            VALUES (?,?,?,?,?,?,?)""",
@@ -425,7 +449,7 @@ def upsert_tag(con, tag: str) -> str:
 
 def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: Optional[str], organism: Optional[str]) -> str:
     key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
-    entity_id = sha16(key)
+    entity_id = sha64(key)
     con.execute(
         """INSERT OR IGNORE INTO entities(entity_id, entity_type, entity_name, entity_variant, organism, created_at)
            VALUES (?,?,?,?,?,?)""",
@@ -454,7 +478,7 @@ def insert_event(
     confidence_v: str,
 ) -> str:
     base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
-    event_id = sha16(base)
+    event_id = sha64(base)
     con.execute(
         """INSERT OR IGNORE INTO research_events(
              event_id, research_domain, event_type, study_stage, biological_system, application_area,
@@ -487,7 +511,7 @@ def insert_measurement(con, event_id: str, measurement: dict):
     # measurement_type, value, and unit are required for a valid measurement
     if mtype is None or value is None or unit is None:
         raise ValueError(f"Missing required measurement fields: measurement_type={mtype}, value={value}, unit={unit}")
-    measurement_id = sha16(f"{event_id}|{mtype}|{value}|{unit}")
+    measurement_id = sha64(f"{event_id}|{mtype}|{value}|{unit}")
     con.execute(
         """INSERT OR IGNORE INTO quantitative_measurements(
              measurement_id, event_id, measurement_type, value, unit, context, created_at
@@ -497,7 +521,7 @@ def insert_measurement(con, event_id: str, measurement: dict):
 
 def insert_relationship(con, entity_id_1: str, entity_id_2: str, relationship_type: str):
     """Insert entity relationship (matches entity_relationships schema)"""
-    relationship_id = sha16(f"{entity_id_1}|{entity_id_2}|{relationship_type}")
+    relationship_id = sha64(f"{entity_id_1}|{entity_id_2}|{relationship_type}")
     con.execute(
         """INSERT OR IGNORE INTO entity_relationships(
              relationship_id, source_entity_id, target_entity_id, relationship_type, created_at

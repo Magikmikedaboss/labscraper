@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
-import warnings
 from typing import Any, List, Tuple
 
 
@@ -83,7 +82,6 @@ OUTCOME_PHRASES = {
 
 HIGH_CONF_THRESHOLD = 6
 MED_CONF_THRESHOLD = 3
-_OLD_CONFIDENCE_SIGNATURE_WARNED = False
 
 
 @dataclass(frozen=True)
@@ -172,22 +170,8 @@ def evidence_strength(sentence_l: str) -> str:
 
 
 def confidence_score(input_data: ConfidenceInput) -> str:
-    """Return low/med/high confidence.
-
-    Deprecated legacy signature:
-      - confidence_score(has_entity, method_tags, failure_reason, decision_taken, has_measurements, sentence_l="")
-    Use:
-      - confidence_score(ConfidenceInput(...))
-    """
-    global _OLD_CONFIDENCE_SIGNATURE_WARNED
+    """Return low/med/high confidence from a ConfidenceInput instance."""
     if not isinstance(input_data, ConfidenceInput):
-        if not _OLD_CONFIDENCE_SIGNATURE_WARNED:
-            warnings.warn(
-                "confidence_score old signature is deprecated; pass ConfidenceInput",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            _OLD_CONFIDENCE_SIGNATURE_WARNED = True
         raise TypeError("confidence_score requires a ConfidenceInput instance")
     ci = input_data
 

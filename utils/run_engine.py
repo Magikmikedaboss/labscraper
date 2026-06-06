@@ -7,7 +7,7 @@ import sqlite3
 import sys
 import logging
 import argparse
-from utils.db_init import _init_db_schema
+from utils.db_init import init_db_schema
 import pdfplumber
 from pdfminer.pdfparser import PDFSyntaxError
 from pdfminer.pdfexceptions import PDFNotImplementedError
@@ -52,8 +52,8 @@ def _init_db_schema_if_needed(db_path):
     """
     Ensure the database at db_path is initialized with the schema.
     For the canonical DB (Path("db/runs.sqlite")), this function checks if required tables are present using _db_has_all_tables;
-    if any are missing, it initializes the schema by calling _init_db_schema. For non-canonical/test DBs, it always initializes the schema.
-    Delegates to utils.db_init._init_db_schema for actual initialization logic.
+    if any are missing, it initializes the schema by calling init_db_schema. For non-canonical/test DBs, it always initializes the schema.
+    Delegates to utils.db_init.init_db_schema for actual initialization logic.
     This conditional behavior ensures that the canonical DB is only initialized if needed, while test/non-canonical DBs are always initialized.
     """
     canonical_db_path = Path("db/runs.sqlite")
@@ -72,12 +72,12 @@ def _init_db_schema_if_needed(db_path):
 
     if is_canonical_db:
         if not _db_has_all_tables(db_path):
-            logger.info(f"Canonical DB at {canonical_path} missing schema; initializing with _init_db_schema.")
-            _init_db_schema(str(db_path))
+            logger.info(f"Canonical DB at {canonical_path} missing schema; initializing with init_db_schema.")
+            init_db_schema(str(db_path))
         else:
             logger.info(f"Canonical DB at {canonical_path} already initialized; skipping schema init.")
     else:
-        _init_db_schema(str(db_path))
+        init_db_schema(str(db_path))
 
 
 # ---------------------------------------------------------
@@ -151,7 +151,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                     file_bytes = f.read()
 
                 # Hash file bytes directly
-                content_hash = sha16(file_bytes)
+                content_hash = sha64(file_bytes)
                 source_id = content_hash
                 file_hash = sha64(file_bytes)
 

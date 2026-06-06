@@ -6,7 +6,7 @@ AXON transforms PDFs, research papers, and curated content sources into structur
 
 Built for researchers, engineers, analysts, and technical teams who need more than document storage and keyword search.
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Parallel Processing](https://img.shields.io/badge/Parallel-4x%20Speedup-green.svg)](https://github.com/Magikmikedaboss/labscraper)
 
@@ -247,8 +247,10 @@ pip install -r requirements.txt
 ## Initialize database
 
 ```bash
-python utils/init_db.py
+python init_db.py
 ```
+
+This initializes the canonical database at `db/runs.sqlite`.
 
 ## Daily Resume (PowerShell)
 
@@ -340,20 +342,23 @@ labscraper/
 │   ├── common.py                   # Common helpers (hashing, etc.)
 │   ├── entity_extractor.py         # (legacy) Entity extraction logic
 │   ├── entity_normalizer.py        # (legacy) Variant normalization
-│   ├── init_db.py                  # Database initialization (run utils/init_db.py)
+│   ├── init_db.py                  # Legacy utility module (use root init_db.py to initialize db/runs.sqlite)
 │   └── scrape_pdfs_phase1.py       # Base scraper functions
 ├── schema.sql                  # Database schema
 ├── config/                     # Configuration files
 │   ├── domains/               # Domain-specific configurations
 │   └── feeds.json             # RSS feed configurations
 ├── seeds/                      # Entity seed files
-│   ├── compounds.txt          # 75 compound names
-│   ├── targets.txt            # 153 biological targets
-│   ├── models.txt             # 136 model systems
-│   ├── assays.json            # 129 assay/method terms
-│   ├── pathways.json          # 124 pathway terms
-│   ├── indications.json       # 88 disease indications
-│   ├── normalization.json     # Variant mapping rules
+│   ├── base/
+│   │   └── life_sciences/     # Canonical location for life-science seed editing
+│   │      ├── compounds.txt
+│   │      ├── targets.txt
+│   │      ├── models.txt
+│   │      ├── assays.txt
+│   │      ├── indications.json
+│   │      ├── pathways.json
+│   │      ├── normalization.json
+│   │      └── stopwords.txt
 │   └── ...                    # Domain and normalization seed assets
 ├── input/                      # Input directories
 │   ├── pdfs/                  # Default PDF input

@@ -42,7 +42,7 @@ from utils.db_utils import (
     upsert_entity
 )
 from utils.deduplication import normalize_event_key
-from utils.common import sha16, sha64
+from utils.common import sha64
 
 process_logger = logging.getLogger("scrape_pdfs_parallel")
 
@@ -74,7 +74,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
 
     try:
         with _connect(db_path) as con:
-            source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
+            source_id = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
             file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
 
             # Track number of events inserted; partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails

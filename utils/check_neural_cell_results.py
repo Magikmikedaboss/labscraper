@@ -1,6 +1,5 @@
 import sqlite3
 from pathlib import Path
-from contextlib import closing
 
 print("=" * 70)
 print("NEURAL CELL EXTRACTION - VERIFICATION RESULTS")
@@ -11,7 +10,7 @@ if not db_path.exists():
     print(f"\u274c Database not found: {db_path}")
     exit(1)
 
-with closing(sqlite3.connect(str(db_path))) as con:
+with sqlite3.connect(str(db_path)) as con:
     # Check entity types
     print("\n1. Entity Types Distribution:")
     print("-" * 70)

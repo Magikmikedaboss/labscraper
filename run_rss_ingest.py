@@ -17,6 +17,7 @@ import re
 import argparse
 import hashlib
 import json
+import sys
 ## Removed duplicate import of sqlite3
 import time
 from pathlib import Path
@@ -25,7 +26,7 @@ import feedparser
 import pdfplumber
 import requests
 from urllib.parse import urlparse
-from utils.common import sha16
+from utils.common import sha64
 from utils.text_utils import chunk_sentences, guess_stage, guess_section
 from utils.data_extractors import extract_quantitative_data
 from utils.entities import extract_entities
@@ -217,22 +218,7 @@ def normalize_event_key(event_type, entities, page, snippet):
     entity_str = "|".join(
         sorted(f"{e.get('entity_type')}:{e.get('entity_name')}" for e in entities)
     )
-    return f"{event_type}|{entity_str}|{page}|{sha16(snippet[:100])}"
-
-
-
-def suggested_keep(conf, event_type, failure_reason, decision_taken, tags):
-    """
-    Suggest whether to keep an event based on confidence and signal features.
-    TODO: Extend for future RSS signal filtering (e.g., advanced event triage or reporting).
-    """
-    if conf in ("med", "high"):
-        return 1
-    if event_type != "other" and (
-        failure_reason != "unknown" or decision_taken != "unknown" or bool(tags)
-    ):
-        return 1
-    return 0
+    return f"{event_type}|{entity_str}|{page}|{sha64(snippet[:100])}"
 
 
 def has_signal(sentence_l: str):
@@ -472,10 +458,10 @@ def main():
         feeds = load_feeds_config(feeds_config_path)
     except FileNotFoundError:
         print(f"❌ Feeds config file not found: {feeds_config_path}")
-        feeds = {"feeds": []}
+        sys.exit(1)
     except RuntimeError as e:
         print(f"❌ Error loading feeds config: {e}")
-        feeds = {"feeds": []}
+        sys.exit(1)
 
     for feed in feeds.get("feeds", []):
         if not feed.get("enabled", True):

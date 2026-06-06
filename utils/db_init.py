@@ -13,7 +13,7 @@ import sqlite3
 from pathlib import Path
 from contextlib import closing
 
-def _init_db_schema(db_path):
+def init_db_schema(db_path):
     """
     Initialize a SQLite database at the given path using the test schema.
 
@@ -42,3 +42,7 @@ def _init_db_schema(db_path):
 
     with closing(sqlite3.connect(db_path_resolved)) as con:
         con.executescript(schema_sql)
+
+
+# Backward-compatible alias for any external imports.
+_init_db_schema = init_db_schema

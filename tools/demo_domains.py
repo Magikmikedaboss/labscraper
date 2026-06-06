@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Test all domains and lenses"""
-from utils.run_engine import extract_entities
+from utils.entities import extract_entities
 
 # Test all available domains
 domains = [

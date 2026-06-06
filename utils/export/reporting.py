@@ -230,7 +230,7 @@ def write_dual_lens_report(
                 if overlay_scores and "bucket" in overlay_scores:
                     bucket = overlay_scores["bucket"]
                     bucket_counts[bucket] += 1
-            total = len(filtered_entities)
+            total = sum(bucket_counts.values())
             for bucket in [
                 "strong",
                 "promising",

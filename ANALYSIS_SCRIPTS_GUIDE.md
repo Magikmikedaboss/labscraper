@@ -239,11 +239,11 @@ To validate enhanced seeds, follow these steps:
     - Open the validation script (e.g., `utils/check_output_files.py`).
     - Edit the line:
        ```python
-       db_path = Path("runs/test_enhanced_seeds.sqlite")
+       db_path = Path("db/runs.sqlite")
        ```
-    - Change it to your target database, for example:
+     - Change it to your target database if needed, for example:
        ```python
-       db_path = Path("runs/your_database.sqlite")
+       db_path = Path("db/local.sqlite")
        ```
 
 2. **Run the validation script:**

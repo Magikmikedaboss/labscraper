@@ -103,10 +103,12 @@ molecular mechanism: -1
 
 ### Option A: Single Lens Per Run (Config-Based)
 
-Set a single overlay in the domain config, then run ingestion:
+Edit `config/domains/biohacking_longevity.json` and set `overlays` to a single value, then run ingestion.
 
 ### Science View
 ```bash
+# In config/domains/biohacking_longevity.json set:
+# "overlays": ["science_research_v1"]
 python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity
@@ -114,6 +116,8 @@ python utils/run_engine.py \
 
 ### Curiosity View
 ```bash
+# In config/domains/biohacking_longevity.json set:
+# "overlays": ["biohacking_curiosity_v1"]
 python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity
@@ -255,13 +259,17 @@ pattern_type,score_science,score_curiosity,bucket_science,bucket_curiosity,...
 
 ### Quick Test (Single Lens)
 ```bash
-# Set science overlay only in domain config, then run:
+# Edit config/domains/biohacking_longevity.json and set:
+#   "overlays": ["science_research_v1"]
+# Then run:
 python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity \
   --output-db output/test_science_lens.sqlite
 
-# Set curiosity overlay only in domain config, then run:
+# Edit config/domains/biohacking_longevity.json and set:
+#   "overlays": ["biohacking_curiosity_v1"]
+# Then run:
 python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity \
