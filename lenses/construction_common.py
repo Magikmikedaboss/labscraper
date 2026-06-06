@@ -216,7 +216,7 @@ def build_lens_event(
         confidence=confidence,
         tags=tags,
         context_strength=infer_context_strength(
-            sentence,
+            s_l,
             has_numbers=has_number(s_l),
             has_units=has_unit_signal(s_l),
         ),

@@ -80,6 +80,26 @@ OUTCOME_PHRASES = {
 }
 
 
+HIGH_SIGNAL_TERMS = (
+    "lc-ms",
+    "mass spectrometry",
+    "in vivo",
+    "in vitro",
+    "clinical",
+    "ic50",
+    "ec50",
+    "half-life",
+    "degraded",
+    "stable",
+    "toxic",
+    "efficacy",
+    "optimized",
+    "modified",
+    "abandoned",
+    "continued",
+)
+
+
 HIGH_CONF_THRESHOLD = 6
 MED_CONF_THRESHOLD = 3
 
@@ -183,25 +203,7 @@ def confidence_score(input_data: ConfidenceInput) -> str:
     if ci.has_measurements:
         score += 2
 
-    high_signal_terms = [
-        "lc-ms",
-        "mass spectrometry",
-        "in vivo",
-        "in vitro",
-        "clinical",
-        "ic50",
-        "ec50",
-        "half-life",
-        "degraded",
-        "stable",
-        "toxic",
-        "efficacy",
-        "optimized",
-        "modified",
-        "abandoned",
-        "continued",
-    ]
-    signal_count = sum(1 for term in high_signal_terms if term in ci.sentence_l)
+    signal_count = sum(1 for term in HIGH_SIGNAL_TERMS if term in ci.sentence_l)
     if signal_count >= 3:
         score += 2
     elif signal_count >= 2:

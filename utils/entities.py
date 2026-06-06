@@ -261,7 +261,7 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
                 ents.append({
                     "entity_type": "stem_cell",
                     "entity_name": name,
-                    "entity_variant": norm,
+                    "entity_variant": "stem_cell",
                     "text": sentence
                 })
                 extracted_names.add(norm)
@@ -273,7 +273,7 @@ def extract_biomedical_entities(sentence: str, extracted_names: set, SEEDS_DIR=N
             norm = normalize_name(name)
             if norm not in extracted_names:
                 ents.append({"entity_type": "neural_cell", "entity_name": name,
-                             "entity_variant": norm, "text": sentence})
+                             "entity_variant": "neural_cell", "text": sentence})
                 extracted_names.add(norm)
 
     # 5. MODELS — after stem/neural cells so dedup blocks their overlap terms

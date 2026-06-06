@@ -72,6 +72,15 @@ CREATE TABLE IF NOT EXISTS event_entities (
     PRIMARY KEY (event_id, entity_id, role)
 );
 
+CREATE TABLE IF NOT EXISTS entity_relationships (
+    relationship_id TEXT PRIMARY KEY,
+    subject_entity_id TEXT NOT NULL,
+    object_entity_id TEXT NOT NULL,
+    relation_type TEXT NOT NULL,
+    context TEXT,
+    created_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS tags (
     tag TEXT PRIMARY KEY
 );

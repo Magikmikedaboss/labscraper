@@ -10,10 +10,6 @@ from utils.path_validation import validate_domain_id
 logger = logging.getLogger(__name__)
 
 
-def _validate_domain_id(domain_id: str) -> str:
-    return validate_domain_id(domain_id)
-
-
 def _publish_latest_file(source_file: Path, latest_file: Path):
     temp_path = latest_file.with_suffix(".tmp")
     try:
@@ -79,7 +75,7 @@ def export_entities_csv(
                     row[f"{overlay_id}_score"] = f"{overlay_scores.get('score', 0):.2f}"
                     row[f"{overlay_id}_bucket"] = overlay_scores.get("bucket", "N/A")
                 else:
-                    row[f"{overlay_id}_score"] = None
+                    row[f"{overlay_id}_score"] = ""
                     row[f"{overlay_id}_bucket"] = "N/A"
 
             writer.writerow(row)
@@ -87,7 +83,7 @@ def export_entities_csv(
     return entities_file, filtered_entities
 
 def publish_latest_entities(entities_file: Path, domain_id: str):
-    domain_id = _validate_domain_id(domain_id)
+    domain_id = validate_domain_id(domain_id)
     latest_dir = Path("exports") / "latest" / domain_id
     latest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -124,9 +120,9 @@ def export_events_csv(
             row = {
                 "event_id": event_id,
                 "event_type": event_dict.get("event_type", ""),
-                "stage": event_dict.get("study_stage") or "",
+                "stage": event_dict.get("stage") or "",
                 "confidence_original": event_dict.get("confidence", "unknown"),
-                "evidence_snippet": snippet[:200],
+                "evidence_snippet": snippet[:200] + ("..." if len(snippet) > 200 else ""),
             }
 
             for overlay_id in overlay_ids:
@@ -138,7 +134,7 @@ def export_events_csv(
     return events_file
 
 def publish_latest_events(events_file: Path, domain_id: str):
-    domain_id = _validate_domain_id(domain_id)
+    domain_id = validate_domain_id(domain_id)
     latest_dir = Path("exports") / "latest" / domain_id
     latest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -208,7 +204,6 @@ def write_dual_lens_report(
         if not overlay_ids:
             logger.warning("No overlays configured; bucket distribution is empty")
             f.write("No bucket data available (no overlays configured).\n")
-            return
 
         for overlay_id in overlay_ids:
             f.write(f"{overlay_id}:\n")

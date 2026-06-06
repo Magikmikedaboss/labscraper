@@ -9,6 +9,8 @@ Tests verify:
 - Returned entities have the expected structural keys
 - Multi-lens stacking can return multiple truths for one sentence
 """
+import logging
+
 import pytest
 
 
@@ -495,13 +497,13 @@ class TestMultiLensStacking:
             },
         )
 
-        with caplog.at_level("WARNING"):
+        with caplog.at_level(logging.WARNING):
             results = detect_multi_lens_warn_on_no_match("irrelevant")
         assert results == []
         assert any("No detectors matched and no errors reported." in m for m in caplog.messages)
 
         caplog.clear()
-        with caplog.at_level("WARNING"):
+        with caplog.at_level(logging.WARNING):
             results_default = detect_multi_lens("irrelevant")
         assert results_default == []
         assert not any("No detectors matched and no errors reported." in m for m in caplog.messages)

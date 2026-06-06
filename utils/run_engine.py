@@ -47,6 +47,7 @@ from utils.db_utils import (
 )
 
 # ---------------------------------------------------------
+from utils.scrape_pdfs_parallel import _sha256_file
 # DB INIT
 # ---------------------------------------------------------
 def _init_db_schema_if_needed(db_path):
@@ -154,11 +155,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
         for pdf_path in tqdm(pdfs, desc="PDFs"):
             print(f"Processing: {pdf_path.name}")
             try:
-                with open(pdf_path, "rb") as f:
-                    file_bytes = f.read()
-
-                # Hash file bytes directly
-                content_hash = sha64(file_bytes)
+                content_hash = _sha256_file(pdf_path)
                 source_id = content_hash
                 file_hash = content_hash
 
@@ -214,9 +211,9 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 page_number=page_idx,
                                 domain=research_domain,
                                 event_type=event_type,
-                                study_stage=stage,
-                                biological_system=None,
-                                application_area=None,
+                                stage=stage,
+                                system_context=None,
+                                application_context=None,
                                 outcome=outcome,
                                 failure_reason=failure_reason,
                                 decision_taken=decision_taken,

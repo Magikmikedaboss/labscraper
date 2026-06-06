@@ -29,7 +29,7 @@ AXON converts unstructured research content into structured knowledge.
 
 ```mermaid
 flowchart TD
-  A[Research Sources] --> B[Discovery]\nRSS + Manual Collection
+  A[Research Sources] --> B[Discovery<br>RSS + Manual Collection]
   B --> C[PDF Link Resolution]
   C --> D[PDF Download and Cache]
   D --> E[PDF and Document Ingestion]
@@ -138,10 +138,10 @@ Additional domains can be added without modifying the core engine.
 
 ```mermaid
 flowchart TD
-  A[AXON] --> B[Discovery Layer]\nRSS Discovery and Source Collection
-  A --> C[Processing Layer]\nExtraction and Classification
-  A --> D[Intelligence Layer]\nNormalization and Ranking
-  A --> E[Delivery Layer]\nSQLite + CSV + Future API + Planned Dashboard
+  A[AXON] --> B[Discovery Layer<br>RSS Discovery and Source Collection]
+  A --> C[Processing Layer<br>Extraction and Classification]
+  A --> D[Intelligence Layer<br>Normalization and Ranking]
+  A --> E[Delivery Layer<br>SQLite + CSV + Future API + Planned Dashboard]
 ```
 
 ## 📂 Project Goals

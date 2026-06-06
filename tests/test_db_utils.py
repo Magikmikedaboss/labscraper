@@ -54,7 +54,12 @@ class TestConnectDB:
 
     def test_connect_db_valid_path(self, temp_db):
         conn, db_path = temp_db
-        assert isinstance(conn, sqlite3.Connection)
+        conn.close()
+        opened = connect_db(db_path)
+        try:
+            assert isinstance(opened, sqlite3.Connection)
+        finally:
+            opened.close()
 
     def test_connect_db_nonexistent_path(self):
         with pytest.raises(FileNotFoundError):

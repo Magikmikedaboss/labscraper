@@ -66,6 +66,21 @@ def test_extract_metadata_uses_pdf_metadata_and_first_page_text():
     assert metadata["title"]
 
 
+def test_extract_metadata_subject_doi_stops_at_invalid_suffix_chars():
+    first_page = Mock()
+    first_page.extract_text.return_value = "Title line only\nAuthors"
+
+    pdf = Mock()
+    pdf.metadata = {
+        "Subject": "DOI: 10.1234/abc.def(ghi),",
+    }
+    pdf.pages = [first_page]
+
+    metadata = extract_metadata(Path("paper.pdf"), pdf)
+
+    assert metadata["doi"] == "10.1234/abc.def"
+
+
 def test_detection_classification_and_confidence_helpers_work_together():
     sentence = (
         "CompoundA was more stable than CompoundB. "

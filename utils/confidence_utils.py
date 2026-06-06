@@ -56,7 +56,7 @@ def safe_confidence_boost(
     # ---------------------------------------------------------
     # Normalize confidence
     # ---------------------------------------------------------
-    conf_normalized = (current_conf or "low").lower().strip()
+    raw_conf = (current_conf or "low").strip().lower()
 
     conf_map = {
         "high": "high",
@@ -68,7 +68,7 @@ def safe_confidence_boost(
     }
 
     # Fallback to "low" for unknown values
-    conf_normalized = conf_map.get(conf_normalized, "low")
+    conf_normalized = conf_map.get(raw_conf, "low")
     if conf_normalized == "high":
         return "high"
 

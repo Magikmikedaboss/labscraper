@@ -185,7 +185,7 @@ ls seeds/base/life_sciences/
 # If missing, create it:
 mkdir seeds/base/life_sciences -Force
 
-# Then create the seed files (see SEED_SYSTEM_IMPLEMENTED.md for contents)
+# Then create the seed files (see seeds/base/life_sciences/*.txt in this repo for canonical contents)
 ```
 
 ### Problem: "No PDFs found"

@@ -152,9 +152,9 @@ class TestStemCellsRegenDomain:
         entities = extract_entities(text, "stem_cells_regen", SEEDS_DIR=SEEDS_DIR)
         names = [e.get("entity_name", "").upper() for e in entities]
         assert "MSC" in names
-        stem = [e for e in entities if e["entity_name"].upper() == "MSC"]
+        stem = [e for e in entities if e.get("entity_name", "").upper() == "MSC"]
         assert stem, f"No entity with name 'MSC' found in entities: {entities}"
-        assert stem[0]["entity_type"] == "stem_cell"
+        assert stem[0].get("entity_type") == "stem_cell"
 
     def test_organoid_typed_as_model(self):
         """'organoid' appears in model names set and should be typed as model."""

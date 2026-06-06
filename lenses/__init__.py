@@ -144,6 +144,8 @@ def _detect_multi_lens_internal(
 
     # If there are results and also detector_errors, log a warning for partial failures
     if detector_errors and results:
+        if raise_on_detector_errors:
+            raise RuntimeError(f"Some detectors failed: {detector_errors}")
         logger.warning("Some detectors failed: %r", detector_errors)
 
     def _ranking_key(item: dict) -> tuple[float, int, int]:

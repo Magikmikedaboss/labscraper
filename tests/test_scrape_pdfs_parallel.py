@@ -1,7 +1,9 @@
 import sqlite3
+import hashlib
 from utils import scrape_pdfs_parallel
 import types
 from unittest.mock import MagicMock
+import pytest
 
 # Patch for multiprocessing and pdfplumber
 
@@ -26,6 +28,25 @@ def test__connect(tmp_path):
         assert isinstance(con, sqlite3.Connection)
     finally:
         con.close()
+
+
+def test_sha64_shim_uses_underlying_impl(monkeypatch):
+    monkeypatch.setattr(scrape_pdfs_parallel, "_sha64", lambda value: f"hashed:{value}")
+    assert scrape_pdfs_parallel.sha64("abc") == "hashed:abc"
+
+
+def test__has_signal_detects_phrases():
+    failure_phrase = next(iter(next(iter(scrape_pdfs_parallel.FAILURE_PHRASES.values()))))
+    assert scrape_pdfs_parallel._has_signal(f"prefix {failure_phrase} suffix")
+    assert not scrape_pdfs_parallel._has_signal("totally unrelated sentence")
+
+
+def test__sha256_file(tmp_path):
+    file_path = tmp_path / "data.bin"
+    payload = b"abc123" * 1000
+    file_path.write_bytes(payload)
+    expected = hashlib.sha256(payload).hexdigest()
+    assert scrape_pdfs_parallel._sha256_file(file_path, chunk_size=64) == expected
 
 def test__db_has_all_tables(tmp_path):
     db = tmp_path / "test.sqlite"
@@ -101,3 +122,45 @@ def test_process_single_pdf(monkeypatch, tmp_path):
     insert_chunk.assert_called()
     insert_event.assert_called()
     upsert_entity.assert_called()
+
+
+def test_process_single_pdf_skips_low_confidence(monkeypatch, tmp_path):
+    monkeypatch.setattr(scrape_pdfs_parallel, "chunk_sentences", lambda text: ["This is a test sentence."])
+    monkeypatch.setattr(scrape_pdfs_parallel, "_has_signal", lambda s: True)
+    dummy_pdf = DummyPDF([DummyPage("test text")])
+    monkeypatch.setattr(scrape_pdfs_parallel, "pdfplumber", types.SimpleNamespace(open=lambda *a, **k: dummy_pdf))
+    monkeypatch.setattr(scrape_pdfs_parallel, "_connect", lambda db: sqlite3.connect(db))
+    monkeypatch.setattr(scrape_pdfs_parallel, "extract_metadata", lambda *a, **k: {})
+    monkeypatch.setattr(scrape_pdfs_parallel, "upsert_source", lambda *a, **k: "sid")
+    monkeypatch.setattr(scrape_pdfs_parallel, "insert_document", lambda *a, **k: "did")
+    monkeypatch.setattr(scrape_pdfs_parallel, "insert_chunk", lambda *a, **k: "cid")
+    insert_event = MagicMock(return_value="eid")
+    monkeypatch.setattr(scrape_pdfs_parallel, "insert_event", insert_event)
+    monkeypatch.setattr(scrape_pdfs_parallel, "detect_method_tags", lambda s: [])
+    monkeypatch.setattr(scrape_pdfs_parallel, "detect_failure_reason", lambda s: "")
+    monkeypatch.setattr(scrape_pdfs_parallel, "detect_decision", lambda s: ("", None))
+    monkeypatch.setattr(scrape_pdfs_parallel, "detect_outcome", lambda s: "")
+    monkeypatch.setattr(scrape_pdfs_parallel, "guess_stage", lambda s: "")
+    monkeypatch.setattr(scrape_pdfs_parallel, "classify_event_type", lambda *a, **k: "type")
+    monkeypatch.setattr(scrape_pdfs_parallel, "evidence_strength", lambda s: "weak")
+    monkeypatch.setattr(scrape_pdfs_parallel, "extract_entities", lambda s, d: [{"entity_type": "t", "entity_name": "n"}])
+    monkeypatch.setattr(scrape_pdfs_parallel, "extract_quantitative_data", lambda s: [])
+    monkeypatch.setattr(scrape_pdfs_parallel, "confidence_score", lambda *a, **k: "low")
+    monkeypatch.setattr(scrape_pdfs_parallel, "normalize_event_key", lambda *a, **k: "key")
+    monkeypatch.setattr(scrape_pdfs_parallel, "ConfidenceInput", lambda **kwargs: kwargs)
+
+    pdf_path = tmp_path / "f.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4\n%EOF")
+    db_path = tmp_path / "db.sqlite"
+    db_path.touch()
+    result = scrape_pdfs_parallel.process_single_pdf((str(pdf_path), "domain", str(db_path)))
+
+    assert result[2] is True
+    assert result[1] == 0
+    insert_event.assert_not_called()
+
+
+def test_main_rejects_entity_name_domain(monkeypatch):
+    monkeypatch.setattr(scrape_pdfs_parallel.sys, "argv", ["prog", "--domain", "peptide"])
+    with pytest.raises(SystemExit):
+        scrape_pdfs_parallel.main()

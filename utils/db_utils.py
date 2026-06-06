@@ -302,6 +302,13 @@ def _ensure_source_tracking_schema(con: sqlite3.Connection) -> None:
         WHERE sha256 IS NOT NULL AND trim(sha256) <> ''
         """
     )
+    con.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_sources_title_norm
+        ON sources(lower(trim(title)))
+        WHERE title IS NOT NULL AND trim(title) <> ''
+        """
+    )
 
 
 def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadata: dict) -> str:
@@ -335,8 +342,19 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
     if exact:
         return exact[0]
 
+    title_prefix = title[:12]
+    title_length = len(title)
     candidates = con.execute(
-        "SELECT source_id, title FROM sources WHERE title IS NOT NULL LIMIT 1000"
+        """
+        SELECT source_id, title
+        FROM sources
+        WHERE title IS NOT NULL
+          AND trim(title) <> ''
+          AND lower(trim(title)) LIKE ?
+          AND abs(length(lower(trim(title))) - ?) <= 20
+        ORDER BY abs(length(lower(trim(title))) - ?), source_id
+        """,
+        (f"{title_prefix}%", title_length, title_length),
     ).fetchall()
     for candidate_id, candidate_title in candidates:
         if not candidate_title:
@@ -466,9 +484,9 @@ def insert_event(
     page_number: int,
     domain: str,
     event_type: str,
-    study_stage: str,
-    biological_system: Optional[str],
-    application_area: Optional[str],
+    stage: str,
+    system_context: Optional[str],
+    application_context: Optional[str],
     outcome: str,
     failure_reason: str,
     decision_taken: str,
@@ -487,7 +505,7 @@ def insert_event(
              source_id, doc_id, chunk_id, page_number, created_at
            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
-            event_id, domain, event_type, study_stage, biological_system, application_area,
+            event_id, domain, event_type, stage, system_context, application_context,
             outcome, failure_reason, decision_taken, decision_driver,
             evidence_snippet[:500], evidence_strength_v, confidence_v,
             source_id, doc_id, chunk_id, page_number, now_iso()

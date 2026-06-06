@@ -76,9 +76,9 @@ def test_show_pdf_cache(tmp_path, caplog, init_test_schema):
             page_number=1,
             domain="domain",
             event_type="type",
-            study_stage="stage",
-            biological_system=None,
-            application_area=None,
+            stage="stage",
+            system_context=None,
+            application_context=None,
             outcome="ok",
             failure_reason="none",
             decision_taken="yes",
@@ -98,5 +98,42 @@ def test_show_pdf_cache(tmp_path, caplog, init_test_schema):
         with pytest.raises(ValueError) as excinfo:
             db_utils.insert_measurement(conn, event_id, {"measurement_type": None, "value": None, "unit": None})
         assert "Missing required measurement fields" in str(excinfo.value)
+    finally:
+        conn.close()
+
+
+def test_upsert_source_finds_fuzzy_match_beyond_first_thousand_rows(init_test_schema):
+    conn = db_utils.connect_db(str(init_test_schema))
+    try:
+        target_title = "x" * 100 + "a"
+        fuzzy_title = "x" * 100 + "b"
+
+        rows = [(f"SRC{i}", f"unrelated title {i}") for i in range(1000)]
+        rows.append(("SRC_MATCH", fuzzy_title))
+        conn.executemany("INSERT INTO sources (source_id, title) VALUES (?, ?)", rows)
+        conn.commit()
+
+        resolved = db_utils.upsert_source(
+            conn,
+            "NEW_SOURCE",
+            "paper.pdf",
+            {"title": target_title},
+        )
+
+        assert resolved == "SRC_MATCH"
+    finally:
+        conn.close()
+
+
+def test_upsert_source_creates_normalized_title_index(init_test_schema):
+    conn = db_utils.connect_db(str(init_test_schema))
+    try:
+        db_utils.upsert_source(conn, "SRC_IDX", "paper.pdf", {"title": "Index Title"})
+        index_names = {
+            row[1]
+            for row in conn.execute("PRAGMA index_list('sources')").fetchall()
+        }
+
+        assert "idx_sources_title_norm" in index_names
     finally:
         conn.close()

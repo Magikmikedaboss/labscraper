@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 
 def export_candidates_domain_aware(domain_id: str = None):
+    if domain_id:
+        domain_id = validate_domain_id(domain_id)
+
     norm_map = load_normalization_map()
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
 
@@ -133,7 +136,6 @@ def export_candidates_domain_aware(domain_id: str = None):
 
     # Write to exports/latest/<domain>/entities.csv if domain_id is given
     if domain_id:
-        domain_id = validate_domain_id(domain_id)
         latest_dir = LATEST_DIR / domain_id
         latest_dir.mkdir(parents=True, exist_ok=True)
         entities_path = latest_dir / "entities.csv"
@@ -141,16 +143,16 @@ def export_candidates_domain_aware(domain_id: str = None):
             writer = csv.writer(f)
             writer.writerow(['entity_name', 'entity_type', 'entity_variant', 'event_count'])
             # Only write rows if there are any entities
-            for (etype, ename), data in canonical_entities.items():
+            for (etype, canonical_name), data in canonical_entities.items():
                 variant_str = ','.join(sorted(data["entity_variant"])) if data["entity_variant"] else ''
                 writer.writerow([
-                    ename,
+                    canonical_name,
                     etype,
                     variant_str,
                     data["event_count"]
                 ])
         print(f"✅ Wrote filtered entities: {entities_path}")
-    print("✅ Exported domain-aware candidates")
+        print("✅ Exported domain-aware candidates")
     return canonical_entities
 
 

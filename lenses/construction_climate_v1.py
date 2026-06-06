@@ -67,7 +67,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
 
     outcome = "neutral"
     if has_negative and has_positive:
-        outcome = "mixed"
+        outcome = "mixed_hazard"
     elif has_negative:
         outcome = "degraded"
     elif has_positive:

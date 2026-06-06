@@ -240,7 +240,7 @@ To validate enhanced seeds, follow these steps:
        ```python
        db_path = Path("db/runs.sqlite")
        ```
-    - Change it to your target database if needed, for example:
+  - Keep `db/runs.sqlite` as the default canonical runtime DB. If needed, you may explicitly override it for a custom/legacy database, for example:
        ```python
        db_path = Path("db/construction_science.sqlite")
        ```

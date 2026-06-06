@@ -49,7 +49,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     # Flexible positive: require reducer + energy phrase (consumption/use/demand) within ENERGY_WORD_WINDOW words.
     flexible_positive = False
     energy_phrase = r"\benergy\s+(?:consumption|use|demand)\b"
-    between_tokens = rf"\b(?:\W+\w+){{0,{ENERGY_WORD_WINDOW}}}\W+"
+    between_tokens = rf"(?:\W*\b\w+\b){{0,{ENERGY_WORD_WINDOW}}}\W*"
     pattern1 = rf"\breduc\w*\b{between_tokens}{energy_phrase}"
     pattern2 = rf"{energy_phrase}{between_tokens}\breduc\w*\b"
     if re.search(pattern1, s_l) or re.search(pattern2, s_l):

@@ -33,23 +33,19 @@ from utils.entity_normalizer import (
     normalize_entity,
     get_entity_role,
 )
+from utils.axon_domains import load_all_domains
 
 
-VALID_DOMAIN_IDS = [
-    "biohacking_longevity",
-    "drug_discovery",
-    "methods_tooling",
-    "neuroscience_cognition",
-    "stem_cells_regen",
-    "construction_science",
-]
+VALID_DOMAIN_IDS = frozenset(
+    load_all_domains(str(Path(__file__).resolve().parents[2] / "config" / "domains")).keys()
+)
 
 
 def _validate_known_domain_id(domain_id: str) -> str:
     safe_domain_id = validate_domain_id(domain_id)
     if safe_domain_id not in VALID_DOMAIN_IDS:
         raise ValueError(
-            f"Invalid domain_id: {safe_domain_id}. Valid domains: {', '.join(VALID_DOMAIN_IDS)}"
+            f"Invalid domain_id: {safe_domain_id}. Valid domains: {', '.join(sorted(VALID_DOMAIN_IDS))}"
         )
     return safe_domain_id
 
@@ -62,7 +58,7 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
 
     db_path_obj = Path(db_path)
     if not db_path_obj.exists() or not db_path_obj.is_file():
-        print(f"⚠️  Database file not found on disk: {db_path_obj}. Continuing; downstream loader may handle alternate backends.")
+        print(f"⚠️  Database file not found on disk: {db_path_obj}. Continuing; downstream loaders may use non-file-backed stores (for example, in-memory or remote databases).")
 
     db_path = str(db_path_obj)
     output_path = Path(output_dir)
@@ -190,7 +186,7 @@ if __name__ == "__main__":
         domain_id = _validate_known_domain_id(domain_id)
     except ValueError:
         print(f"❌ Invalid domain_id: {domain_id}")
-        print(f"Valid domains: {', '.join(VALID_DOMAIN_IDS)}")
+        print(f"Valid domains: {', '.join(sorted(VALID_DOMAIN_IDS))}")
         sys.exit(1)
 
 

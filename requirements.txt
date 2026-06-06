@@ -1,6 +1,6 @@
 feedparser>=6.0,<7.0
 pdfplumber>=0.11,<1.0
-pdfminer.six>=2020.0,<2027.0
+pdfminer.six>=2020.0
 pandas>=2.0,<4.0
 numpy>=1.24,<3.0
 requests>=2.34.2,<3.0

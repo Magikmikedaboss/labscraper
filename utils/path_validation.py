@@ -1,4 +1,3 @@
-import os
 import re
 from pathlib import Path
 
@@ -17,8 +16,6 @@ def validate_domain_id(domain_id: str) -> str:
     p = Path(domain_id)
     if p.is_absolute() or len(p.parts) != 1:
         raise ValueError("Invalid domain_id: must be a single safe path segment")
-    if os.path.isabs(domain_id):
-        raise ValueError("Invalid domain_id: absolute paths are not allowed")
     if not _DOMAIN_ID_RE.match(domain_id):
         raise ValueError("Invalid domain_id: only letters, numbers, underscore, and hyphen are allowed")
     return domain_id

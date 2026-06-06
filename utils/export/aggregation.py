@@ -22,7 +22,7 @@ def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowS
 
             events = cur.execute(
                 """
-                SELECT event_id, event_type, stage AS study_stage, confidence, evidence_snippet,
+                SELECT event_id, event_type, stage, confidence, evidence_snippet,
                        source_id, doc_id, chunk_id, page_number, created_at
                 FROM research_events
                 """

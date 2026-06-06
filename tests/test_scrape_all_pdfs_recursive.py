@@ -51,6 +51,18 @@ class FakeConn:
 def fake_connect(*a, **kw):
     return FakeConn()
 
+
+def make_path_stub(exists_bool):
+    import pathlib
+
+    PathBase = type(pathlib.Path())
+
+    class PathStub(PathBase):
+        def exists(self):
+            return exists_bool
+
+    return PathStub
+
 def test_main_no_pdfs_found(monkeypatch, tmp_path, capsys):
     # Patch sys.argv to simulate CLI call
     test_args = ["prog", "--root-dirs", str(tmp_path), "--domain", "testdomain", "--output-db", str(tmp_path/"test.sqlite"), "--workers", "1"]
@@ -107,12 +119,7 @@ def test_main_db_init(monkeypatch, tmp_path, capsys):
 
 
 def test_find_all_pdfs_dir_not_found(monkeypatch, tmp_path, capsys):
-    import pathlib
-    PathBase = type(pathlib.Path())
-    class PathStub(PathBase):
-        def exists(self):
-            return False
-    monkeypatch.setattr(scrape_all_pdfs_recursive, "Path", PathStub)
+    monkeypatch.setattr(scrape_all_pdfs_recursive, "Path", make_path_stub(False))
     out = scrape_all_pdfs_recursive.find_all_pdfs([tmp_path/"missingdir"])
     assert out == []
 
@@ -125,13 +132,8 @@ def test_main_parallel_and_db_stats(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(scrape_all_pdfs_recursive, "find_all_pdfs", lambda dirs: [tmp_path/"a.pdf", tmp_path/"b.pdf"])
     # Patch input to 'y'
     monkeypatch.setattr("builtins.input", lambda _: "y")
-    # Patch DB path exists using PathStub
-    import pathlib
-    PathBase = type(pathlib.Path())
-    class PathStub(PathBase):
-        def exists(self):
-            return True
-    monkeypatch.setattr(scrape_all_pdfs_recursive, "Path", PathStub)
+    # Patch DB path exists using the shared stub factory
+    monkeypatch.setattr(scrape_all_pdfs_recursive, "Path", make_path_stub(True))
     # Patch sqlite3.connect to simulate DB stats using the shared FakeCon
     response_map = {
         "COUNT(*) FROM research_events": (42,),
