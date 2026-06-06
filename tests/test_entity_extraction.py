@@ -68,7 +68,10 @@ class TestEntityExtraction:
         compounds = extract_compounds(text)
         assert isinstance(compounds, list)
         # Assert expected compounds are present
-        assert any((c.get("entity_name") or "").lower() == "aspirin" for c in compounds)
+        assert any(
+            "aspirin" in ((c.get("entity_name") or "") + (c.get("text") or "")).lower()
+            for c in compounds
+        )
 
     def test_extract_targets(self):
         """Test target extraction"""

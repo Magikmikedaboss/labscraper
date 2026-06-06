@@ -50,24 +50,23 @@ def main(argv=None):
     # ---------------------------------------------------------
     # LOAD CONFIG
     # ---------------------------------------------------------
-    if config_path.exists():
-        try:
-            validated_path = validate_file_path(config_path)
+    try:
+        validated_path = validate_file_path(config_path)
 
-            with open(validated_path, encoding="utf-8") as f:
-                config = validate_feed_config(json.load(f))
+        with open(validated_path, encoding="utf-8") as f:
+            config = validate_feed_config(json.load(f))
 
-            feeds = [(feed["url"], feed["name"]) for feed in config.get("feeds", [])]
+        feeds = [(feed["url"], feed["name"]) for feed in config.get("feeds", [])]
 
-        except (json.JSONDecodeError, ValidationError) as e:
-            print(f"⚠️ Validation error in {args.config}: {e}")
-            print("   Falling back to default feeds...")
-            feeds = default_feeds
+    except (json.JSONDecodeError, ValidationError) as e:
+        print(f"⚠️ Validation error in {args.config}: {e}")
+        print("   Falling back to default feeds...")
+        feeds = default_feeds
 
-        except Exception as e:
-            print(f"⚠️ Error reading {args.config}: {e}")
-            print("   Falling back to default feeds...")
-            feeds = default_feeds
+    except Exception as e:
+        print(f"⚠️ Error reading {args.config}: {e}")
+        print("   Falling back to default feeds...")
+        feeds = default_feeds
 
     print(f"\n🔍 Testing {len(feeds)} feeds...")
     print("=" * 60)

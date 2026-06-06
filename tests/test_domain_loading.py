@@ -180,6 +180,6 @@ class TestDomainLoading:
             assert profile.name == "Biohacking & Longevity"
 
             # Explicit cleanup to avoid Windows file locks
-            json_path.unlink()
+            json_path.unlink(missing_ok=True)
             del profile, config_domains, json_path
             gc.collect()

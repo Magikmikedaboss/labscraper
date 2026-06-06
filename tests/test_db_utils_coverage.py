@@ -54,48 +54,49 @@ def test_show_pdf_cache(tmp_path, caplog, init_test_schema):
     # Setup DB connection and insert required source/document
     db_path = init_test_schema
     conn = db_utils.connect_db(str(db_path))
-    db_utils.upsert_source(conn, "SRC2", "file.pdf", {"title": "T", "authors": "A", "year": 2020, "doi": "D"})
-    doc_id = db_utils.insert_document(conn, "SRC2", "file.pdf", "sha256abc")
-    with caplog.at_level(logging.INFO):
-        db_utils.show_pdf_cache(str(cache_dir))
-    output = " ".join([r.getMessage() for r in caplog.records])
-    assert "PDF CACHE" in output
-    # Insert chunk
-    chunk_id = db_utils.insert_chunk(conn, "SRC2", doc_id, 1, "Methods", "Some chunk text.")
-    assert isinstance(chunk_id, str)
-    # Upsert entity
-    entity_id = db_utils.upsert_entity(conn, "compound", "aspirin", None, None)
-    assert isinstance(entity_id, str)
-    # Insert event
-    event_id = db_utils.insert_event(
-        con=conn,
-        source_id="SRC2",
-        doc_id=doc_id,
-        chunk_id=chunk_id,
-        page_number=1,
-        domain="domain",
-        event_type="type",
-        study_stage="stage",
-        biological_system=None,
-        application_area=None,
-        outcome="ok",
-        failure_reason="none",
-        decision_taken="yes",
-        decision_driver=None,
-        evidence_snippet="evidence",
-        evidence_strength_v="strong",
-        confidence_v="high",
-    )
-    assert isinstance(event_id, str)
-    # Link event to entity
-    db_utils.link_event_entity(conn, event_id, entity_id, "primary")
-    # Link event tag
-    db_utils.link_event_tag(conn, event_id, "tag1")
-    # Insert measurement (valid)
-    db_utils.insert_measurement(conn, event_id, {"measurement_type": "IC50", "value": "5.0", "unit": "uM", "context": "IC50 = 5.0 uM"})
-    # Insert measurement (missing required fields)
-    with pytest.raises(ValueError) as excinfo:
-        db_utils.insert_measurement(conn, event_id, {"measurement_type": None, "value": None, "unit": None})
-    assert "Missing required measurement fields" in str(excinfo.value)
-    # Clean up
-    conn.close()
+    try:
+        db_utils.upsert_source(conn, "SRC2", "file.pdf", {"title": "T", "authors": "A", "year": 2020, "doi": "D"})
+        doc_id = db_utils.insert_document(conn, "SRC2", "file.pdf", "sha256abc")
+        with caplog.at_level(logging.INFO):
+            db_utils.show_pdf_cache(str(cache_dir))
+        output = " ".join([r.getMessage() for r in caplog.records])
+        assert "PDF CACHE" in output
+        # Insert chunk
+        chunk_id = db_utils.insert_chunk(conn, "SRC2", doc_id, 1, "Methods", "Some chunk text.")
+        assert isinstance(chunk_id, str)
+        # Upsert entity
+        entity_id = db_utils.upsert_entity(conn, "compound", "aspirin", None, None)
+        assert isinstance(entity_id, str)
+        # Insert event
+        event_id = db_utils.insert_event(
+            con=conn,
+            source_id="SRC2",
+            doc_id=doc_id,
+            chunk_id=chunk_id,
+            page_number=1,
+            domain="domain",
+            event_type="type",
+            study_stage="stage",
+            biological_system=None,
+            application_area=None,
+            outcome="ok",
+            failure_reason="none",
+            decision_taken="yes",
+            decision_driver=None,
+            evidence_snippet="evidence",
+            evidence_strength_v="strong",
+            confidence_v="high",
+        )
+        assert isinstance(event_id, str)
+        # Link event to entity
+        db_utils.link_event_entity(conn, event_id, entity_id, "primary")
+        # Link event tag
+        db_utils.link_event_tag(conn, event_id, "tag1")
+        # Insert measurement (valid)
+        db_utils.insert_measurement(conn, event_id, {"measurement_type": "IC50", "value": "5.0", "unit": "uM", "context": "IC50 = 5.0 uM"})
+        # Insert measurement (missing required fields)
+        with pytest.raises(ValueError) as excinfo:
+            db_utils.insert_measurement(conn, event_id, {"measurement_type": None, "value": None, "unit": None})
+        assert "Missing required measurement fields" in str(excinfo.value)
+    finally:
+        conn.close()
