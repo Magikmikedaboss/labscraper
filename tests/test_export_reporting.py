@@ -53,7 +53,7 @@ def test_export_events_csv_formats_scores_and_defaults(tmp_path):
         {
             "event_id": "ev1",
             "event_type": "failure",
-            "stage": "pilot",
+            "study_stage": "pilot",
             "confidence": "high",
             "evidence_snippet": "x" * 250,
         },
@@ -77,6 +77,7 @@ def test_export_events_csv_formats_scores_and_defaults(tmp_path):
 
     assert len(rows) == 2
     assert rows[0]["event_id"] == "ev1"
+    assert rows[0]["stage"] == "pilot"
     assert rows[0]["ov1_score"] == "+1.5"
     assert rows[0]["evidence_snippet"] == ("x" * 200) + "..."
     assert rows[1]["event_id"] == ""

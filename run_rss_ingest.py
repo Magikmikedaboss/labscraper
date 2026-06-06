@@ -180,11 +180,9 @@ def ensure_db_schema(db_path: Path):
     statements = []
     statement = ""
     for line in schema_sql.splitlines():
-        # Remove inline SQL comments, then skip empty/comment-only lines.
-        cleaned_line = re.sub(r"--.*$", "", line).strip()
-        if not cleaned_line:
+        if line.strip().startswith("--"):
             continue
-        statement += cleaned_line + "\n"
+        statement += line + "\n"
         if sqlite3.complete_statement(statement):
             statements.append(statement.strip())
             statement = ""

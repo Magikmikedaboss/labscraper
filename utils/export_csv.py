@@ -161,7 +161,7 @@ def export_candidates_domain_aware(domain_id: str = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--domain", type=str, default=None)
+    parser.add_argument("--domain", type=str, required=True)
     args = parser.parse_args()
 
 

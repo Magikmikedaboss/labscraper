@@ -45,9 +45,8 @@ from utils.db_utils import (
     link_event_tag,
     insert_measurement,
 )
-
-# ---------------------------------------------------------
 from utils.scrape_pdfs_parallel import _sha256_file
+
 # DB INIT
 # ---------------------------------------------------------
 def _init_db_schema_if_needed(db_path):

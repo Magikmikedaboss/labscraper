@@ -203,7 +203,7 @@ def confidence_score(input_data: ConfidenceInput) -> str:
     if ci.has_measurements:
         score += 2
 
-    signal_count = sum(1 for term in HIGH_SIGNAL_TERMS if term in ci.sentence_l)
+    signal_count = sum(1 for term in HIGH_SIGNAL_TERMS if _contains_phrase(ci.sentence_l, term))
     if signal_count >= 3:
         score += 2
     elif signal_count >= 2:
