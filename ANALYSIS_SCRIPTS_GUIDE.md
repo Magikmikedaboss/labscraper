@@ -1,4 +1,4 @@
-# Analysis Scripts Guide
+﻿# Analysis Scripts Guide
 
 ## Overview
 
@@ -29,32 +29,32 @@ python utils/test_results_analysis.py
 ENHANCED SEEDS TEST RESULTS - 25 PDFs
 ======================================================================
 
-📊 OVERALL EXTRACTION:
+ OVERALL EXTRACTION:
    Events: 1195
    Unique Entities: 119
 
-🏷️  ENTITY TYPE DISTRIBUTION:
+  ENTITY TYPE DISTRIBUTION:
    model       :  56 unique entities |   56 total mentions
    target      :  44 unique entities |   44 total mentions
    stem_cell   :   9 unique entities |    9 total mentions
    compound    :   7 unique entities |    7 total mentions
 
-🔬 TOP MODELS EXTRACTED:
+ TOP MODELS EXTRACTED:
    Total models found: 30
-   ✅ NEW neuroscience models detected: Astrocytes
-   🆕  1. Astrocytes
+    NEW neuroscience models detected: Astrocytes
+     1. Astrocytes
        2. BLOOD
        3. Basal medium
    ...
 
-🎯 TOP TARGETS EXTRACTED:
+ TOP TARGETS EXTRACTED:
    Total targets found: 30
-   ✅ NEW targets detected: ACC, APP, BDNF, IL10, LMNA
-   🆕  1. ACC
+    NEW targets detected: ACC, APP, BDNF, IL10, LMNA
+     1. ACC
        2. AKT
    ...
 
-📊 CONFIDENCE DISTRIBUTION:
+ CONFIDENCE DISTRIBUTION:
    high:    8 (  0.7%)
    med :  527 ( 44.1%)
    low :  660 ( 55.2%)
@@ -89,7 +89,7 @@ python utils/check_compound_extraction.py
 COMPOUND EXTRACTION ANALYSIS
 ======================================================================
 
-📊 COMPOUNDS FOUND IN TEST SCRAPE (25 PDFs):
+ COMPOUNDS FOUND IN TEST SCRAPE (25 PDFs):
    Total extracted: 7
    1. GLUCAGON
    2. LIRAGLUTIDE
@@ -99,7 +99,7 @@ COMPOUND EXTRACTION ANALYSIS
    6. RAPAMYCIN
    7. SIROLIMUS
 
-📋 COMPOUNDS AVAILABLE IN SEED FILE:
+ COMPOUNDS AVAILABLE IN SEED FILE:
    Total in seeds: 58
    
    Sample (first 20):
@@ -108,14 +108,14 @@ COMPOUND EXTRACTION ANALYSIS
     3. dulaglutide
    ...
 
-✅ YES - Your app CAN find compound names!
+ YES - Your app CAN find compound names!
 
-📈 Coverage:
+ Coverage:
    - Seed file has: 58 compounds
    - Test found: 7 compounds
    - Detection rate: 12.1%
 
-🔍 How it works:
+ How it works:
    1. Scraper reads compounds.txt seed file
    2. Searches PDFs for exact matches (case-insensitive)
    3. Extracts compound name when found in text
@@ -135,8 +135,8 @@ COMPOUND EXTRACTION ANALYSIS
 **Purpose:** Check which popular longevity/biohacking compounds are in your seed file
 
 **What it shows:**
-- Which longevity compounds are already in seeds (✓)
-- Which are missing (✗)
+- Which longevity compounds are already in seeds ()
+- Which are missing ()
 - Complete list of all compounds in seeds
 - Recommendations for additions
 
@@ -153,29 +153,29 @@ LONGEVITY COMPOUND CHECK
 
 Checking for popular longevity/biohacking compounds...
 
-✅ ALREADY IN SEEDS (20/20):
-   ✓ nad+
-   ✓ nmn
-   ✓ nr
-   ✓ resveratrol
-   ✓ spermidine
-   ✓ fisetin
-   ✓ quercetin
-   ✓ curcumin
-   ✓ berberine
-   ✓ alpha-ketoglutarate
-   ✓ ca-akg
-   ✓ urolithin a
-   ✓ apigenin
-   ✓ luteolin
-   ✓ pterostilbene
-   ✓ sulforaphane
-   ✓ egcg
-   ✓ astaxanthin
-   ✓ coq10
-   ✓ pqq
+ ALREADY IN SEEDS (20/20):
+    nad+
+    nmn
+    nr
+    resveratrol
+    spermidine
+    fisetin
+    quercetin
+    curcumin
+    berberine
+    alpha-ketoglutarate
+    ca-akg
+    urolithin a
+    apigenin
+    luteolin
+    pterostilbene
+    sulforaphane
+    egcg
+    astaxanthin
+    coq10
+    pqq
 
-❌ MISSING (0/20):
+ MISSING (0/20):
    (none)
 
 ======================================================================
@@ -236,20 +236,20 @@ python utils/check_longevity_compounds.py
 To validate enhanced seeds, follow these steps:
 
 1. **Set the database path:**
-    - Open the validation script (e.g., `utils/check_enhanced_seeds.py`).
+    - Open the validation script (e.g., `utils/check_output_files.py`).
     - Edit the line:
        ```python
-       db_path = Path("runs/test_enhanced_seeds.sqlite")
+       db_path = Path("db/runs.sqlite")
        ```
-    - Change it to your target database, for example:
+     - Change it to your target database if needed, for example:
        ```python
-       db_path = Path("runs/your_database.sqlite")
+       db_path = Path("db/local.sqlite")
        ```
 
 2. **Run the validation script:**
     - Execute the script in your terminal:
        ```bash
-       python utils/check_enhanced_seeds.py
+       python utils/check_output_files.py
        ```
 
 3. **Interpret the results:**
@@ -280,9 +280,11 @@ longevity_compounds = [
 
 ## What Each Script Does NOT Do
 
-❌ **Does NOT modify any files** - All scripts are read-only
-❌ **Does NOT run the scraper** - You must run scraper first
-❌ **Does NOT require internet** - All analysis is local
-❌ **Does NOT change the database** - Only reads data
+ **Does NOT modify any files** - All scripts are read-only
+ **Does NOT run the scraper** - You must run scraper first
+ **Does NOT require internet** - All analysis is local
+ **Does NOT change the database** - Only reads data
 
-✅ **Safe to run anytime** - No side effects
+ **Safe to run anytime** - No side effects
+
+

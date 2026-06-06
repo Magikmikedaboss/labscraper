@@ -3,38 +3,37 @@ import re
 import feedparser
 from typing import List, Dict, Optional
 
-# Reusable patterns
-PDF_REGEX = re.compile(r'https?://[^\s<>"\']+\.(?:pdf|PDF)(?:\?[^&\s]*)?(?:&[^&\s]*)?', re.IGNORECASE)
+PDF_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.pdf(?:\?[^\s<>"\']*)?', re.IGNORECASE)
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
-def parse_feed(url: str):
+def parse_feed(url: str, raise_on_error: bool = False):
     """Parse an RSS/Atom feed"""
     try:
         return feedparser.parse(url)
     except Exception:
+        if raise_on_error:
+            raise
         # Return empty dict on error (matches test expectation)
         return {}
 
 def extract_pdf_links(entry: Dict) -> List[str]:
     """Extract PDF links from a feed entry"""
     pdf_links = []
-    
     # Check summary
     summary = entry.get('summary', '')
-    pdf_links.extend(PDF_REGEX.findall(summary))
-    
+    pdf_links.extend(PDF_LINK_REGEX.findall(summary))
     # Check content blocks
     for content in entry.get('content', []):
         content_value = content.get('value', '')
-        pdf_links.extend(PDF_REGEX.findall(content_value))
-    
+        pdf_links.extend(PDF_LINK_REGEX.findall(content_value))
     # Check direct links
     for link in entry.get('links', []):
         href = link.get('href', '')
         if href:
-            pdf_links.extend(PDF_REGEX.findall(href))
-    
-    return list(set(pdf_links))  # Deduplicate
+            match = PDF_LINK_REGEX.search(href)
+            if match:
+                pdf_links.append(match.group(0))
+    return list(set(pdf_links))
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
     """
@@ -48,10 +47,12 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) 
     Returns:
         Dict with feed stats and PDF links
     """
+    if not url or not isinstance(url, str) or not url.strip():
+        return {'success': False, 'error': 'Missing or invalid url'}
+
     print(f"Testing {name}: {url}")
-    
     try:
-        feed = parse_feed(url)
+        feed = parse_feed(url, raise_on_error=True)
         
         # Handle both dict and feedparser object for compatibility
         if isinstance(feed, dict):
@@ -120,3 +121,8 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) 
         print(f"  ❌ Error: {e}")
         print()
         return {'success': False, 'error': str(e)}
+
+
+def test_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
+    """Backward-compatible alias for older scripts."""
+    return probe_feed(url, name, check_keywords=check_keywords)

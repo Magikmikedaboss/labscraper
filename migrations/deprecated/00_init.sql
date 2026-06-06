@@ -1,0 +1,3 @@
+-- DEPRECATED: This file is no longer canonical.
+-- The canonical schema is now at the project root: ../../schema.sql
+-- This file has been moved to migrations/deprecated/ to prevent accidental execution.

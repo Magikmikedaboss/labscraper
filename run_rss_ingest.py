@@ -1,496 +1,506 @@
 #!/usr/bin/env python3
 """
 RSS Feed Ingestion System
-Downloads and processes RSS feeds, extracts PDFs, and processes them through the pipeline.
 """
+from __future__ import annotations
 
-import feedparser
-import requests
-import hashlib
 import sqlite3
-import argparse
+from functools import wraps
+import logging
+# ...existing imports...
+
+
+# ---------------------------------------------------------
+# IMPORTS AND SYMBOLS (moved above function definitions)
+# ---------------------------------------------------------
 import re
+import argparse
+import hashlib
+import json
+import sys
+## Removed duplicate import of sqlite3
 import time
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
+from typing import Any
+import feedparser
 import pdfplumber
+import requests
+from urllib.parse import urlparse
+from utils.common import sha64
+from utils.text_utils import chunk_sentences, guess_stage, guess_section
+from utils.data_extractors import extract_quantitative_data
+from utils.entities import extract_entities
+from utils.event_classification import (
+    detect_method_tags,
+    detect_failure_reason,
+    detect_decision,
+    detect_outcome,
+    classify_event_type,
+    evidence_strength,
+    confidence_score,
+    FAILURE_PHRASES,
+    DECISION_PHRASES,
+    METHOD_TAGS,
+    ConfidenceInput,
+)
+from utils.db_utils import (
+    upsert_source,
+    insert_document,
+    insert_chunk,
+    insert_event,
+    link_event_entity,
+    link_event_tag,
+    insert_measurement,
+    upsert_entity,
+)
 
-# Import functions from utils/run_engine.py
-import sys
-sys.path.insert(0, str(Path(__file__).parent / "utils"))
+# ---------------------------------------------------------
+# DB ERROR HANDLING DECORATOR
+# ---------------------------------------------------------
+def db_operational_error_handler(context_msg):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except sqlite3.OperationalError as oe:
+                print(f"\u274c DB error during {context_msg}: {oe}")
+                if "no such table" in str(oe):
+                    print(f"   \u2192 Table missing: {context_msg}")
+                raise
+        return wrapper
+    return decorator
 
-# Import chunk_sentences function that's missing
-def chunk_sentences(text):
-    """Simple sentence chunking for RSS processing"""
-    import re
-    sentences = re.split(r'[.!?]+', text)
-    return [s.strip() for s in sentences if s.strip()]
+# ---------------------------------------------------------
+# PER-SENTENCE PROCESSING
+# ---------------------------------------------------------
+@db_operational_error_handler("insert_event")
+def _insert_event(*args, **kwargs):
+    return insert_event(*args, **kwargs)
 
-# Import functions from utils/run_engine.py
-try:
-    from utils.run_engine import (
-        extract_metadata, guess_stage, guess_section,
-        extract_entities, extract_quantitative_data,
-        detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
-        classify_event_type, evidence_strength, confidence_score,
-        suggested_keep, normalize_event_key,
-        upsert_source, insert_document, insert_chunk, insert_event,
-        link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-        now_iso, sha16, sha64, RESEARCH_DOMAIN,
-        FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
+@db_operational_error_handler("upsert_entity/link_event_entity")
+def _upsert_and_link_entity(con, event_id, e):
+    eid = upsert_entity(con, e["entity_type"], e["entity_name"], None, None)
+    link_event_entity(con, event_id, eid, e.get("role", "unknown"))
+
+@db_operational_error_handler("link_event_tag")
+def _link_event_tag(con, event_id, tag):
+    link_event_tag(con, event_id, tag)
+
+@db_operational_error_handler("insert_measurement")
+def _insert_measurement(con, event_id, m):
+    insert_measurement(con, event_id, m)
+
+def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sent, section, seen):
+    s_l = sent.lower()
+    if not has_signal(s_l):
+        return False
+
+    tags = detect_method_tags(s_l)
+    failure = detect_failure_reason(s_l)
+    decision, driver = detect_decision(s_l)
+    outcome = detect_outcome(s_l)
+    stage = guess_stage(s_l)
+    event_type = classify_event_type(s_l, tags, failure, decision)
+    strength = evidence_strength(s_l)
+    entities = extract_entities(sent, domain)
+    measurements = extract_quantitative_data(sent)
+    conf = confidence_score(
+        ConfidenceInput(
+            has_entity=bool(entities),
+            method_tags=tags,
+            failure_reason=failure,
+            decision_taken=decision,
+            has_measurements=bool(measurements),
+            sentence_l=s_l,
+        )
     )
-    print("✅ Successfully imported run_engine functions")
-except ImportError:
-    print("⚠️  Could not import run_engine functions - using mock functions for testing")
-    
-    # Mock functions for testing
-    def extract_metadata(pdf_path, pdf):
-        return {"title": "Test Paper", "authors": ["Test Author"], "year": "2023"}
-    
-    def guess_stage(text):
-        return "unknown"
-    
-    def guess_section(text):
-        return "unknown"
-    
-    def extract_entities(text, domain):
-        return []
-    
-    def extract_quantitative_data(text):
-        return []
-    
-    def detect_method_tags(text):
-        return []
-    
-    def detect_failure_reason(text):
-        return None
-    
-    def detect_decision(text):
-        return None, None
-    
-    def detect_outcome(text):
-        return "unknown"
-    
-    def classify_event_type(text, tags, failure_reason, decision_taken):
-        return "other"
-    
-    def evidence_strength(text):
-        return "low"
-    
-    def confidence_score(has_entities, tags, failure_reason, decision_taken, has_measurements, text):
-        return 0.5
-    
-    def suggested_keep(conf, event_type, failure_reason, decision_taken, tags):
-        return 1
-    
-    def normalize_event_key(event_type, ents, page_idx, sent):
-        return f"{event_type}_{page_idx}_{hash(sent) % 1000}"
-    
-    def upsert_source(con, source_id, filename, metadata):
-        return source_id
-    
-    def insert_document(con, source_id, path, file_hash):
-        return 1
-    
-    def insert_chunk(con, source_id, doc_id, page_idx, section, text):
-        return 1
-    
-    def insert_event(con, source_id, doc_id, chunk_id, page_number, domain, event_type, study_stage, biological_system, application_area, outcome, failure_reason, decision_taken, decision_driver, evidence_snippet, evidence_strength_v, confidence_v):
-        return 1
-    
-    def link_event_entity(con, event_id, entity_id, role):
-        pass
-    
-    def link_event_tag(con, event_id, tag):
-        pass
-    
-    def insert_measurement(con, event_id, measurement):
-        pass
-    
-    def upsert_entity(con, entity_type, entity_name, entity_variant, role):
-        return 1
-    
-    def now_iso():
-        from datetime import datetime
-        return datetime.now().isoformat()
-    
-    def sha16(text):
-        import hashlib
-        return hashlib.sha256(text.encode()).hexdigest()[:16]
-    
-    def sha64(text):
-        import hashlib
-        return hashlib.sha256(text.encode()).hexdigest()
-    
-    RESEARCH_DOMAIN = "test"
-    FAILURE_PHRASES = {}
-    DECISION_PHRASES = {}
-    METHOD_TAGS = {}
+    # SMART FILTER: Only keep if at least one signal
+    if not (entities or tags or measurements):
+        return False
+    key = normalize_event_key(event_type, entities, page_number, sent)
+    if key in seen:
+        return False
+    seen.add(key)
+    event_id = _insert_event(
+        con=con,
+        source_id=source_id,
+        doc_id=doc_id,
+        chunk_id=chunk_id,
+        page_number=page_number,
+        domain=domain,
+        event_type=event_type,
+        study_stage=stage,
+        biological_system=None,
+        application_area=None,
+        outcome=outcome,
+        failure_reason=failure,
+        decision_taken=decision,
+        decision_driver=driver,
+        evidence_snippet=sent,
+        evidence_strength_v=strength,
+        confidence_v=conf,
+    )
+    for e in entities:
+        _upsert_and_link_entity(con, event_id, e)
+    for tag in tags:
+        _link_event_tag(con, event_id, tag)
+    for m in measurements:
+        _insert_measurement(con, event_id, m)
+    return True
 
-# Default paths
-DB_PATH = Path("db") / "runs.sqlite"
-RSS_CACHE_DIR = Path("input") / "rss_cache"
-FEEDS_CONFIG = Path("config") / "feeds.json"
+DOC_LINK_REGEX = re.compile(r"https?://[^\s<>\"']+\.pdf(?:\?[^\s<>\"']*)?", re.IGNORECASE)
 
-def load_feeds_config():
-    """Load RSS feeds configuration from JSON file"""
-    if not FEEDS_CONFIG.exists():
-        print(f"⚠️  RSS feeds config not found: {FEEDS_CONFIG}")
-        print("Creating default config...")
-        default_config = {
-            "feeds": [
-                {
-                    "name": "arXiv Materials Science",
-                    "url": "http://export.arxiv.org/rss/cs.MA",
-                    "domain": "construction_science",
-                    "enabled": True
-                },
-                {
-                    "name": "arXiv Biomaterials",
-                    "url": "http://export.arxiv.org/rss/q-bio.BM",
-                    "domain": "methods_tooling", 
-                    "enabled": True
-                }
-            ]
-        }
-        import json
-        FEEDS_CONFIG.parent.mkdir(parents=True, exist_ok=True)
-        with open(FEEDS_CONFIG, 'w') as f:
-            json.dump(default_config, f, indent=2)
-        print(f"✅ Created default config at {FEEDS_CONFIG}")
-        return default_config
-    
-    import json
-    with open(FEEDS_CONFIG, 'r') as f:
-        return json.load(f)
+# ---------------------------------------------------------
+# PATHS
+# ---------------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parent
+FEEDS_CONFIG = PROJECT_ROOT / "config/feeds.json"
+DB_PATH = PROJECT_ROOT / "db/rss.sqlite"
+DATA_ROOT = PROJECT_ROOT / "data"
+RSS_CACHE_DIR = (DATA_ROOT / "cache" / "rss") if DATA_ROOT.exists() else (PROJECT_ROOT / "cache" / "rss")
+SEEDS_DIR = PROJECT_ROOT / "input" / "seeds"  # Add SEEDS_DIR definition for entity extraction consistency
 
-def get_pdf_links_from_feed(feed_url):
-    """Extract PDF links from RSS feed entries"""
+# ---------------------------------------------------------
+# IMPORT PIPELINE
+# ---------------------------------------------------------
+
+# ---------------------------------------------------------
+# DB INIT
+# ---------------------------------------------------------
+def ensure_db_schema(db_path: Path):
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    schema_path = PROJECT_ROOT / "schema.sql"
+    if not schema_path.exists():
+        raise SystemExit(f"Missing schema file: {schema_path}")
+
+    schema_sql = schema_path.read_text(encoding="utf-8")
+    statements = []
+    statement = ""
+    for line in schema_sql.splitlines():
+        # Skip comments
+        if line.strip().startswith("--") or not line.strip():
+            continue
+        statement += line + "\n"
+        if sqlite3.complete_statement(statement):
+            statements.append(statement.strip())
+            statement = ""
+
+    with sqlite3.connect(db_path) as con:
+        try:
+            con.execute("BEGIN")
+            for sql in statements:
+                try:
+                    con.execute(sql)
+                except sqlite3.Error as e:
+                    con.rollback()
+                    msg = f"[ensure_db_schema] Error in SQL: {sql[:80]}...\nException: {e}"
+                    raise RuntimeError(msg) from e
+            con.commit()
+        except Exception:
+            con.rollback()
+            raise
+
+# ---------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------
+def load_feeds_config(path: Path) -> dict[str, Any]:
+
     try:
-        feed = feedparser.parse(feed_url)
-        pdf_links = []
-        
-        for entry in feed.entries:
-            # Look for PDF links in various places
-            links = []
-            
-            # Check entry links (arXiv feeds have PDF links here)
-            for link in entry.get('links', []):
-                href = link.get('href', '')
-                if href:
-                    # For arXiv, look for PDF links specifically
-                    if '.pdf' in href.lower():
-                        links.append(href)
-                    # Also check for arXiv PDF pattern
-                    elif 'arxiv.org' in href:
-                        # Parse URL and normalize to PDF format
-                        parsed = urlparse(href)
-                        path = parsed.path
-                        
-                        # Ensure path has /pdf/ and ends with .pdf
-                        if '/abs/' in path:
-                            path = path.replace('/abs/', '/pdf/')
-                        elif '/pdf/' not in path:
-                            path = path.rstrip('/') + '/pdf/'
-                        
-                        # Ensure path ends with .pdf
-                        if not path.endswith('.pdf'):
-                            path += '.pdf'
-                        
-                        # Reconstruct URL preserving query and fragment
-                        pdf_url = parsed._replace(path=path).geturl()
-                        links.append(pdf_url)
-            
-            # Check entry summary for PDF links
-            summary = entry.get('summary', '')
-            pdf_matches = re.findall(r'https?://[^\s<>"\']*.pdf', summary, re.IGNORECASE)
-            links.extend(pdf_matches)
-            
-            # Check entry content for PDF links
-            for content in entry.get('content', []):
-                content_value = content.get('value', '')
-                pdf_matches = re.findall(r'https?://[^\s<>"\']*.pdf', content_value, re.IGNORECASE)
-                links.extend(pdf_matches)
-            
-            # Process found links
-            for link in links:
-                # Clean up the link
-                link = link.strip()
-                if link and not link.startswith('#'):
-                    # Handle relative URLs
-                    if not link.startswith('http'):
-                        link = urljoin(feed_url, link)
-                    
-                    pdf_links.append({
-                        'url': link,
-                        'title': entry.get('title', ''),
-                        'published': entry.get('published', ''),
-                        'summary': entry.get('summary', '')[:200]
-                    })
-        
-        return pdf_links
-    except Exception as e:
-        print(f"❌ Error parsing feed {feed_url}: {e}")
-        return []
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Malformed JSON in feeds config file {path}: {e}")
 
-def download_pdf(pdf_url, cache_dir):
-    """Download PDF and save to cache directory"""
-    try:
-        # Create cache directory
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate cache filename based on URL hash
-        url_hash = hashlib.md5(pdf_url.encode()).hexdigest()
-        cache_file = cache_dir / f"{url_hash}.pdf"
-        
-        # Check if already cached
-        if cache_file.exists():
-            print(f"  📥 Using cached PDF: {cache_file.name}")
-            return cache_file
-        
-        # Download PDF
-        print(f"  📥 Downloading PDF: {pdf_url}")
-        response = requests.get(pdf_url, timeout=30, stream=True)
-        response.raise_for_status()
-        
-        # Check if content is actually a PDF
-        content_type = response.headers.get('content-type', '').lower()
-        if 'pdf' not in content_type and not response.content.startswith(b'%PDF'):
-            print(f"  ⚠️  Not a PDF file: {pdf_url}")
+
+def normalize_event_key(event_type, entities, page, snippet):
+    entity_str = "|".join(
+        sorted(f"{e.get('entity_type')}:{e.get('entity_name')}" for e in entities)
+    )
+    return f"{event_type}|{entity_str}|{page}|{sha64(snippet[:100])}"
+
+
+def has_signal(sentence_l: str):
+    """
+    Check if a sentence contains signal phrases.
+    
+    TODO: keep for future RSS signal filtering (e.g., for pre-filtering sentences before event extraction)
+    """
+    return (
+        any(p in sentence_l for lst in FAILURE_PHRASES.values() for p in lst)
+        or any(p in sentence_l for lst in DECISION_PHRASES.values() for p in lst)
+        or any(p in sentence_l for lst in METHOD_TAGS.values() for p in lst)
+    )
+# ---------------------------------------------------------
+# RSS
+# ---------------------------------------------------------
+def get_pdf_links_from_feed(feed_url: str):
+    from utils.feed_utils import extract_pdf_links
+
+    feed = feedparser.parse(feed_url)
+    pdf_links = []
+
+    for entry in feed.entries:
+        # Uncomment for debugging:
+        # print("[DEBUG] Feed entry:", json.dumps(entry, default=str, indent=2))
+        found_urls = extract_pdf_links(entry)
+
+        # Strategy 2: arXiv abstract URL → PDF URL conversion
+        entry_link = entry.get("link", "")
+        if "arxiv.org/abs/" in entry_link:
+            arxiv_pdf = entry_link.replace("/abs/", "/pdf/") + ".pdf"
+            if arxiv_pdf not in found_urls:
+                found_urls.append(arxiv_pdf)
+
+        # Strategy 3: check link elements for type=application/pdf or title=pdf (Atom feeds)
+        for link in entry.get("links", []):
+            href = link.get("href", "")
+            if (
+                "application/pdf" in link.get("type", "")
+                or link.get("title", "").lower() == "pdf"
+            ):
+                if href and href not in found_urls:
+                    found_urls.append(href)
+
+        # Only keep URLs that look like PDFs (accept .pdf in path, even with query strings)
+        pdf_urls = [
+            url for url in found_urls
+            if DOC_LINK_REGEX.search(url) or urlparse(url).path.lower().endswith(".pdf")
+        ]
+
+        # If no direct PDF links found, try fetching the HTML page and searching for PDFs
+        if not pdf_urls and entry_link:
+            try:
+                print(f"[DEBUG] Fetching HTML page for PDF discovery: {entry_link}")
+                resp = requests.get(entry_link, timeout=10)
+                if resp.ok:
+                    html = resp.text
+                    html_pdfs = DOC_LINK_REGEX.findall(html)
+                    for url in html_pdfs:
+                        if url not in pdf_urls:
+                            pdf_urls.append(url)
+            except Exception as e:
+                print(f"[DEBUG] Failed to fetch or parse HTML for PDFs: {e}")
+
+        for url in pdf_urls:
+            pdf_links.append({"url": url, "title": entry.get("title", "")})
+
+    return pdf_links
+
+# ---------------------------------------------------------
+# DOWNLOAD
+# ---------------------------------------------------------
+def download_pdf(url: str, cache_dir: Path):
+    from requests.exceptions import Timeout, ConnectionError, HTTPError
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    file_path = cache_dir / f"{hashlib.sha256(url.encode()).hexdigest()}.pdf"
+
+    if file_path.exists():
+        return file_path
+
+    headers = {
+        "User-Agent": "LabScraper/1.0 (+https://github.com/labscraper/labscraper)"
+    }
+
+    max_attempts = 3
+    backoff = 1
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            r = requests.get(url, timeout=20, headers=headers)
+            r.raise_for_status()
+            file_path.write_bytes(r.content)
+            return file_path
+
+        except (Timeout, ConnectionError) as e:
+            if attempt == max_attempts:
+                logging.error(f"❌ Download failed after {attempt} attempts: {e}")
+                return None
+
+            logging.warning(
+                f"Network error (attempt {attempt}): {e}. Retrying in {backoff}s..."
+            )
+            time.sleep(backoff)
+            backoff *= 2
+
+        except HTTPError as e:
+            status_code = getattr(e.response, "status_code", "unknown")
+
+            if status_code != "unknown" and status_code >= 500 and attempt < max_attempts:
+                logging.warning(
+                    f"Server error {status_code} (attempt {attempt}). Retrying in {backoff}s..."
+                )
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+
+            logging.error(
+                f"❌ HTTP error after {attempt} attempts ({status_code}): {e}"
+            )
             return None
-        
-        # Save to cache
-        with open(cache_file, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        
-        print(f"  ✅ Downloaded: {cache_file.name}")
-        return cache_file
-        
-    except Exception as e:
-        print(f"  ❌ Failed to download {pdf_url}: {e}")
-        return None
 
-def process_pdf_with_engine(pdf_path, domain, db_path):
-    """Process PDF using the existing engine functions"""
+        except Exception as e:
+            logging.error(f"❌ Unexpected error after {attempt} attempts: {e}")
+            if attempt == max_attempts:
+                return None
+            continue
+
+# ---------------------------------------------------------
+# PROCESS
+# ---------------------------------------------------------
+
+def is_valid_pdf(path):
     try:
-        # Create stable source ID
-        file_size = pdf_path.stat().st_size
-        file_mtime = int(pdf_path.stat().st_mtime)
-        source_id = sha16(f"{pdf_path.name}|{file_size}|{file_mtime}")
-        file_hash = sha64(f"{pdf_path.name}|{file_size}|{file_mtime}")
-        
-        events_count = 0
-        seen_events = set()
-        
-        with sqlite3.connect(db_path) as con:
-            # Extract metadata
-            with pdfplumber.open(str(pdf_path)) as pdf:
-                metadata = extract_metadata(pdf_path, pdf)
-                upsert_source(con, source_id, pdf_path.name, metadata)
-                doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
-                
-                for page_idx, page in enumerate(pdf.pages, start=1):
-                    text = page.extract_text() or ""
-                    if not text.strip():
-                        continue
-                    
-                    section = guess_section(text.lower())
-                    chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
-                    
-                    for sent in chunk_sentences(text):
-                        s_l = sent.lower()
-                        
-                        # Check for signals
-                        has_signal = (
-                            any(p in s_l for lst in FAILURE_PHRASES.values() for p in lst) or
-                            any(p in s_l for lst in DECISION_PHRASES.values() for p in lst) or
-                            any(p in s_l for lst in METHOD_TAGS.values() for p in lst)
-                        )
-                        if not has_signal:
-                            continue
-                        
-                        # Process sentence
-                        tags = detect_method_tags(s_l)
-                        failure_reason = detect_failure_reason(s_l)
-                        decision_taken, decision_driver = detect_decision(s_l)
-                        outcome = detect_outcome(s_l)
-                        stage = guess_stage(s_l)
-                        event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
-                        strength = evidence_strength(s_l)
-                        
-                        ents = extract_entities(sent, domain)
-                        measurements = extract_quantitative_data(sent)
-                        
-                        conf = confidence_score(bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l)
-                        keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
-                        
-                        if keep == 0 and event_type == "other":
-                            continue
-                        
-                        event_key = normalize_event_key(event_type, ents, page_idx, sent)
-                        if event_key in seen_events:
-                            continue
-                        seen_events.add(event_key)
-                        
-                        # Insert event
-                        bio_sys = None
-                        if "serum" in tags:
-                            bio_sys = "serum/plasma"
-                        elif "organoid" in s_l:
-                            bio_sys = "organoid"
-                        elif "cell line" in s_l or re.search(r'\bcell culture\b|\bcell lines?\b', s_l):
-                            bio_sys = "cells"
-                        
-                        event_id = insert_event(
-                            con=con,
-                            source_id=source_id,
-                            doc_id=doc_id,
-                            chunk_id=chunk_id,
-                            page_number=page_idx,
-                            domain=domain,
-                            event_type=event_type,
-                            study_stage=stage,
-                            biological_system=bio_sys,
-                            application_area=None,
-                            outcome=outcome,
-                            failure_reason=failure_reason,
-                            decision_taken=decision_taken,
-                            decision_driver=decision_driver,
-                            evidence_snippet=sent,
-                            evidence_strength_v=strength,
-                            confidence_v=conf,
-                        )
-                        
-                        # Link entities and tags
-                        for t in tags:
-                            link_event_tag(con, event_id, t)
-                        
-                        for e in ents:
-                            entity_id = upsert_entity(
-                                con,
-                                e["entity_type"],
-                                e["entity_name"],
-                                e.get("entity_variant"),
-                                None
-                            )
-                            link_event_entity(con, event_id, entity_id, e.get("role", "unknown"))
-                        
-                        # Insert measurements
-                        for m in measurements:
-                            insert_measurement(con, event_id, m)
-                        
-                        events_count += 1
-        
-        return events_count
-        
-    except Exception as e:
-        print(f"  ❌ Error processing {pdf_path}: {e}")
-        return 0
+        with open(path, "rb") as f:
+            header = f.read(5)
+            if header != b"%PDF-":
+                return False
+        return True
+    except Exception:
+        return False
 
+def process_pdf(
+    pdf_path: Path,
+    domain: str,
+    db_path: Path,
+    source_url: str | None = None,
+    source_title: str | None = None,
+):
+    events = 0
+    seen = set()
+
+    required_tables = [
+        "sources", "documents", "chunks", "entities", "research_events",
+        "event_entities", "tags", "event_tags", "quantitative_measurements"
+    ]
+
+    def check_required_tables(con):
+        missing = []
+        cur = con.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = {row[0] for row in cur.fetchall()}
+        for t in required_tables:
+            if t not in tables:
+                missing.append(t)
+        return missing
+
+    with sqlite3.connect(db_path) as con:
+        # Preflight: check for required tables
+        missing_tables = check_required_tables(con)
+        if missing_tables:
+            print(f"❌ Database schema is missing required tables: {', '.join(missing_tables)}.\n       Please run ensure_db_schema or check your schema migrations.")
+            return 0
+        try:
+            # Stream file hashing to avoid high memory use for large PDFs.
+            h = hashlib.sha256()
+            with open(pdf_path, "rb") as f:
+                for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                    h.update(chunk)
+            file_hash = h.hexdigest()
+            source_id = file_hash[:16]
+            metadata = {
+                "title": source_title or pdf_path.stem,
+                "url": source_url,
+                "domain": domain,
+            }
+            if source_url:
+                doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Z0-9<>%+,]+", source_url, re.I)
+                if doi_match:
+                    metadata["doi"] = doi_match.group(0).rstrip(".,;:")
+            source_id = upsert_source(con, source_id, str(pdf_path), metadata)
+
+            with pdfplumber.open(str(pdf_path)) as pdf:
+                try:
+                    doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
+                    for i, page in enumerate(pdf.pages, start=1):
+                        text = page.extract_text() or ""
+                        if not text.strip():
+                            continue
+
+                        section = guess_section(text.lower())
+                        chunk_id = insert_chunk(con, source_id, doc_id, i, section, text)
+
+                        for sent in chunk_sentences(text):
+                            added = _process_sentence(
+                                con, source_id, doc_id, chunk_id, i, domain, sent, section, seen
+                            )
+                            if added:
+                                events += 1
+                except sqlite3.OperationalError as oe:
+                    print(f"❌ DB schema error: {oe}")
+                    if 'no such table' in str(oe):
+                        print("   → One or more required tables are missing. Run ensure_db_schema or check your migrations.")
+                    return 0
+        except Exception as e:
+            print(f"❌ Failed to process PDF {pdf_path}: {e}")
+            return 0
+    return events
+
+# ---------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------
 def main():
-    """Main RSS ingestion function"""
-    parser = argparse.ArgumentParser(description='RSS Feed Ingestion System')
-    parser.add_argument('--feeds-config', type=Path, default=FEEDS_CONFIG,
-                       help='Path to RSS feeds configuration JSON file')
-    parser.add_argument('--db-path', type=Path, default=DB_PATH,
-                       help='Output database path')
-    parser.add_argument('--cache-dir', type=Path, default=RSS_CACHE_DIR,
-                       help='Cache directory for downloaded PDFs')
-    parser.add_argument('--dry-run', action='store_true',
-                       help='Show what would be downloaded without actually downloading')
-    parser.add_argument('--domain', type=str,
-                       help='Override domain for all feeds (for testing)')
-    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--feeds", default=str(FEEDS_CONFIG), help="Path to feeds.json")
+    parser.add_argument("--db", default=str(DB_PATH), help="Path to SQLite database")
     args = parser.parse_args()
-    
-    # Load feeds configuration
-    feeds_config = load_feeds_config()
-    
-    # Ensure database and cache directories exist
-    args.db_path.parent.mkdir(parents=True, exist_ok=True)
-    args.cache_dir.mkdir(parents=True, exist_ok=True)
-    
-    print("📡 RSS FEED INGESTION SYSTEM")
-    print("=" * 50)
-    print(f"Database: {args.db_path}")
-    print(f"Cache: {args.cache_dir}")
-    print(f"Feeds config: {args.feeds_config}")
-    print()
-    
-    total_downloaded = 0
-    total_processed = 0
-    
-    # Process each feed
-    for feed_config in feeds_config.get('feeds', []):
-        if not feed_config.get('enabled', True):
-            print(f"⏭️  Skipping disabled feed: {feed_config['name']}")
+
+    feeds_config_path = Path(args.feeds)
+    db_path = Path(args.db)
+
+
+    ensure_db_schema(db_path)
+
+    try:
+        feeds = load_feeds_config(feeds_config_path)
+    except FileNotFoundError:
+        print(f"❌ Feeds config file not found: {feeds_config_path}")
+        sys.exit(1)
+    except RuntimeError as e:
+        print(f"❌ Error loading feeds config: {e}")
+        sys.exit(1)
+
+    for feed in feeds.get("feeds", []):
+        if not feed.get("enabled", True):
             continue
-        
-        feed_url = feed_config['url']
-        domain = args.domain if args.domain else feed_config.get('domain', 'methods_tooling')
-        
-        print(f"📡 Processing feed: {feed_config['name']}")
-        print(f"   URL: {feed_url}")
-        print(f"   Domain: {domain}")
-        
-        # Get PDF links from feed
-        pdf_links = get_pdf_links_from_feed(feed_url)
-        print(f"   Found {len(pdf_links)} PDF links")
-        
-        if not pdf_links:
-            print("   No PDFs found, skipping...")
+
+        if "url" not in feed:
+            print(f"⚠️ Skipping feed entry missing 'url': {feed}")
             continue
-        
-        # Process each PDF
-        feed_downloaded = 0
-        feed_processed = 0
-        
-        for pdf_info in pdf_links:
-            pdf_url = pdf_info['url']
-            pdf_title = pdf_info['title']
-            
-            print(f"   📄 {pdf_title}")
-            print(f"      URL: {pdf_url}")
-            
+
+        print(f"📡 {feed.get('name', feed['url'])}")
+
+        links = get_pdf_links_from_feed(feed["url"])
+        print(f"[DEBUG] Links found: {len(links)}")
+
+        for item in links:
+            print(f"   📄 {item['title']}")
+
             if args.dry_run:
-                print("      [DRY RUN] Would download and process")
-                feed_downloaded += 1
-                feed_processed += 1
                 continue
-            
-            # Download PDF
-            cache_file = download_pdf(pdf_url, args.cache_dir)
-            if not cache_file:
+
+            pdf = download_pdf(item["url"], RSS_CACHE_DIR)
+            if not pdf:
                 continue
-            
-            feed_downloaded += 1
-            
-            # Process PDF
-            events_count = process_pdf_with_engine(cache_file, domain, args.db_path)
-            if events_count > 0:
-                feed_processed += 1
-                print(f"      ✅ Processed: {events_count} events")
-            else:
-                print("      ⚠️  No events extracted")
-        
-        total_downloaded += feed_downloaded
-        total_processed += feed_processed
-        
-        print(f"   Summary: {feed_downloaded} downloaded, {feed_processed} processed")
-        print()
-        
-        # Be respectful to servers
-        time.sleep(2)
-    
-    print("=" * 50)
-    print("RSS INGESTION COMPLETE")
-    print(f"Total downloaded: {total_downloaded}")
-    print(f"Total processed: {total_processed}")
-    print(f"Database: {args.db_path}")
-    
-    if args.dry_run:
-        print("\n⚠️  This was a dry run - no actual downloads or processing occurred")
+
+            if not is_valid_pdf(pdf):
+                print("⚠️ Skipping invalid PDF")
+                continue
+
+            count = process_pdf(
+                pdf,
+                feed.get("domain", "methods_tooling"),
+                db_path,
+                source_url=item.get("url"),
+                source_title=item.get("title"),
+            )
+            print(f"   ✅ {count} events")
+
+            time.sleep(1)
+
 
 if __name__ == "__main__":
     main()

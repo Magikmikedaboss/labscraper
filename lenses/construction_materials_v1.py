@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
 
 MATERIALS = [
@@ -26,18 +26,23 @@ NEGATIVE_COMPARATORS = ["decreased", "reduced", "lower", "degraded"]
 COMPARATORS = POSITIVE_COMPARATORS + NEGATIVE_COMPARATORS
 TEST_MARKERS = ["test", "tested", "measured", "results", "specimen", "samples"]
 
-def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
+def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
 
     mats = list_hits(s_l, MATERIALS)
     props = list_hits(s_l, PROPERTIES)
 
-    # Signal: materials + property, or strong unit/numeric measurement + property, or test marker alone
-    signal = (bool(mats) and bool(props)) or (bool(props) and (has_unit_signal(s_l) or has_number(s_l))) or contains_any(s_l, TEST_MARKERS)
 
-    # Allow test markers alone to trigger detection, even if props is empty
-    if not signal or (not props and not contains_any(s_l, TEST_MARKERS)):
+    # Signal: materials + property, or strong unit/numeric measurement + property, or test marker (only if mats or props present)
+    signal = (
+        (bool(mats) and bool(props))
+        or (bool(props) and (has_unit_signal(s_l) or has_number(s_l)))
+        or ((bool(mats) or bool(props)) and contains_any(s_l, TEST_MARKERS))
+    )
+
+    # Return early if no signal
+    if not signal:
         return None, []
 
     # Note: matches are lowercased because list_hits is run on s_l (lowercased input)
@@ -52,7 +57,7 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     elif contains_any(s_l, NEGATIVE_COMPARATORS):
         outcome = "degraded"
     else:
-        outcome = "unknown"
+        outcome = "neutral"
 
     score = 0
     if mats:
@@ -76,4 +81,4 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     if has_unit_signal(s_l):
         tags.append("has_units")
 
-    return LensEvent("material_performance", outcome, conf, tags), dedupe_entities(entities)
+    return build_lens_event("materials", "material_performance", outcome, conf, tags, sentence, source_type), dedupe_entities(entities)

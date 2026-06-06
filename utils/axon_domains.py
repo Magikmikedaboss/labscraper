@@ -206,63 +206,60 @@ def load_all_domains(domains_dir: str) -> Dict[str, DomainProfile]:
             print(f"Failed to load domain profile from {fname}: {e}")
             continue
         
-        try:
-            if prof.id in domains:
-                raise ValueError(f"Duplicate domain id: {prof.id}")
-            domains[prof.id] = prof
-        except ValueError:
-            raise  # Re-raise duplicate ID error to fail fast    
+        if prof.id in domains:
+            raise ValueError(f"Duplicate domain id: {prof.id}")
+        domains[prof.id] = prof
     return domains
 
 
-def get_domain_by_id(domain_id: str, domains_dir: str = "seeds/domains") -> Optional[DomainProfile]:
+def get_domain_by_id(domain_id: str, domains_dir: str = "config/domains") -> Optional[DomainProfile]:
     """
     Get a specific domain profile by ID.
 
-    Args:
-        domain_id: Domain identifier
-        domains_dir: Path to domains directory
-
-    Returns:
-        DomainProfile if found, None otherwise
+    Canonical location is `config/domains` (default). Also supports legacy `seeds/domains` for backward compatibility.
+    The search order is: domains_dir (default: config/domains), then 'config/domains', then 'seeds/domains'.
     """
-    # Prevent path traversal attacks by sanitizing the domain_id
     if not domain_id or not isinstance(domain_id, str):
         return None
 
-    # Reject domain_id containing path separators or traversal sequences
     if "/" in domain_id or "\\" in domain_id or ".." in domain_id:
         return None
 
-    # Build path safely using basename to prevent traversal
     safe_filename = os.path.basename(f"{domain_id}.json")
-    path = os.path.join(domains_dir, safe_filename)
+    search_dirs = []
+    for candidate_dir in [domains_dir, "config/domains", "seeds/domains"]:
+        if candidate_dir and candidate_dir not in search_dirs:
+            search_dirs.append(candidate_dir)
 
-    # Verify the resolved path stays within the domains directory
-    try:
-        resolved_path = os.path.realpath(path)
-        resolved_domains_dir = os.path.realpath(domains_dir)
-        if not resolved_path.startswith(resolved_domains_dir + os.sep) and resolved_path != resolved_domains_dir:
-            return None
-    except (OSError, ValueError):
-        return None
+    for base_dir in search_dirs:
+        path = os.path.join(base_dir, safe_filename)
 
-    if not os.path.isfile(path):
-        return None
+        try:
+            resolved_path = os.path.realpath(path)
+            resolved_domains_dir = os.path.realpath(base_dir)
+            if not resolved_path.startswith(resolved_domains_dir + os.sep) and resolved_path != resolved_domains_dir:
+                continue
+        except (OSError, ValueError):
+            continue
 
-    if not os.access(path, os.R_OK):
-        return None
+        if not os.path.isfile(path):
+            continue
 
-    try:
-        return load_domain_profile(path)
-    except (FileNotFoundError, json.JSONDecodeError, ValueError, OSError):
-        return None
+        if not os.access(path, os.R_OK):
+            continue
+
+        try:
+            return load_domain_profile(path)
+        except (FileNotFoundError, json.JSONDecodeError, ValueError, OSError):
+            continue
+
+    return None
 
 
 # Example usage
 if __name__ == "__main__":
     # Load all domains
-    domains = load_all_domains("seeds/domains")
+    domains = load_all_domains("config/domains")
     
     print("="*70)
     print("AXON LABS DOMAIN PROFILES")

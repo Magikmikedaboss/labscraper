@@ -1,28 +1,21 @@
-"""
-Entity Normalization Module
 
-Collapses entity variants into canonical forms and identifies context-only entities.
-Now supports domain overlay aliases for MSC→mesenchymal stem cell, etc.
-
-Usage:
-    from entity_normalizer import normalize_entity, is_context_entity, load_overlay_aliases
-    
-    norm_map = load_normalization_map()
-    overlay_aliases = load_overlay_aliases("stem_cells_regen")  # Optional
-    
-    normalized = normalize_entity(entity, norm_map, overlay_aliases)
-    if not is_context_entity(normalized):
-        # Include in top entities ranking
-"""
-
+import logging
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional, List, Tuple, Union
+
+# Central set of primary entity types
+PRIMARY_TYPES = {
+    'gene', 'protein', 'compound', 'cell_type', 'assay', 'test_method',
+    'stem_cell', 'neural_cell', 'model', 'peptide', 'failure_mode', 'target',
+    'organism', 'disease', 'phenotype', 'mutation', 'variant', 'tissue', 'pathway',
+    'biomarker', 'receptor', 'enzyme', 'transcription_factor', 'rna', 'metabolite',
+    'drug', 'chemical', 'exposure', 'treatment', 'intervention', 'outcome', 'measurement'
+}
 
 
 def load_normalization_map(path: str = "seeds/normalization.json") -> dict:
     """Load the normalization map from JSON file"""
-    import logging
     try:
         text = Path(path).read_text(encoding="utf-8")
         return json.loads(text)
@@ -37,259 +30,186 @@ def load_normalization_map(path: str = "seeds/normalization.json") -> dict:
         raise
 
 
+
+# Module-level import and flag for seed_overlay_loader
+try:
+    from utils import seed_overlay_loader
+    _SEED_OVERLAY_LOADER_AVAILABLE = True
+except (ImportError, ModuleNotFoundError, SyntaxError) as e:
+    logging.getLogger(__name__).warning(f"seed_overlay_loader could not be imported: {e}")
+    seed_overlay_loader = None
+    _SEED_OVERLAY_LOADER_AVAILABLE = False
+
 def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "seeds/overlays") -> Dict[str, str]:
     """
-    Load alias→canonical mappings from domain overlay.
-    
+    Load alias→canonical mappings from domain overlay using seed_overlay_loader if available.
+
     Args:
         domain_id: Domain identifier (e.g., "stem_cells_regen")
         overlays_dir: Path to overlays directory
-        
+
     Returns:
-        Dictionary mapping alias (lowercase) to canonical name
-        
+        Dictionary mapping alias (lowercase) to canonical name. Empty if unavailable or error.
+
     Example:
         {"msc": "mesenchymal stem cell", "ipsc": "induced pluripotent stem cell"}
+
+    Notes:
+        - If seed_overlay_loader is not present or fails, returns an empty dict and logs a warning.
+        - If neither get_overlay_aliases nor OVERLAY_ALIASES is present, logs a warning.
     """
+    overlay_map = {}
+    logger = logging.getLogger(__name__)
+    if not _SEED_OVERLAY_LOADER_AVAILABLE or seed_overlay_loader is None:
+        logger.warning(f"seed_overlay_loader not available, overlay aliases unavailable for {domain_id}")
+        return overlay_map
     try:
-        from .seed_overlay_loader import load_overlay
-        overlay = load_overlay(domain_id, overlays_dir)
-    except ImportError:
-        # Fallback to direct loading if import fails
-        import logging
-        logging.getLogger(__name__).warning(
-            f"Could not import seed_overlay_loader, overlay aliases unavailable for {domain_id}"
-        )
-        overlay = None
-    
-    if not overlay:
-        return {}
-    
-    # Extract aliases from overlay
-    aliases = {}
-    if "entities" in overlay and "aliases" in overlay["entities"]:
-        for key, value in overlay["entities"]["aliases"].items():
-            if isinstance(value, list):
-                # Format: {canonical: [alias_list]}
-                for alias in value:
-                    aliases[alias.lower()] = key
-            elif isinstance(value, str):
-                # Format: {variant: canonical}
-                aliases[key.lower()] = value
-    
-    return aliases
+        if hasattr(seed_overlay_loader, 'get_overlay_aliases'):
+            overlay_map = seed_overlay_loader.get_overlay_aliases(domain_id, overlays_dir)
+        elif hasattr(seed_overlay_loader, 'OVERLAY_ALIASES'):
+            overlay_map = seed_overlay_loader.OVERLAY_ALIASES.get(domain_id, {})
+        else:
+            logger.warning(f"seed_overlay_loader found but no loader function or alias map present for {domain_id}")
+    except Exception as e:
+        logger.error(f"Error loading overlay aliases for {domain_id}: {e}")
+    return overlay_map
 
 
-def normalize_entity_name(entity_type: str, entity_name: str, norm_map: dict, overlay_aliases: Optional[Dict[str, str]] = None) -> str:
+def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dict] = None) -> dict:
     """
-    Normalize an entity name to its canonical form.
-    
-    Checks overlay aliases first (MSC→mesenchymal stem cell), then core normalization map.
-    
+    Normalize an entity using the normalization map and overlay aliases.
     Args:
-        entity_type: Type of entity (assay, compound, model, etc.)
-        entity_name: Original entity name
-        norm_map: Normalization map loaded from JSON
-        overlay_aliases: Optional overlay alias map (from load_overlay_aliases)
-        
+        entity: dict with keys 'entity_type', 'entity_name', 'entity_variant'
+        norm_map: normalization mapping
+        overlay_aliases: overlay alias mapping (optional)
     Returns:
-        Canonical entity name, or original if no mapping found
+        dict with normalized 'entity_type', 'entity_name', 'entity_variant', preserving extra keys
+    Notes:
+        Keys are matched case-sensitively, but mapped values from overlay_aliases and norm_map will be lowercased for consistency (see etype, name).
     """
-    name_lower = entity_name.lower()
-    
-    # Check overlay aliases first (higher priority)
-    if overlay_aliases and name_lower in overlay_aliases:
-        return overlay_aliases[name_lower]
-    
-    # Check core normalization map
-    if entity_type not in norm_map:
-        return entity_name
-    
-    # Check each canonical form and its variants
-    for canonical, variants in norm_map[entity_type].items():
-        for variant in variants:
-            if name_lower == variant.lower():
-                return canonical
-    
-    # No mapping found, return original
-    return entity_name
+    copy = dict(entity)
+    name = (entity.get('entity_name') or '').strip().lower()
+    etype = (entity.get('entity_type') or '').strip().lower()
+    variant = (entity.get('entity_variant') or '').strip().lower()
+    # Overlay alias normalization (mapped values are lowercased)
+    if overlay_aliases and name in overlay_aliases:
+        name = overlay_aliases[name].lower()
+    if overlay_aliases and variant in overlay_aliases:
+        variant = overlay_aliases[variant].lower()
+    # Normalization map: match input name to any variant in norm_map[etype] and set to canonical_name
+    # Supported shapes for variants_entry:
+    #   list:  ["a", "b"]
+    #   dict:  {"key": ["a", "b"], "other": ["c"]}
+    #   tuple: (["a", "b"], metadata)  # only first element (list) is used
+    #   else:  falls back to empty list
+    # This logic maps any matching variant (case-insensitive) to canonical_name.
+    # Role assignment is handled by get_entity_role.
+    if etype in norm_map:
+        name_resolved = False
+        variant_resolved = not bool(variant)
+        for canonical_name, variants_entry in norm_map[etype].items():
+            if isinstance(variants_entry, list):
+                # e.g. ["a", "b"]
+                variants = variants_entry
+            elif isinstance(variants_entry, dict):
+                # e.g. {"variants": ["a", "b"], "role": "primary"}
+                variants = variants_entry.get('variants', [])
+            elif isinstance(variants_entry, tuple):
+                # e.g. (["a", "b"], metadata)
+                variants = variants_entry[0]
+            else:
+                variants = []
+
+            if (not name_resolved) and any(name == v.lower() for v in variants):
+                name = canonical_name.lower()
+                name_resolved = True
+
+            if (not variant_resolved) and variant and any(variant == v.lower() for v in variants):
+                variant = canonical_name.lower()
+                variant_resolved = True
+
+            if name_resolved and variant_resolved:
+                break
+    copy['entity_type'] = etype
+    copy['entity_name'] = name
+    copy['entity_variant'] = variant
+    # Do not return a string; always return a dict
+    # Role assignment is handled by get_entity_role
+    return copy
 
 
-def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[Dict[str, str]] = None) -> dict:
+
+def get_entity_role(
+    entity: dict,
+    norm_map: Dict[str, Dict[str, Union[List[str], Dict[str, object], Tuple[List[str], str]]]]
+) -> str:
     """
-    Normalize an entity dict to use canonical name.
-    
+    Assign a role to the entity based on type and normalization map.
+
     Args:
-        entity: Entity dict with keys: entity_type, entity_name, entity_variant, etc.
-        norm_map: Normalization map loaded from JSON
-        overlay_aliases: Optional overlay alias map (from load_overlay_aliases)
-        
+        entity (dict): Entity dictionary with at least 'entity_type' and 'entity_name'.
+        norm_map (dict): Normalization map of the form:
+            norm_map[etype][canonical_name] = variants_entry
+            where variants_entry can be one of:
+                - list[str]: List of variant names (legacy format)
+                  Example: ['rapamycin', 'sirolimus']
+                - dict: {'variants': list[str], 'role': str}
+                  Example: {'variants': ['rapamycin', 'sirolimus'], 'role': 'primary'}
+                - tuple: (list[str], str)
+                  Example: (['rapamycin', 'sirolimus'], 'primary')
+            The function will check if the entity name matches canonical_name or any variant, and return the associated role.
+
     Returns:
-        New entity dict with normalized name
-    """
-    normalized_name = normalize_entity_name(
-        entity["entity_type"],
-        entity["entity_name"],
-        norm_map,
-        overlay_aliases
-    )
-    
-    return {
-        **entity,
-        "entity_name": normalized_name,
-        "original_name": entity.get("original_name", entity["entity_name"])
-    }
+        str: 'primary' for main entities, 'context' for context-only, or 'unknown'.
 
+    Symbol references:
+        - norm_map: normalization mapping as described above
+        - etype: entity type (lowercased)
+        - canonical_name: canonical entity name (lowercased)
+        - variants_entry: one of the accepted formats above
+        - role: string role, e.g. 'primary' or 'context'
 
-def is_context_entity(entity: dict, norm_map: dict) -> bool:
+    Example norm_map usage:
+        norm_map = {
+            'compound': {
+                'rapamycin': ['rapamycin', 'sirolimus'],
+                'metformin': {'variants': ['metformin', 'glucophage'], 'role': 'primary'},
+                'everolimus': (['everolimus', 'afinitor'], 'context'),
+            }
+        }
     """
-    Check if an entity is context-only (should be demoted from rankings).
-    
-    Args:
-        entity: Entity dict with entity_name
-        norm_map: Normalization map loaded from JSON
-        
-    Returns:
-        True if entity is context-only, False otherwise
-    """
-    context_list = norm_map.get("context_only_entities", [])
-    return entity["entity_name"].upper() in [c.upper() for c in context_list]
+    etype = (entity.get('entity_type') or '').strip().lower()
+    name = (entity.get('entity_name') or '').strip().lower()
 
+    # 1. Try new-style norm_map[etype][canonical_name] supporting role metadata
+    if etype in norm_map:
+        for canonical_name, variants_entry in norm_map[etype].items():
+            # Support legacy: variants_entry is a list
+            role = 'primary'
+            if isinstance(variants_entry, list):
+                variants = variants_entry
+            # Support dict: {'variants': [...], 'role': ...}
+            elif isinstance(variants_entry, dict):
+                variants = variants_entry.get('variants', [])
+                role = variants_entry.get('role', 'primary')
+            # Support tuple: ([...], 'role')
+            elif isinstance(variants_entry, tuple) and len(variants_entry) == 2:
+                variants, role = variants_entry
+            else:
+                variants = []
+            all_variants = [canonical_name] + list(variants)
+            if any(name == v.lower() for v in all_variants):
+                return role
 
-def get_entity_role(entity: dict, norm_map: dict) -> str:
-    """
-    Determine entity role: 'primary' or 'context'.
-    
-    Args:
-        entity: Entity dict
-        norm_map: Normalization map
-        
-    Returns:
-        'context' if context-only entity, 'primary' otherwise
-    """
-    # Primary entities - these are the main research subjects
-    if entity["entity_type"] in ['compound', 'target', 'neural_cell', 'stem_cell', 'peptide', 'indication', 'pathway']:
+    # 2. Fallback: old top-level norm_map['context'] and norm_map['primary']
+    if 'context' in norm_map and etype in norm_map['context'] and name in norm_map['context'][etype]:
+        return 'context'
+    if 'primary' in norm_map:
+        if etype in norm_map['primary']:
+            if name in norm_map['primary'][etype]:
+                return 'primary'
+
+    # 3. Expanded set of primary types
+    if etype in PRIMARY_TYPES:
         return 'primary'
-    
-    # Context entities - these provide context but aren't the main focus
-    if entity["entity_type"] in ['model', 'assay', 'method']:
-        # Special case: biological fluids should be context, not primary
-        biofluids = ['serum', 'plasma', 'blood', 'csf', 'cerebrospinal fluid', 'urine', 'saliva', 'synovial fluid']
-        if entity["entity_name"].lower() in biofluids:
-            return 'context'  # Biological fluids and these types are always context
-    
-    # Default to context for unknown types
-    return 'context'
-
-
-def normalize_entity_list(entities: List[dict], norm_map: dict, overlay_aliases: Optional[Dict[str, str]] = None) -> List[dict]:
-    """
-    Normalize a list of entities and add role information.
-    
-    Args:
-        entities: List of entity dicts
-        norm_map: Normalization map
-        overlay_aliases: Optional overlay alias map (from load_overlay_aliases)
-        
-    Returns:
-        List of normalized entities with role field added
-    """
-    normalized = []
-    for entity in entities:
-        norm_entity = normalize_entity(entity, norm_map, overlay_aliases)
-        norm_entity["role"] = get_entity_role(norm_entity, norm_map)
-        normalized.append(norm_entity)
-    
-    return normalized
-
-def get_primary_entities(entities: List[dict], norm_map: dict, overlay_aliases: Optional[Dict[str, str]] = None) -> List[dict]:
-    """
-    Filter to only primary (non-context) entities.
-    
-    Args:
-        entities: List of entity dicts
-        norm_map: Normalization map
-        overlay_aliases: Optional overlay aliases for normalization
-    Returns:
-        List of primary entities only
-    """
-    normalized = normalize_entity_list(entities, norm_map, overlay_aliases)
-    return [e for e in normalized if e["role"] == "primary"]
-
-
-def get_context_entities(entities: List[dict], norm_map: dict, overlay_aliases: Optional[Dict[str, str]] = None) -> List[dict]:
-    """
-    Filter to only context entities.
-    
-    Args:
-        entities: List of entity dicts
-        norm_map: Normalization map
-        overlay_aliases: Optional overlay aliases for normalization
-    Returns:
-        List of context entities only
-    """
-    normalized = normalize_entity_list(entities, norm_map, overlay_aliases)
-    return [e for e in normalized if e["role"] == "context"]
-
-
-# Example usage
-if __name__ == "__main__":
-    # Load normalization map
-    norm_map = load_normalization_map()
-    
-    # Test entities
-    test_entities = [
-        {"entity_type": "assay", "entity_name": "mass spectrometry", "entity_variant": "assay"},
-        {"entity_type": "assay", "entity_name": "LC-MS/MS", "entity_variant": "assay"},
-        {"entity_type": "assay", "entity_name": "liquid chromatography", "entity_variant": "assay"},
-        {"entity_type": "model", "entity_name": "in vivo", "entity_variant": "experimental"},
-        {"entity_type": "model", "entity_name": "HUMAN", "entity_variant": "organism"},
-        {"entity_type": "compound", "entity_name": "SEMAGLUTIDE", "entity_variant": "peptide"},
-    ]
-    
-    print("=" * 70)
-    print("ENTITY NORMALIZATION TEST")
-    print("=" * 70)
-    
-    print("\n1. Core normalization (no overlay):")
-    for e in test_entities:
-        print(f"  {e['entity_name']} ({e['entity_type']})")
-    
-    print("\n2. Normalized entities:")
-    normalized = normalize_entity_list(test_entities, norm_map)
-    for e in normalized:
-        role_marker = "🔧" if e["role"] == "context" else "⭐"
-        print(f"  {role_marker} {e['entity_name']} ({e['entity_type']}) - {e['role']}")
-    
-    # Test overlay aliases
-    print("\n3. Testing overlay aliases (stem cells domain):")
-    overlay_aliases = load_overlay_aliases("stem_cells_regen")
-    print(f"   Loaded {len(overlay_aliases)} aliases from stem cells overlay")
-    
-    # Test stem cell abbreviations
-    stem_cell_tests = [
-        {"entity_type": "cell_type", "entity_name": "MSC", "entity_variant": "cell"},
-        {"entity_type": "cell_type", "entity_name": "iPSC", "entity_variant": "cell"},
-        {"entity_type": "cell_type", "entity_name": "ESC", "entity_variant": "cell"},
-        {"entity_type": "cell_type", "entity_name": "mesenchymal stem cell", "entity_variant": "cell"},
-    ]
-    
-    print("\n   Abbreviation → Canonical:")
-    for e in stem_cell_tests:
-        normalized = normalize_entity(e, norm_map, overlay_aliases)
-        arrow = "→" if e["entity_name"] != normalized["entity_name"] else "="
-        print(f"   {e['entity_name']:30} {arrow} {normalized['entity_name']}")
-    
-    print("\n4. Primary entities only (for rankings):")
-    primary = get_primary_entities(test_entities, norm_map)
-    for e in primary:
-        print(f"  ⭐ {e['entity_name']} ({e['entity_type']})")
-    
-    print("\n5. Context entities only (for filters):")
-    context = get_context_entities(test_entities, norm_map)
-    for e in context:
-        print(f"  🔧 {e['entity_name']} ({e['entity_type']})")
-    
-    print("\n" + "=" * 70)
-    print("✅ Overlay alias normalization working!")
-    print("=" * 70)
+    return 'unknown'

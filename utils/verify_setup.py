@@ -45,26 +45,25 @@ def check_dependencies():
 def check_files():
     """Check if required files exist"""
     print("\nChecking required files...")
-    
+    project_root = Path(__file__).resolve().parents[1]
     required_files = {
-        'utils/schema.sql': 'Database schema',
-        'init_db.py': 'Database initialization',
-        'utils/scrape_pdfs.py': 'Main scraper',
-        'utils/export_csv.py': 'CSV export tool',
-        'README.md': 'Documentation',
-        'requirements.txt': 'Dependencies list',
+        project_root / 'schema.sql': 'Database schema',
+        project_root / 'init_db.py': 'Database initialization',
+        project_root / 'utils/scrape_pdfs.py': 'Main scraper',
+        project_root / 'utils/export_csv.py': 'CSV export tool',
+        project_root / 'README.md': 'Documentation',
+        project_root / 'requirements.txt': 'Dependencies list',
     }
-    
     all_ok = True
     for filename, description in required_files.items():
-        path = Path(filename)
+        path = filename  # filename is already a Path object
+        short_name = path.name
         if path.exists():
             size = path.stat().st_size
-            print(f"  ✅ {filename:20} - {description} ({size:,} bytes)")
+            print(f"  ✅ {short_name:20} - {description} ({size:,} bytes)")
         else:
-            print(f"  ❌ {filename:20} - {description} (MISSING)")
+            print(f"  ❌ {short_name:20} - {description} (MISSING)")
             all_ok = False
-    
     return all_ok
 
 def check_directories():
@@ -168,8 +167,8 @@ def test_import():
     print("\nTesting module imports...")
     
     try:
-        # Test if we can read the schema
-        schema_path = Path('utils/schema.sql')
+        # Test if we can read the canonical schema at the project root
+        schema_path = (Path(__file__).resolve().parents[1] / "schema.sql").resolve()
         if schema_path.exists():
             schema = schema_path.read_text()
             if 'CREATE TABLE' in schema:
@@ -177,12 +176,14 @@ def test_import():
             else:
                 print("  schema.sql appears invalid")
                 return False
-        
+        else:
+            print(f"  schema.sql not found at {schema_path}")
+            return False
+
         # Test basic imports
-        
         print("  All core modules can be imported")
         return True
-        
+
     except Exception as e:
         print(f"  Import error: {e}")
         return False

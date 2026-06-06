@@ -1,0 +1,58 @@
+{
+  "feeds": [
+    {
+      "name": "arXiv - Quantitative Biology (Longevity/Drug Discovery)",
+      "url": "https://rss.arxiv.org/rss/q-bio",
+      "domain": "biohacking_longevity",
+      "enabled": true
+    },
+    {
+      "name": "Science Magazine",
+      "url": "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science",
+      "domain": "methods_tooling",
+      "enabled": false
+    },
+    {
+      "name": "bioRxiv - Cell Biology (Stem Cells)",
+      "url": "https://connect.biorxiv.org/biorxiv_xml.php?subject=cell_biology",
+      "domain": "stem_cells_regen",
+      "enabled": true
+    },
+    {
+      "name": "Building Science - Building Science Corporation",
+      "url": "https://buildingscience.com/rss.xml",
+      "domain": "construction_science",
+      "enabled": true
+    },
+    {
+      "name": "NREL News (National Renewable Energy Laboratory)",
+      "url": "https://www.nrel.gov/news/rss.xml",
+      "domain": "construction_science",
+      "enabled": false
+    },
+    {
+      "name": "USGS Maps",
+      "url": "https://www.usgs.gov/maps/rss.xml",
+      "domain": "construction_science",
+      "enabled": false
+    },
+    {
+      "name": "NIST News",
+      "url": "https://www.nist.gov/news-events/cms-rss.xml",
+      "domain": "construction_science",
+      "enabled": false
+    },
+    {
+      "name": "arXiv Applied Physics",
+      "url": "https://export.arxiv.org/rss/physics.app-ph",
+      "domain": "construction_science",
+      "enabled": true
+    },
+    {
+      "name": "arXiv Materials Science",
+      "url": "https://export.arxiv.org/rss/cond-mat.mtrl-sci",
+      "domain": "construction_science",
+      "enabled": true
+    }
+  ]
+}

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
 
 FAILURE_MODES = [
@@ -21,7 +21,7 @@ CAUSAL_MARKERS = ["due to", "caused by", "attributed to", "resulted from", "led 
 
 HIGH_SIGNAL = ["failure", "failed", "collapse", "fracture", "investigation", "forensic", "root cause"]
 
-def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
+def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
 
@@ -41,8 +41,13 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     for d in driver_hits[:5]:
         entities.append(make_entity("failure_driver", d, "driver", "cause"))
 
-    # Outcome
-    outcome = "failed" if contains_any(s_l, ["failed", "collapse", "fracture"]) else "unknown"
+    # Outcome (normalized later to negative/neutral buckets)
+    if mode_hits:
+        outcome = "failed"
+    elif has_causal:
+        outcome = "negative"
+    else:
+        outcome = "unknown"
 
     # Confidence
     score = 0
@@ -69,4 +74,4 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     if has_unit_signal(s_l): 
         tags.append("has_units")
 
-    return LensEvent("failure_analysis", outcome, conf, tags), dedupe_entities(entities)
+    return build_lens_event("failure", "failure_analysis", outcome, conf, tags, sentence, source_type), dedupe_entities(entities)

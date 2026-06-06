@@ -1,233 +1,71 @@
-"""
-Phase 1 PDF Scraper Functions - Full Version
-This file contains all the core functions needed for the parallel PDF processing.
-"""
 
-import re
+from pathlib import Path
 import hashlib
-from typing import List, Dict, Tuple, Pattern
-
-# Import from run_engine.py using relative import
-from .run_engine import (
-    extract_entities, confidence_score
+from typing import Dict
+import sqlite3
+import pdfplumber
+from datetime import datetime
+from utils.common import sha64
+from utils.metadata_utils import extract_metadata
+from utils.text_utils import chunk_sentences, guess_stage, guess_section
+from utils.data_extractors import extract_quantitative_data
+from utils.entities import extract_entities
+from utils.event_classification import (
+    confidence_score,
+    ConfidenceInput,
+    detect_method_tags,
+    detect_failure_reason,
+    detect_decision,
+    classify_event_type,
+    detect_outcome,
+    evidence_strength,
 )
+from utils.db_init import init_db_schema
 
-# Precompile quantitative regex patterns at module scope for performance
-QUANTITATIVE_PATTERNS: List[Tuple[Pattern, str]] = [
-    (re.compile(r'ic50.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', re.IGNORECASE), 'ic50'),
-    (re.compile(r'ec50.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', re.IGNORECASE), 'ec50'),
-    (re.compile(r'kd.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', re.IGNORECASE), 'kd'),
-    (re.compile(r'ki.*?(\d+\.?\d*)\s*(nm|μm|mm|µm)', re.IGNORECASE), 'ki'),
-    (re.compile(r'half[- ]?life.*?(\d+\.?\d*)\s*(min|hour|day|hr|h)', re.IGNORECASE), 'half_life'),
-    (re.compile(r'stability.*?(\d+\.?\d*)\s*(%|percent)', re.IGNORECASE), 'stability_percent'),
-    (re.compile(r't1/2.*?(\d+\.?\d*)\s*(min|hour|day|hr|h)', re.IGNORECASE), 'half_life'),
-]
+# Add SEEDS_DIR definition (mirroring run_engine.py)
+project_root = Path(__file__).parent.parent.resolve()
+SEEDS_DIR = project_root / "input" / "seeds"
 
-# Constants and patterns from run_engine.py
-FAILURE_PHRASES = {
-    "stability_failure": ["rapidly degraded", "degraded", "unstable", "poor stability", "short half-life"],
-    "no_activity": ["no significant", "no measurable", "did not show", "no activity", "inactive"],
-    "toxicity_flag": ["cytotoxic", "toxicity", "cell death"],
-    "reproducibility": ["reproducible", "reproducibility", "batch-to-batch", "variability"],
-    "scalability": ["scale-up", "scalable", "manufacturing", "yield", "process", "costly to produce"],
-    "regulatory": ["regulatory", "guideline", "compliance", "safety concern", "risk assessment"],
-}
-
-DECISION_PHRASES = {
-    "abandoned": ["not pursued", "not pursued further", "excluded", "discarded"],
-    "modified": ["optimized", "modified", "analog", "derivative", "cyclized", "pegylated", "amidated"],
-    "continued": ["further study", "continued", "follow-up", "subsequently", "next we"],
-    "paused": ["inconclusive", "unclear", "requires further investigation"],
-    "replicated": ["replicated", "repeated", "validated"],
-    "escalated": ["advanced to", "moved to", "in vivo", "clinical"],
-}
-
-METHOD_TAGS = {
-    "lc-ms/ms": ["lc-ms/ms", "lc ms/ms", "lc-ms", "mass spectrometry", "ms/ms"],
-    "fluorescent": ["fluorescent", "fluorescence", "fluorophore", "label"],
-    "serum": ["serum", "plasma", "biological fluids"],
-    "incubation": ["incubation", "long incubation"],
-    "nitrosamine": ["nitrosamine", "nitrosamines"],
-    "gmp": ["gmp", "good manufacturing practice"],
-}
-
-def sha16(s: str) -> str:
-    """Generate 16-character SHA256 hash"""
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
-
-def sha64(s: str) -> str:
-    """Generate full SHA256 hash"""
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()
-
-def chunk_sentences(text: str) -> List[str]:
-    """Split text into sentences"""
-    parts = re.split(r"(?<=[\.\?\!])\s+", text.replace("\n", " "))
-    return [p.strip() for p in parts if p.strip()]
-
-def guess_stage(sentence_l: str) -> str:
-    """Guess study stage from sentence"""
-    if any(k in sentence_l for k in ["in vivo", "mouse", "rat", "animal model"]):
-        return "in_vivo"
-    if any(k in sentence_l for k in ["in vitro", "cell line", "cells", "culture"]):
-        return "in_vitro"
-    if any(k in sentence_l for k in ["clinical", "patients", "phase i", "phase ii", "randomized"]):
-        return "clinical"
-    return "unknown"
-
-def guess_section(page_text_l: str) -> str:
-    """Guess document section from page text"""
-    if "methods" in page_text_l and "results" in page_text_l:
-        return "mixed"
-    if "methods" in page_text_l:
-        return "methods"
-    if "results" in page_text_l:
-        return "results"
-    if "discussion" in page_text_l:
-        return "discussion"
-    return "unknown"
-
-def extract_all_entities(sentence: str, title: str, domain: str) -> List[Dict]:
-    """Extract all entities from a sentence based on domain"""
-    return extract_entities(sentence, domain)
-
-def extract_quantitative_data(sentence: str) -> List[Dict]:
-    """Extract numerical measurements from sentence using precompiled patterns"""
-    measurements = []
-    s_l = sentence.lower()
-    
-    for pattern, mtype in QUANTITATIVE_PATTERNS:
-        matches = pattern.finditer(s_l)
-        for m in matches:
-            try:
-                value = float(m.group(1))
-                unit = m.group(2)
-                measurements.append({
-                    'measurement_type': mtype,
-                    'value': value,
-                    'unit': unit,
-                    'context': m.group(0)
-                })
-            except (ValueError, IndexError):
-                continue
-    
-    return measurements
-
-def detect_method_tags(sentence_l: str) -> List[str]:
-    """Detect method tags in sentence"""
-    tags = []
-    for tag, phrases in METHOD_TAGS.items():
-        if any(p in sentence_l for p in phrases):
-            tags.append(tag)
-    return tags
-
-def detect_failure_reason(sentence_l: str) -> str:
-    """Detect failure reason from sentence"""
-    for reason, phrases in FAILURE_PHRASES.items():
-        if any(p in sentence_l for p in phrases):
-            if reason == "reproducibility":
-                return "reproducibility"
-            if reason == "scalability":
-                return "scalability"
-            if reason == "regulatory":
-                return "regulatory"
-            return reason
-    return "unknown"
-
-def detect_decision(sentence_l: str) -> Tuple[str, str | None]:
-    """Detect decision from sentence"""
-    for decision, phrases in DECISION_PHRASES.items():
-        if any(p in sentence_l for p in phrases):
-            return decision, None
-    return "unknown", None
-
-def detect_outcome(sentence_l: str) -> str:
-    """Detect outcome from sentence"""
-    OUTCOME_PHRASES = {
-        "failed": ["no significant", "no measurable", "inactive", "excluded", "not pursued"],
-        "improved": ["improved", "increased", "enhanced", "more stable", "longer half-life"],
-        "successful": ["significant", "potent", "strong activity"],
-        "weak": ["weak", "limited"],
-        "moderate": ["moderate"],
-    }
-    
-    for outcome in ["failed", "improved", "successful", "moderate", "weak"]:
-        if any(p in sentence_l for p in OUTCOME_PHRASES[outcome]):
-            return outcome
-    return "unknown"
-
-def classify_event_type(sentence_l: str, method_tags: List[str], failure_reason: str, decision_taken: str) -> str:
-    """Classify event type from sentence and context"""
-    if "nitrosamine" in method_tags or failure_reason == "regulatory":
-        return "regulatory_risk"
-    if failure_reason == "toxicity_flag":
-        return "toxicity_flag"
-    if failure_reason == "stability_failure":
-        return "stability_issue"
-    if failure_reason == "no_activity" or any(k in sentence_l for k in ["activity", "efficacy", "potent", "ic50", "ec50"]):
-        return "efficacy_result"
-    if failure_reason == "scalability" or any(k in sentence_l for k in ["manufacturing", "scale-up", "yield"]):
-        return "manufacturing_constraint"
-    if method_tags:
-        if any(k in sentence_l for k in ["cost-intensive", "expensive", "time-consuming", "fast", "cost-effective"]):
-            return "cost_tradeoff"
-        return "method_evaluation"
-    if decision_taken != "unknown":
-        return "decision_point"
-    return "other"
-
-def evidence_strength(sentence_l: str) -> str:
-    """Determine evidence strength from sentence"""
-    if any(k in sentence_l for k in ["we conclude", "demonstrate", "significant", "robust", "strong"]):
-        return "strong"
-    if any(k in sentence_l for k in ["suggest", "may", "might", "could", "trend"]):
-        return "weak"
-    return "moderate"
-
-def confidence_score_phase1(has_entity: bool, method_tags: List[str], failure_reason: str, decision_taken: str, has_measurements: bool, sentence_l: str = "") -> str:
-    """Phase 1 confidence scoring function"""
-    return confidence_score(has_entity, method_tags, failure_reason, decision_taken, has_measurements, sentence_l)
-
-def suggested_keep(conf: str, event_type: str, failure_reason: str, decision_taken: str, tags: List[str]) -> int:
-    """Determine if event should be kept based on confidence and context"""
-    if conf in ("med", "high"):
-        return 1
-    if event_type not in ("other",) and (failure_reason != "unknown" or decision_taken != "unknown" or tags):
-        return 1
-    return 0
-
-def normalize_event_key(event_type: str, entities: List[Dict], page: int, snippet: str) -> str:
-    """Create key for deduplication"""
-    entity_str = "|".join(sorted(e['entity_name'] for e in entities))
-    snippet_hash = sha16(snippet[:100])
-    return f"{event_type}|{entity_str}|{page}|{snippet_hash}"
 
 # Database functions
 def upsert_source(con, source_id: str, pdf_file: str, metadata: Dict):
     """Insert or update source record"""
+    now = datetime.now().isoformat()
     con.execute(
-        """INSERT OR IGNORE INTO sources(source_id, pdf_file, title, authors, year, doi, imported_at)
-           VALUES (?,?,?,?,?,?,?)""",
+        """
+        INSERT INTO sources(source_id, pdf_file, title, authors, year, doi, imported_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(source_id) DO UPDATE SET
+            pdf_file=excluded.pdf_file,
+            title=excluded.title,
+            authors=excluded.authors,
+            year=excluded.year,
+            doi=excluded.doi,
+            imported_at=excluded.imported_at
+        """,
         (source_id, pdf_file, metadata.get('title'), metadata.get('authors'), 
-         metadata.get('year'), metadata.get('doi'), "2026-02-07T00:00:00Z"),
+         metadata.get('year'), metadata.get('doi'), now),
     )
 
 def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
     """Insert document record"""
-    doc_id = sha16(f"{source_id}|{file_path}|{sha256}")
+    doc_id = sha64(f"{source_id}|{file_path}|{sha256}")
+    now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO documents(doc_id, source_id, file_path, file_type, sha256, created_at)
            VALUES (?,?,?,?,?,?)""",
-        (doc_id, source_id, file_path, "pdf", sha256, "2026-02-07T00:00:00Z"),
+        (doc_id, source_id, file_path, "pdf", sha256, now),
     )
     return doc_id
 
 def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
     """Insert chunk record"""
-    chunk_id = sha16(f"{doc_id}|{page_number}|{chunk_text[:200]}")
+    chunk_id = sha64(f"{doc_id}|{page_number}|{chunk_text[:200]}")
+    now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
            VALUES (?,?,?,?,?,?,?)""",
-        (chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, "2026-02-07T00:00:00Z"),
+        (chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, now),
     )
     return chunk_id
 
@@ -237,7 +75,8 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
                  evidence_snippet: str, evidence_strength_v: str, confidence_v: str) -> str:
     """Insert research event record"""
     base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
-    event_id = sha16(base)
+    event_id = sha64(base)
+    now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO research_events(
              event_id, research_domain, event_type, study_stage, biological_system, application_area,
@@ -249,7 +88,7 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
             event_id, domain, event_type, study_stage, biological_system, application_area,
             outcome, failure_reason, decision_taken, decision_driver,
             evidence_snippet[:500], evidence_strength_v, confidence_v,
-            source_id, doc_id, chunk_id, page_number, "2026-02-07T00:00:00Z"
+            source_id, doc_id, chunk_id, page_number, now
         ),
     )
     return event_id
@@ -273,29 +112,147 @@ def link_event_tag(con, event_id: str, tag: str):
 
 def insert_measurement(con, event_id: str, measurement: Dict):
     """Insert quantitative measurement"""
-    measurement_id = sha16(f"{event_id}|{measurement['measurement_type']}|{measurement['value']}|{measurement['unit']}")
+    measurement_id = sha64(f"{event_id}|{measurement['measurement_type']}|{measurement['value']}|{measurement['unit']}")
+    created_at = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO quantitative_measurements(
-             measurement_id, event_id, measurement_type, value, unit, context, created_at
-           ) VALUES (?,?,?,?,?,?,?)""",
+            measurement_id, event_id, measurement_type, value, unit, context, created_at
+        ) VALUES (?,?,?,?,?,?,?)""",
         (measurement_id, event_id, measurement['measurement_type'], 
-         measurement['value'], measurement['unit'], measurement['context'], "2026-02-07T00:00:00Z"),
+         measurement['value'], measurement['unit'], measurement['context'], created_at),
     )
 
 def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str | None, organism: str | None) -> str:
     """Insert or update entity record"""
     key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
-    entity_id = sha16(key)
+    entity_id = sha64(key)
+    created_at = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO entities(entity_id, entity_type, entity_name, entity_variant, organism, created_at)
            VALUES (?,?,?,?,?,?)""",
-        (entity_id, entity_type, entity_name, entity_variant, organism, "2026-02-07T00:00:00Z"),
+        (entity_id, entity_type, entity_name, entity_variant, organism, created_at),
     )
     return entity_id
 
-def main():
-    """Main function placeholder"""
-    pass
+
+def map_research_domain(meta: dict) -> str:
+    """Fallback: Guess research domain from metadata dict."""
+    for key in ("domain", "research_domain", "field", "area"):
+        if key in meta and meta[key]:
+            return str(meta[key])
+    return "methods_tooling"
+
+
+
+
+def main(input_dir="input/pdfs", db_path="db.sqlite"):
+    input_dir = Path(input_dir)
+    init_db_schema(db_path)
+    with sqlite3.connect(db_path) as con:
+        con.execute("PRAGMA foreign_keys = ON")
+        pdfs = list(input_dir.rglob("*.pdf"))
+        print(f"Found {len(pdfs)} PDFs in {input_dir} (including subfolders)")
+        for pdf_path in pdfs:
+            try:
+                print(f"\nProcessing: {pdf_path.name}")
+                meta = extract_metadata(pdf_path)
+                print(f"  Metadata: {meta}")
+                # Upsert source and document
+                file_bytes = pdf_path.read_bytes()
+                source_id = sha64(file_bytes)
+                upsert_source(con, source_id, str(pdf_path), meta)
+                file_hash = hashlib.sha256(file_bytes).hexdigest()
+                doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
+                domain = meta.get("domain") or meta.get("research_domain") or map_research_domain(meta) or "methods_tooling"
+                with pdfplumber.open(pdf_path) as pdf:
+                    for page_num, page in enumerate(pdf.pages, start=1):
+                        text = page.extract_text() or ""
+                        section = guess_section(text.lower())
+                        chunk_id = insert_chunk(con, source_id, doc_id, page_num, section, text)
+                        for sent in chunk_sentences(text):
+                            ents = extract_entities(sent, domain=domain, SEEDS_DIR=SEEDS_DIR)
+                            if not ents:
+                                continue
+                            measurements = extract_quantitative_data(sent)
+                            sent_l = sent.lower()
+                            method_tags = detect_method_tags(sent_l)
+                            failure_reason = detect_failure_reason(sent_l)
+                            decision_taken, decision_driver = detect_decision(sent_l)
+                            event_type = classify_event_type(sent_l, method_tags, failure_reason, decision_taken)
+                            outcome = detect_outcome(sent_l)
+                            evidence_strength_v = evidence_strength(sent_l)
+                            study_stage = guess_stage(sent.lower())
+                            confidence = confidence_score(
+                                ConfidenceInput(
+                                    has_entity=bool(ents),
+                                    method_tags=method_tags,
+                                    failure_reason=failure_reason,
+                                    decision_taken=decision_taken,
+                                    has_measurements=bool(measurements),
+                                    sentence_l=sent
+                                )
+                            )
+                            # Insert event
+                            event_id = insert_event(
+                                con=con,
+                                source_id=source_id,
+                                doc_id=doc_id,
+                                chunk_id=chunk_id,
+                                page_number=page_num,
+                                domain=domain,
+                                event_type=event_type,
+                                study_stage=study_stage,
+                                biological_system=None,
+                                application_area=None,
+                                outcome=outcome,
+                                failure_reason=failure_reason,
+                                decision_taken=decision_taken,
+                                decision_driver=decision_driver,
+                                evidence_snippet=sent,
+                                evidence_strength_v=evidence_strength_v,
+                                confidence_v=confidence,
+                            )
+                            # Persist entities and link to event
+                            for ent in ents:
+                                entity_id = upsert_entity(
+                                    con,
+                                    ent.get("entity_type", "unknown"),
+                                    ent.get("entity_name", "unknown"),
+                                    ent.get("entity_variant"),
+                                    ent.get("organism")
+                                )
+                                # Use ent.get("role") if available, else default to "unknown"
+                                link_event_entity(con, event_id, entity_id, ent.get("role", "unknown"))
+                            # Persist measurements and link to event
+                            for measurement in measurements:
+                                insert_measurement(con, event_id, measurement)
+                            print(f"    Inserted event: {event_id} (page {page_num})")
+            except Exception as e:
+                print(f"❌ Error processing {pdf_path}: {e}")
+                # Optionally record failure status in DB for this source
+                try:
+                    fail_source_id = sha64(pdf_path.read_bytes()) if pdf_path.exists() else sha64(str(pdf_path))
+                    upsert_source(
+                        con,
+                        fail_source_id,
+                        str(pdf_path),
+                        {
+                            "title": f"[FAILED] {str(e)[:200]}",
+                            "authors": "",
+                            "year": None,
+                            "doi": None,
+                        }
+                    )
+                except Exception as db_e:
+                    print(f"   (DB error while recording failure for {pdf_path}: {db_e})")
+                continue
+
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Modular PDF-to-DB pipeline")
+    parser.add_argument('--input-dir', type=str, default="input/pdfs", help="Input directory containing PDFs")
+    parser.add_argument('--db-path', type=str, default="db.sqlite", help="Path to output SQLite database")
+    args = parser.parse_args()
+    main(input_dir=args.input_dir, db_path=args.db_path)

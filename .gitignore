@@ -1,4 +1,11 @@
-# Python
+# Ignore one-off generated markdown files (anchored to repo root)
+# Ignore generated markdown files in .artifacts/
+/.artifacts/**/*.md
+# Naming convention: generated files use GEN_*, TEMP_*, or _temp_*.md
+/GEN_*.md
+/TEMP_*.md
+/_temp_*.md
+
 __pycache__/
 *.py[cod]
 *$py.class
@@ -24,10 +31,6 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
-.venv/
-venv/
-ENV/
 
 # IDE
 .vscode/
@@ -44,7 +47,6 @@ Thumbs.db
 output/*.sqlite
 output/*.sqlite-shm
 output/*.sqlite-wal
-output/*.db
 
 # Large files
 *.pdf
@@ -56,4 +58,3 @@ output/*.db
 
 # Keep output CSVs (they're important)
 # output/*.csv  # Commented out - we want to keep these
-output/

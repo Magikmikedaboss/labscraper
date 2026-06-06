@@ -18,9 +18,11 @@ linaclotide
 plecanatide
 
 # mtor inhibitors
-rapamycin (sirolimus)
+rapamycin  # synonym of sirolimus; both included for literature coverage
+sirolimus  # INN; synonym of rapamycin
 everolimus
 temsirolimus
+
 # ampk activators
 metformin
 phenformin
@@ -46,14 +48,15 @@ vasopressin
 desmopressin
 calcitonin
 glucagon
-
 # monoclonal antibodies
 trastuzumab
 pembrolizumab
 nivolumab
 rituximab
 
+
 # small molecules (common in peptide-related research)
+aspirin
 dexamethasone
 cyclosporine
 tacrolimus

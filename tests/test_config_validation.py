@@ -14,7 +14,7 @@ class TestConfigValidation:
             seed_file = Path(temp_dir) / "test_seeds.txt"
             seed_file.write_text("# Test seed file\ncompound1\ncompound2\n# Comment line\ncompound3\n")
             
-            seeds = load_seed_file(seed_file)
+            seeds = load_seed_file(seed_file, case="lower")
             
             assert len(seeds) == 3
             assert 'compound1' in seeds
@@ -27,7 +27,7 @@ class TestConfigValidation:
         with tempfile.TemporaryDirectory() as temp_dir:
             seed_file = Path(temp_dir) / "missing_seeds.txt"
             
-            seeds = load_seed_file(seed_file)
+            seeds = load_seed_file(seed_file, case="lower")
             
             assert seeds == set()
 
@@ -37,7 +37,7 @@ class TestConfigValidation:
             seed_file = Path(temp_dir) / "empty_seeds.txt"
             seed_file.write_text("")
             
-            seeds = load_seed_file(seed_file)
+            seeds = load_seed_file(seed_file, case="lower")
             
             assert seeds == set()
 
@@ -47,7 +47,7 @@ class TestConfigValidation:
             seed_file = Path(temp_dir) / "comments_only.txt"
             seed_file.write_text("# This is a comment\n# Another comment\n")
             
-            seeds = load_seed_file(seed_file)
+            seeds = load_seed_file(seed_file, case="lower")
             
             assert seeds == set()
 
@@ -57,7 +57,7 @@ class TestConfigValidation:
             seed_file = Path(temp_dir) / "mixed_seeds.txt"
             seed_file.write_text("valid_seed1\n# Comment\nvalid_seed2\n\n# Another comment\nvalid_seed3\n")
             
-            seeds = load_seed_file(seed_file)
+            seeds = load_seed_file(seed_file, case="lower")
             
             assert len(seeds) == 3
             assert 'valid_seed1' in seeds
@@ -71,11 +71,10 @@ class TestConfigValidation:
             seed_file = Path(temp_dir) / "case_seeds.txt"
             seed_file.write_text("UPPERCASE\nlowercase\nMixedCase\n")
             
-            seeds = load_seed_file(seed_file)
+            seeds = load_seed_file(seed_file, case="lower")
             
             assert len(seeds) == 3
             assert 'uppercase' in seeds
-            assert 'lowercase' in seeds
             assert 'mixedcase' in seeds
             assert 'UPPERCASE' not in seeds  # Should be converted to lowercase
             assert 'lowercase' in seeds

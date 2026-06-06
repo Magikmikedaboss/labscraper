@@ -1,33 +1,50 @@
-"""
-Parallel PDF Scraper - Process multiple PDFs simultaneously
-Uses multiprocessing to speed up scraping by 4-8x (depending on PDF size/IO)
-"""
 
+import random
 import multiprocessing as mp
 from multiprocessing import Pool
 import sqlite3
 import argparse
 import re
+import logging
 from pathlib import Path
 import pdfplumber
 from tqdm import tqdm
 from typing import List, Tuple
-
 import sys
+import time
+
 sys.path.insert(0, str(Path(__file__).parent))
 
-from scrape_pdfs_phase1_full import (
-    extract_metadata, chunk_sentences, guess_stage, guess_section,
-    extract_all_entities, extract_quantitative_data,
-    detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
-    classify_event_type, evidence_strength, confidence_score_phase1,
-    suggested_keep, normalize_event_key,
-    upsert_source, insert_document, insert_chunk, insert_event,
-    link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-    sha16, sha64,
-    FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
+from utils.metadata_utils import extract_metadata
+from utils.text_utils import chunk_sentences, guess_stage, guess_section
+from utils.data_extractors import extract_quantitative_data
+from utils.entities import extract_entities
+from utils.event_classification import (
+    detect_method_tags,
+    detect_failure_reason,
+    detect_decision,
+    detect_outcome,
+    classify_event_type,
+    evidence_strength,
+    confidence_score,
+    FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS,
+    ConfidenceInput,
 )
+from utils.db_utils import (
+    _db_has_all_tables,
+    upsert_source,
+    insert_document,
+    insert_chunk,
+    insert_event,
+    link_event_entity,
+    link_event_tag,
+    insert_measurement,
+    upsert_entity
+)
+from utils.deduplication import normalize_event_key
+from utils.common import sha64
 
+process_logger = logging.getLogger("scrape_pdfs_parallel")
 
 def _connect(db_path: Path) -> sqlite3.Connection:
     """Create a sqlite connection configured for concurrent writes."""
@@ -57,16 +74,18 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
 
     try:
         with _connect(db_path) as con:
-            source_id = sha16(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
+            source_id = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
             file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
 
+            # Track number of events inserted; partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
             events_count = 0
             seen_events = set()
 
             with pdfplumber.open(str(pdf_path)) as pdf:
                 metadata = extract_metadata(pdf_path, pdf)
-
-                upsert_source(con, source_id, pdf_path.name, metadata)
+                metadata.setdefault("domain", domain)
+                metadata.setdefault("publication_date", metadata.get("year"))
+                source_id = upsert_source(con, source_id, pdf_path.name, metadata)
                 doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
 
                 for page_idx, page in enumerate(pdf.pages, start=1):
@@ -82,6 +101,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         if not _has_signal(s_l):
                             continue
 
+
                         tags = detect_method_tags(s_l)
                         failure_reason = detect_failure_reason(s_l)
                         decision_taken, decision_driver = detect_decision(s_l)
@@ -89,16 +109,21 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         stage = guess_stage(s_l)
                         event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                         strength = evidence_strength(s_l)
-
-                        ents = extract_all_entities(sent, metadata.get("title", "") or "", domain)
+                        ents = extract_entities(sent, domain)
                         measurements = extract_quantitative_data(sent)
 
-                        conf = confidence_score_phase1(
-                            bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l
+                        # Use new confidence_score for filtering
+                        conf = confidence_score(
+                            ConfidenceInput(
+                                has_entity=bool(ents),
+                                method_tags=tags,
+                                failure_reason=failure_reason,
+                                decision_taken=decision_taken,
+                                has_measurements=bool(measurements),
+                                sentence_l=s_l
+                            )
                         )
-                        keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
-
-                        if keep == 0 and event_type == "other":
+                        if conf == "low":
                             continue
 
                         event_key = normalize_event_key(event_type, ents, page_idx, sent)
@@ -114,25 +139,43 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         elif "cell line" in s_l or re.search(r'\bcell culture\b|\bcell lines?\b', s_l):
                             bio_sys = "cells"
 
-                        event_id = insert_event(
-                            con=con,
-                            source_id=source_id,
-                            doc_id=doc_id,
-                            chunk_id=chunk_id,
-                            page_number=page_idx,
-                            domain=domain,
-                            event_type=event_type,
-                            study_stage=stage,
-                            biological_system=bio_sys,
-                            application_area=None,
-                            outcome=outcome,
-                            failure_reason=failure_reason,
-                            decision_taken=decision_taken,
-                            decision_driver=decision_driver,
-                            evidence_snippet=sent,
-                            evidence_strength_v=strength,
-                            confidence_v=conf,
-                        )
+                        # Add retry logic for SQLite writes
+                        event_id = None
+                        last_exc = None
+                        base_sleep = 0.1
+                        for attempt in range(3):
+                            try:
+                                event_id = insert_event(
+                                    con=con,
+                                    source_id=source_id,
+                                    doc_id=doc_id,
+                                    chunk_id=chunk_id,
+                                    page_number=page_idx,
+                                    domain=domain,
+                                    event_type=event_type,
+                                    study_stage=stage,
+                                    biological_system=bio_sys,
+                                    application_area=None,
+                                    outcome=outcome,
+                                    failure_reason=failure_reason,
+                                    decision_taken=decision_taken,
+                                    decision_driver=decision_driver,
+                                    evidence_snippet=sent,
+                                    evidence_strength_v=strength,
+                                    confidence_v=conf,
+                                )
+                                break
+                            except sqlite3.OperationalError as e:
+                                last_exc = e
+                                sleep_time = base_sleep * (2 ** attempt)
+                                sleep_time += random.uniform(0, 0.05)
+                                time.sleep(sleep_time)
+                        else:
+                            process_logger.warning(
+                                "Failed to insert event after 3 retries: source_id=%s, doc_id=%s, chunk_id=%s, page_idx=%s, event_type=%s, exc=%r",
+                                source_id, doc_id, chunk_id, page_idx, event_type, last_exc
+                            )
+                            continue
 
                         for t in tags:
                             link_event_tag(con, event_id, t)
@@ -151,27 +194,25 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                             insert_measurement(con, event_id, m)
 
                         events_count += 1
-
-            con.commit()
+                        # Periodically commit every 50 events for durability
+                        # Partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
+                        if events_count % 50 == 0:
+                            try:
+                                con.commit()
+                            except sqlite3.Error as commit_exc:
+                                con.rollback()
+                                return (pdf_path.name, events_count, False, f"Commit failed: {commit_exc}")
+            # Final commit after all events for this PDF
+            # Partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
+            try:
+                con.commit()
+            except sqlite3.Error as commit_exc:
+                con.rollback()
+                return (pdf_path.name, events_count, False, f"Final commit failed: {commit_exc}")
             return (pdf_path.name, events_count, True, "")
     except Exception as e:
         return (pdf_path.name, 0, False, str(e))
 
-
-def _db_has_all_tables(db_path: Path) -> bool:
-    """Check if all required tables exist in the DB."""
-    required_tables = {
-        'sources', 'documents', 'chunks', 'entities',
-        'research_events', 'event_entities', 'tags', 'event_tags',
-        'quantitative_measurements', 'entity_relationships'
-    }
-    try:
-        with sqlite3.connect(db_path, timeout=30.0) as con:
-            tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-            table_names = {t[0] for t in tables}
-            return required_tables.issubset(table_names)
-    except Exception:
-        return False
 
 def _ensure_db_schema(db_path: Path) -> None:
     """Ensure the database has the required schema initialized."""

@@ -68,13 +68,13 @@ python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir i
 - **Speed:** ~3-4 seconds per PDF
 - **65 PDFs:** ~3-4 minutes
 - **Workers:** 4
-- **Speedup:** 4x faster ⚡
+- **Speedup:** 4x faster 
 
 ### Parallel Scraper (8 workers)
 - **Speed:** ~1.5-2 seconds per PDF
 - **65 PDFs:** ~2 minutes
 - **Workers:** 8
-- **Speedup:** 8x faster ⚡⚡
+- **Speedup:** 8x faster 
 
 ---
 
@@ -82,16 +82,16 @@ python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir i
 
 ### Sequential (Original)
 ```text
-PDF 1 → PDF 2 → PDF 3 → PDF 4 → ... → PDF 65
+PDF 1  PDF 2  PDF 3  PDF 4  ...  PDF 65
 [====================================] 15 min
 ```
 
 ### Parallel (4 workers)
 ```text
-Worker 1: PDF 1  → PDF 5  → PDF 9  → ...
-Worker 2: PDF 2  → PDF 6  → PDF 10 → ...
-Worker 3: PDF 3  → PDF 7  → PDF 11 → ...
-Worker 4: PDF 4  → PDF 8  → PDF 12 → ...
+Worker 1: PDF 1   PDF 5   PDF 9   ...
+Worker 2: PDF 2   PDF 6   PDF 10  ...
+Worker 3: PDF 3   PDF 7   PDF 11  ...
+Worker 4: PDF 4   PDF 8   PDF 12  ...
 [====================================] 4 min
 ```
 
@@ -150,18 +150,18 @@ Expected speedup: 4x faster
 Database: output/combined_biohacking_all.sqlite
 ======================================================================
 
-PDFs: 100%|████████████████████| 65/65 [03:45<00:00,  3.46s/it]
+PDFs: 100%|| 65/65 [03:45<00:00,  3.46s/it]
 
 ======================================================================
 SCRAPING COMPLETE
 ======================================================================
-✅ Total events inserted: 2847
-✅ Successful PDFs: 65/65
-✅ Database: D:\myrepo\peptide-scraper\output\combined_biohacking_all.sqlite
+ Total events inserted: 2847
+ Successful PDFs: 65/65
+ Database: D:\myrepo\peptide-scraper\output\combined_biohacking_all.sqlite
 
 ======================================================================
 Next step: Run dual-lens export
-  python export_dual_lens.py output/combined_biohacking_all.sqlite biohacking_longevity
+  python utils/export/export_dual_lens.py output/combined_biohacking_all.sqlite biohacking_longevity
 ======================================================================
 ```
 
@@ -173,13 +173,13 @@ Combine parallel processing with multi-folder scraping:
 
 ```bash
 # Folder 1 (parallel, 4 workers)
-python scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 4
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 4
 
 # Folder 2 (parallel, 4 workers, same DB)
-python scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs/biohacking --output-db output/combined.sqlite --workers 4
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs/biohacking --output-db output/combined.sqlite --workers 4
 
 # Apply dual-lens export
-python export_dual_lens.py output/combined.sqlite biohacking_longevity
+python utils/export/export_dual_lens.py output/combined.sqlite biohacking_longevity
 ```
 
 **Result:** Both folders scraped in ~6-8 minutes instead of 30+ minutes!
@@ -189,16 +189,16 @@ python export_dual_lens.py output/combined.sqlite biohacking_longevity
 ## Safety
 
 ### Is it safe?
-✅ **YES!** SQLite handles concurrent writes automatically.
+ **YES!** SQLite handles concurrent writes automatically.
 
 ### What about data corruption?
-✅ **No risk!** Each worker has its own connection, SQLite manages locking.
+ **No risk!** Each worker has its own connection, SQLite manages locking.
 
 ### What if a worker crashes?
-✅ **No problem!** Other workers continue, failed PDFs are reported.
+ **No problem!** Other workers continue, failed PDFs are reported.
 
 ### Can I run it multiple times?
-✅ **Yes!** Uses `INSERT OR IGNORE` for deduplication.
+ **Yes!** Uses `INSERT OR IGNORE` for deduplication.
 
 ---
 
@@ -240,17 +240,17 @@ python export_dual_lens.py output/combined.sqlite biohacking_longevity
 
 ## Summary
 
-### Difficulty: ⭐ Easy!
+### Difficulty:  Easy!
 - Just 3 main changes from sequential version
 - Python's multiprocessing handles the complexity
 - SQLite handles concurrent writes
 
-### Speed Gain: ⚡⚡⚡ 4-8x Faster!
-- 65 PDFs: 15 min → 2-4 min
-- 200 PDFs: 45 min → 6-10 min
-- 1000 PDFs: 4 hours → 30-60 min
+### Speed Gain:  4-8x Faster!
+- 65 PDFs: 15 min  2-4 min
+- 200 PDFs: 45 min  6-10 min
+- 1000 PDFs: 4 hours  30-60 min
 
-### Safety: ✅ Production Ready!
+### Safety:  Production Ready!
 - SQLite concurrency is battle-tested
 - Automatic locking prevents conflicts
 - Failed workers don't affect others
@@ -277,3 +277,5 @@ python export_dual_lens.py output/combined.sqlite biohacking_longevity
 ---
 
 **Bottom line:** Parallel processing is easy to implement and gives massive speedup. The script is ready to use!
+
+

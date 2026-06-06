@@ -17,6 +17,14 @@ import json
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
+from utils.validators import (
+    ValidationError,
+    validate_database,
+    validate_domain_name,
+    validate_feed_config,
+    validate_file_path,
+)
+
 # Import chunk_sentences function that's missing
 def chunk_sentences(text):
     """Simple sentence chunking for abstract processing"""
@@ -31,10 +39,11 @@ try:
         extract_entities, extract_quantitative_data,
         detect_method_tags, detect_failure_reason, detect_decision, detect_outcome,
         classify_event_type, evidence_strength, confidence_score,
+        ConfidenceInput,
         suggested_keep, normalize_event_key,
         upsert_source, insert_document, insert_chunk, insert_event,
         link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-        sha16, sha64,
+        sha64,
         FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
     )
     print("✅ Successfully imported run_engine functions")
@@ -48,14 +57,17 @@ DB_PATH = Path("db") / "runs.sqlite"
 FEEDS_CONFIG = Path("config") / "feeds.json"
 
 def load_feeds_config(feeds_config_path=None):
-    """Load RSS feeds configuration from JSON file"""
+    """Load and validate RSS feeds configuration from JSON file."""
     config_path = feeds_config_path or FEEDS_CONFIG
     if not config_path.exists():
         print(f"⚠️  RSS feeds config not found: {config_path}")
         return {"feeds": []}
-    
-    with open(config_path, 'r') as f:
-        return json.load(f)
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return validate_feed_config(json.load(f))
+    except json.JSONDecodeError as err:
+        raise ValidationError(f"Invalid JSON in {config_path}: {err}") from err
 
 def extract_abstract_from_asce_page(abstract_url):
     """Extract abstract text from ASCE journal page"""
@@ -111,7 +123,7 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
     """Process abstract using the existing engine functions"""
     try:
         # Create stable source ID based on URL
-        source_id = sha16(abstract_url)
+        source_id = sha64(abstract_url)
         file_hash = sha64(abstract_url)
         
         events_count = 0
@@ -123,10 +135,12 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
                 "title": f"ASCE Abstract: {abstract_url.split('/')[-1][:50]}",
                 "authors": ["ASCE Journal"],
                 "year": "2023",
-                "url": abstract_url
+                "url": abstract_url,
+                "domain": domain,
+                "publication_date": "2023",
             }
             
-            upsert_source(con, source_id, abstract_url, metadata)
+            source_id = upsert_source(con, source_id, abstract_url, metadata)
             doc_id = insert_document(con, source_id, abstract_url, file_hash)
             
             # Process abstract as a single "page"
@@ -158,7 +172,16 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
                 ents = extract_entities(sent, domain)
                 measurements = extract_quantitative_data(sent)
                 
-                conf = confidence_score(bool(ents), tags, failure_reason, decision_taken, bool(measurements), s_l)
+                conf = confidence_score(
+                    ConfidenceInput(
+                        has_entity=bool(ents),
+                        method_tags=tags,
+                        failure_reason=failure_reason,
+                        decision_taken=decision_taken,
+                        has_measurements=bool(measurements),
+                        sentence_l=s_l,
+                    )
+                )
                 keep = suggested_keep(conf, event_type, failure_reason, decision_taken, tags)
                 
                 if keep == 0 and event_type == "other":
@@ -239,10 +262,17 @@ def main():
     #                    help='Only process abstracts, skip PDF downloads')
     
     args = parser.parse_args()
-    
-    # Load feeds configuration
-    feeds_config = load_feeds_config(args.feeds_config)
-    
+
+    try:
+        args.feeds_config = validate_file_path(args.feeds_config, must_exist=False)
+        args.db_path = validate_database(args.db_path, must_exist=False)
+        args.domain = validate_domain_name(args.domain)
+
+        feeds_config = load_feeds_config(args.feeds_config)
+    except ValidationError as e:
+        print(f"❌ Validation error: {e}")
+        sys.exit(1)
+
     # Ensure database directory exists
     args.db_path.parent.mkdir(parents=True, exist_ok=True)
     

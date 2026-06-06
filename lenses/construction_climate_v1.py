@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
 
 HAZARDS = [
@@ -29,7 +29,7 @@ CONSTRUCTION_SYSTEMS = [
     "drainage", "plumbing", "electrical", "mechanical", "structural system", "building envelope"
 ]
 
-def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
+def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
 
@@ -46,12 +46,23 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     for r in resil[:4]:
         entities.append(make_entity("resilience_term", r, "concept", "context"))
 
-    # If both positive and negative signals are present, outcome will be set to 'failed' (fail-safe precedence)
-    outcome = "unknown"
-    if contains_any(s_l, ["reduced", "mitigated", "improved", "enhanced"]):
+    # Outcome assignment logic:
+    #   - outcome == "degraded": Explicit negative language is present (e.g., "increased risk", "worsened").
+    #     This means the sentence contains strong signals of climate impact or vulnerability worsening.
+    #   - outcome == "negative": A hazard is present, but there is no explicit negative outcome phrase.
+    #     This means the sentence mentions a hazard but does not use strong language about impact.
+    #   - outcome == "improved": Explicit positive language is present (e.g., "mitigated", "improved").
+    #   - outcome == "neutral": No hazard or resilience signal is present.
+    #
+    # Downstream use: Consumers of the outcome field can distinguish between explicit negative impact ("degraded")
+    # and generic hazard mention ("negative"). This allows for more nuanced event classification and reporting.
+    outcome = "neutral"
+    if contains_any(s_l, ["increased risk", "risk increased", "worsened", "exacerbated", "higher vulnerability"]):
+        outcome = "degraded"
+    elif contains_any(s_l, ["reduced", "mitigated", "improved", "enhanced"]):
         outcome = "improved"
-    if contains_any(s_l, ["increased risk", "worsened", "exacerbated"]):
-        outcome = "failed"
+    elif haz:
+        outcome = "negative"
 
     score = 0
     if haz:
@@ -87,4 +98,4 @@ def detect(sentence: str) -> Tuple[Optional[LensEvent], List[dict]]:
     if materials_hits or systems_hits:
         tags.append("construction_climate_interaction")
 
-    return LensEvent("climate_resilience", outcome, conf, tags), dedupe_entities(entities)
+    return build_lens_event("climate", "climate_resilience", outcome, conf, tags, sentence, source_type), dedupe_entities(entities)

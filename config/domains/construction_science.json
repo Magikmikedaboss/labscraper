@@ -4,6 +4,10 @@
   "description": "Domain for construction materials, building physics, structural engineering, and construction failure analysis. Focuses on material properties, structural performance, and engineering validation.",
   "claims_mode": "observational_only",
   "domain_profile_version": "v1",
+  "overlays": [
+    "construction_research_v1",
+    "science_research_v1"
+  ],
   "seed_overlays": {
     "include_files": ["construction_materials.json", "construction_building_physics.json", "construction_failure.json"],
     "prefer_types": ["material", "property", "method", "model", "code_standard", "pathway"]

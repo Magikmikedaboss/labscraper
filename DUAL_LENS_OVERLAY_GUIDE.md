@@ -5,38 +5,17 @@
 The biohacking_longevity domain now supports **dual-lens analysis** using two complementary overlays:
 
 1. **Science Research Lens** - Emphasizes rigorous research, mechanisms, replication
-2. **Biohacking Curiosity Lens** - Emphasizes protocols, optimization, experimentation
-
-## How It Works
-
-### Base Layer (Always Active)
 - **Base Seeds**: compounds.txt, targets.txt, models.txt, assays.json, etc.
 - **Purpose**: Entity extraction (what exists)
-- **Result**: Identifies all entities in the text
-
-### Overlay Layer (Optional Emphasis)
-- **Overlays**: science_research_v1.json, biohacking_curiosity_v1.json
 - **Purpose**: Emphasis and ranking (what matters)
 - **Result**: Different "views" of the same data
 
 ---
-
-## The Two Overlays
-
-### 🔬 Science Research Lens (`science_research_v1`)
-
-**What It Emphasizes:**
 - Mechanistic pathways (mTOR, autophagy, senescence)
 - Experimental rigor (in vivo, controlled, randomized)
-- Replication and statistical significance
-- Clinical trials and translational progress
-- Biomarkers and causal relationships
-
 **What It De-emphasizes:**
 - Anecdotal reports
 - Self-reported outcomes
-- Lifestyle optimization language
-- Biohacking terminology
 
 **Boost Terms:**
 ```text
@@ -70,7 +49,7 @@ biohack: -1
 
 ---
 
-### ⚡ Biohacking Curiosity Lens (`biohacking_curiosity_v1`)
+### Biohacking Curiosity Lens (`biohacking_curiosity_v1`)
 
 **What It Emphasizes:**
 - Protocols and dosing strategies
@@ -122,24 +101,26 @@ molecular mechanism: -1
 
 ## Operating Modes
 
-### Option A: Single Lens Per Run (Simplest)
+### Option A: Single Lens Per Run (Config-Based)
 
-Run the scraper with one overlay at a time:
+Edit `config/domains/biohacking_longevity.json` and set `overlays` to a single value, then run ingestion.
 
 ### Science View
 ```bash
-python scrape_pdfs.py \
-  --input-dir input_pdfs/longevity_v1 \
-  --domain biohacking_longevity \
-  --overlay science_research_v1
+# In config/domains/biohacking_longevity.json set:
+# "overlays": ["science_research_v1"]
+python utils/run_engine.py \
+  --input-dir input/pdfs/biohacking_longevity \
+  --domain biohacking_longevity
 ```
 
 ### Curiosity View
 ```bash
-python scrape_pdfs.py \
-  --input-dir input_pdfs/longevity_v1 \
-  --domain biohacking_longevity \
-  --overlay biohacking_curiosity_v1
+# In config/domains/biohacking_longevity.json set:
+# "overlays": ["biohacking_curiosity_v1"]
+python utils/run_engine.py \
+  --input-dir input/pdfs/biohacking_longevity \
+  --domain biohacking_longevity
 ```
 
 **Result:** Two separate runs, two different rankings
@@ -159,7 +140,7 @@ The domain file is configured for dual-lens mode:
 
 **Single Run:**
 ```bash
-python scrape_pdfs.py \
+python utils/run_engine.py \
   --input-dir input_pdfs/longevity_v1 \
   --domain biohacking_longevity
 ```
@@ -218,16 +199,16 @@ pattern_type,score_science,score_curiosity,bucket_science,bucket_curiosity,...
 
 ## What Overlays DO NOT Do
 
-❌ **Do NOT change extraction**
+ **Do NOT change extraction**
 - Same entities are found regardless of overlay
 - No hallucination of new entities
 - No hiding of evidence
 
-❌ **Do NOT filter documents**
+ **Do NOT filter documents**
 - All documents are processed
 - All events are captured
 
-✅ **DO change emphasis**
+ **DO change emphasis**
 - Boost/demote confidence scores
 - Reorder entity rankings
 - Bias pattern scoring
@@ -278,18 +259,20 @@ pattern_type,score_science,score_curiosity,bucket_science,bucket_curiosity,...
 
 ### Quick Test (Single Lens)
 ```bash
-# Test science lens only
-python scrape_pdfs.py \
-  --input-dir input_pdfs_test \
+# Edit config/domains/biohacking_longevity.json and set:
+#   "overlays": ["science_research_v1"]
+# Then run:
+python utils/run_engine.py \
+  --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity \
-  --overlay science_research_v1 \
   --output-db output/test_science_lens.sqlite
 
-# Test curiosity lens only
-python scrape_pdfs.py \
-  --input-dir input_pdfs_test \
+# Edit config/domains/biohacking_longevity.json and set:
+#   "overlays": ["biohacking_curiosity_v1"]
+# Then run:
+python utils/run_engine.py \
+  --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity \
-  --overlay biohacking_curiosity_v1 \
   --output-db output/test_curiosity_lens.sqlite
 ```
 
@@ -326,4 +309,6 @@ con_cur = sqlite3.connect('output/test_curiosity_lens.sqlite')
 4. **No data loss** (all evidence preserved)
 5. **User choice** (toggle between views)
 
-The system doesn't change what's true—it changes what you notice first.
+The system doesn't change what's true; it changes what you notice first.
+
+

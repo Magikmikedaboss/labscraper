@@ -8,6 +8,14 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 
+OVERLAY_MAPPING = {
+    "stem_cells_regen": "stem_cells_overlay_v1.json",
+    "neuroscience_cognition": "neuroscience_overlay_v1.json",
+    "biohacking_longevity": "longevity_overlay_v1.json",
+    "construction_science": "construction_science_aliases.json",
+}
+
+
 def load_json(path: str) -> Any:
     """Load JSON file safely."""
     try:
@@ -131,15 +139,7 @@ def load_overlay(domain_id: str, overlays_dir: str = "seeds/overlays") -> Option
     Returns:
         Overlay dictionary if found, None otherwise
     """
-    # Map domain IDs to overlay files
-    mapping = {
-        "stem_cells_regen": "stem_cells_overlay_v1.json",
-        "neuroscience_cognition": "neuroscience_overlay_v1.json",
-        "biohacking_longevity": "longevity_overlay_v1.json",
-        "construction_science": "construction_science_aliases.json",
-    }
-    
-    fname = mapping.get(domain_id)
+    fname = OVERLAY_MAPPING.get(domain_id)
     if not fname:
         return None
     
