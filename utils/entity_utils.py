@@ -9,7 +9,7 @@ from utils.entity_normalizer import normalize_entity, get_entity_role
 from utils.process_words import is_process_word
 import re
 
-def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: dict = None) -> Tuple[int, int, str, str, str]:
+def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: dict | None = None) -> Tuple[int, int, str, str, str]:
     """
     Count primary and context entities in a semicolon-separated string.
     Uses overlay aliases for normalization (MSC→mesenchymal stem cell).
@@ -46,7 +46,7 @@ def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: d
     all_str = "; ".join([f"{e['orig_entity_type']}:{e['orig_entity_name']}" for e in normalized])
     return (len(primary), len(context), primary_str, context_str, all_str)
 
-def load_overlay_aliases_safe(domain_id: str = None) -> Dict[str, str]:
+def load_overlay_aliases_safe(domain_id: str | None = None) -> Dict[str, str]:
     """
     Safely load overlay aliases for a given domain_id.
     If domain_id is None, returns an empty dict (no load attempted).

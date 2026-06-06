@@ -28,7 +28,6 @@ def ensure_db_exists():
 # ---------------------------------------------------------
 def export_events():
     print("🏗️  Exporting construction science events...")
-    ensure_db_exists()
 
     with sqlite3.connect(DB_PATH) as con:
         con.row_factory = sqlite3.Row
@@ -83,7 +82,6 @@ def export_events():
 # ---------------------------------------------------------
 def export_entities():
     print("🏗️  Exporting construction science entities...")
-    ensure_db_exists()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     with sqlite3.connect(DB_PATH) as con:
@@ -131,7 +129,6 @@ def export_entities():
 # ---------------------------------------------------------
 def export_event_entities():
     print("🏗️  Exporting event-entity relationships...")
-    ensure_db_exists()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     with sqlite3.connect(DB_PATH) as con:

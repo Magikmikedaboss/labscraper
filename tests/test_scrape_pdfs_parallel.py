@@ -58,7 +58,6 @@ def test_process_single_pdf(monkeypatch, tmp_path):
     dummy_pdf = DummyPDF([DummyPage("test text")])
     monkeypatch.setattr(scrape_pdfs_parallel, "pdfplumber", types.SimpleNamespace(open=lambda *a, **k: dummy_pdf))
     monkeypatch.setattr(scrape_pdfs_parallel, "_connect", lambda db: sqlite3.connect(db))
-    monkeypatch.setattr(scrape_pdfs_parallel, "sha16", lambda s: "id")
     monkeypatch.setattr(scrape_pdfs_parallel, "sha64", lambda s: "hash")
     monkeypatch.setattr(scrape_pdfs_parallel, "extract_metadata", lambda *a, **k: {})
     # Use MagicMock for key helpers

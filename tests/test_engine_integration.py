@@ -6,7 +6,7 @@ import sqlite3
 import tempfile
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 
 from utils.run_engine import main
 from utils.db_init import init_db_schema
@@ -181,3 +181,121 @@ def test_main_function_domain_specific_processing():
                 )
             gc.collect()
             assert output_db.exists()
+
+
+def test_main_continues_when_one_pdf_fails(tmp_path):
+    input_dir = tmp_path / "input_pdfs"
+    input_dir.mkdir()
+    output_db = tmp_path / "test_output.sqlite"
+    init_db_schema(str(output_db))
+
+    bad_pdf = input_dir / "bad.pdf"
+    good_pdf = input_dir / "good.pdf"
+    bad_pdf.write_bytes(b"%PDF-1.4 bad")
+    good_pdf.write_bytes(b"%PDF-1.4 good")
+
+    mock_pdf = Mock()
+    mock_page = Mock()
+    mock_page.extract_text.return_value = "Test content"
+    mock_pdf.pages = [mock_page]
+    mock_pdf.metadata = {}
+
+    class _PdfCtx:
+        def __init__(self, pdf_obj):
+            self._pdf = pdf_obj
+
+        def __enter__(self):
+            return self._pdf
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def open_side_effect(path):
+        if str(path).endswith("bad.pdf"):
+            raise Exception("Simulated per-file failure")
+        return _PdfCtx(mock_pdf)
+
+    with patch("utils.run_engine.pdfplumber.open", side_effect=open_side_effect) as mock_pdf_open, \
+         patch("utils.run_engine.extract_metadata", return_value={"title": "T", "authors": "A", "year": 2023}), \
+         patch("utils.run_engine.chunk_sentences", return_value=["Test sentence."]):
+        main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
+
+    assert mock_pdf_open.call_count == 2
+    assert output_db.exists()
+
+
+def test_main_exits_1_when_all_pdfs_fail(tmp_path):
+    input_dir = tmp_path / "input_pdfs"
+    input_dir.mkdir()
+    output_db = tmp_path / "test_output.sqlite"
+    init_db_schema(str(output_db))
+
+    (input_dir / "a.pdf").write_bytes(b"%PDF-1.4 a")
+    (input_dir / "b.pdf").write_bytes(b"%PDF-1.4 b")
+
+    with patch("utils.run_engine.pdfplumber.open", side_effect=Exception("Processing error")):
+        with pytest.raises(SystemExit) as exc:
+            main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
+        assert exc.value.code == 1
+
+
+def test_main_invalid_domain_current_behavior_continues(tmp_path):
+    input_dir = tmp_path / "input_pdfs"
+    input_dir.mkdir()
+    output_db = tmp_path / "test_output.sqlite"
+    init_db_schema(str(output_db))
+
+    pdf_path = input_dir / "test.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 content")
+
+    mock_pdf = Mock()
+    mock_page = Mock()
+    mock_page.extract_text.return_value = "Test content"
+    mock_pdf.pages = [mock_page]
+    mock_pdf.metadata = {}
+
+    captured_metadata = {}
+
+    def upsert_source_side_effect(con, source_id, title, metadata):
+        captured_metadata.update(metadata)
+        return source_id
+
+    with patch("utils.run_engine.pdfplumber.open") as mock_pdf_open, \
+         patch("utils.run_engine.extract_metadata", return_value={}), \
+         patch("utils.run_engine.chunk_sentences", return_value=[]), \
+         patch("utils.run_engine.upsert_source", side_effect=upsert_source_side_effect):
+        mock_pdf_open.return_value.__enter__.return_value = mock_pdf
+        invalid_domain = "not_a_real_domain"
+        main(domain=invalid_domain, input_dir=str(input_dir), db_path=str(output_db))
+
+    assert captured_metadata.get("domain") == "not_a_real_domain"
+
+
+def test_main_duplicate_pdf_content_uses_same_source_id(tmp_path):
+    input_dir = tmp_path / "input_pdfs"
+    input_dir.mkdir()
+    output_db = tmp_path / "test_output.sqlite"
+    init_db_schema(str(output_db))
+
+    duplicate_bytes = b"%PDF-1.4 same-content"
+    (input_dir / "first.pdf").write_bytes(duplicate_bytes)
+    (input_dir / "second.pdf").write_bytes(duplicate_bytes)
+
+    mock_pdf = Mock()
+    mock_page = Mock()
+    mock_page.extract_text.return_value = ""
+    mock_pdf.pages = [mock_page]
+    mock_pdf.metadata = {}
+
+    upsert_source_spy = MagicMock(side_effect=lambda con, source_id, title, metadata: source_id)
+
+    with patch("utils.run_engine.pdfplumber.open") as mock_pdf_open, \
+         patch("utils.run_engine.extract_metadata", return_value={"title": "T", "authors": "A", "year": 2023}), \
+         patch("utils.run_engine.upsert_source", upsert_source_spy):
+        mock_pdf_open.return_value.__enter__.return_value = mock_pdf
+        main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
+
+    assert upsert_source_spy.call_count == 2
+    first_source_id = upsert_source_spy.call_args_list[0].args[1]
+    second_source_id = upsert_source_spy.call_args_list[1].args[1]
+    assert first_source_id == second_source_id

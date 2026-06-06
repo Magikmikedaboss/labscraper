@@ -115,7 +115,10 @@ def get_source_weight(source_type: Optional[str]) -> float:
     key = str(source_type or "research_paper").strip().lower()
     if key not in SOURCE_WEIGHTS:
         logging.getLogger(__name__).warning(
-            f"Unknown source_type '{source_type}' (normalized key: '{key}'); using default weight {SOURCE_WEIGHTS['research_paper']}"
+            "Unknown source_type '%s' (normalized key: '%s'); using default weight %s",
+            source_type,
+            key,
+            SOURCE_WEIGHTS["research_paper"],
         )
     return SOURCE_WEIGHTS.get(key, SOURCE_WEIGHTS["research_paper"])
 
