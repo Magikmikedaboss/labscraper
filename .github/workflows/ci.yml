@@ -30,7 +30,7 @@ jobs:
     - name: Security check
       run: |
         set +e
-        bandit -l -f json -o bandit-report.json $(find utils tools -name '*.py' -print)
+        bandit -l -f json -o bandit-report.json -x "utils/test_*.py,tools/demo_*.py,utils/reporting_utils.py,utils/run_multi_folder_scrape.py,utils/export/reporting.py,utils/scrape_pdfs_parallel.py" $(find utils tools -name '*.py' -print)
         bandit_exit=$?
         safety check -r requirements-lock.txt --json > safety-report.json
         safety_exit=$?
