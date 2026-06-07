@@ -56,5 +56,9 @@ output/*.sqlite-wal
 *.log
 *.bak
 
+# Generated security scan reports
+bandit-report.json
+bandit-excluded.json
+
 # Keep output CSVs (they're important)
 # output/*.csv  # Commented out - we want to keep these
