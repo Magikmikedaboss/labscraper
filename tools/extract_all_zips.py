@@ -3,7 +3,6 @@ import logging
 import zipfile
 import os
 import sys
-import shutil
 from pathlib import Path, PurePosixPath
 import datetime
 import time
