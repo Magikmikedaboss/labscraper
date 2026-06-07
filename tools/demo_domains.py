@@ -42,7 +42,7 @@ if __name__ == "__main__":
     print("=" * 60)
     try:
         from lenses import construction_failure_v1
-    except (ImportError, ModuleNotFoundError) as e:
+    except ImportError as e:
         print(f"Error loading lenses: {e}")
     else:
         print("construction_failure_v1 lens loaded")

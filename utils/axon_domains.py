@@ -24,6 +24,7 @@ class DomainProfile:
         claims_mode: Always "observational_only" for Axon Labs
         domain_profile_version: Version for reproducibility
         seed_overlays: Seed file preferences for this domain
+        overlays: Overlay identifiers and lens rules for this domain
         exclusions: Terms and document types to exclude
         pattern_emphasis: Soft multipliers for pattern scores
         language: Dict with keys:
@@ -40,6 +41,7 @@ class DomainProfile:
     exclusions: Dict[str, Any]
     pattern_emphasis: Dict[str, float]
     language: Dict[str, List[str]]
+    overlays: List[str] = field(default_factory=list)
     output_allowed_phrases: List[str] = field(default_factory=list)
 
     def get_output_allowed_phrases(self) -> List[str]:
@@ -172,6 +174,7 @@ def load_domain_profile(path: str) -> DomainProfile:
         claims_mode=data.get("claims_mode", "observational_only"),
         domain_profile_version=data.get("domain_profile_version", "v1"),
         seed_overlays=data.get("seed_overlays", {}),
+        overlays=data.get("overlays", []),
         exclusions=data.get("exclusions", {}),
         pattern_emphasis=data.get("pattern_emphasis", {}),
         language=data.get("language", {"allowed": [], "forbidden": []}),
@@ -237,7 +240,7 @@ def get_domain_by_id(domain_id: str, domains_dir: str = "config/domains") -> Opt
         try:
             resolved_path = os.path.realpath(path)
             resolved_domains_dir = os.path.realpath(base_dir)
-            if not resolved_path.startswith(resolved_domains_dir + os.sep) and resolved_path != resolved_domains_dir:
+            if not resolved_path.startswith(resolved_domains_dir + os.sep):
                 continue
         except (OSError, ValueError):
             continue

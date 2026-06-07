@@ -4,8 +4,8 @@ from utils.event_classification import ConfidenceInput
 
 def test_sha16_and_sha64():
     s = "test string"
-    h16 = common.sha16(s)
-    h64 = common.sha64(s)
+    h16 = common.sha256_short(s)
+    h64 = common.sha256_hex(s)
     assert isinstance(h16, str) and len(h16) == 16
     assert isinstance(h64, str) and len(h64) == 64
     assert h64.startswith(h16)
@@ -43,7 +43,7 @@ def test_detect_failure_reason():
 
 def test_detect_decision():
     s = "The project was abandoned."
-    decision, _ = event_classification.detect_decision(s.lower())
+    decision = event_classification.detect_decision(s.lower())
     assert decision == "abandoned"
 
 def test_detect_outcome():

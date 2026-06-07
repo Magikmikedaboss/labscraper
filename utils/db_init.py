@@ -12,7 +12,6 @@ For initializing the main db/runs.sqlite database, always use the canonical root
 import sqlite3
 import logging
 from pathlib import Path
-from contextlib import closing
 
 
 logger = logging.getLogger(__name__)
@@ -65,7 +64,7 @@ def init_db_schema(db_path):
 
     schema_sql = schema_path.read_text(encoding='utf-8')
 
-    with closing(sqlite3.connect(db_path_resolved)) as con:
+    with sqlite3.connect(db_path_resolved) as con:
         con.executescript(schema_sql)
         _apply_rename_context_columns_migration_if_needed(con, project_root)
 

@@ -113,14 +113,19 @@ def export_events_csv(
         writer.writeheader()
 
         for event in events:
-            event_dict = dict(event) if not isinstance(event, dict) else event
+            if isinstance(event, dict):
+                event_dict = event
+            elif hasattr(event, "as_dict"):
+                event_dict = event.as_dict()
+            else:
+                event_dict = dict(event)
             event_id = event_dict.get("event_id") or ""
             snippet = event_dict.get("evidence_snippet") or ""
 
             row = {
                 "event_id": event_id,
                 "event_type": event_dict.get("event_type", ""),
-                "stage": event_dict.get("stage") or event_dict.get("study_stage") or "",
+                "stage": event_dict["stage"],
                 "confidence_original": event_dict.get("confidence", "unknown"),
                 "evidence_snippet": snippet[:200] + ("..." if len(snippet) > 200 else ""),
             }

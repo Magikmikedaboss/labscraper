@@ -214,7 +214,7 @@ pip install -r requirements.txt
 # Close any programs that might be using the database
 # Then delete and recreate:
 Remove-Item db/runs.sqlite -Force
-python init_db.py
+python utils/init_db.py
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
 ```
 
@@ -258,7 +258,7 @@ Remove-Item db/runs.sqlite -ErrorAction SilentlyContinue
 Remove-Item output/*.csv -ErrorAction SilentlyContinue
 
 # Rebuild
-python init_db.py
+python utils/init_db.py
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
 python utils/export_csv.py --domain methods_tooling
 python utils/check_entity_types.py

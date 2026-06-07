@@ -37,7 +37,11 @@ class TestDomainLoading:
                 f.write("# Stopwords\nstopword1\nstopword2\n")
             # Change working directory to temp_dir and clear cache
             monkeypatch.chdir(temp_dir)
-            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            seeds = get_seeds(SEEDS_DIR=seeds_dir)
+            compounds = seeds["compounds"]
+            _targets = seeds["targets"]
+            _models = seeds["models"]
+            stopwords = seeds["stopwords"]
             assert len(compounds) == 2
             assert len(_targets) == 2
             assert len(_models) == 2
@@ -63,7 +67,11 @@ class TestDomainLoading:
                 f.write("# Compounds\ncompound1\ncompound2\n")
             # Change working directory to temp_dir and clear cache
             monkeypatch.chdir(temp_dir)
-            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            seeds = get_seeds(SEEDS_DIR=seeds_dir)
+            compounds = seeds["compounds"]
+            _targets = seeds["targets"]
+            _models = seeds["models"]
+            stopwords = seeds["stopwords"]
             assert len(compounds) == 2
             assert len(_targets) == 0
             assert len(_models) == 0
@@ -88,7 +96,11 @@ class TestDomainLoading:
                 f.write("")
             # Change working directory to temp_dir and clear cache
             monkeypatch.chdir(temp_dir)
-            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            seeds = get_seeds(SEEDS_DIR=seeds_dir)
+            compounds = seeds["compounds"]
+            _targets = seeds["targets"]
+            _models = seeds["models"]
+            stopwords = seeds["stopwords"]
             assert len(compounds) == 0
             assert len(_targets) == 0
             assert len(_models) == 0
@@ -110,7 +122,10 @@ class TestDomainLoading:
                 f.write("# This is a comment\ncompound1\n# Another comment\ncompound2\n")
             # Change working directory to temp_dir and clear cache
             monkeypatch.chdir(temp_dir)
-            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            seeds = get_seeds(SEEDS_DIR=seeds_dir)
+            compounds = seeds["compounds"]
+            _targets = seeds["targets"]
+            _models = seeds["models"]
             assert len(compounds) == 2
             assert 'COMPOUND1' in compounds
             assert 'COMPOUND2' in compounds
@@ -133,7 +148,10 @@ class TestDomainLoading:
                 f.write("UPPERCASE\nlowercase\nMixedCase\n")
             # Change working directory to temp_dir and clear cache
             monkeypatch.chdir(temp_dir)
-            compounds, _targets, _models, stopwords = get_seeds(SEEDS_DIR=seeds_dir)
+            seeds = get_seeds(SEEDS_DIR=seeds_dir)
+            compounds = seeds["compounds"]
+            _targets = seeds["targets"]
+            _models = seeds["models"]
             assert len(compounds) == 3
             assert 'UPPERCASE' in compounds
             assert 'LOWERCASE' in compounds
@@ -151,7 +169,11 @@ class TestDomainLoading:
             # Don't create seeds directory
             # Change working directory to temp_dir and clear cache
             monkeypatch.chdir(temp_dir)
-            compounds, _targets, _models, stopwords = get_seeds()
+            seeds = get_seeds()
+            compounds = seeds["compounds"]
+            _targets = seeds["targets"]
+            _models = seeds["models"]
+            stopwords = seeds["stopwords"]
             assert len(compounds) == 0
             assert len(_targets) == 0
             assert len(_models) == 0

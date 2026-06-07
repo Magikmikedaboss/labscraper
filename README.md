@@ -272,7 +272,17 @@ python -m ruff check .
 
 ### Modular Pipeline (Development/Debug)
 
-The modular pipeline is orchestrated by `utils/scrape_pdfs_phase1_full.py`. This script demonstrates the core PDF-to-database logic using only the new modular utility functions, and is ideal for debugging, development, or as a template for further customization.
+The three PDF entry points serve different needs:
+
+| Use case | Script | Key flags |
+| --- | --- | --- |
+| Development / debugging the modular pipeline | `utils/scrape_pdfs_phase1_full.py` | `--domain`, `--input-dir` |
+| Single-threaded or quick local run | `utils/run_engine.py` | `--domain`, `--input-dir` |
+| Large datasets / throughput-first runs | `utils/scrape_pdfs_parallel.py` | `--domain`, `--input-dir`, `--workers` |
+
+Use `utils/scrape_pdfs_phase1_full.py` when you want to trace the modular PDF-to-database flow step by step. Use `utils/run_engine.py` for a straightforward single-process run. Use `utils/scrape_pdfs_parallel.py` when processing many PDFs and you want to tune concurrency with `--workers`.
+
+`--dry-run` is not supported by these PDF scrapers; use it only with workflows that explicitly expose it, such as `run_rss_ingest.py`.
 
 
 ```bash

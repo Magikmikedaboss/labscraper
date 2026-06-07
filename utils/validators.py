@@ -51,11 +51,18 @@ def validate_database(path: Union[str, Path], must_exist: bool = False) -> Path:
 
     parent = p.parent
     if not parent.exists():
-        try:
-            parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            raise ValidationError(f"Failed to create database directory '{parent}': {e}") from e
+        raise ValidationError(f"Database directory not found: {parent}")
 
+    return p
+
+
+def ensure_database_dir(path: Union[str, Path]) -> Path:
+    """Create the parent directory for a database path if needed."""
+    p = Path(path)
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        raise ValidationError(f"Failed to create database directory '{p.parent}': {e}") from e
     return p
 
 

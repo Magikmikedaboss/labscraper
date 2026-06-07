@@ -332,7 +332,7 @@ class TestClimateLens:
         types = {e["entity_type"] for e in entities}
         assert "hazard" in types
 
-    def test_failed_outcome_on_worsened(self):
+    def test_negative_outcome_on_exacerbated(self):
         from lenses.construction_climate_v1 import detect
         sentence = "Flood vulnerability was exacerbated by increased storm surge intensity."
         event, _ = detect(sentence)

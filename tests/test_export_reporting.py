@@ -53,12 +53,13 @@ def test_export_events_csv_formats_scores_and_defaults(tmp_path):
         {
             "event_id": "ev1",
             "event_type": "failure",
-            "study_stage": "pilot",
+            "stage": "pilot",
             "confidence": "high",
             "evidence_snippet": "x" * 250,
         },
         {
             "event_type": "success",
+            "stage": "",
             "evidence_snippet": None,
         },
     ]

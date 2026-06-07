@@ -16,6 +16,7 @@ import sys
 
 # Import validation utilities
 from utils.validators import (
+    ensure_database_dir,
     validate_directory, validate_database, ValidationError
 )
 
@@ -267,7 +268,7 @@ class PeptideScraperUI:
                         raise ValidationError(f"Invalid database extension: {db_path.suffix}")
                     
                     # Ensure parent directory exists
-                    db_path.parent.mkdir(parents=True, exist_ok=True)
+                    db_path = ensure_database_dir(db_path)
                     
                     self.db_var.set(str(db_path))
                     self.log_message(f"✓ New database file: {db_path}")

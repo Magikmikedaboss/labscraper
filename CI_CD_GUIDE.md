@@ -95,7 +95,7 @@ safety check --output json > safety-report.json
 pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing
 
 # Check coverage threshold
-pytest --cov=utils --cov=tools --cov-fail-under=50
+pytest --cov=utils --cov=tools --cov-fail-under=70
 ### Pre-commit Hooks (Optional)
 For even faster feedback, you can set up pre-commit hooks:
 

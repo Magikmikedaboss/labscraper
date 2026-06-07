@@ -201,12 +201,19 @@ def get_entity_role(
             if any(name == v.lower() for v in all_variants):
                 return role
 
+    def _matches_legacy_names(values) -> bool:
+        if isinstance(values, dict):
+            candidates = values.keys()
+        else:
+            candidates = values
+        return any(name == str(value).strip().lower() for value in candidates)
+
     # 2. Fallback: old top-level norm_map['context'] and norm_map['primary']
-    if 'context' in norm_map and etype in norm_map['context'] and name in norm_map['context'][etype]:
+    if 'context' in norm_map and etype in norm_map['context'] and _matches_legacy_names(norm_map['context'][etype]):
         return 'context'
     if 'primary' in norm_map:
         if etype in norm_map['primary']:
-            if name in norm_map['primary'][etype]:
+            if _matches_legacy_names(norm_map['primary'][etype]):
                 return 'primary'
 
     # 3. Expanded set of primary types

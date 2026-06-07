@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 
 from pathlib import Path
 import hashlib
@@ -5,7 +7,7 @@ from typing import Dict
 import sqlite3
 import pdfplumber
 from datetime import datetime
-from utils.common import sha64
+from utils.common import sha256_hex
 from utils.metadata_utils import extract_metadata
 from utils.text_utils import chunk_sentences, guess_stage, guess_section
 from utils.data_extractors import extract_quantitative_data
@@ -25,6 +27,214 @@ from utils.db_init import init_db_schema
 # Add SEEDS_DIR definition (mirroring run_engine.py)
 project_root = Path(__file__).parent.parent.resolve()
 SEEDS_DIR = project_root / "input" / "seeds"
+
+CONSTRUCTION_EVENT_PATTERNS = [
+    (
+        "moisture_failure",
+        ["moisture", "water intrusion", "water leakage", "condensation", "vapor", "wetting"],
+        ["failure", "issue", "problem", "damage", "mold", "rot", "leak", "leakage", "poor"],
+    ),
+    (
+        "thermal_performance",
+        ["thermal", "temperature", "heat", "cold", "r-value", "u-value", "insulation"],
+        ["performance", "resistance", "loss", "transfer", "control", "retention", "insulate"],
+    ),
+    (
+        "insulation_strategy",
+        ["insulation", "spray foam", "rigid foam", "batt", "continuous insulation", "air barrier"],
+        ["strategy", "assembly", "layer", "retrofit", "detail", "exterior", "interior"],
+    ),
+    (
+        "air_sealing_issue",
+        ["air sealing", "air leakage", "airtightness", "infiltration", "exfiltration", "sealant"],
+        ["issue", "problem", "leak", "leakage", "failure", "gap", "draft"],
+    ),
+    (
+        "vapor_control",
+        ["vapor", "vapour", "vapor diffusion", "vapor retarder", "vapor barrier", "vapor control"],
+        ["control", "retarder", "barrier", "diffusion", "perm", "condensation"],
+    ),
+    (
+        "structural_failure",
+        ["beam", "column", "slab", "foundation", "wall", "roof", "connection", "panel", "truss", "joist"],
+        ["failure", "crack", "cracking", "collapse", "buckling", "deflection", "shear", "settlement", "spalling"],
+    ),
+    (
+        "material_degradation",
+        ["corrosion", "weathering", "degradation", "deterioration", "delamination", "fatigue", "freeze-thaw"],
+        ["damage", "loss", "degrade", "degraded", "decay", "rot", "mold", "spalling"],
+    ),
+    (
+        "code_or_standard_reference",
+        ["iecc", "astm", "asce", "aci", "ul", "iso", "en standard", "code", "standard"],
+        ["reference", "compliance", "requirement", "section", "chapter", "table", "clause"],
+    ),
+    (
+        "durability_finding",
+        ["durability", "service life", "lifespan", "long-term", "weathering resistance"],
+        ["finding", "performance", "resistance", "assessment", "study", "evidence"],
+    ),
+    (
+        "construction_method",
+        ["assembly", "retrofit", "installation", "construction", "framing", "enclosure", "detailing", "building"],
+        ["method", "approach", "procedure", "system", "detail", "technique"],
+    ),
+    (
+        "climate_load",
+        ["climate zone", "climate load", "snow load", "wind load", "rain load", "degree days", "heating degree days", "cooling degree days", "climate normals"],
+        ["building", "buildings", "performance", "moisture", "risk", "heating", "cooling", "insulation", "vapor", "vapour", "durability", "material", "wall", "roof", "attic", "foundation", "assembly", "duct", "condensation", "load"],
+    ),
+]
+
+CLIMATE_ROW_LOCATION_TERMS = {
+    "canada",
+    "canadian",
+    "toronto",
+    "vancouver",
+    "calgary",
+    "edmonton",
+    "ottawa",
+    "montreal",
+    "quebec",
+    "halifax",
+    "winnipeg",
+    "regina",
+    "saskatoon",
+    "victoria",
+    "whitehorse",
+    "yellowknife",
+    "iqaluit",
+    "alberta",
+    "british columbia",
+    "manitoba",
+    "saskatchewan",
+    "nova scotia",
+    "new brunswick",
+    "newfoundland",
+    "labrador",
+}
+
+CLIMATE_BUILDING_CONTEXT_TERMS = {
+    "building",
+    "buildings",
+    "envelope",
+    "performance",
+    "moisture",
+    "risk",
+    "heating",
+    "cooling",
+    "insulation",
+    "vapor",
+    "vapour",
+    "durability",
+    "material",
+    "wall",
+    "roof",
+    "attic",
+    "foundation",
+    "assembly",
+    "duct",
+    "condensation",
+    "load",
+}
+
+CLIMATE_MONTH_TERMS = {
+    "jan",
+    "january",
+    "feb",
+    "february",
+    "mar",
+    "march",
+    "apr",
+    "april",
+    "may",
+    "jun",
+    "june",
+    "jul",
+    "july",
+    "aug",
+    "august",
+    "sep",
+    "sept",
+    "september",
+    "oct",
+    "october",
+    "nov",
+    "november",
+    "dec",
+    "december",
+}
+
+
+def _looks_like_construction_boilerplate(sentence_l: str) -> bool:
+    sentence = sentence_l.lower()
+    if ("climate normals" in sentence or "normales climatiques" in sentence) and not _has_climate_building_context(sentence):
+        return True
+    front_matter_terms = {
+        "table of contents",
+        "contents",
+        "list of acronyms",
+        "executive summary",
+        "disclaimer",
+        "authors",
+        "acknowledgments",
+        "acknowledgements",
+        "copyright",
+        "all rights reserved",
+        "references",
+        "bibliography",
+        "about this report",
+    }
+    if any(term in sentence for term in front_matter_terms):
+        return True
+    boilerplate_terms = {"temperature", "humidity", "pressure", "volume", "table", "normals"}
+    action_terms = {"load", "performance", "failure", "damage", "strategy", "control", "reference", "issue"}
+    if len(boilerplate_terms.intersection(sentence.split())) >= 3 and not any(term in sentence for term in action_terms):
+        return True
+    if "climate" in sentence and "pressure" in sentence and "temperature" in sentence and "humidity" in sentence:
+        return True
+    return False
+
+
+def _has_climate_building_context(sentence_l: str) -> bool:
+    return any(term in sentence_l for term in CLIMATE_BUILDING_CONTEXT_TERMS)
+
+
+def _looks_like_climate_table_row(sentence_l: str, source_title_l: str) -> bool:
+    if "climate normals" not in source_title_l and "climate normals" not in sentence_l:
+        return False
+    if _has_climate_building_context(sentence_l):
+        return False
+
+    token_list = [token.strip(".,;:()[]{}") for token in sentence_l.split() if token.strip(".,;:()[]{}")] 
+    numeric_tokens = sum(1 for token in token_list if token.replace(".", "", 1).replace("-", "", 1).isdigit())
+    month_hits = sum(1 for term in CLIMATE_MONTH_TERMS if term in sentence_l)
+    location_hits = sum(1 for term in CLIMATE_ROW_LOCATION_TERMS if term in sentence_l)
+
+    if numeric_tokens >= 3 and len(token_list) <= 18:
+        return True
+    if month_hits >= 2 and numeric_tokens >= 1:
+        return True
+    if location_hits >= 1 and numeric_tokens >= 1 and len(token_list) <= 12:
+        return True
+    if "table" in sentence_l and numeric_tokens >= 2:
+        return True
+    if "normal" in sentence_l and numeric_tokens >= 2:
+        return True
+    return False
+
+
+def _classify_construction_event(sentence_l: str) -> str | None:
+    sentence = sentence_l.lower()
+    if any(term in sentence for term in ("climate zone", "climate load", "degree days", "heating degree days", "cooling degree days", "climate normals")):
+        if _has_climate_building_context(sentence):
+            return "climate_load"
+    for event_type, primary_terms, context_terms in CONSTRUCTION_EVENT_PATTERNS:
+        if not any(term in sentence for term in primary_terms):
+            continue
+        if any(term in sentence for term in context_terms):
+            return event_type
+    return None
 
 
 # Database functions
@@ -57,7 +267,7 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
         if existing:
             return existing[0]
 
-    doc_id = sha64(f"{source_id}|{file_path}|{sha256}")
+    doc_id = sha256_hex(f"{source_id}|{file_path}|{sha256}")
     now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO documents(doc_id, source_id, file_path, file_type, sha256, created_at)
@@ -68,7 +278,7 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
 
 def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
     """Insert chunk record"""
-    chunk_id = sha64(f"{doc_id}|{page_number}|{chunk_text}")
+    chunk_id = sha256_hex(f"{doc_id}|{page_number}|{chunk_text}")
     now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
@@ -83,7 +293,7 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
                  evidence_snippet: str, evidence_strength_v: str, confidence_v: str) -> str:
     """Insert research event record"""
     base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
-    event_id = sha64(base)
+    event_id = sha256_hex(base)
     now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO research_events(
@@ -99,8 +309,6 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
             source_id, doc_id, chunk_id, page_number, now
         ),
     )
-    return event_id
-
 def link_event_entity(con, event_id: str, entity_id: str, role: str):
     """Link event to entity"""
     con.execute(
@@ -120,7 +328,7 @@ def link_event_tag(con, event_id: str, tag: str):
 
 def insert_measurement(con, event_id: str, measurement: Dict):
     """Insert quantitative measurement"""
-    measurement_id = sha64(f"{event_id}|{measurement['measurement_type']}|{measurement['value']}|{measurement['unit']}")
+    measurement_id = sha256_hex(f"{event_id}|{measurement['measurement_type']}|{measurement['value']}|{measurement['unit']}")
     created_at = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO quantitative_measurements(
@@ -133,7 +341,7 @@ def insert_measurement(con, event_id: str, measurement: Dict):
 def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: str | None, organism: str | None) -> str:
     """Insert or update entity record"""
     key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
-    entity_id = sha64(key)
+    entity_id = sha256_hex(key)
     created_at = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO entities(entity_id, entity_type, entity_name, entity_variant, organism, created_at)
@@ -164,7 +372,7 @@ def _sha64_file(path: Path, chunk_size: int = 64 * 1024) -> str:
 
 
 
-def main(input_dir="input/pdfs", db_path="db.sqlite"):
+def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None):
     input_dir = Path(input_dir)
     init_db_schema(db_path)
     with sqlite3.connect(db_path) as con:
@@ -181,22 +389,45 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                 upsert_source(con, source_id, str(pdf_path), meta)
                 file_hash = source_id
                 doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
-                domain = meta.get("domain") or meta.get("research_domain") or map_research_domain(meta) or "methods_tooling"
+                source_title_l = str(meta.get("title") or pdf_path.stem).lower()
+                resolved_domain = (
+                    domain
+                    or meta.get("domain")
+                    or meta.get("research_domain")
+                    or map_research_domain(meta)
+                    or "methods_tooling"
+                )
                 with pdfplumber.open(pdf_path) as pdf:
                     for page_num, page in enumerate(pdf.pages, start=1):
                         text = page.extract_text() or ""
                         section = guess_section(text.lower())
                         chunk_id = insert_chunk(con, source_id, doc_id, page_num, section, text)
                         for sent in chunk_sentences(text):
-                            ents = extract_entities(sent, domain=domain, SEEDS_DIR=SEEDS_DIR)
+                            ents = extract_entities(sent, domain=resolved_domain, SEEDS_DIR=SEEDS_DIR)
                             if not ents:
                                 continue
                             measurements = extract_quantitative_data(sent)
                             sent_l = sent.lower()
-                            method_tags = detect_method_tags(sent_l)
-                            failure_reason = detect_failure_reason(sent_l)
-                            decision_taken, decision_driver = detect_decision(sent_l)
-                            event_type = classify_event_type(sent_l, method_tags, failure_reason, decision_taken)
+                            if resolved_domain == "construction_science" and _looks_like_construction_boilerplate(sent_l):
+                                continue
+                            if resolved_domain == "construction_science" and _looks_like_climate_table_row(sent_l, source_title_l):
+                                continue
+                            if resolved_domain == "construction_science":
+                                event_type = _classify_construction_event(sent_l)
+                                if not event_type:
+                                    continue
+                                if event_type == "climate_load" and not _has_climate_building_context(sent_l):
+                                    continue
+                                method_tags = detect_method_tags(sent_l)
+                                failure_reason = detect_failure_reason(sent_l)
+                                decision_taken = detect_decision(sent_l)
+                                decision_driver = None
+                            else:
+                                method_tags = detect_method_tags(sent_l)
+                                failure_reason = detect_failure_reason(sent_l)
+                                decision_taken = detect_decision(sent_l)
+                                decision_driver = None
+                                event_type = classify_event_type(sent_l, method_tags, failure_reason, decision_taken)
                             outcome = detect_outcome(sent_l)
                             evidence_strength_v = evidence_strength(sent_l)
                             stage = guess_stage(sent.lower())
@@ -217,7 +448,7 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                                 doc_id=doc_id,
                                 chunk_id=chunk_id,
                                 page_number=page_num,
-                                domain=domain,
+                                domain=resolved_domain,
                                 event_type=event_type,
                                 stage=stage,
                                 system_context=None,
@@ -250,9 +481,10 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                 # Optionally record failure status in DB for this source
                 try:
                     try:
-                        fail_source_id = sha64(pdf_path.read_bytes()) if pdf_path.exists() else sha64(str(pdf_path))
+                        con.rollback()
+                        fail_source_id = _sha64_file(pdf_path)
                     except Exception:
-                        fail_source_id = sha64(str(pdf_path))
+                        fail_source_id = sha256_hex(str(pdf_path))
                     upsert_source(
                         con,
                         fail_source_id,
@@ -274,6 +506,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Modular PDF-to-DB pipeline")
     parser.add_argument('--input-dir', type=str, default="input/pdfs", help="Input directory containing PDFs")
-    parser.add_argument('--db-path', type=str, default="db.sqlite", help="Path to output SQLite database")
+    parser.add_argument('--db-path', '--output-db', dest='db_path', type=str, default="db.sqlite", help="Path to output SQLite database")
+    parser.add_argument('--domain', type=str, default=None, help="Explicit research domain override")
     args = parser.parse_args()
-    main(input_dir=args.input_dir, db_path=args.db_path)
+    main(input_dir=args.input_dir, db_path=args.db_path, domain=args.domain)

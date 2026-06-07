@@ -6,6 +6,8 @@ Run this after installation to ensure everything works.
 import sys
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 def check_python_version():
     """Check if Python version is 3.8+"""
     print("Checking Python version...")
@@ -45,14 +47,13 @@ def check_dependencies():
 def check_files():
     """Check if required files exist"""
     print("\nChecking required files...")
-    project_root = Path(__file__).resolve().parents[1]
     required_files = {
-        project_root / 'schema.sql': 'Database schema',
-        project_root / 'init_db.py': 'Database initialization',
-        project_root / 'utils/scrape_pdfs.py': 'Main scraper',
-        project_root / 'utils/export_csv.py': 'CSV export tool',
-        project_root / 'README.md': 'Documentation',
-        project_root / 'requirements.txt': 'Dependencies list',
+        PROJECT_ROOT / 'schema.sql': 'Database schema',
+        PROJECT_ROOT / 'init_db.py': 'Database initialization',
+        PROJECT_ROOT / 'utils/scrape_pdfs_phase1.py': 'Main scraper',
+        PROJECT_ROOT / 'utils/export_csv.py': 'CSV export tool',
+        PROJECT_ROOT / 'README.md': 'Documentation',
+        PROJECT_ROOT / 'requirements.txt': 'Dependencies list',
     }
     all_ok = True
     for filename, description in required_files.items():
@@ -114,7 +115,7 @@ def check_database():
         print("  No database found. Expected one of:")
         for path in db_paths:
             print(f"    - {path}")
-        print("  Run: python init_db.py or python -m init_db")
+        print("  Run: python utils/init_db.py or python -m init_db")
         return True
     
     print(f"  Found database: {db_path.name}")
@@ -137,7 +138,7 @@ def check_database():
                 missing = [t for t in expected_tables if t not in table_names]
                 if missing:
                     print(f"  Database exists but missing tables: {', '.join(missing)}")
-                    print("     Run: python init_db.py or python -m init_db")
+                    print("     Run: python utils/init_db.py or python -m init_db")
                     return False
                 
                 # Check record counts
@@ -147,7 +148,7 @@ def check_database():
                 print("  Database initialized and valid")
                 print(f"     Sources: {sources}, Events: {events}, Entities: {entities}")
             if events == 0:
-                print("     No data yet - run: python utils/scrape_pdfs.py")
+                print("     No data yet - run: python utils/scrape_pdfs_phase1.py")
         elif db_path.suffix == '.csv':            # CSV file (domain-specific export)
             import csv
             with open(db_path, 'r', encoding='utf-8') as f:
@@ -168,7 +169,7 @@ def test_import():
     
     try:
         # Test if we can read the canonical schema at the project root
-        schema_path = (Path(__file__).resolve().parents[1] / "schema.sql").resolve()
+        schema_path = (PROJECT_ROOT / "schema.sql").resolve()
         if schema_path.exists():
             schema = schema_path.read_text()
             if 'CREATE TABLE' in schema:
@@ -207,8 +208,8 @@ def print_summary(results):
         print("\nNext steps:")
         print("  1. Add PDFs to input_pdfs/ folder")
         print("  2. Run: python utils/init_db.py (if not done)")
-        print("  3. Run: python utils/scrape_pdfs.py")
-        print("  4. Run: python utils/export_csv.py")
+        print("  3. Run: python utils/scrape_pdfs_phase1.py")
+        print("  4. Run: python utils/export_csv.py --domain construction_science")
         print("\nSee QUICKSTART.md for detailed instructions.")
     else:
         print("\nSome checks failed. Please fix the issues above.")

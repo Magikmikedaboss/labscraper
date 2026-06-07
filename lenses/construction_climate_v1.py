@@ -39,6 +39,10 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
             outcome phrase appears; this captures generic hazard mention.
         - outcome == "improved": Explicit positive language is present
             (e.g., "mitigated", "improved").
+        - outcome == "mixed_hazard": Explicit positive and explicit negative
+            signals appear in the same sentence (e.g., "mitigated risk but
+            worsened flooding"). This sits between degraded/negative and
+            improved/neutral for mixed-valence climate statements.
         - outcome == "neutral": No hazard or resilience signal is present.
 
     Downstream use: Consumers can distinguish explicit negative impact

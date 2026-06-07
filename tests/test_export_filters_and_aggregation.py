@@ -1,3 +1,5 @@
+import json
+
 from utils.export.aggregation import (
     build_entity_event_map,
     build_entity_models_map,
@@ -6,7 +8,9 @@ from utils.export.aggregation import (
     build_event_overlay_scores,
 )
 from utils.export.filters import (
+    DEFAULT_KNOWN_PEPTIDES,
     is_valid_export_peptide,
+    load_known_peptides,
     should_skip_entity,
     should_suppress_entity_for_csv,
 )
@@ -32,6 +36,28 @@ def test_filters_basic_behavior():
     assert should_skip_entity("compound", "ASPIRIN", "context")
     assert should_skip_entity("peptide", "bad-token", "primary")
     assert not should_skip_entity("compound", "ASPIRIN", "primary")
+
+
+def test_load_known_peptides_from_json_config(tmp_path):
+    config_path = tmp_path / "peptides.json"
+    config_path.write_text(
+        json.dumps([" octreotide ", "lanreotide", "Lanreotide", 123, None]),
+        encoding="utf-8",
+    )
+
+    loaded = load_known_peptides(config_path=config_path, env={})
+
+    assert loaded == {"OCTREOTIDE", "LANREOTIDE"}
+
+
+def test_load_known_peptides_env_and_fallback(tmp_path):
+    loaded = load_known_peptides(env={"LABSCRAPER_KNOWN_PEPTIDES": "etelcalcetide,  teriparatide\n"})
+    assert loaded == {"ETELCALCETIDE", "TERIPARATIDE"}
+
+    malformed_path = tmp_path / "peptides.json"
+    malformed_path.write_text("{not-json", encoding="utf-8")
+
+    assert load_known_peptides(config_path=malformed_path, env={}) == set(DEFAULT_KNOWN_PEPTIDES)
 
 
 def test_should_suppress_entity_for_csv_threshold_and_none_events():

@@ -7,6 +7,7 @@ from __future__ import annotations
 import sqlite3
 from functools import wraps
 import logging
+from urllib.parse import urljoin
 # ...existing imports...
 
 
@@ -25,7 +26,7 @@ from typing import Any
 import feedparser
 import pdfplumber
 import requests
-from utils.common import sha64
+from utils.common import sha256_hex
 from utils.text_utils import chunk_sentences, guess_stage, guess_section
 from utils.data_extractors import extract_quantitative_data
 from utils.entities import extract_entities
@@ -90,6 +91,10 @@ def _link_event_tag(con, event_id, tag):
 def _insert_measurement(con, event_id, m):
     insert_measurement(con, event_id, m)
 
+
+def _resolve_pdf_url(base_url: str, url: str) -> str:
+    return urljoin(base_url, url) if url else url
+
 def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sent, section, seen):
     s_l = sent.lower()
     if not has_signal(s_l):
@@ -97,7 +102,7 @@ def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sen
 
     tags = detect_method_tags(s_l)
     failure = detect_failure_reason(s_l)
-    decision, driver = detect_decision(s_l)
+    decision = detect_decision(s_l)
     outcome = detect_outcome(s_l)
     stage = guess_stage(s_l)
     event_type = classify_event_type(s_l, tags, failure, decision)
@@ -135,7 +140,7 @@ def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sen
         outcome=outcome,
         failure_reason=failure,
         decision_taken=decision,
-        decision_driver=driver,
+        decision_driver=None,
         evidence_snippet=sent,
         evidence_strength_v=strength,
         confidence_v=conf,
@@ -180,11 +185,23 @@ def ensure_db_schema(db_path: Path):
     with sqlite3.connect(db_path) as con:
         try:
             con.executescript(schema_sql)
+            _apply_rename_context_columns_migration_if_needed(con)
             con.commit()
         except sqlite3.Error as e:
             con.rollback()
             raise RuntimeError(f"[ensure_db_schema] Error executing schema script: {e}") from e
 
+
+def _apply_rename_context_columns_migration_if_needed(con: sqlite3.Connection) -> None:
+    columns = {
+        row[1]
+        for row in con.execute("PRAGMA table_info(research_events)").fetchall()
+    }
+    legacy_cols = {"study_stage", "biological_system", "application_area"}
+    target_cols = {"stage", "system_context", "application_context"}
+    if legacy_cols.issubset(columns) and target_cols.isdisjoint(columns):
+        migration_sql = (PROJECT_ROOT / "migrations" / "01_rename_research_event_context_columns.sql").read_text(encoding="utf-8")
+        con.executescript(migration_sql)
 # ---------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------
@@ -201,7 +218,7 @@ def normalize_event_key(event_type, entities, page, snippet):
     entity_str = "|".join(
         sorted(f"{e.get('entity_type')}:{e.get('entity_name')}" for e in entities)
     )
-    return f"{event_type}|{entity_str}|{page}|{sha64(snippet[:100])}"
+    return f"{event_type}|{entity_str}|{page}|{sha256_hex(snippet[:100])}"
 
 
 def has_signal(sentence_l: str):
@@ -243,8 +260,9 @@ def get_pdf_links_from_feed(feed_url: str):
                 "application/pdf" in link.get("type", "")
                 or link.get("title", "").lower() == "pdf"
             ):
-                if href and href not in found_urls:
-                    found_urls.append(href)
+                resolved_href = _resolve_pdf_url(entry_link, href)
+                if resolved_href and resolved_href not in found_urls:
+                    found_urls.append(resolved_href)
 
         # Only keep URLs that look like PDFs (accept .pdf in path, even with query strings)
         pdf_urls = [
@@ -261,8 +279,9 @@ def get_pdf_links_from_feed(feed_url: str):
                     html = resp.text
                     html_pdfs = DOC_LINK_REGEX.findall(html)
                     for url in html_pdfs:
-                        if url not in pdf_urls:
-                            pdf_urls.append(url)
+                        resolved_url = _resolve_pdf_url(entry_link, url)
+                        if resolved_url not in pdf_urls:
+                            pdf_urls.append(resolved_url)
             except Exception as e:
                 print(f"[DEBUG] Failed to fetch or parse HTML for PDFs: {e}")
 
@@ -328,6 +347,11 @@ def download_pdf(url: str, cache_dir: Path):
             logging.error(f"❌ Unexpected error after {attempt} attempts: {e}")
             if attempt == max_attempts:
                 return None
+            logging.warning(
+                f"Unexpected error (attempt {attempt}): {e}. Retrying in {backoff}s..."
+            )
+            time.sleep(backoff)
+            backoff *= 2
             continue
 
 # ---------------------------------------------------------

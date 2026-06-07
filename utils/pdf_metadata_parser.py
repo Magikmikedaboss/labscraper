@@ -5,13 +5,16 @@ import re
 from typing import Dict, Any, Optional
 
 
+YEAR_PATTERN = re.compile(r'(19|20)\d{2}')
+
+
 AFFILIATION_KEYWORDS = ["university", "institute", "department", "dept", "school", "hospital", "center", "centre", "faculty", "college", "clinic", "laboratory", "lab", "company", "corporation", "inc", "llc", "ltd", "email", "@", ".edu", ".org", ".com", "http://", "https://"]
 
 def extract_year_from_creation_date(creation_date: str) -> Optional[int]:
     """Extracts year from PDF creation date string."""
     if not creation_date or not isinstance(creation_date, str):
         return None
-    match = re.search(r'(19|20)\d{2}', creation_date)
+    match = YEAR_PATTERN.search(creation_date)
     if match:
         return int(match.group(0))
     return None
@@ -78,7 +81,7 @@ def parse_first_page_text(text: str, max_header_scan: int = 10) -> Dict[str, Any
                         meta["doi"] = doi_val
     # Year extraction: scan from end to avoid picking from title
     for line in reversed(lines):
-        year_match = re.search(r"(19|20)\d{2}", line)
+        year_match = YEAR_PATTERN.search(line)
         if year_match:
             meta["year"] = int(year_match.group(0))
             break

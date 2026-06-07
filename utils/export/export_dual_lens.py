@@ -5,6 +5,7 @@ Applies overlay scoring to existing extraction results and exports
 with dual perspectives.
 """
 
+import logging
 import sys
 from pathlib import Path
 
@@ -36,9 +37,20 @@ from utils.entity_normalizer import (
 from utils.axon_domains import load_all_domains
 
 
-VALID_DOMAIN_IDS = frozenset(
-    load_all_domains(str(Path(__file__).resolve().parents[2] / "config" / "domains")).keys()
-)
+logger = logging.getLogger(__name__)
+
+
+def _get_valid_domain_ids() -> frozenset[str]:
+    domains_dir = Path(__file__).resolve().parents[2] / "config" / "domains"
+    try:
+        domains = load_all_domains(str(domains_dir))
+    except Exception as exc:
+        logger.error("Failed to load domain profiles from %s: %s", domains_dir, exc)
+        raise RuntimeError(f"Failed to load domain profiles from {domains_dir}") from exc
+    return frozenset(domains.keys())
+
+
+VALID_DOMAIN_IDS = _get_valid_domain_ids()
 
 
 def _is_special_db_identifier(db_path: str) -> bool:

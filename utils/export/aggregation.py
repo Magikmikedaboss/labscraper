@@ -123,7 +123,9 @@ def build_entity_scores(
     entity_scores = {}
 
     for entity in entities:
-        if not isinstance(entity, dict):
+        if isinstance(entity, sqlite3.Row):
+            entity = dict(entity)
+        elif not isinstance(entity, dict):
             logger.warning("Skipping malformed entity (not a dict): %r", entity)
             continue
 

@@ -1,5 +1,7 @@
 """Tests for entity extraction functionality using pytest"""
 
+import pytest
+
 from utils.entities import extract_entities
 from utils.entities import extract_compounds
 from utils.entities import extract_targets, extract_models
@@ -33,18 +35,8 @@ class TestEntityExtraction:
         # Should extract construction-specific entities
         assert len(entities) > 0
         entity_types = [e["entity_type"] for e in entities]
-        assert any(
-            et
-            in [
-                "material",
-                "system",
-                "environment",
-                "failure_mode",
-                "hazard",
-                "test_method",
-            ]
-            for et in entity_types
-        )
+        expected = ["material", "system"]
+        assert set(expected).issubset(set(entity_types))
 
     def test_extract_entities_empty_text(self):
         """Test entity extraction with empty text"""
@@ -228,3 +220,15 @@ class TestBiomedicalEntities:
         assert all(e.get("entity_variant") == "neural_cell" for e in neural_entities)
         assert "mesenchymal" in extracted_names
         assert "microglia" in extracted_names
+
+
+@pytest.mark.parametrize(
+    "word",
+    ["CANADIAN", "CLIMATE", "PREFACE", "PRINCIPAL", "SERVICE", "PACIFIC"],
+)
+def test_biomedical_peptide_denylist_blocks_obvious_false_positives(word):
+    text = f"The term {word} appears in the document."
+
+    entities = extract_entities(text, "methods_tooling")
+
+    assert not any(e["entity_type"] == "peptide" and e.get("entity_name") == word for e in entities)

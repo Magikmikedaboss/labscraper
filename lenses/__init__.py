@@ -159,7 +159,7 @@ def _detect_multi_lens_internal(
             )
         return (
             item.get("source_weight", 0.0),
-            active_confidence_rank.get(conf, 0),
+            active_confidence_rank.get(conf, 1),
             active_context_rank.get(item.get("context_strength", "weak"), 0),
         )
 

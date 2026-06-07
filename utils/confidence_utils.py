@@ -87,8 +87,16 @@ def safe_confidence_boost(
     for e in raw_entities:
         if ":" in e:
             etype, ename = e.split(":", 1)
-            entity_types.add(etype.lower().strip())
-            entity_names_lower.add(ename.lower().strip())
+            etype = etype.lower().strip()
+            ename = ename.lower().strip()
+            if not etype or not ename:
+                logging.warning(
+                    "Malformed entity entry with empty type or name: '%s' in entities_str='%s'",
+                    e, entities_str
+                )
+                continue
+            entity_types.add(etype)
+            entity_names_lower.add(ename)
         else:
             logging.warning(
                 "Malformed entity entry (missing ':'): '%s' in entities_str='%s'",

@@ -40,7 +40,7 @@ def test_test_feeds_main_uses_validated_config(tmp_path, monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["test_feeds.py", "--config", str(config_path), "--keywords", "concrete", "--save-working"],
+        ["test_feeds.py", "--config", str(config_path), "--keywords", "concrete", "--save-working", "--default-domain", "construction_science"],
     )
 
     test_feeds_module.main()
@@ -48,6 +48,7 @@ def test_test_feeds_main_uses_validated_config(tmp_path, monkeypatch):
     assert calls == [("https://example.com/feed.xml", "Example Feed", ["concrete"])]
     saved_config = json.loads((tmp_path / "feeds_working.json").read_text(encoding="utf-8"))
     assert saved_config["feeds"][0]["url"] == "https://example.com/feed.xml"
+    assert saved_config["feeds"][0]["domain"] == "construction_science"
 
 
 def test_test_feeds_main_falls_back_on_invalid_config(tmp_path, monkeypatch, capsys):

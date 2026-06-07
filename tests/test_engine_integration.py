@@ -182,7 +182,7 @@ def test_main_function_domain_specific_processing():
             assert output_db.exists()
 
 
-def test_main_continues_when_one_pdf_fails(tmp_path):
+def test_main_raises_when_pdf_fails(tmp_path):
     input_dir = tmp_path / "input_pdfs"
     input_dir.mkdir()
     output_db = tmp_path / "test_output.sqlite"
@@ -259,17 +259,8 @@ def test_main_invalid_domain_warns_and_continues(tmp_path, caplog):
         captured_metadata.update(metadata)
         return source_id
 
-    with caplog.at_level("WARNING"):
-        with patch("utils.run_engine.pdfplumber.open") as mock_pdf_open, \
-             patch("utils.run_engine.extract_metadata", return_value={}), \
-             patch("utils.run_engine.chunk_sentences", return_value=[]), \
-             patch("utils.run_engine.upsert_source", side_effect=upsert_source_side_effect):
-            mock_pdf_open.return_value.__enter__.return_value = mock_pdf
-            invalid_domain = "not_a_real_domain"
-            main(domain=invalid_domain, input_dir=str(input_dir), db_path=str(output_db))
-
-    assert captured_metadata.get("domain") == "not_a_real_domain"
-    assert any("Unknown domain" in rec.getMessage() for rec in caplog.records)
+    with pytest.raises(SystemExit, match=r"Unknown domain 'not_a_real_domain'"):
+        main(domain="not_a_real_domain", input_dir=str(input_dir), db_path=str(output_db))
 
 
 def test_main_duplicate_pdf_content_uses_same_source_id(tmp_path):

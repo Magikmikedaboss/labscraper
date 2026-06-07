@@ -36,6 +36,11 @@ def main(argv=None):
         action="store_true",
         help="Save working feeds to <config_stem>_working.json",
     )
+    parser.add_argument(
+        "--default-domain",
+        default=None,
+        help="Fallback domain to use when a feed does not specify one",
+    )
     if argv is None:
         argv = sys.argv[1:]
     args, _ = parser.parse_known_args(argv)
@@ -110,7 +115,7 @@ def main(argv=None):
                 {
                     "name": r["name"],
                     "url": r["url"],
-                    "domain": r.get("domain") or feed_domains.get((r.get("url"), r.get("name"))) or "construction_science",
+                    "domain": r.get("domain") or feed_domains.get((r.get("url"), r.get("name"))) or args.default_domain,
                     "enabled": True,
                 }
                 for r in working

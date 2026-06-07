@@ -115,13 +115,15 @@ def export_candidates_domain_aware(domain_id: str = None):
                     raw_fragments = evariant.split(ENTITY_VARIANT_DELIM)
                     trimmed_fragments = [fragment.strip() for fragment in raw_fragments]
                     has_empty_fragment = any(not fragment for fragment in trimmed_fragments)
-                    rejoined = ENTITY_VARIANT_DELIM.join(trimmed_fragments)
+                    normalized_variant = ENTITY_VARIANT_DELIM.join(
+                        fragment for fragment in trimmed_fragments if fragment
+                    )
                     if has_empty_fragment:
                         logger.warning(
                             "Malformed entity_variant split for key=%s: original=%r normalized=%r",
                             key,
                             evariant,
-                            rejoined,
+                            normalized_variant,
                         )
                     variants = [fragment for fragment in trimmed_fragments if fragment]
                 else:

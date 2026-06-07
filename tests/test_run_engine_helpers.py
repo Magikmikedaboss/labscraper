@@ -3,6 +3,8 @@
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 from utils.run_engine import (
     chunk_sentences,
     classify_event_type,
@@ -15,9 +17,10 @@ from utils.run_engine import (
     extract_quantitative_data,
     guess_section,
     guess_stage,
-    sha16,
-    sha64,
+    sha256_short,
+    sha256_hex,
 )
+from utils import metadata_utils
 from utils.event_classification import ConfidenceInput, DECISION_PHRASES
 from utils.data_extractors import extract_relationships
 from utils.common import now_iso
@@ -29,8 +32,8 @@ def test_basic_helpers_return_expected_formats():
 
     assert chunks == ["First sentence.", "Second sentence!", "Third question?"]
     assert now_iso().endswith("Z")
-    assert len(sha16("hello")) == 16
-    assert len(sha64("hello")) == 64
+    assert len(sha256_short("hello")) == 16
+    assert len(sha256_hex("hello")) == 64
 
 
 def test_guess_stage_and_section_cover_all_major_branches():
@@ -81,6 +84,31 @@ def test_extract_metadata_subject_doi_stops_at_invalid_suffix_chars():
     assert metadata["doi"] == "10.1234/abc.def"
 
 
+def test_extract_metadata_handles_pdf_open_failure(monkeypatch):
+    def raise_os_error(*args, **kwargs):
+        raise OSError("cannot open")
+
+    monkeypatch.setattr(metadata_utils.pdfplumber, "open", raise_os_error)
+
+    metadata = metadata_utils.extract_metadata(Path("paper.pdf"))
+
+    assert metadata["error"] == "cannot open"
+
+
+def test_extract_metadata_propagates_value_error_from_parser(monkeypatch):
+    first_page = Mock()
+    first_page.extract_text.return_value = "Title line only"
+
+    pdf = Mock()
+    pdf.metadata = {}
+    pdf.pages = [first_page]
+
+    monkeypatch.setattr(metadata_utils, "parse_first_page_text", lambda text: (_ for _ in ()).throw(ValueError("bad parse")))
+
+    with pytest.raises(ValueError, match="bad parse"):
+        metadata_utils.extract_metadata(Path("paper.pdf"), pdf)
+
+
 def test_detection_classification_and_confidence_helpers_work_together():
     sentence = (
         "CompoundA was more stable than CompoundB. "
@@ -91,7 +119,7 @@ def test_detection_classification_and_confidence_helpers_work_together():
 
     tags = detect_method_tags(sentence_l)
     failure_reason = detect_failure_reason(sentence_l)
-    decision_taken, decision_driver = detect_decision(sentence_l)
+    decision_taken = detect_decision(sentence_l)
     outcome = detect_outcome(sentence_l)
     event_type = classify_event_type(sentence_l, tags, failure_reason, decision_taken)
 
@@ -113,7 +141,6 @@ def test_detection_classification_and_confidence_helpers_work_together():
     # Check that the detected decision is one of the allowed decision types.
     allowed = set(DECISION_PHRASES.keys())
     assert decision_taken in allowed
-    assert decision_driver is None
     assert outcome == "positive"
     assert event_type == "stability_issue"
     measurements = extract_quantitative_data(sentence)
