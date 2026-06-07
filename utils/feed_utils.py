@@ -33,7 +33,7 @@ def extract_pdf_links(entry: Dict) -> List[str]:
             found_list = PDF_LINK_REGEX.findall(href)
             if found_list:
                 pdf_links.extend(found_list)
-    return list(set(pdf_links))
+    return list(dict.fromkeys(pdf_links))
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
     """

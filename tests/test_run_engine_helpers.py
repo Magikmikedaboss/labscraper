@@ -103,7 +103,10 @@ def test_extract_metadata_propagates_value_error_from_parser(monkeypatch):
     pdf.metadata = {}
     pdf.pages = [first_page]
 
-    monkeypatch.setattr(metadata_utils, "parse_first_page_text", lambda text: (_ for _ in ()).throw(ValueError("bad parse")))
+    def raise_parse_error(text):
+        raise ValueError("bad parse")
+
+    monkeypatch.setattr(metadata_utils, "parse_first_page_text", raise_parse_error)
 
     with pytest.raises(ValueError, match="bad parse"):
         metadata_utils.extract_metadata(Path("paper.pdf"), pdf)

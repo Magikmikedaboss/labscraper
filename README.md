@@ -503,6 +503,8 @@ entity_relationships (
 )
 ```
 
+This table stores directed entity relationships, and its cascading foreign keys mean deleting an entity removes linked inbound and outbound relationships.
+
 ---
 
 ## 🎨 Integration with Next.js

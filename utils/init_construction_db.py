@@ -75,6 +75,9 @@ CREATE TABLE IF NOT EXISTS event_entities (
 );
 
 CREATE TABLE IF NOT EXISTS entity_relationships (
+    -- Stores directed relationships between entities via source_entity_id and target_entity_id.
+    -- Typical relationship_type values include parent_of, related_to, and derived_from.
+    -- FOREIGN KEYs use ON DELETE CASCADE, so removing an entity also removes inbound and outbound links and can affect graph integrity.
     relationship_id TEXT PRIMARY KEY,
     source_entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE CASCADE,
     target_entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE CASCADE,

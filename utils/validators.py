@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import Any, Union, Dict, Optional
 import re
-import copy
 
 
 class ValidationError(Exception):
@@ -162,7 +161,7 @@ def validate_feed_config(config: Any) -> Dict[str, Any]:
     if not isinstance(feeds, list):
         raise ValidationError("Feed config field 'feeds' must be a list")
 
-    validated_config = copy.deepcopy(config)
+    validated_config = config.copy()
     validated_config["feeds"] = [
         validate_feed_entry(feed, index=i)
         for i, feed in enumerate(feeds, start=1)

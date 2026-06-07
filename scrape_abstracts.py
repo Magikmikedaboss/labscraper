@@ -141,6 +141,7 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
                 "domain": domain,
                 "publication_date": "2023",
             }
+            decision_driver = metadata.get("decision_driver")
             
             source_id = upsert_source(con, source_id, abstract_url, metadata)
             doc_id = insert_document(con, source_id, abstract_url, file_hash)
@@ -217,7 +218,7 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
                     outcome=outcome,
                     failure_reason=failure_reason,
                     decision_taken=decision_taken,
-                    decision_driver=None,
+                    decision_driver=decision_driver,
                     evidence_snippet=sent,
                     evidence_strength_v=strength,
                     confidence_v=conf,

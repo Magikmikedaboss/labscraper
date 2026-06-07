@@ -111,10 +111,24 @@ def extract_all_zips(base_dir):
                                 abs_target.mkdir(parents=True, exist_ok=True)
                             else:
                                 abs_target.parent.mkdir(parents=True, exist_ok=True)
+                                bytes_written = 0
                                 with zip_ref.open(member) as src, abs_target.open('wb') as dst:
-                                    shutil.copyfileobj(src, dst, length=64 * 1024)
+                                    while True:
+                                        chunk = src.read(64 * 1024)
+                                        if not chunk:
+                                            break
+                                        dst.write(chunk)
+                                        bytes_written += len(chunk)
+                                if bytes_written != member.file_size:
+                                    logger.warning(
+                                        "Extracted byte count mismatch for %s in %s: expected %s bytes, wrote %s bytes",
+                                        orig_name,
+                                        zip_path,
+                                        member.file_size,
+                                        bytes_written,
+                                    )
                                 extracted_file_count += 1
-                                total_extracted_bytes += member.file_size
+                                total_extracted_bytes += bytes_written
                             # Set permissions and timestamps for both files and directories
                             if mode:
                                 try:

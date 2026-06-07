@@ -28,15 +28,24 @@ def summarize_safety(report_path: Path) -> None:
     if text is None:
         raise ValueError(f"Could not decode {report_path}")
 
-    start = text.find("{")
-    if start == -1:
-        raise ValueError("No JSON object found in safety report")
+    text = text.strip()
+    if not text:
+        raise ValueError("Safety report is empty")
 
-    data, _ = json.JSONDecoder().raw_decode(text[start:])
-    for vuln in data.get("vulnerabilities", [])[:10]:
+    start_candidates = [idx for idx in (text.find("{"), text.find("[")) if idx != -1]
+    if not start_candidates:
+        raise ValueError("No JSON payload found in safety report")
+
+    data, _ = json.JSONDecoder().raw_decode(text[min(start_candidates):])
+    vulnerabilities = data.get("vulnerabilities", []) if isinstance(data, dict) else data
+
+    for vuln in vulnerabilities[:10]:
+        if not isinstance(vuln, dict):
+            continue
         print(
-            f"Safety {vuln.get('package_name')} {vuln.get('analyzed_version')} "
-            f"{vuln.get('vulnerable_spec')}"
+            f"Safety {vuln.get('package_name')} "
+            f"{vuln.get('analyzed_version') or vuln.get('installed_version')} "
+            f"{vuln.get('vulnerable_spec') or vuln.get('specifier', '')}"
         )
 
 

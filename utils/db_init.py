@@ -59,6 +59,8 @@ def init_db_schema(db_path):
     if db_path_resolved == canonical_path:
         raise ValueError(f"Refusing to initialize canonical persistent DB: {db_path_resolved}")
 
+    db_path_resolved.parent.mkdir(parents=True, exist_ok=True)
+
     if not schema_path.exists():
         raise FileNotFoundError(f"Missing schema.sql at {schema_path}")
 

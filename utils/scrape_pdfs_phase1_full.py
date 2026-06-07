@@ -361,7 +361,7 @@ def map_research_domain(meta: dict) -> str:
     return "methods_tooling"
 
 
-def _sha64_file(path: Path, chunk_size: int = 64 * 1024) -> str:
+def _sha256_file(path: Path, chunk_size: int = 64 * 1024) -> str:
     hasher = hashlib.sha256()
     with path.open("rb") as handle:
         while True:
@@ -387,7 +387,7 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                 meta = extract_metadata(pdf_path)
                 print(f"  Metadata: {meta}")
                 # Upsert source and document
-                source_id = _sha64_file(pdf_path)
+                source_id = _sha256_file(pdf_path)
                 upsert_source(con, source_id, str(pdf_path), meta)
                 file_hash = source_id
                 doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
@@ -487,7 +487,7 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                 try:
                     try:
                         con.rollback()
-                        fail_source_id = _sha64_file(pdf_path)
+                        fail_source_id = _sha256_file(pdf_path)
                     except Exception:
                         fail_source_id = sha256_hex(str(pdf_path))
                     upsert_source(
