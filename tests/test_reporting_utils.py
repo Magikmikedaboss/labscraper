@@ -5,8 +5,8 @@ def test_write_run_meta_creates_output_file(tmp_path):
     confidence_changes = {}
     canonical_entities = {('type', 'name'): {
         'event_count': 1,
-        'paper_ids': set(),
-        'original_names': set(),
+        'paper_ids': [],
+        'original_names': [],
         'entity_name': 'name',
         'entity_type': 'type',
         'entity_variant': '',

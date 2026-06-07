@@ -22,7 +22,7 @@ def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowS
 
             events = cur.execute(
                 """
-                SELECT event_id, event_type, study_stage, confidence, evidence_snippet,
+                SELECT event_id, event_type, stage, confidence, evidence_snippet,
                        source_id, doc_id, chunk_id, page_number, created_at
                 FROM research_events
                 """
@@ -93,6 +93,10 @@ def build_event_models(model_rows):
         row_dict = dict(row) if not isinstance(row, dict) else row
         event_id = row_dict.get("event_id")
         entity_name = row_dict.get("entity_name")
+        if not isinstance(event_id, str) or not isinstance(entity_name, str):
+            continue
+        event_id = event_id.strip()
+        entity_name = entity_name.strip()
         if not event_id or not entity_name:
             continue
         event_models[event_id].add(entity_name)

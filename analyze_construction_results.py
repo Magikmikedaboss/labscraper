@@ -30,7 +30,7 @@ def analyze_construction_results():
         FROM entities e
         JOIN event_entities ee ON e.entity_id = ee.entity_id
         JOIN research_events re ON ee.event_id = re.event_id
-        WHERE re.research_domain = 'construction'
+        WHERE re.research_domain = 'construction_science'
         GROUP BY e.entity_type
         ORDER BY count DESC
         ''')
@@ -46,7 +46,7 @@ def analyze_construction_results():
         FROM entities e
         JOIN event_entities ee ON e.entity_id = ee.entity_id
         JOIN research_events re ON ee.event_id = re.event_id
-        WHERE re.research_domain = 'construction'
+        WHERE re.research_domain = 'construction_science'
         GROUP BY e.entity_name, e.entity_type
         ORDER BY frequency DESC
         LIMIT 20
@@ -63,7 +63,7 @@ def analyze_construction_results():
         FROM research_events re
         JOIN event_entities ee ON re.event_id = ee.event_id
         JOIN entities e ON ee.entity_id = e.entity_id
-        WHERE re.research_domain = 'construction'
+        WHERE re.research_domain = 'construction_science'
         ORDER BY re.created_at DESC
         LIMIT 5
         ''')
@@ -92,7 +92,7 @@ def analyze_construction_results():
         cursor.execute('''
         SELECT re.failure_reason, COUNT(*) as count
         FROM research_events re
-        WHERE re.research_domain = 'construction' AND re.failure_reason != 'unknown'
+        WHERE re.research_domain = 'construction_science' AND re.failure_reason != 'unknown'
         GROUP BY re.failure_reason
         ORDER BY count DESC
         ''')
@@ -104,10 +104,10 @@ def analyze_construction_results():
         # Get study stages
         print("🔬 Study Stages Distribution:")
         cursor.execute('''
-        SELECT re.study_stage, COUNT(*) as count
+        SELECT re.stage, COUNT(*) as count
         FROM research_events re
-        WHERE re.research_domain = 'construction'
-        GROUP BY re.study_stage
+        WHERE re.research_domain = 'construction_science'
+        GROUP BY re.stage
         ORDER BY count DESC
         ''')
         stage_stats = cursor.fetchall()
@@ -118,10 +118,10 @@ def analyze_construction_results():
         # Get biological systems (should be construction systems)
         print("🏗️  Biological Systems (Construction Context):")
         cursor.execute('''
-        SELECT re.biological_system, COUNT(*) as count
+        SELECT re.system_context, COUNT(*) as count
         FROM research_events re
-        WHERE re.research_domain = 'construction' AND re.biological_system IS NOT NULL
-        GROUP BY re.biological_system
+        WHERE re.research_domain = 'construction_science' AND re.system_context IS NOT NULL
+        GROUP BY re.system_context
         ORDER BY count DESC
         LIMIT 10
         ''')
@@ -137,7 +137,7 @@ def analyze_construction_results():
         FROM entities e
         JOIN event_entities ee ON e.entity_id = ee.entity_id
         JOIN research_events re ON ee.event_id = re.event_id
-        WHERE re.research_domain = 'construction' 
+        WHERE re.research_domain = 'construction_science' 
         AND e.entity_type IN ('peptide', 'compound', 'target', 'model', 'stem_cell', 'neural_cell')
         GROUP BY e.entity_type
         ''')
@@ -152,15 +152,15 @@ def analyze_construction_results():
         
         # Summary statistics
         print("📊 SUMMARY STATISTICS:")
-        cursor.execute('SELECT COUNT(*) FROM research_events WHERE research_domain = "construction"')
+        cursor.execute('SELECT COUNT(*) FROM research_events WHERE research_domain = "construction_science"')
         total_events = cursor.fetchone()[0]
         print(f"  Total events: {total_events}")
         
-        cursor.execute('SELECT COUNT(DISTINCT e.entity_id) FROM entities e JOIN event_entities ee ON e.entity_id = ee.entity_id JOIN research_events re ON ee.event_id = re.event_id WHERE re.research_domain = "construction"')
+        cursor.execute('SELECT COUNT(DISTINCT e.entity_id) FROM entities e JOIN event_entities ee ON e.entity_id = ee.entity_id JOIN research_events re ON ee.event_id = re.event_id WHERE re.research_domain = "construction_science"')
         total_entities = cursor.fetchone()[0]
         print(f"  Total unique entities: {total_entities}")
         
-        cursor.execute('SELECT COUNT(DISTINCT re.source_id) FROM research_events re WHERE re.research_domain = "construction"')
+        cursor.execute('SELECT COUNT(DISTINCT re.source_id) FROM research_events re WHERE re.research_domain = "construction_science"')
         total_sources = cursor.fetchone()[0]
         print(f"  Total sources (PDFs): {total_sources}")
         

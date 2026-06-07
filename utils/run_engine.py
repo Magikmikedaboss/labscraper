@@ -8,6 +8,7 @@ import sys
 import logging
 import argparse
 from utils.db_init import init_db_schema
+from utils.axon_domains import get_domain_by_id
 import pdfplumber
 from pdfminer.pdfparser import PDFSyntaxError
 from pdfminer.pdfexceptions import PDFNotImplementedError
@@ -44,8 +45,8 @@ from utils.db_utils import (
     link_event_tag,
     insert_measurement,
 )
+from utils.scrape_pdfs_parallel import _sha256_file
 
-# ---------------------------------------------------------
 # DB INIT
 # ---------------------------------------------------------
 def _init_db_schema_if_needed(db_path):
@@ -122,6 +123,12 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
         input_dir = input_dir or _default_input_dir()
         db_path = db_path or Path("db/runs.sqlite")
 
+    if get_domain_by_id(research_domain) is None:
+        logging.getLogger(__name__).warning(
+            "Unknown domain '%s'; proceeding with fallback behavior.",
+            research_domain,
+        )
+
     # Normalize paths
     input_dir = Path(input_dir)
     db_path = Path(db_path)
@@ -147,13 +154,9 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
         for pdf_path in tqdm(pdfs, desc="PDFs"):
             print(f"Processing: {pdf_path.name}")
             try:
-                with open(pdf_path, "rb") as f:
-                    file_bytes = f.read()
-
-                # Hash file bytes directly
-                content_hash = sha64(file_bytes)
+                content_hash = _sha256_file(pdf_path)
                 source_id = content_hash
-                file_hash = sha64(file_bytes)
+                file_hash = content_hash
 
                 with pdfplumber.open(str(pdf_path)) as pdf:
                     metadata = extract_metadata(pdf_path, pdf)
@@ -207,9 +210,9 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 page_number=page_idx,
                                 domain=research_domain,
                                 event_type=event_type,
-                                study_stage=stage,
-                                biological_system=None,
-                                application_area=None,
+                                stage=stage,
+                                system_context=None,
+                                application_context=None,
                                 outcome=outcome,
                                 failure_reason=failure_reason,
                                 decision_taken=decision_taken,
@@ -244,7 +247,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                 continue
             except Exception:
                 logging.exception("Unexpected error processing %s", pdf_path)
-                continue
+                raise
         con.commit()
         if success_count == 0:
             sys.exit(1)

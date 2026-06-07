@@ -11,7 +11,7 @@ First, let's see what you have:
 # You should be in: C:\projects\labscraper
 
 # Check if seed files exist
-ls seeds/base/life_sciences/
+Get-ChildItem seeds/base/life_sciences/
 
 # You should see:
 # - compounds.txt
@@ -19,7 +19,7 @@ ls seeds/base/life_sciences/
 # - models.txt
 # - assays.txt
 # - indications.json
-# - pathways.json
+# - stopwords.txt
 ```
 
 Legacy root seed files have been removed from active use. Edit all seed files under `seeds/base/life_sciences/`.
@@ -38,7 +38,7 @@ Remove-Item db/runs.sqlite -ErrorAction SilentlyContinue
 Remove-Item output/*.csv -ErrorAction SilentlyContinue
 
 # Recreate the database with fresh schema
-python init_db.py
+python utils/init_db.py
 ```
 
 **Expected Output:**
@@ -185,7 +185,7 @@ ls seeds/base/life_sciences/
 # If missing, create it:
 mkdir seeds/base/life_sciences -Force
 
-# Then create the seed files (see SEED_SYSTEM_IMPLEMENTED.md for contents)
+# Then create the seed files (see seeds/base/life_sciences/*.txt in this repo for canonical contents)
 ```
 
 ### Problem: "No PDFs found"

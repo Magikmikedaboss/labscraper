@@ -26,7 +26,7 @@ def check_confidence_distribution():
         print("SAMPLE HIGH CONFIDENCE EVENTS")
         print("="*60)
         high_events = con.execute("""
-            SELECT event_type, study_stage, evidence_snippet
+            SELECT event_type, stage AS study_stage, evidence_snippet
             FROM research_events
             WHERE confidence = 'high'
             LIMIT 5
@@ -51,7 +51,7 @@ def check_confidence_distribution():
         print("="*60)
 
         med_events = con.execute("""
-            SELECT event_type, study_stage, evidence_snippet
+            SELECT event_type, stage AS study_stage, evidence_snippet
             FROM research_events
             WHERE confidence = 'med'
             LIMIT 5

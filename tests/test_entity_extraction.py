@@ -3,6 +3,7 @@
 from utils.entities import extract_entities
 from utils.entities import extract_compounds
 from utils.entities import extract_targets, extract_models
+from utils.entities import extract_biomedical_entities
 
 
 class TestEntityExtraction:
@@ -171,7 +172,8 @@ class TestBiomedicalEntities:
         assert len(peptide_entities) > 0
         # Assert the expected peptide sequence is present in the extracted entity
         assert any(
-            "GGGSGGGSGGG" in (e.get("entity_name", "") or e.get("entity_text", ""))
+            ("GGGSGGGSGGG" in e.get("entity_name", ""))
+            or ("GGGSGGGSGGG" in e.get("text", ""))
             for e in peptide_entities
         )
 
@@ -208,3 +210,21 @@ class TestBiomedicalEntities:
 
         stem_cell_entities = [e for e in entities if e["entity_type"] == "stem_cell"]
         assert len(stem_cell_entities) > 0
+        assert any(e.get("entity_variant") == "stem_cell" for e in stem_cell_entities)
+
+    def test_extract_biomedical_stem_and_neural_cell_variants(self):
+        """Test descriptive variants and dedup normalization for stem/neural cells"""
+        text = "Mesenchymal stem cells and microglia were analyzed together."
+        extracted_names = set()
+
+        entities = extract_biomedical_entities(text, extracted_names)
+
+        stem_entities = [e for e in entities if e["entity_type"] == "stem_cell"]
+        neural_entities = [e for e in entities if e["entity_type"] == "neural_cell"]
+
+        assert stem_entities
+        assert neural_entities
+        assert all(e.get("entity_variant") == "stem_cell" for e in stem_entities)
+        assert all(e.get("entity_variant") == "neural_cell" for e in neural_entities)
+        assert "mesenchymal" in extracted_names
+        assert "microglia" in extracted_names

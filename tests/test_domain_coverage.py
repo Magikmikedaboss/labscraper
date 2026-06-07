@@ -31,7 +31,7 @@ class TestNeuroscienceCognitionDomain:
         text = "Inhibition of mTOR signaling reduced neuroinflammation in hippocampal neurons."
         entities = extract_entities(text, "neuroscience_cognition", SEEDS_DIR=SEEDS_DIR)
         assert len(entities) > 0
-        names = [e["entity_name"].upper() for e in entities]
+        names = [e.get("entity_name", "").upper() for e in entities]
         assert "MTOR" in names
 
     def test_model_extracted(self):
@@ -40,7 +40,7 @@ class TestNeuroscienceCognitionDomain:
         entities = extract_entities(text, "neuroscience_cognition", SEEDS_DIR=SEEDS_DIR)
         types = [e["entity_type"] for e in entities]
         assert "model" in types
-        assert any("hek293" in e["entity_name"].lower() or "mouse" in e["entity_name"].lower() for e in entities)
+        assert any("hek293" in e.get("entity_name", "").lower() or "mouse" in e.get("entity_name", "").lower() for e in entities)
 
     def test_no_entities_from_irrelevant_text(self):
         """Purely generic text without biomedical terms returns no entities."""
@@ -52,9 +52,9 @@ class TestNeuroscienceCognitionDomain:
         """'neurons' should be typed as neural_cell, not stem_cell or model."""
         text = "Dopaminergic neurons were depleted in the substantia nigra."
         entities = extract_entities(text, "neuroscience_cognition", SEEDS_DIR=SEEDS_DIR)
-        neural = [e for e in entities if e["entity_name"].lower() == "neurons"]
+        neural = [e for e in entities if e.get("entity_name", "").lower() == "neurons"]
         assert len(neural) > 0, "No 'neurons' entity extracted"
-        assert any(e["entity_type"] == "neural_cell" for e in neural), "No 'neurons' entity typed as 'neural_cell'"
+        assert any(e.get("entity_type") == "neural_cell" for e in neural), "No 'neurons' entity typed as 'neural_cell'"
 
 
 class TestBiohackingLongevityDomain:
@@ -65,14 +65,14 @@ class TestBiohackingLongevityDomain:
         text = "Everolimus extended median lifespan in aged mice by activating autophagy."
         entities = extract_entities(text, "biohacking_longevity", SEEDS_DIR=SEEDS_DIR)
         assert len(entities) > 0
-        names = [e["entity_name"].upper() for e in entities]
+        names = [e.get("entity_name", "").upper() for e in entities]
         assert "EVEROLIMUS" in names
 
     def test_metformin_compound_extracted(self):
         """Metformin should be extracted as a compound."""
         text = "Metformin treatment reduced all-cause mortality in a cohort study."
         entities = extract_entities(text, "biohacking_longevity", SEEDS_DIR=SEEDS_DIR)
-        names = [e["entity_name"].upper() for e in entities]
+        names = [e.get("entity_name", "").upper() for e in entities]
         assert "METFORMIN" in names
 
     def test_mtor_target_in_longevity_context(self):
@@ -80,7 +80,7 @@ class TestBiohackingLongevityDomain:
         text = "mTOR inhibition is a conserved longevity pathway across species."
         entities = extract_entities(text, "biohacking_longevity", SEEDS_DIR=SEEDS_DIR)
         assert len(entities) > 0
-        names = [e["entity_name"].upper() for e in entities]
+        names = [e.get("entity_name", "").upper() for e in entities]
         assert "MTOR" in names
 
     def test_ipsc_stem_cell_longevity(self):
@@ -110,7 +110,7 @@ class TestDrugDiscoveryDomain:
         """A biological target (AKT) should be extracted."""
         text = "AKT phosphorylation was significantly reduced following treatment with the compound."
         entities = extract_entities(text, "drug_discovery", SEEDS_DIR=SEEDS_DIR)
-        names = [e["entity_name"].upper() for e in entities]
+        names = [e.get("entity_name", "").upper() for e in entities]
         assert "AKT" in names
 
     def test_multiple_entities_in_one_sentence(self):
@@ -150,11 +150,11 @@ class TestStemCellsRegenDomain:
         """MSC should be extracted and typed as stem_cell."""
         text = "MSC transplantation promoted bone regeneration in the rat femur defect model."
         entities = extract_entities(text, "stem_cells_regen", SEEDS_DIR=SEEDS_DIR)
-        names = [e["entity_name"].upper() for e in entities]
+        names = [e.get("entity_name", "").upper() for e in entities]
         assert "MSC" in names
-        stem = [e for e in entities if e["entity_name"].upper() == "MSC"]
+        stem = [e for e in entities if e.get("entity_name", "").upper() == "MSC"]
         assert stem, f"No entity with name 'MSC' found in entities: {entities}"
-        assert stem[0]["entity_type"] == "stem_cell"
+        assert stem[0].get("entity_type") == "stem_cell"
 
     def test_organoid_typed_as_model(self):
         """'organoid' appears in model names set and should be typed as model."""
@@ -167,7 +167,7 @@ class TestStemCellsRegenDomain:
         """Well-known regen targets like mTOR should still be extractable."""
         text = "mTOR signaling drives proliferation in MSC populations after injury."
         entities = extract_entities(text, "stem_cells_regen", SEEDS_DIR=SEEDS_DIR)
-        names = [e["entity_name"].upper() for e in entities]
+        names = [e.get("entity_name", "").upper() for e in entities]
         assert "MTOR" in names, "mTOR not extracted as target in regen context"
 
     def test_empty_text_returns_empty_list(self):

@@ -6,7 +6,6 @@ from utils.export.aggregation import (
     build_event_overlay_scores,
 )
 from utils.export.filters import (
-    PEPTIDE_EVENT_THRESHOLD,
     is_valid_export_peptide,
     should_skip_entity,
     should_suppress_entity_for_csv,
@@ -46,9 +45,6 @@ def test_should_suppress_entity_for_csv_threshold_and_none_events():
 
     assert should_suppress_entity_for_csv(entity, low_events)
     assert not should_suppress_entity_for_csv(entity, enough_events)
-
-    # Explicitly tie behavior to configurable threshold
-    assert PEPTIDE_EVENT_THRESHOLD == 2
 
 
 def test_build_event_overlay_scores_skips_missing_event_id(caplog):

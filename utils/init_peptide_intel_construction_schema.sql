@@ -21,6 +21,19 @@ CREATE TABLE IF NOT EXISTS documents (
     created_at TEXT,
     FOREIGN KEY (source_id) REFERENCES sources(source_id)
 );
+
+CREATE TABLE IF NOT EXISTS chunks (
+    chunk_id TEXT PRIMARY KEY,
+    doc_id TEXT,
+    source_id TEXT,
+    page_number INTEGER,
+    section_guess TEXT,
+    chunk_text TEXT,
+    created_at TEXT,
+    FOREIGN KEY (doc_id) REFERENCES documents(doc_id),
+    FOREIGN KEY (source_id) REFERENCES sources(source_id)
+);
+
 CREATE TABLE IF NOT EXISTS entities (
     entity_id TEXT PRIMARY KEY,
     entity_type TEXT,
@@ -34,9 +47,9 @@ CREATE TABLE IF NOT EXISTS research_events (
     event_id TEXT PRIMARY KEY,
     research_domain TEXT,
     event_type TEXT,
-    study_stage TEXT,
-    biological_system TEXT,
-    application_area TEXT,
+    stage TEXT,
+    system_context TEXT,
+    application_context TEXT,
     outcome TEXT,
     failure_reason TEXT,
     decision_taken TEXT,
@@ -74,16 +87,6 @@ CREATE TABLE IF NOT EXISTS event_tags (
     FOREIGN KEY (event_id) REFERENCES research_events(event_id),
     FOREIGN KEY (tag) REFERENCES tags(tag)
 );
-CREATE TABLE IF NOT EXISTS quantitative_measurements (
-    measurement_id TEXT PRIMARY KEY,
-    event_id TEXT,
-    measurement_type TEXT,
-    value REAL,
-    unit TEXT,
-    context TEXT,
-    created_at TEXT
-);
-
 CREATE TABLE IF NOT EXISTS quantitative_measurements (
     measurement_id TEXT PRIMARY KEY,
     event_id TEXT,

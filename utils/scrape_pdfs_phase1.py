@@ -3,11 +3,10 @@ Phase 1 PDF Scraper Functions
 This file contains the core functions needed for PDF processing.
 """
 
+from typing import Optional
 
-# Import functions from run_engine.py
-
-from utils.run_engine import extract_entities, confidence_score
-from utils.event_classification import ConfidenceInput
+from utils.entities import extract_entities
+from utils.event_classification import ConfidenceInput, confidence_score
 
 def confidence_score_phase1(has_entity: bool, method_tags: list[str], failure_reason: str, decision_taken: str, has_measurements: bool, sentence_l: str = "") -> str:
     """Phase 1 confidence scoring function"""
@@ -22,9 +21,9 @@ def confidence_score_phase1(has_entity: bool, method_tags: list[str], failure_re
         )
     )
 
-def extract_all_entities(sentence: str, _title: str, domain: str) -> list[dict]:
+def extract_all_entities(sentence: str, _title: str, domain: str, SEEDS_DIR: Optional[str] = None) -> list[dict]:
     """Extract all entities from a sentence based on domain. _title is unused (API compatibility)."""
-    return extract_entities(sentence, domain)
+    return extract_entities(sentence, domain, SEEDS_DIR)
 
 def main():
     """Main function placeholder"""

@@ -29,7 +29,7 @@ AXON converts unstructured research content into structured knowledge.
 
 ```mermaid
 flowchart TD
-  A[Research Sources] --> B[Discovery]\nRSS + Manual Collection
+  A[Research Sources] --> B[Discovery<br>RSS + Manual Collection]
   B --> C[PDF Link Resolution]
   C --> D[PDF Download and Cache]
   D --> E[PDF and Document Ingestion]
@@ -138,10 +138,10 @@ Additional domains can be added without modifying the core engine.
 
 ```mermaid
 flowchart TD
-  A[AXON] --> B[Discovery Layer]\nRSS Discovery and Source Collection
-  A --> C[Processing Layer]\nExtraction and Classification
-  A --> D[Intelligence Layer]\nNormalization and Ranking
-  A --> E[Delivery Layer]\nSQLite + CSV + Future API + Planned Dashboard
+  A[AXON] --> B[Discovery Layer<br>RSS Discovery and Source Collection]
+  A --> C[Processing Layer<br>Extraction and Classification]
+  A --> D[Intelligence Layer<br>Normalization and Ranking]
+  A --> E[Delivery Layer<br>SQLite + CSV + Future API + Planned Dashboard]
 ```
 
 ## 📂 Project Goals
@@ -246,11 +246,15 @@ pip install -r requirements.txt
 
 ## Initialize database
 
+The engine auto-initializes the canonical production/dev database at `db/runs.sqlite` on first run.
+
+For manual or isolated local/CI testing, use the explicit initializer with a non-canonical target path:
+
 ```bash
-python init_db.py
+python utils/init_db.py db/local.sqlite
 ```
 
-This initializes the canonical database at `db/runs.sqlite`.
+Note: `utils/init_db.py` is guarded against direct initialization of the canonical `db/runs.sqlite`.
 
 ## Daily Resume (PowerShell)
 
@@ -342,8 +346,7 @@ labscraper/
 │   ├── common.py                   # Common helpers (hashing, etc.)
 │   ├── entity_extractor.py         # (legacy) Entity extraction logic
 │   ├── entity_normalizer.py        # (legacy) Variant normalization
-│   ├── init_db.py                  # Legacy utility module (use root init_db.py to initialize db/runs.sqlite)
-│   └── scrape_pdfs_phase1.py       # Base scraper functions
+│   ├── init_db.py                  # Isolated DB initialization (guarded against db/runs.sqlite)│   └── scrape_pdfs_phase1.py       # Base scraper functions
 ├── schema.sql                  # Database schema
 ├── config/                     # Configuration files
 │   ├── domains/               # Domain-specific configurations
@@ -531,7 +534,7 @@ See `README_UI.md` for the current UI/control-panel integration entry points.
 ### Adding New Seed Terms
 ```bash
 # Edit seed files with your preferred editor (example)
-code seeds/assays.json
+code seeds/base/life_sciences/assays.txt
 
 # Validate (prevents crashes from ambiguous abbreviations)
 python utils/lint_seeds.py

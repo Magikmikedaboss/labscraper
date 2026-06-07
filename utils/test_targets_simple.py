@@ -53,7 +53,7 @@ def main():
 
             print("\nTesting extract_all_entities() for targets:")
             for sent in test_sentences:
-                entities = extract_all_entities(sent)
+                entities = extract_all_entities(sent, "test sentence", "methods_tooling")
                 targets = [e for e in entities if e.get('entity_type') == 'target']
                 if targets:
                     print(f"  ✓ '{sent[:50]}...' → {[t['entity_name'] for t in targets]}")

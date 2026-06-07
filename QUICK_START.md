@@ -12,7 +12,7 @@ AXON is a modular research intelligence engine for extracting structured signals
 6. Analyze results or import into dashboards
 
 ## Prerequisites
-- Python 3.10+
+- Python 3.11+
 - Required packages (install with `pip install -r requirements.txt`)
 
 ## Quick Setup

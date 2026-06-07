@@ -49,6 +49,14 @@ def upsert_source(con, source_id: str, pdf_file: str, metadata: Dict):
 
 def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
     """Insert document record"""
+    if sha256:
+        existing = con.execute(
+            "SELECT doc_id FROM documents WHERE sha256 = ? LIMIT 1",
+            (sha256,),
+        ).fetchone()
+        if existing:
+            return existing[0]
+
     doc_id = sha64(f"{source_id}|{file_path}|{sha256}")
     now = datetime.now().isoformat()
     con.execute(
@@ -60,7 +68,7 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
 
 def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
     """Insert chunk record"""
-    chunk_id = sha64(f"{doc_id}|{page_number}|{chunk_text[:200]}")
+    chunk_id = sha64(f"{doc_id}|{page_number}|{chunk_text}")
     now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
@@ -70,7 +78,7 @@ def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_gue
     return chunk_id
 
 def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: int,
-                 domain: str, event_type: str, study_stage: str, biological_system: str | None, application_area: str | None,
+                 domain: str, event_type: str, stage: str, system_context: str | None, application_context: str | None,
                  outcome: str, failure_reason: str, decision_taken: str, decision_driver: str | None,
                  evidence_snippet: str, evidence_strength_v: str, confidence_v: str) -> str:
     """Insert research event record"""
@@ -79,13 +87,13 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
     now = datetime.now().isoformat()
     con.execute(
         """INSERT OR IGNORE INTO research_events(
-             event_id, research_domain, event_type, study_stage, biological_system, application_area,
+             event_id, research_domain, event_type, stage, system_context, application_context,
              outcome, failure_reason, decision_taken, decision_driver,
              evidence_snippet, evidence_strength, confidence,
              source_id, doc_id, chunk_id, page_number, created_at
            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
-            event_id, domain, event_type, study_stage, biological_system, application_area,
+            event_id, domain, event_type, stage, system_context, application_context,
             outcome, failure_reason, decision_taken, decision_driver,
             evidence_snippet[:500], evidence_strength_v, confidence_v,
             source_id, doc_id, chunk_id, page_number, now
@@ -143,6 +151,17 @@ def map_research_domain(meta: dict) -> str:
     return "methods_tooling"
 
 
+def _sha64_file(path: Path, chunk_size: int = 64 * 1024) -> str:
+    hasher = hashlib.sha256()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(chunk_size)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
 
 
 def main(input_dir="input/pdfs", db_path="db.sqlite"):
@@ -158,10 +177,9 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                 meta = extract_metadata(pdf_path)
                 print(f"  Metadata: {meta}")
                 # Upsert source and document
-                file_bytes = pdf_path.read_bytes()
-                source_id = sha64(file_bytes)
+                source_id = _sha64_file(pdf_path)
                 upsert_source(con, source_id, str(pdf_path), meta)
-                file_hash = hashlib.sha256(file_bytes).hexdigest()
+                file_hash = source_id
                 doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                 domain = meta.get("domain") or meta.get("research_domain") or map_research_domain(meta) or "methods_tooling"
                 with pdfplumber.open(pdf_path) as pdf:
@@ -181,7 +199,7 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                             event_type = classify_event_type(sent_l, method_tags, failure_reason, decision_taken)
                             outcome = detect_outcome(sent_l)
                             evidence_strength_v = evidence_strength(sent_l)
-                            study_stage = guess_stage(sent.lower())
+                            stage = guess_stage(sent.lower())
                             confidence = confidence_score(
                                 ConfidenceInput(
                                     has_entity=bool(ents),
@@ -189,7 +207,7 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                                     failure_reason=failure_reason,
                                     decision_taken=decision_taken,
                                     has_measurements=bool(measurements),
-                                    sentence_l=sent
+                                    sentence_l=sent_l
                                 )
                             )
                             # Insert event
@@ -201,9 +219,9 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                                 page_number=page_num,
                                 domain=domain,
                                 event_type=event_type,
-                                study_stage=study_stage,
-                                biological_system=None,
-                                application_area=None,
+                                stage=stage,
+                                system_context=None,
+                                application_context=None,
                                 outcome=outcome,
                                 failure_reason=failure_reason,
                                 decision_taken=decision_taken,
@@ -231,7 +249,10 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                 print(f"❌ Error processing {pdf_path}: {e}")
                 # Optionally record failure status in DB for this source
                 try:
-                    fail_source_id = sha64(pdf_path.read_bytes()) if pdf_path.exists() else sha64(str(pdf_path))
+                    try:
+                        fail_source_id = sha64(pdf_path.read_bytes()) if pdf_path.exists() else sha64(str(pdf_path))
+                    except Exception:
+                        fail_source_id = sha64(str(pdf_path))
                     upsert_source(
                         con,
                         fail_source_id,

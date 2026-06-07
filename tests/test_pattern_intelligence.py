@@ -1,3 +1,5 @@
+import sqlite3
+
 import pytest
 from utils import pattern_intelligence
 
@@ -34,8 +36,7 @@ def test_detect_pattern_type_param(event_count, expected):
         events_data,
         all_entity_counts
     )
-    # If event_count (12) exceeds HIGH_RECURRENCE threshold (10) in detect_pattern_type,
-    # the expected classification is "convergence"; empty events_data and all_entity_counts are valid for this test.
+    # Verify convergence when event_count > HIGH_RECURRENCE.
     assert result == expected
 
 
@@ -85,3 +86,64 @@ def test_generate_interpretation():
         "proteinY", "abandonment", 10, OutcomeSignals(positive=0, neutral=0, negative=2, replication=0)
     )
     assert "declining research attention" in interp
+
+
+def test_analyze_patterns_missing_db_returns_empty(monkeypatch, tmp_path, capsys):
+    missing_db = tmp_path / "missing.sqlite"
+    monkeypatch.setattr(pattern_intelligence, "DB_PATH", missing_db)
+    monkeypatch.setattr(
+        pattern_intelligence,
+        "_get_outcome_signals",
+        lambda: {"positive": [], "neutral": [], "negative": [], "replication": []},
+    )
+
+    results = pattern_intelligence.analyze_patterns(top_n=3)
+    output = capsys.readouterr().out
+
+    assert results == []
+    assert "Database file not found" in output
+
+
+def test_analyze_patterns_and_display_results(monkeypatch, tmp_path, capsys):
+    db_path = tmp_path / "patterns.sqlite"
+    with sqlite3.connect(db_path) as con:
+        con.executescript(
+            """
+            CREATE TABLE entities (entity_id TEXT PRIMARY KEY, entity_name TEXT, entity_type TEXT);
+            CREATE TABLE research_events (event_id TEXT PRIMARY KEY, evidence_snippet TEXT, confidence TEXT);
+            CREATE TABLE event_entities (event_id TEXT, entity_id TEXT);
+            """
+        )
+        con.execute("INSERT INTO entities VALUES (?, ?, ?)", ("e1", "Protein A", "target"))
+        con.execute("INSERT INTO entities VALUES (?, ?, ?)", ("e2", "Protein B", "target"))
+
+        con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev1", "improved and replicated in vivo", "high"))
+        con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev2", "improved outcomes", "med"))
+        con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev3", "failure observed", "low"))
+
+        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("ev1", "e1"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("ev2", "e1"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("ev3", "e2"))
+
+    monkeypatch.setattr(pattern_intelligence, "DB_PATH", db_path)
+    monkeypatch.setattr(
+        pattern_intelligence,
+        "_get_outcome_signals",
+        lambda: {
+            "positive": ["improved"],
+            "neutral": [],
+            "negative": ["failure"],
+            "replication": ["replicated"],
+        },
+    )
+
+    results = pattern_intelligence.analyze_patterns(top_n=2)
+
+    assert len(results) == 2
+    assert results[0].health_score >= results[1].health_score
+    assert {results[0].entity_name, results[1].entity_name} == {"Protein A", "Protein B"}
+
+    pattern_intelligence.display_results(results)
+    output = capsys.readouterr().out
+    assert "PATTERN ANALYSIS RESULTS" in output
+    assert "SUMMARY STATISTICS" in output

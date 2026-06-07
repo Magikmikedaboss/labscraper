@@ -20,6 +20,8 @@ PHYSICS_TERMS = [
     "indoor temperature", "comfort"
 ]
 
+ENERGY_WORD_WINDOW = 7
+
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
@@ -44,11 +46,12 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         "lower heat loss", "lower energy use", "lower energy consumption",
         "improved r-value", "improved r value", "reduced infiltration"
     ])
-    # Flexible positive: 'reduced' within 7 words of 'energy consumption' or 'consumption'
+    # Flexible positive: require reducer + energy phrase (consumption/use/demand) within ENERGY_WORD_WINDOW words.
     flexible_positive = False
-    # Match 'reduced' and 'energy consumption' (or 'consumption') within 7 words, any order, anywhere
-    pattern1 = r"reduc\w*\b(?:\W+\w+){0,7}\W+(energy consumption|consumption)"
-    pattern2 = r"(energy consumption|consumption)\b(?:\W+\w+){0,7}\W+reduc\w*"
+    energy_phrase = r"\benergy\s+(?:consumption|use|demand)\b"
+    between_tokens = rf"(?:\W*\b\w+\b){{0,{ENERGY_WORD_WINDOW}}}\W*"
+    pattern1 = rf"\breduc\w*\b{between_tokens}{energy_phrase}"
+    pattern2 = rf"{energy_phrase}{between_tokens}\breduc\w*\b"
     if re.search(pattern1, s_l) or re.search(pattern2, s_l):
         flexible_positive = True
     neg = contains_any(s_l, ["higher energy", "increased leakage", "worsened", "condensation risk", "mold growth", "mold detected"])

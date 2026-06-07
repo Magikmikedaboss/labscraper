@@ -63,3 +63,22 @@ def test_write_run_meta(tmp_path, monkeypatch):
     # Normalization map is deterministic via monkeypatch.
 
 
+def test_get_overlay_version_branches():
+    class Domain:
+        pass
+
+    assert reporting_utils.get_overlay_version(None) == "v1"
+
+    domain = Domain()
+    domain.overlay_version = "v2"
+    assert reporting_utils.get_overlay_version(domain) == "v2"
+
+    domain = Domain()
+    domain.metadata = {"overlay_version": "v3"}
+    assert reporting_utils.get_overlay_version(domain) == "v3"
+
+    domain = Domain()
+    domain.domain_profile_version = "v4"
+    assert reporting_utils.get_overlay_version(domain) == "v4"
+
+

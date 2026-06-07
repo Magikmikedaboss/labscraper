@@ -48,9 +48,9 @@ CREATE TABLE IF NOT EXISTS research_events (
     event_id TEXT PRIMARY KEY,
     research_domain TEXT,
     event_type TEXT,
-    study_stage TEXT,
-    biological_system TEXT,
-    application_area TEXT,
+    stage TEXT,
+    system_context TEXT,
+    application_context TEXT,
     outcome TEXT,
     failure_reason TEXT,
     decision_taken TEXT,
@@ -70,6 +70,15 @@ CREATE TABLE IF NOT EXISTS event_entities (
     entity_id TEXT,
     role TEXT,
     PRIMARY KEY (event_id, entity_id, role)
+);
+
+CREATE TABLE IF NOT EXISTS entity_relationships (
+    relationship_id TEXT PRIMARY KEY,
+    source_entity_id TEXT NOT NULL,
+    target_entity_id TEXT NOT NULL,
+    relationship_type TEXT NOT NULL,
+    context TEXT,
+    created_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS tags (

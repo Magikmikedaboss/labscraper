@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS sources (
   url TEXT,
   domain TEXT,
   pdf_file TEXT,                         -- local file name
-  imported_at TEXT
+  imported_at TEXT,
+  last_seen_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_sources_year ON sources(year);
@@ -49,10 +50,36 @@ CREATE TABLE IF NOT EXISTS chunks (
   page_number INTEGER,                   -- nullable for HTML
   section_guess TEXT,                    -- Methods / Results / Discussion / etc (optional)
   chunk_text TEXT NOT NULL,
-  created_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (doc_id) REFERENCES documents(doc_id) ON DELETE CASCADE,
   FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE
 );
+
+CREATE TRIGGER IF NOT EXISTS trg_chunks_source_id_consistency_insert
+BEFORE INSERT ON chunks
+FOR EACH ROW
+WHEN EXISTS (
+  SELECT 1
+  FROM documents d
+  WHERE d.doc_id = NEW.doc_id
+    AND d.source_id <> NEW.source_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'chunks.source_id must match documents.source_id for doc_id');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_chunks_source_id_consistency_update
+BEFORE UPDATE OF doc_id, source_id ON chunks
+FOR EACH ROW
+WHEN EXISTS (
+  SELECT 1
+  FROM documents d
+  WHERE d.doc_id = NEW.doc_id
+    AND d.source_id <> NEW.source_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'chunks.source_id must match documents.source_id for doc_id');
+END;
 
 CREATE INDEX IF NOT EXISTS idx_chunks_source ON chunks(source_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_doc ON chunks(doc_id);
@@ -95,9 +122,9 @@ CREATE TABLE IF NOT EXISTS research_events (
                                          -- cost_tradeoff | reproducibility_issue | decision_point | other
 
   -- Context (high value for filtering)
-  study_stage TEXT,                      -- in_silico | in_vitro | ex_vivo | in_vivo | clinical | unknown
-  biological_system TEXT,                -- "human fibroblasts", "mouse model", "serum", "organoid", etc
-  application_area TEXT,                 -- anti-aging, wound healing, regenerative, etc
+  stage TEXT,                            -- in_silico | in_vitro | ex_vivo | in_vivo | clinical | unknown
+  system_context TEXT,                   -- "human fibroblasts", "mouse model", "serum", "organoid", etc
+  application_context TEXT,              -- anti-aging, wound healing, regenerative, etc
 
   -- Outcome + decision intelligence
   outcome TEXT NOT NULL DEFAULT 'unknown',           -- failed | weak | moderate | improved | successful | unknown
@@ -121,6 +148,7 @@ CREATE TABLE IF NOT EXISTS research_events (
   created_at TEXT DEFAULT (datetime('now')),
 
   FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE,
+  -- Keep events for audit/history when document artifacts are removed; null doc/chunk references are expected.
   FOREIGN KEY (doc_id) REFERENCES documents(doc_id) ON DELETE SET NULL,
   FOREIGN KEY (chunk_id) REFERENCES chunks(chunk_id) ON DELETE SET NULL
 );

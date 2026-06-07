@@ -5,21 +5,25 @@ CSV Export v5 - Domain-Aware with Overlay Support
 import sqlite3
 import csv
 import argparse
-from pathlib import Path, PurePath
+import logging
+from pathlib import Path
 from collections import defaultdict
-import os
-import re
 from utils.entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
 from utils.process_words import is_process_word
+from utils.path_validation import validate_domain_id
 
 DB_PATH = Path("db") / "runs.sqlite"
 OUTPUT_DIR = Path("output")
 LATEST_DIR = Path("exports") / "latest"
 ENTITY_VARIANT_DELIM = "|||"
+logger = logging.getLogger(__name__)
 
 
 
 def export_candidates_domain_aware(domain_id: str = None):
+    if domain_id:
+        domain_id = validate_domain_id(domain_id)
+
     norm_map = load_normalization_map()
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
 
@@ -108,7 +112,18 @@ def export_candidates_domain_aware(domain_id: str = None):
             # Domain query uses a custom delimiter to preserve commas in values.
             if evariant:
                 if domain_id:
-                    variants = (s.strip() for s in evariant.split(ENTITY_VARIANT_DELIM) if s.strip())
+                    raw_fragments = evariant.split(ENTITY_VARIANT_DELIM)
+                    trimmed_fragments = [fragment.strip() for fragment in raw_fragments]
+                    has_empty_fragment = any(not fragment for fragment in trimmed_fragments)
+                    rejoined = ENTITY_VARIANT_DELIM.join(trimmed_fragments)
+                    if has_empty_fragment:
+                        logger.warning(
+                            "Malformed entity_variant split for key=%s: original=%r normalized=%r",
+                            key,
+                            evariant,
+                            rejoined,
+                        )
+                    variants = [fragment for fragment in trimmed_fragments if fragment]
                 else:
                     variants = [evariant.strip()]
                 for v in variants:
@@ -122,9 +137,6 @@ def export_candidates_domain_aware(domain_id: str = None):
 
     # Write to exports/latest/<domain>/entities.csv if domain_id is given
     if domain_id:
-        # Sanitize domain_id to prevent path traversal or unsafe values
-        if os.path.isabs(domain_id) or len(PurePath(domain_id).parts) > 1 or '..' in domain_id or not re.match(r'^[A-Za-z0-9_-]+$', domain_id):
-            raise ValueError(f"Invalid domain_id: {domain_id}")
         latest_dir = LATEST_DIR / domain_id
         latest_dir.mkdir(parents=True, exist_ok=True)
         entities_path = latest_dir / "entities.csv"
@@ -132,16 +144,16 @@ def export_candidates_domain_aware(domain_id: str = None):
             writer = csv.writer(f)
             writer.writerow(['entity_name', 'entity_type', 'entity_variant', 'event_count'])
             # Only write rows if there are any entities
-            for (etype, ename), data in canonical_entities.items():
+            for (etype, canonical_name), data in canonical_entities.items():
                 variant_str = ','.join(sorted(data["entity_variant"])) if data["entity_variant"] else ''
                 writer.writerow([
-                    ename,
+                    canonical_name,
                     etype,
                     variant_str,
                     data["event_count"]
                 ])
         print(f"✅ Wrote filtered entities: {entities_path}")
-    print("✅ Exported domain-aware candidates")
+        print("✅ Exported domain-aware candidates")
     return canonical_entities
 
 

@@ -25,7 +25,6 @@ from typing import Any
 import feedparser
 import pdfplumber
 import requests
-from urllib.parse import urlparse
 from utils.common import sha64
 from utils.text_utils import chunk_sentences, guess_stage, guess_section
 from utils.data_extractors import extract_quantitative_data
@@ -130,9 +129,9 @@ def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sen
         page_number=page_number,
         domain=domain,
         event_type=event_type,
-        study_stage=stage,
-        biological_system=None,
-        application_area=None,
+        stage=stage,
+        system_context=None,
+        application_context=None,
         outcome=outcome,
         failure_reason=failure,
         decision_taken=decision,
@@ -149,7 +148,10 @@ def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sen
         _insert_measurement(con, event_id, m)
     return True
 
-DOC_LINK_REGEX = re.compile(r"https?://[^\s<>\"']+\.pdf(?:\?[^\s<>\"']*)?", re.IGNORECASE)
+DOC_LINK_REGEX = re.compile(
+    r"(?:https?://)?[^\s<>\"']+\.pdf(?:\?[^\s<>\"']*)?(?:#[^\s<>\"']*)?",
+    re.IGNORECASE,
+)
 
 # ---------------------------------------------------------
 # PATHS
@@ -159,7 +161,6 @@ FEEDS_CONFIG = PROJECT_ROOT / "config/feeds.json"
 DB_PATH = PROJECT_ROOT / "db/rss.sqlite"
 DATA_ROOT = PROJECT_ROOT / "data"
 RSS_CACHE_DIR = (DATA_ROOT / "cache" / "rss") if DATA_ROOT.exists() else (PROJECT_ROOT / "cache" / "rss")
-SEEDS_DIR = PROJECT_ROOT / "input" / "seeds"  # Add SEEDS_DIR definition for entity extraction consistency
 
 # ---------------------------------------------------------
 # IMPORT PIPELINE
@@ -176,31 +177,13 @@ def ensure_db_schema(db_path: Path):
         raise SystemExit(f"Missing schema file: {schema_path}")
 
     schema_sql = schema_path.read_text(encoding="utf-8")
-    statements = []
-    statement = ""
-    for line in schema_sql.splitlines():
-        # Skip comments
-        if line.strip().startswith("--") or not line.strip():
-            continue
-        statement += line + "\n"
-        if sqlite3.complete_statement(statement):
-            statements.append(statement.strip())
-            statement = ""
-
     with sqlite3.connect(db_path) as con:
         try:
-            con.execute("BEGIN")
-            for sql in statements:
-                try:
-                    con.execute(sql)
-                except sqlite3.Error as e:
-                    con.rollback()
-                    msg = f"[ensure_db_schema] Error in SQL: {sql[:80]}...\nException: {e}"
-                    raise RuntimeError(msg) from e
+            con.executescript(schema_sql)
             con.commit()
-        except Exception:
+        except sqlite3.Error as e:
             con.rollback()
-            raise
+            raise RuntimeError(f"[ensure_db_schema] Error executing schema script: {e}") from e
 
 # ---------------------------------------------------------
 # HELPERS
@@ -266,7 +249,7 @@ def get_pdf_links_from_feed(feed_url: str):
         # Only keep URLs that look like PDFs (accept .pdf in path, even with query strings)
         pdf_urls = [
             url for url in found_urls
-            if DOC_LINK_REGEX.search(url) or urlparse(url).path.lower().endswith(".pdf")
+            if DOC_LINK_REGEX.search(url)
         ]
 
         # If no direct PDF links found, try fetching the HTML page and searching for PDFs
@@ -355,9 +338,8 @@ def is_valid_pdf(path):
     try:
         with open(path, "rb") as f:
             header = f.read(5)
-            if header != b"%PDF-":
-                return False
-        return True
+            is_pdf = header == b"%PDF-"
+        return is_pdf
     except Exception:
         return False
 
@@ -399,7 +381,8 @@ def process_pdf(
                 for chunk in iter(lambda: f.read(1024 * 1024), b""):
                     h.update(chunk)
             file_hash = h.hexdigest()
-            source_id = file_hash[:16]
+            # Use a deterministic hash-derived base id; upsert_source may return a canonical existing id.
+            initial_source_id = file_hash[:16]
             metadata = {
                 "title": source_title or pdf_path.stem,
                 "url": source_url,
@@ -409,7 +392,7 @@ def process_pdf(
                 doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Z0-9<>%+,]+", source_url, re.I)
                 if doi_match:
                     metadata["doi"] = doi_match.group(0).rstrip(".,;:")
-            source_id = upsert_source(con, source_id, str(pdf_path), metadata)
+            source_id = upsert_source(con, initial_source_id, str(pdf_path), metadata)
 
             with pdfplumber.open(str(pdf_path)) as pdf:
                 try:

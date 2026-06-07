@@ -1,5 +1,6 @@
 
 import logging
+import re
 from typing import Optional
 
 # Configurable mapping of high-value entity types by domain
@@ -32,6 +33,10 @@ MODEL_CONTEXT_TERMS = frozenset([
     "environmental exposure", "hazard assessment"
 ])
 
+MODEL_CONTEXT_PATTERN = re.compile(
+    r"\b(?:" + "|".join(re.escape(term) for term in MODEL_CONTEXT_TERMS) + r")\b"
+)
+
 
 def safe_confidence_boost(
     entities_str: str,
@@ -51,7 +56,7 @@ def safe_confidence_boost(
     # ---------------------------------------------------------
     # Normalize confidence
     # ---------------------------------------------------------
-    conf_normalized = (current_conf or "low").lower().strip()
+    raw_conf = (current_conf or "low").strip().lower()
 
     conf_map = {
         "high": "high",
@@ -63,7 +68,7 @@ def safe_confidence_boost(
     }
 
     # Fallback to "low" for unknown values
-    conf_normalized = conf_map.get(conf_normalized, "low")
+    conf_normalized = conf_map.get(raw_conf, "low")
     if conf_normalized == "high":
         return "high"
 
@@ -109,7 +114,7 @@ def safe_confidence_boost(
     # ---------------------------------------------------------
     sentence_lower = sentence_l.lower() if isinstance(sentence_l, str) else ""
 
-    has_model_context = any(term in sentence_lower for term in MODEL_CONTEXT_TERMS)
+    has_model_context = bool(MODEL_CONTEXT_PATTERN.search(sentence_lower))
 
     # ---------------------------------------------------------
     # Confidence logic

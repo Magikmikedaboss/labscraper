@@ -4,6 +4,9 @@ PDF metadata parsing and normalization utilities
 import re
 from typing import Dict, Any, Optional
 
+
+AFFILIATION_KEYWORDS = ["university", "institute", "department", "dept", "school", "hospital", "center", "centre", "faculty", "college", "clinic", "laboratory", "lab", "company", "corporation", "inc", "llc", "ltd", "email", "@", ".edu", ".org", ".com", "http://", "https://"]
+
 def extract_year_from_creation_date(creation_date: str) -> Optional[int]:
     """Extracts year from PDF creation date string."""
     if not creation_date or not isinstance(creation_date, str):
@@ -44,10 +47,9 @@ def parse_first_page_text(text: str, max_header_scan: int = 10) -> Dict[str, Any
     else:
         meta["title"] = None
     # Heuristics for authors
-    affiliation_keywords = ["university", "institute", "department", "dept", "school", "hospital", "center", "centre", "faculty", "college", "clinic", "laboratory", "lab", "company", "corporation", "inc", "llc", "ltd", "email", "@", ".edu", ".org", ".com", "http://", "https://"]
     author_candidate = None
     for line in nonempty[1:max_header_scan]:
-        if any(kw in line.lower() for kw in affiliation_keywords):
+        if any(kw in line.lower() for kw in AFFILIATION_KEYWORDS):
             continue
         if re.search(r"@|http[s]?://|www\.", line):
             continue

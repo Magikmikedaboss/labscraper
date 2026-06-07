@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 One-liner validation for database results
-Usage: python quick_validation.py runs/construction_test_final.sqlite
+Usage: python quick_validation.py db/runs.sqlite
 """
 
 import sqlite3

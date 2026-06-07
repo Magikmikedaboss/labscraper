@@ -34,7 +34,9 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     props = list_hits(s_l, PROPERTIES)
 
 
-    # Signal: materials + property, or strong unit/numeric measurement + property, or test marker (only if mats or props present)
+    # Signal is true when: (1) material/property pair co-occurs, (2) a property is quantified via
+    # has_unit_signal(s_l) or has_number(s_l), or (3) mats/props co-occur with contains_any(s_l, TEST_MARKERS)
+    # to catch test/assay-style lines.
     signal = (
         (bool(mats) and bool(props))
         or (bool(props) and (has_unit_signal(s_l) or has_number(s_l)))
@@ -52,6 +54,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     for p in props[:6]:
         entities.append(make_entity("property", p, "property", "measurement"))
 
+    # Materials outputs follow the shared neutral fallback used by other construction lenses.
     if contains_any(s_l, POSITIVE_COMPARATORS):
         outcome = "improved"
     elif contains_any(s_l, NEGATIVE_COMPARATORS):

@@ -30,6 +30,21 @@ CONSTRUCTION_SYSTEMS = [
 ]
 
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
+    """Detect climate-resilience lens events in construction sentences.
+
+    Outcome assignment taxonomy:
+        - outcome == "degraded": Explicit negative language is present
+            (e.g., "increased risk", "worsened"), signaling clear worsening impact.
+        - outcome == "negative": A hazard is present, but no explicit negative
+            outcome phrase appears; this captures generic hazard mention.
+        - outcome == "improved": Explicit positive language is present
+            (e.g., "mitigated", "improved").
+        - outcome == "neutral": No hazard or resilience signal is present.
+
+    Downstream use: Consumers can distinguish explicit negative impact
+    ("degraded") from generic hazard mention ("negative") for nuanced
+    classification and reporting.
+    """
     s_l = sentence.lower()
     entities: List[dict] = []
 
@@ -46,20 +61,16 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     for r in resil[:4]:
         entities.append(make_entity("resilience_term", r, "concept", "context"))
 
-    # Outcome assignment logic:
-    #   - outcome == "degraded": Explicit negative language is present (e.g., "increased risk", "worsened").
-    #     This means the sentence contains strong signals of climate impact or vulnerability worsening.
-    #   - outcome == "negative": A hazard is present, but there is no explicit negative outcome phrase.
-    #     This means the sentence mentions a hazard but does not use strong language about impact.
-    #   - outcome == "improved": Explicit positive language is present (e.g., "mitigated", "improved").
-    #   - outcome == "neutral": No hazard or resilience signal is present.
-    #
-    # Downstream use: Consumers of the outcome field can distinguish between explicit negative impact ("degraded")
-    # and generic hazard mention ("negative"). This allows for more nuanced event classification and reporting.
+    # Classify outcome from hazard and valence signals.
+    has_negative = contains_any(s_l, ["increased risk", "risk increased", "worsened", "exacerbated", "higher vulnerability"])
+    has_positive = contains_any(s_l, ["reduced", "mitigated", "improved", "enhanced"])
+
     outcome = "neutral"
-    if contains_any(s_l, ["increased risk", "risk increased", "worsened", "exacerbated", "higher vulnerability"]):
+    if has_negative and has_positive:
+        outcome = "mixed_hazard"
+    elif has_negative:
         outcome = "degraded"
-    elif contains_any(s_l, ["reduced", "mitigated", "improved", "enhanced"]):
+    elif has_positive:
         outcome = "improved"
     elif haz:
         outcome = "negative"

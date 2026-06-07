@@ -1,7 +1,5 @@
 [run]
 branch = True
-
-[report]
 omit =
     run_rss_ingest.py
     tools/demo_output.py
@@ -11,8 +9,9 @@ omit =
     utils/show_v4_exports.py
     utils/lint_seeds.py
     utils/overlay_scorer.py
-    utils/integrated_entity_system.py
     utils/verify_setup.py
     */test_*.py
+
+[report]
 show_missing = True
 skip_covered = False

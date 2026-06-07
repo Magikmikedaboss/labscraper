@@ -6,6 +6,7 @@ import sqlite3
 import argparse
 import re
 import logging
+import hashlib
 from pathlib import Path
 import pdfplumber
 from tqdm import tqdm
@@ -42,7 +43,12 @@ from utils.db_utils import (
     upsert_entity
 )
 from utils.deduplication import normalize_event_key
-from utils.common import sha64
+from utils.common import sha64 as _sha64
+
+
+def sha64(s):
+    """Compatibility shim for tests that monkeypatch module-level sha64."""
+    return _sha64(s)
 
 process_logger = logging.getLogger("scrape_pdfs_parallel")
 
@@ -63,6 +69,18 @@ def _has_signal(s_l: str) -> bool:
     )
 
 
+def _sha256_file(path: Path, chunk_size: int = 64 * 1024) -> str:
+    """Hash a file in chunks to avoid loading large PDFs fully into memory."""
+    hasher = hashlib.sha256()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(chunk_size)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
 def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
     """
     Worker: process one PDF end-to-end.
@@ -74,8 +92,9 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
 
     try:
         with _connect(db_path) as con:
-            source_id = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
-            file_hash = sha64(f"{pdf_path.name}|{pdf_path.stat().st_size}|{int(pdf_path.stat().st_mtime)}")
+            digest = _sha256_file(pdf_path)
+            source_id = digest
+            file_hash = digest
 
             # Track number of events inserted; partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
             events_count = 0
@@ -85,7 +104,15 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                 metadata = extract_metadata(pdf_path, pdf)
                 metadata.setdefault("domain", domain)
                 metadata.setdefault("publication_date", metadata.get("year"))
-                source_id = upsert_source(con, source_id, pdf_path.name, metadata)
+                resolved_source_id = upsert_source(con, source_id, pdf_path.name, metadata)
+                if resolved_source_id != source_id:
+                    process_logger.warning(
+                        "Source ID remapped for %s: computed=%s resolved=%s",
+                        pdf_path.name,
+                        source_id,
+                        resolved_source_id,
+                    )
+                source_id = resolved_source_id
                 doc_id = insert_document(con, source_id, str(pdf_path.resolve()), file_hash)
 
                 for page_idx, page in enumerate(pdf.pages, start=1):
@@ -153,9 +180,9 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                                     page_number=page_idx,
                                     domain=domain,
                                     event_type=event_type,
-                                    study_stage=stage,
-                                    biological_system=bio_sys,
-                                    application_area=None,
+                                    stage=stage,
+                                    system_context=bio_sys,
+                                    application_context=None,
                                     outcome=outcome,
                                     failure_reason=failure_reason,
                                     decision_taken=decision_taken,

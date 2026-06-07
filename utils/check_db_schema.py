@@ -14,12 +14,18 @@ def check_db_schema(db_path):
             for col in schema:
                 print(f"  {col[1]} ({col[2]})")
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
+def main(argv=None):
+    args = sys.argv if argv is None else argv
+    if len(args) < 2:
         print("Usage: python check_db_schema.py <database_path>", file=sys.stderr)
-        sys.exit(1)
+        return 1
     try:
-        check_db_schema(sys.argv[1])
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        check_db_schema(args[1])
+    except Exception as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

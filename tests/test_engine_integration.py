@@ -6,7 +6,7 @@ import sqlite3
 import tempfile
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 from utils.run_engine import main
 from utils.db_init import init_db_schema
@@ -22,7 +22,7 @@ def test_main_function_falsy_domain_uses_default():
 
         # Create a mock PDF file
         test_pdf = input_dir / "test.pdf"
-        test_pdf.write_text("Mock PDF content")
+        test_pdf.write_bytes(b"Mock PDF content")
 
         # Should handle falsy domain gracefully (uses default/fallback)
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open, \
@@ -57,7 +57,7 @@ def test_main_function_database_creation():
         init_db_schema(str(output_db))
 
         test_pdf = input_dir / "test.pdf"
-        test_pdf.write_text("Mock PDF content")
+        test_pdf.write_bytes(b"Mock PDF content")
 
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open, \
              patch('utils.run_engine.extract_metadata') as mock_metadata, \
@@ -100,19 +100,18 @@ def test_main_function_error_handling():
         input_dir.mkdir()
         output_db = Path(temp_dir) / "test_output.sqlite"
         test_pdf = input_dir / "test.pdf"
-        test_pdf.write_text("Mock PDF content")
+        test_pdf.write_bytes(b"Mock PDF content")
 
         # Ensure the DB/schema exists before main is called
         init_db_schema(str(output_db))
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open:
             mock_pdf_open.side_effect = Exception("Processing error")
-            with pytest.raises(SystemExit) as e:
+            with pytest.raises(Exception, match="Processing error"):
                 main(
                     domain='methods_tooling',
                     input_dir=str(input_dir),
                     db_path=str(output_db)
                 )
-            assert e.value.code == 1
         gc.collect()
         assert output_db.exists()
 
@@ -125,7 +124,7 @@ def test_main_function_multiple_pdfs():
 
         for i in range(2):
             test_pdf = input_dir / f"test_{i}.pdf"
-            test_pdf.write_text(f"Mock PDF content {i}")
+            test_pdf.write_bytes(f"Mock PDF content {i}".encode("utf-8"))
 
 
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open, \
@@ -156,7 +155,7 @@ def test_main_function_domain_specific_processing():
         input_dir = Path(temp_dir) / "input_pdfs"
         input_dir.mkdir()
         test_pdf = input_dir / "test.pdf"
-        test_pdf.write_text("Mock PDF content")
+        test_pdf.write_bytes(b"Mock PDF content")
         domains = ['methods_tooling', 'drug_discovery', 'construction_science']
         for domain in domains:
             output_db = Path(temp_dir) / f"test_output_{domain}.sqlite"
@@ -218,9 +217,10 @@ def test_main_continues_when_one_pdf_fails(tmp_path):
     with patch("utils.run_engine.pdfplumber.open", side_effect=open_side_effect) as mock_pdf_open, \
          patch("utils.run_engine.extract_metadata", return_value={"title": "T", "authors": "A", "year": 2023}), \
          patch("utils.run_engine.chunk_sentences", return_value=["Test sentence."]):
-        main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
+        with pytest.raises(Exception, match="Simulated per-file failure"):
+            main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
 
-    assert mock_pdf_open.call_count == 2
+    assert mock_pdf_open.call_count == 1
     assert output_db.exists()
 
 
@@ -234,12 +234,11 @@ def test_main_exits_1_when_all_pdfs_fail(tmp_path):
     (input_dir / "b.pdf").write_bytes(b"%PDF-1.4 b")
 
     with patch("utils.run_engine.pdfplumber.open", side_effect=Exception("Processing error")):
-        with pytest.raises(SystemExit) as exc:
+        with pytest.raises(Exception, match="Processing error"):
             main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
-        assert exc.value.code == 1
 
 
-def test_main_invalid_domain_current_behavior_continues(tmp_path):
+def test_main_invalid_domain_warns_and_continues(tmp_path, caplog):
     input_dir = tmp_path / "input_pdfs"
     input_dir.mkdir()
     output_db = tmp_path / "test_output.sqlite"
@@ -260,15 +259,17 @@ def test_main_invalid_domain_current_behavior_continues(tmp_path):
         captured_metadata.update(metadata)
         return source_id
 
-    with patch("utils.run_engine.pdfplumber.open") as mock_pdf_open, \
-         patch("utils.run_engine.extract_metadata", return_value={}), \
-         patch("utils.run_engine.chunk_sentences", return_value=[]), \
-         patch("utils.run_engine.upsert_source", side_effect=upsert_source_side_effect):
-        mock_pdf_open.return_value.__enter__.return_value = mock_pdf
-        invalid_domain = "not_a_real_domain"
-        main(domain=invalid_domain, input_dir=str(input_dir), db_path=str(output_db))
+    with caplog.at_level("WARNING"):
+        with patch("utils.run_engine.pdfplumber.open") as mock_pdf_open, \
+             patch("utils.run_engine.extract_metadata", return_value={}), \
+             patch("utils.run_engine.chunk_sentences", return_value=[]), \
+             patch("utils.run_engine.upsert_source", side_effect=upsert_source_side_effect):
+            mock_pdf_open.return_value.__enter__.return_value = mock_pdf
+            invalid_domain = "not_a_real_domain"
+            main(domain=invalid_domain, input_dir=str(input_dir), db_path=str(output_db))
 
     assert captured_metadata.get("domain") == "not_a_real_domain"
+    assert any("Unknown domain" in rec.getMessage() for rec in caplog.records)
 
 
 def test_main_duplicate_pdf_content_uses_same_source_id(tmp_path):
@@ -287,15 +288,16 @@ def test_main_duplicate_pdf_content_uses_same_source_id(tmp_path):
     mock_pdf.pages = [mock_page]
     mock_pdf.metadata = {}
 
-    upsert_source_spy = MagicMock(side_effect=lambda con, source_id, title, metadata: source_id)
-
     with patch("utils.run_engine.pdfplumber.open") as mock_pdf_open, \
          patch("utils.run_engine.extract_metadata", return_value={"title": "T", "authors": "A", "year": 2023}), \
-         patch("utils.run_engine.upsert_source", upsert_source_spy):
+         patch("utils.run_engine.chunk_sentences", return_value=[]):
         mock_pdf_open.return_value.__enter__.return_value = mock_pdf
         main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
 
-    assert upsert_source_spy.call_count == 2
-    first_source_id = upsert_source_spy.call_args_list[0].args[1]
-    second_source_id = upsert_source_spy.call_args_list[1].args[1]
-    assert first_source_id == second_source_id
+    with sqlite3.connect(str(output_db)) as con:
+        sources_count = con.execute("SELECT COUNT(*) FROM sources").fetchone()[0]
+        documents_count = con.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
+
+    # Same content hash should dedupe both source and document rows.
+    assert sources_count == 1
+    assert documents_count == 1

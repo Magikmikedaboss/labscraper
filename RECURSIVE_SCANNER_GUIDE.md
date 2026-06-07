@@ -63,7 +63,7 @@ python utils/scrape_all_pdfs_recursive.py --root-dirs "D:\neuroscience_pdfs" --d
 ## What Happens When You Run It
 
 ### Step 1: Scanning
-```
+```text
  Scanning for PDFs...
  input_pdfs_test: Found 45 PDFs
  input_pdfs: Found 298 PDFs
@@ -72,7 +72,7 @@ python utils/scrape_all_pdfs_recursive.py --root-dirs "D:\neuroscience_pdfs" --d
 ```
 
 ### Step 2: Folder Breakdown
-```
+```text
  Folder breakdown (15 folders):
    stemcells_v1: 65 PDFs
    neuroscience_v1: 57 PDFs
