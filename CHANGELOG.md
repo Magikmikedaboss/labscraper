@@ -310,7 +310,7 @@ entity_relationships (
 
 4. Export new CSV files:
    ```bash
-   python export_csv.py
+  python export_csv.py --domain construction_science
    ```
 
 **Note**: The new version extracts more data from the same PDFs, so re-running is recommended.

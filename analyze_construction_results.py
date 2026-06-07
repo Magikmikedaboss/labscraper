@@ -78,7 +78,7 @@ def analyze_construction_results():
         cursor.execute('''
         SELECT re.event_type, COUNT(*) as count
         FROM research_events re
-        WHERE re.research_domain = 'construction'
+        WHERE re.research_domain = 'construction_science'
         GROUP BY re.event_type
         ORDER BY count DESC
         ''')

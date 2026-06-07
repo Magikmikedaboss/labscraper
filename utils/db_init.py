@@ -12,7 +12,6 @@ For initializing the main db/runs.sqlite database, always use the canonical root
 import sqlite3
 import logging
 from pathlib import Path
-from contextlib import closing
 
 
 logger = logging.getLogger(__name__)
@@ -60,12 +59,14 @@ def init_db_schema(db_path):
     if db_path_resolved == canonical_path:
         raise ValueError(f"Refusing to initialize canonical persistent DB: {db_path_resolved}")
 
+    db_path_resolved.parent.mkdir(parents=True, exist_ok=True)
+
     if not schema_path.exists():
         raise FileNotFoundError(f"Missing schema.sql at {schema_path}")
 
     schema_sql = schema_path.read_text(encoding='utf-8')
 
-    with closing(sqlite3.connect(db_path_resolved)) as con:
+    with sqlite3.connect(db_path_resolved) as con:
         con.executescript(schema_sql)
         _apply_rename_context_columns_migration_if_needed(con, project_root)
 

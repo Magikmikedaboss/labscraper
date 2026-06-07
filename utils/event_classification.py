@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
-from typing import Any, List, Tuple
+from typing import List
 
 
 METHOD_TAGS = {
@@ -133,11 +133,12 @@ def detect_failure_reason(sentence_l: str) -> str:
     return "unknown"
 
 
-def detect_decision(sentence_l: str) -> Tuple[str, Any]:
+def detect_decision(sentence_l: str) -> str:
+    # Future decision metadata can be added later, but the public API stays single-value for now.
     for decision, phrases in DECISION_PHRASES.items():
         if any(_contains_phrase(sentence_l, p) for p in phrases):
-            return decision, None
-    return "unknown", None
+            return decision
+    return "unknown"
 
 
 def detect_outcome(sentence_l: str) -> str:

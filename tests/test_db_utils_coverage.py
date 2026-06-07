@@ -108,16 +108,16 @@ def test_upsert_source_finds_fuzzy_match_beyond_first_thousand_rows(init_test_sc
         target_title = "x" * 100 + "a"
         fuzzy_title = "x" * 100 + "b"
 
-        rows = [(f"SRC{i}", f"unrelated title {i}") for i in range(1000)]
-        rows.append(("SRC_MATCH", fuzzy_title))
-        conn.executemany("INSERT INTO sources (source_id, title) VALUES (?, ?)", rows)
+        rows = [(f"SRC{i}", f"unrelated title {i}", "Other Author") for i in range(1000)]
+        rows.append(("SRC_MATCH", fuzzy_title, "Shared Author"))
+        conn.executemany("INSERT INTO sources (source_id, title, authors) VALUES (?, ?, ?)", rows)
         conn.commit()
 
         resolved = db_utils.upsert_source(
             conn,
             "NEW_SOURCE",
             "paper.pdf",
-            {"title": target_title},
+            {"title": target_title, "authors": "Shared Author"},
         )
 
         assert resolved == "SRC_MATCH"

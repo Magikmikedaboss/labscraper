@@ -47,7 +47,7 @@ echo "ozempic" >> seeds/compounds.txt
 python scrape_pdfs.py
 
 # Export results
-python export_csv.py
+python export_csv.py --domain peptide
 ```
 
 ### Domain-Specific Profiles (Future)

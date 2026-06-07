@@ -53,6 +53,11 @@ def test_get_seed_files():
     assert prof.get_seed_files() == ["f1.json", "f2.json"]
     prof = make_profile(seed_overlays={})
     assert prof.get_seed_files() == []
+    prof = make_profile(
+        seed_overlays={"include_files": ["f1.json"]},
+        dual_lens={"enabled": True, "overlay_config": {"include_files": ["f2.json", "f1.json"]}},
+    )
+    assert prof.get_seed_files() == ["f1.json", "f2.json"]
 
 def test_load_domain_profile(tmp_path):
     data = {

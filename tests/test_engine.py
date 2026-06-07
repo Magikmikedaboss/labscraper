@@ -2,7 +2,6 @@ import tempfile
 import sqlite3
 from pathlib import Path
 from unittest.mock import patch, Mock
-import gc
 
 from utils.run_engine import main
 
@@ -52,8 +51,5 @@ def test_main_function_database_creation():
             assert 'documents' in tables
         finally:
             conn.close()
-
-        # Run garbage collection after all context managers and connection cleanup
-        gc.collect()
 
 

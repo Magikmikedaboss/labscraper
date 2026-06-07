@@ -1,6 +1,7 @@
 from utils.db_utils import inspect_database
 import utils.db_utils as db_utils
 import sqlite3
+import re
 import pytest
 
 # Test for inspect_database function in utils/db_utils.py
@@ -59,8 +60,10 @@ def test_inspect_database_invalid_db_path_type_raises_type_error():
 def test_inspect_database_handles_many_tables(tmp_path, caplog):
     db_path = tmp_path / "many_tables.sqlite"
     with sqlite3.connect(db_path) as con:
-        for idx in range(60):
-            con.execute(f"CREATE TABLE t_{idx} (id INTEGER)")
+        table_names = [f"t_{idx}" for idx in range(60)]
+        for table_name in table_names:
+            assert re.fullmatch(r"t_\d+", table_name)
+            con.execute(f"CREATE TABLE {table_name} (id INTEGER)")
 
     with caplog.at_level("INFO"):
         result = inspect_database(str(db_path), detailed=False)

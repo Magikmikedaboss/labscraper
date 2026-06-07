@@ -14,5 +14,7 @@ def test_init_test_db_creates_database(tmp_path):
 def test_init_test_db_rejects_canonical_db(tmp_path):
     project_root = Path(__file__).resolve().parents[1]
     canonical = project_root / "db" / "runs.sqlite"
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError) as excinfo:
         init_test_db.init_test_db(str(canonical))
+
+    assert "canonical" in str(excinfo.value).lower()

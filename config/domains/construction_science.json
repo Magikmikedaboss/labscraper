@@ -9,8 +9,8 @@
     "science_research_v1"
   ],
   "seed_overlays": {
-    "include_files": ["construction_materials.json", "construction_building_physics.json", "construction_failure.json"],
-    "prefer_types": ["material", "property", "method", "model", "code_standard", "pathway"]
+    "include_files": ["materials.txt", "properties.txt", "failure_modes.txt"],
+    "prefer_types": ["material", "system", "failure_mode", "environment", "hazard", "test_method", "code", "property"]
   },
   "exclusions": {
     "terms": ["coupon", "buy now", "sale", "discount", "deal", "limited time", "best price", "cheap", "affordable", "budget", "economy", "promotion", "marketing", "advertising", "commercial", "vendor", "supplier", "manufacturer", "distributor", "wholesale", "retail", "store", "shop", "purchase", "order", "shipping", "delivery", "stock", "inventory", "availability", "in stock", "out of stock", "backorder", "preorder", "clearance", "liquidation", "rebate", "refund", "return", "exchange", "warranty", "guarantee", "satisfaction", "money back", "risk free", "no obligation", "free trial", "demo", "sample", "catalog", "brochure", "flyer", "leaflet", "pamphlet", "poster", "banner", "ad", "advertisement", "sales", "selling", "buy", "payment", "proceed to checkout", "complete purchase", "complete order", "place order", "submit order", "confirm_order", "confirm_purchase", "confirm_payment", "confirm_checkout"],
@@ -33,7 +33,7 @@
     "secondary_lens": "biohacking_longevity",
     "overlay_config": {
       "include_files": [],
-      "prefer_types": ["material", "property", "method", "model", "code_standard", "pathway"]
+      "prefer_types": ["material", "system", "failure_mode", "environment", "hazard", "test_method", "code", "property"]
     },
     "scoring": {
       "primary_weight": 0.6,

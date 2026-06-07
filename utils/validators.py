@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import Any, Union, Dict, Optional
 import re
-import copy
 
 
 class ValidationError(Exception):
@@ -51,11 +50,18 @@ def validate_database(path: Union[str, Path], must_exist: bool = False) -> Path:
 
     parent = p.parent
     if not parent.exists():
-        try:
-            parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            raise ValidationError(f"Failed to create database directory '{parent}': {e}") from e
+        raise ValidationError(f"Database directory not found: {parent}")
 
+    return p
+
+
+def ensure_database_dir(path: Union[str, Path]) -> Path:
+    """Create the parent directory for a database path if needed."""
+    p = Path(path)
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        raise ValidationError(f"Failed to create database directory '{p.parent}': {e}") from e
     return p
 
 
@@ -155,7 +161,7 @@ def validate_feed_config(config: Any) -> Dict[str, Any]:
     if not isinstance(feeds, list):
         raise ValidationError("Feed config field 'feeds' must be a list")
 
-    validated_config = copy.deepcopy(config)
+    validated_config = config.copy()
     validated_config["feeds"] = [
         validate_feed_entry(feed, index=i)
         for i, feed in enumerate(feeds, start=1)

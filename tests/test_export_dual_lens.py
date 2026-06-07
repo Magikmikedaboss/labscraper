@@ -1,4 +1,5 @@
 from utils.export import export_dual_lens
+import sqlite3
 
 class DummyScorer:
     def __init__(self, dual=True):
@@ -31,7 +32,7 @@ def test_export_dual_lens_smoke(monkeypatch, tmp_path):
     monkeypatch.setattr(module, "OverlayScorer", lambda config: DummyScorer())
 
     db_path = tmp_path / "runs.sqlite"
-    db_path.write_text("", encoding="utf-8")
+    sqlite3.connect(db_path).close()
 
     class DummySqlite3:
         @staticmethod

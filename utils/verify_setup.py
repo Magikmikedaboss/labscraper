@@ -6,6 +6,8 @@ Run this after installation to ensure everything works.
 import sys
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 def check_python_version():
     """Check if Python version is 3.8+"""
     print("Checking Python version...")
@@ -45,14 +47,13 @@ def check_dependencies():
 def check_files():
     """Check if required files exist"""
     print("\nChecking required files...")
-    project_root = Path(__file__).resolve().parents[1]
     required_files = {
-        project_root / 'schema.sql': 'Database schema',
-        project_root / 'init_db.py': 'Database initialization',
-        project_root / 'utils/scrape_pdfs.py': 'Main scraper',
-        project_root / 'utils/export_csv.py': 'CSV export tool',
-        project_root / 'README.md': 'Documentation',
-        project_root / 'requirements.txt': 'Dependencies list',
+        PROJECT_ROOT / 'schema.sql': 'Database schema',
+        PROJECT_ROOT / 'init_db.py': 'Database initialization',
+        PROJECT_ROOT / 'utils/scrape_pdfs_phase1.py': 'Main scraper',
+        PROJECT_ROOT / 'utils/export_csv.py': 'CSV export tool',
+        PROJECT_ROOT / 'README.md': 'Documentation',
+        PROJECT_ROOT / 'requirements.txt': 'Dependencies list',
     }
     all_ok = True
     for filename, description in required_files.items():
@@ -96,12 +97,7 @@ def check_database():
     
     # Check for domain-specific databases first, then fall back to general
     db_paths = [
-        Path('runs') / 'candidates_primary_neuroscience_cognition.csv',  # Neuroscience cognition
-        Path('runs') / 'candidates_primary_stem_cells_regen.csv',        # Stem cells regeneration
-        Path('runs') / 'candidates_primary_biohacking_longevity.csv',    # Biohacking longevity
-        Path('runs') / 'candidates_primary_construction_science.csv',    # Construction science
-        Path('output') / 'peptide_intel.sqlite',                         # General peptide database
-        Path('runs') / 'peptide_intel.sqlite',                           # Alternative location
+        Path('db') / 'runs.sqlite',                                      # Canonical database
     ]
     
     db_path = None
@@ -147,7 +143,7 @@ def check_database():
                 print("  Database initialized and valid")
                 print(f"     Sources: {sources}, Events: {events}, Entities: {entities}")
             if events == 0:
-                print("     No data yet - run: python utils/scrape_pdfs.py")
+                print("     No data yet - run: python utils/scrape_pdfs_phase1.py")
         elif db_path.suffix == '.csv':            # CSV file (domain-specific export)
             import csv
             with open(db_path, 'r', encoding='utf-8') as f:
@@ -168,7 +164,7 @@ def test_import():
     
     try:
         # Test if we can read the canonical schema at the project root
-        schema_path = (Path(__file__).resolve().parents[1] / "schema.sql").resolve()
+        schema_path = (PROJECT_ROOT / "schema.sql").resolve()
         if schema_path.exists():
             schema = schema_path.read_text()
             if 'CREATE TABLE' in schema:
@@ -206,15 +202,15 @@ def print_summary(results):
         print("\nAll checks passed! You're ready to go!")
         print("\nNext steps:")
         print("  1. Add PDFs to input_pdfs/ folder")
-        print("  2. Run: python utils/init_db.py (if not done)")
-        print("  3. Run: python utils/scrape_pdfs.py")
-        print("  4. Run: python utils/export_csv.py")
+        print("  2. Run: python init_db.py (if not done)")
+        print("  3. Run: python utils/scrape_pdfs_phase1.py")
+        print("  4. Run: python utils/export_csv.py --domain construction_science")
         print("\nSee QUICKSTART.md for detailed instructions.")
     else:
         print("\nSome checks failed. Please fix the issues above.")
         print("\nCommon fixes:")
         print("  - Install dependencies: pip install -r requirements.txt")
-        print("  - Initialize database: python utils/init_db.py")
+        print("  - Initialize database: python init_db.py")
         print("  - Check file permissions")
     print("="*60)
 

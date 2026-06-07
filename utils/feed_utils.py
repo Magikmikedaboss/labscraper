@@ -3,7 +3,7 @@ import re
 import feedparser
 from typing import List, Dict, Optional
 
-PDF_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.pdf(?:\?[^\s<>"\']*)?', re.IGNORECASE)
+PDF_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.pdf(?:\?[^\s<>"\']*)?(?:#[^\s<>"\']*)?', re.IGNORECASE)
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
 def parse_feed(url: str, raise_on_error: bool = False):
@@ -30,10 +30,10 @@ def extract_pdf_links(entry: Dict) -> List[str]:
     for link in entry.get('links', []):
         href = link.get('href', '')
         if href:
-            match = PDF_LINK_REGEX.search(href)
-            if match:
-                pdf_links.append(match.group(0))
-    return list(set(pdf_links))
+            found_list = PDF_LINK_REGEX.findall(href)
+            if found_list:
+                pdf_links.extend(found_list)
+    return list(dict.fromkeys(pdf_links))
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
     """

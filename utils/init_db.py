@@ -7,6 +7,8 @@ Foreign key enforcement:
 """
 
 import sqlite3
+import argparse
+import sys
 from pathlib import Path
 
 
@@ -20,12 +22,12 @@ def get_connection_with_foreign_keys(db_path):
     return con
 
 
-def main(db_path="db.sqlite"):
+def main(db_path="db.sqlite", force=False):
     # Always use the canonical root-level schema.sql
     project_root = Path(__file__).resolve().parents[1]
     canonical_db_path = (project_root / "db" / "runs.sqlite").resolve()
     db_path_resolved = Path(db_path).resolve()
-    if db_path_resolved == canonical_db_path:
+    if not force and db_path_resolved == canonical_db_path:
         raise RuntimeError(f"Refusing to initialize the canonical root DB at {canonical_db_path}. Choose a different path or modify this guardrail if intentional.")
     schema_path = project_root / "schema.sql"
     if not schema_path.exists():
@@ -37,10 +39,12 @@ def main(db_path="db.sqlite"):
     print(f"Initialized database at {db_path_resolved}")
 
 if __name__ == "__main__":
-    import sys
     try:
-        db_path = sys.argv[1] if len(sys.argv) > 1 else "db.sqlite"
-        main(db_path)
+        parser = argparse.ArgumentParser(description="Initialize a SQLite database from schema.sql.")
+        parser.add_argument("db_path", nargs="?", default="db.sqlite", help="Path to the database file to initialize.")
+        parser.add_argument("--force", action="store_true", help="Allow initializing the canonical db/runs.sqlite path.")
+        args = parser.parse_args()
+        main(args.db_path, force=args.force)
     except Exception as e:
         print(f"[init_db.py] Error: {e}", file=sys.stderr)
         sys.exit(1)

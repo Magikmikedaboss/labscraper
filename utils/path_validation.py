@@ -7,8 +7,14 @@ _DOMAIN_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 def validate_domain_id(domain_id: str) -> str:
     """Validate a domain id for safe single-segment path usage."""
-    if not isinstance(domain_id, str) or not domain_id.strip():
+    if not isinstance(domain_id, str):
+        raise TypeError("domain_id must be a string")
+    stripped_domain_id = domain_id.strip()
+    if not stripped_domain_id:
         raise ValueError("domain_id must be a non-empty string")
+    if domain_id != stripped_domain_id:
+        raise ValueError("domain_id must be a non-empty string")
+    domain_id = stripped_domain_id
     if ".." in domain_id:
         raise ValueError("Invalid domain_id: parent path traversal is not allowed")
     if any(sep in domain_id for sep in ("/", "\\")):

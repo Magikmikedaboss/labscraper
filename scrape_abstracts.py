@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils.validators import (
     ValidationError,
+    ensure_database_dir,
     validate_database,
     validate_domain_name,
     validate_feed_config,
@@ -43,7 +44,7 @@ try:
         suggested_keep, normalize_event_key,
         upsert_source, insert_document, insert_chunk, insert_event,
         link_event_entity, link_event_tag, insert_measurement, upsert_entity,
-        sha64,
+        sha256_hex,
         FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS
     )
     print("✅ Successfully imported run_engine functions")
@@ -123,13 +124,14 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
     """Process abstract using the existing engine functions"""
     try:
         # Create stable source ID based on URL
-        source_id = sha64(abstract_url)
-        file_hash = sha64(abstract_url)
+        source_id = sha256_hex(abstract_url)
+        file_hash = sha256_hex(abstract_text)
         
         events_count = 0
         seen_events = set()
         
         with sqlite3.connect(db_path) as con:
+            con.execute("PRAGMA foreign_keys = ON")
             # Extract metadata from URL
             metadata = {
                 "title": f"ASCE Abstract: {abstract_url.split('/')[-1][:50]}",
@@ -139,6 +141,7 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
                 "domain": domain,
                 "publication_date": "2023",
             }
+            decision_driver = metadata.get("decision_driver")
             
             source_id = upsert_source(con, source_id, abstract_url, metadata)
             doc_id = insert_document(con, source_id, abstract_url, file_hash)
@@ -163,7 +166,7 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
                 # Process sentence
                 tags = detect_method_tags(s_l)
                 failure_reason = detect_failure_reason(s_l)
-                decision_taken, decision_driver = detect_decision(s_l)
+                decision_taken = detect_decision(s_l)
                 outcome = detect_outcome(s_l)
                 stage = guess_stage(s_l)
                 event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
@@ -274,7 +277,7 @@ def main():
         sys.exit(1)
 
     # Ensure database directory exists
-    args.db_path.parent.mkdir(parents=True, exist_ok=True)
+    args.db_path = ensure_database_dir(args.db_path)
     
     print("🌐 HYBRID RSS + WEB SCRAPING SYSTEM")
     print("=" * 60)

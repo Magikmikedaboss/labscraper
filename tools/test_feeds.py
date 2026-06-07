@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.feed_utils import probe_feed
-from utils.validators import ValidationError, validate_feed_config, validate_file_path
+from utils.validators import ValidationError, validate_domain_name, validate_feed_config, validate_file_path
 
 # Export default_feeds for import in tests
 default_feeds = [
@@ -36,9 +36,20 @@ def main(argv=None):
         action="store_true",
         help="Save working feeds to <config_stem>_working.json",
     )
+    parser.add_argument(
+        "--default-domain",
+        default=None,
+        help="Fallback domain to use when a feed does not specify one",
+    )
     if argv is None:
         argv = sys.argv[1:]
     args, _ = parser.parse_known_args(argv)
+    if args.default_domain is not None:
+        try:
+            args.default_domain = validate_domain_name(args.default_domain)
+        except ValidationError as e:
+            print(f"⚠️ Invalid --default-domain: {e}")
+            return 1
     config_path = Path(args.config)
     # Default feeds fallback
     feeds = default_feeds
@@ -110,7 +121,7 @@ def main(argv=None):
                 {
                     "name": r["name"],
                     "url": r["url"],
-                    "domain": r.get("domain") or feed_domains.get((r.get("url"), r.get("name"))) or "construction_science",
+                    "domain": r.get("domain") or feed_domains.get((r.get("url"), r.get("name"))) or args.default_domain,
                     "enabled": True,
                 }
                 for r in working

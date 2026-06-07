@@ -10,6 +10,8 @@ import logging
 
 from typing import Dict, Any, Union
 import re
+from pdfminer.pdfparser import PDFException
+from pdfminer.psparser import PSException
 from utils.pdf_metadata_parser import extract_year_from_creation_date, parse_first_page_text
 
 
@@ -61,7 +63,7 @@ def extract_metadata(pdf_path: Union[str, Path], pdf=None) -> Dict[str, Any]:
                 _extract_meta_from_pdf(pdf_obj, meta)
         else:
             _extract_meta_from_pdf(pdf, meta)
-    except Exception as e:  # Broad catch is intentional so a single bad PDF does not stop batch ingestion.
+    except (OSError, PDFException, PSException) as e:
         logging.exception("Error extracting metadata from %s", pdf_path)
         meta["error"] = str(e)
     # Clean up authors (strip whitespace)

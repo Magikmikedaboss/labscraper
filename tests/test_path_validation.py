@@ -14,12 +14,19 @@ def test_validate_domain_id_accepts_safe_value():
         ("some/domain", "path separators"),
         ("some\\domain", "path separators"),
         ("", "non-empty string"),
+        ("   ", "non-empty string"),
+        ("  safe_id  ", "non-empty string"),
         ("domain$name!", "only letters"),
     ],
 )
 def test_validate_domain_id_rejects_unsafe_inputs(domain_id, expected_message):
     with pytest.raises(ValueError, match=expected_message):
         validate_domain_id(domain_id)
+
+
+def test_validate_domain_id_rejects_non_string_input():
+    with pytest.raises(TypeError, match="domain_id must be a string"):
+        validate_domain_id(None)
 
 
 def test_validate_domain_id_rejects_absolute_path():

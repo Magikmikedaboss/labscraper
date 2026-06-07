@@ -32,6 +32,6 @@ def test_load_overlay_aliases_safe_none():
 
 def test_load_overlay_aliases_safe_importerror(monkeypatch):
     import sys
-    monkeypatch.setitem(sys.modules, "utils.entity_normalizer", None)
+    monkeypatch.delitem(sys.modules, "utils.entity_normalizer", raising=False)
     # Should not raise, should return {}
     assert entity_utils.load_overlay_aliases_safe("foo") == {}

@@ -69,17 +69,28 @@ CREATE TABLE IF NOT EXISTS event_entities (
     event_id TEXT,
     entity_id TEXT,
     role TEXT,
-    PRIMARY KEY (event_id, entity_id, role)
+    PRIMARY KEY (event_id, entity_id, role),
+    FOREIGN KEY (event_id) REFERENCES research_events(event_id) ON DELETE CASCADE,
+    FOREIGN KEY (entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS entity_relationships (
+    -- Stores directed relationships between entities via source_entity_id and target_entity_id.
+    -- Typical relationship_type values include parent_of, related_to, and derived_from.
+    -- FOREIGN KEYs use ON DELETE CASCADE, so removing an entity also removes inbound and outbound links and can affect graph integrity.
     relationship_id TEXT PRIMARY KEY,
-    source_entity_id TEXT NOT NULL,
-    target_entity_id TEXT NOT NULL,
+    source_entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE CASCADE,
+    target_entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE CASCADE,
     relationship_type TEXT NOT NULL,
     context TEXT,
     created_at TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_entity_relationships_source
+    ON entity_relationships(source_entity_id);
+
+CREATE INDEX IF NOT EXISTS idx_entity_relationships_target
+    ON entity_relationships(target_entity_id);
 
 CREATE TABLE IF NOT EXISTS tags (
     tag TEXT PRIMARY KEY
@@ -107,6 +118,7 @@ def main():
     db_path.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(str(db_path))
     try:
+        con.execute("PRAGMA foreign_keys = ON")
         con.executescript(SCHEMA)
         con.commit()
         print(f"✅ Initialized schema in {db_path.resolve()}")

@@ -1,6 +1,7 @@
 from pathlib import Path
 import tempfile
 import hashlib
+import logging
 from datetime import datetime, timezone
 from typing import Set, Union
 import warnings
@@ -15,13 +16,17 @@ def _to_bytes(s: Union[str, bytes]) -> bytes:
         return s
     return s.encode("utf-8")
 
-def sha16(s: Union[str, bytes]) -> str:
-    """Return first 16 hex digits of sha256 hash of input."""
+def sha256_short(s: Union[str, bytes]) -> str:
+    """Return the first 16 hex chars of SHA-256.
+
+    This is a 64-bit identifier and is not appropriate for security-sensitive
+    uses because collisions are materially more likely than with a full digest.
+    """
     data = _to_bytes(s)
     return hashlib.sha256(data).hexdigest()[:16]
 
-def sha64(s: Union[str, bytes]) -> str:
-    """Return full sha256 hex digest of input."""
+def sha256_hex(s: Union[str, bytes]) -> str:
+    """Return the full SHA-256 hex digest of input."""
     data = _to_bytes(s)
     return hashlib.sha256(data).hexdigest()
 
@@ -44,20 +49,28 @@ def is_temp_dir(path):
 # PUBLIC API
 # ---------------------------------------------------------
 def get_seeds(SEEDS_DIR=None):
+    empty = {
+        "compounds": set(),
+        "targets": set(),
+        "models": set(),
+        "stopwords": set(),
+    }
+
     if SEEDS_DIR is None and is_temp_dir(Path.cwd()):
-        return set(), set(), set(), set()
+        logging.warning("Skipping seed loading because SEEDS_DIR is None and Path.cwd() is a temp dir: %s", Path.cwd())
+        return empty
 
     resolved_dir = _resolve_seeds_dir(SEEDS_DIR)
 
     if not resolved_dir.exists():
-        return set(), set(), set(), set()
+        return empty
 
-    return (
-        get_compound_seeds(resolved_dir),
-        get_target_seeds(resolved_dir),
-        get_model_seeds(resolved_dir),
-        get_stopword_seeds(resolved_dir),
-    )
+    return {
+        "compounds": get_compound_seeds(resolved_dir),
+        "targets": get_target_seeds(resolved_dir),
+        "models": get_model_seeds(resolved_dir),
+        "stopwords": get_stopword_seeds(resolved_dir),
+    }
 
 
 # ---------------------------------------------------------
@@ -82,7 +95,7 @@ def _resolve_seeds_dir(SEEDS_DIR=None):
             resolved = p2.resolve()
             return _normalize_seeds_root(resolved)
 
-        warnings.warn(f"Provided SEEDS_DIR '{SEEDS_DIR}' not found as absolute or relative path; falling back to auto-discovery.")
+        logging.warning(f"Provided SEEDS_DIR '{SEEDS_DIR}' not found as absolute or relative path; falling back to auto-discovery.")
 
     # Walk up directories to find /seeds
     for parent in [Path.cwd()] + list(Path.cwd().parents):
@@ -97,15 +110,7 @@ def _resolve_seeds_dir(SEEDS_DIR=None):
 # SEED LOADERS
 # ---------------------------------------------------------
 def get_compound_seeds(resolved_dir=None):
-    if resolved_dir is not None:
-        if isinstance(resolved_dir, Path) and resolved_dir.exists():
-            resolved = resolved_dir
-        elif isinstance(resolved_dir, str) and Path(resolved_dir).exists():
-            resolved = Path(resolved_dir)
-        else:
-            resolved = _resolve_seeds_dir(resolved_dir)
-    else:
-        resolved = _resolve_seeds_dir()
+    resolved = _resolve_seeds_dir(resolved_dir)
     return _get_compound_seeds_resolved(str(resolved))
 
 

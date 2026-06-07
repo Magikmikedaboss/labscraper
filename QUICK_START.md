@@ -1,4 +1,4 @@
-﻿﻿# Quick Start Guide
+# Quick Start Guide
 
 ## Overview
 AXON is a modular research intelligence engine for extracting structured signals from PDF documents. It supports multiple research domains and provides parallel processing for optimal performance.

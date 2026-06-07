@@ -280,18 +280,15 @@ class OverlayScorer:
 
 def load_domain_config(domain_id: str) -> Dict[str, Any]:
     """Load domain configuration from JSON file"""
-    # Try config/domains first, then seeds/domains for backward compatibility
-    domain_path = Path("config/domains") / f"{domain_id}.json"
-    
-    if not domain_path.exists():
-        # Fallback to seeds/domains for backward compatibility
-        fallback_path = Path("seeds/domains") / f"{domain_id}.json"
-        if fallback_path.exists():
-            print(f"⚠️  Warning: Falling back to seeds/domains for {domain_id}. Consider moving to config/domains to avoid duplicate configs.")
-            domain_path = fallback_path
-        else:
-            raise FileNotFoundError(f"Domain config not found: {domain_path}")
-    
+    project_root = Path(__file__).resolve().parents[1]
+    domains_dir = (project_root / "config" / "domains").resolve()
+    domain_path = (domains_dir / f"{domain_id}.json").resolve()
+
+    try:
+        domain_path.relative_to(domains_dir)
+    except ValueError as exc:
+        raise ValueError(f"Invalid domain config path: {domain_path}") from exc
+
     if not domain_path.exists():
         raise FileNotFoundError(f"Domain config not found: {domain_path}")
     

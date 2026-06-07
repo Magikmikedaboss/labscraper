@@ -25,12 +25,12 @@ def test_event_classification_basic():
     assert reason in event_classification.FAILURE_PHRASES or reason == "unknown"
     # Decision
     dec = event_classification.detect_decision(s)
-    assert isinstance(dec, tuple)
+    assert isinstance(dec, str)
     # Outcome
     out = event_classification.detect_outcome(s)
     assert isinstance(out, str)
     # Classify
-    etype = event_classification.classify_event_type(s, tags, reason, dec[0])
+    etype = event_classification.classify_event_type(s, tags, reason, dec)
     assert isinstance(etype, str)
     # Evidence strength
     strength = event_classification.evidence_strength(s)
@@ -41,7 +41,7 @@ def test_event_classification_basic():
             has_entity=True,
             method_tags=tags,
             failure_reason=reason,
-            decision_taken=dec[0],
+            decision_taken=dec,
             has_measurements=True,
             sentence_l=s
         )
@@ -66,8 +66,8 @@ def test_entities_extract_compounds_targets(monkeypatch):
 
 def test_common_sha_and_temp():
     s = "test string"
-    assert len(common.sha16(s)) == 16
-    assert len(common.sha64(s)) == 64
+    assert len(common.sha256_short(s)) == 16
+    assert len(common.sha256_hex(s)) == 64
     # is_temp_dir should work for temp and non-temp
     assert isinstance(common.is_temp_dir(tempfile.gettempdir()), bool)
     assert isinstance(common.is_temp_dir("/"), bool)

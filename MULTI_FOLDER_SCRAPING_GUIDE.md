@@ -145,13 +145,13 @@ Contains:
 
 ## Current Status
 
-###  Folder 1: IN PROGRESS
+### Folder 1: IN PROGRESS
 - Processing: 1/65 PDFs (2%)
 - Time per PDF: ~18 seconds
 - Estimated completion: ~20-30 minutes
 
 
-###  Folder 2: WAITING
+### Folder 2: WAITING
 
 - Processing: 0 / N PDFs (waiting for Folder 1 to finish)
 - Time per PDF: N/A (queue is paused)

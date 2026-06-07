@@ -82,3 +82,21 @@ def test_get_overlay_version_branches():
     assert reporting_utils.get_overlay_version(domain) == "v4"
 
 
+def test_get_overlay_version_precedence():
+    class Domain:
+        pass
+
+    domain = Domain()
+    domain.overlay_version = "overlay-v2"
+    domain.metadata = {"overlay_version": "metadata-v3"}
+    domain.domain_profile_version = "profile-v4"
+
+    assert reporting_utils.get_overlay_version(domain) == "overlay-v2"
+
+    del domain.overlay_version
+    assert reporting_utils.get_overlay_version(domain) == "metadata-v3"
+
+    domain.metadata = {}
+    assert reporting_utils.get_overlay_version(domain) == "profile-v4"
+
+

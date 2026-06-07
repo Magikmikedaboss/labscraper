@@ -24,6 +24,7 @@ class DomainProfile:
         claims_mode: Always "observational_only" for Axon Labs
         domain_profile_version: Version for reproducibility
         seed_overlays: Seed file preferences for this domain
+        overlays: Overlay identifiers and lens rules for this domain
         exclusions: Terms and document types to exclude
         pattern_emphasis: Soft multipliers for pattern scores
         language: Dict with keys:
@@ -40,6 +41,8 @@ class DomainProfile:
     exclusions: Dict[str, Any]
     pattern_emphasis: Dict[str, float]
     language: Dict[str, List[str]]
+    overlays: List[str] = field(default_factory=list)
+    dual_lens: Dict[str, Any] = field(default_factory=dict)
     output_allowed_phrases: List[str] = field(default_factory=list)
 
     def get_output_allowed_phrases(self) -> List[str]:
@@ -138,7 +141,14 @@ class DomainProfile:
         Returns:
             List of seed file names
         """
-        return self.seed_overlays.get("include_files", [])
+        files = list(self.seed_overlays.get("include_files", []))
+        dual_lens = self.dual_lens if isinstance(self.dual_lens, dict) else {}
+        overlay_config = dual_lens.get("overlay_config", {}) if dual_lens.get("enabled") else {}
+        if isinstance(overlay_config, dict):
+            for include_file in overlay_config.get("include_files", []):
+                if include_file not in files:
+                    files.append(include_file)
+        return files
 
 
 def load_domain_profile(path: str) -> DomainProfile:
@@ -172,9 +182,11 @@ def load_domain_profile(path: str) -> DomainProfile:
         claims_mode=data.get("claims_mode", "observational_only"),
         domain_profile_version=data.get("domain_profile_version", "v1"),
         seed_overlays=data.get("seed_overlays", {}),
+        overlays=data.get("overlays", []),
         exclusions=data.get("exclusions", {}),
         pattern_emphasis=data.get("pattern_emphasis", {}),
         language=data.get("language", {"allowed": [], "forbidden": []}),
+        dual_lens=data.get("dual_lens", {}),
         output_allowed_phrases=data.get("output_allowed_phrases", []),
     )
 
@@ -216,8 +228,7 @@ def get_domain_by_id(domain_id: str, domains_dir: str = "config/domains") -> Opt
     """
     Get a specific domain profile by ID.
 
-    Canonical location is `config/domains` (default). Also supports legacy `seeds/domains` for backward compatibility.
-    The search order is: domains_dir (default: config/domains), then 'config/domains', then 'seeds/domains'.
+    Canonical location is `config/domains` (default).
     """
     if not domain_id or not isinstance(domain_id, str):
         return None
@@ -227,7 +238,7 @@ def get_domain_by_id(domain_id: str, domains_dir: str = "config/domains") -> Opt
 
     safe_filename = os.path.basename(f"{domain_id}.json")
     search_dirs = []
-    for candidate_dir in [domains_dir, "config/domains", "seeds/domains"]:
+    for candidate_dir in [domains_dir, "config/domains"]:
         if candidate_dir and candidate_dir not in search_dirs:
             search_dirs.append(candidate_dir)
 
@@ -237,7 +248,7 @@ def get_domain_by_id(domain_id: str, domains_dir: str = "config/domains") -> Opt
         try:
             resolved_path = os.path.realpath(path)
             resolved_domains_dir = os.path.realpath(base_dir)
-            if not resolved_path.startswith(resolved_domains_dir + os.sep) and resolved_path != resolved_domains_dir:
+            if not resolved_path.startswith(resolved_domains_dir + os.sep):
                 continue
         except (OSError, ValueError):
             continue

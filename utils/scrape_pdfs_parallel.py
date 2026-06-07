@@ -43,7 +43,7 @@ from utils.db_utils import (
     upsert_entity
 )
 from utils.deduplication import normalize_event_key
-from utils.common import sha64 as _sha64
+from utils.common import sha256_hex as _sha64
 
 
 def sha64(s):
@@ -55,6 +55,7 @@ process_logger = logging.getLogger("scrape_pdfs_parallel")
 def _connect(db_path: Path) -> sqlite3.Connection:
     """Create a sqlite connection configured for concurrent writes."""
     con = sqlite3.connect(str(db_path), timeout=30.0)
+    con.execute("PRAGMA foreign_keys = ON;")
     con.execute("PRAGMA journal_mode=WAL;")
     con.execute("PRAGMA synchronous=NORMAL;")
     con.execute("PRAGMA busy_timeout=30000;")
@@ -131,7 +132,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
 
                         tags = detect_method_tags(s_l)
                         failure_reason = detect_failure_reason(s_l)
-                        decision_taken, decision_driver = detect_decision(s_l)
+                        decision_taken = detect_decision(s_l)
                         outcome = detect_outcome(s_l)
                         stage = guess_stage(s_l)
                         event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
@@ -186,13 +187,15 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                                     outcome=outcome,
                                     failure_reason=failure_reason,
                                     decision_taken=decision_taken,
-                                    decision_driver=decision_driver,
+                                    decision_driver=None,
                                     evidence_snippet=sent,
                                     evidence_strength_v=strength,
                                     confidence_v=conf,
                                 )
                                 break
-                            except sqlite3.OperationalError as e:
+                            except sqlite3.IntegrityError:
+                                raise
+                            except sqlite3.Error as e:
                                 last_exc = e
                                 sleep_time = base_sleep * (2 ** attempt)
                                 sleep_time += random.uniform(0, 0.05)

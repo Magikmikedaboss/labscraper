@@ -17,6 +17,7 @@ Scoring and confidence logic for export pipeline
 # Confidence normalization for system boundaries
 def normalize_confidence(conf: str) -> str:
     """Normalize confidence to 'low', 'med', or 'high'. Unknowns become 'low'."""
+    conf = conf.lower()
     if conf not in {"low", "med", "high"}:
         return "low"
     return conf
@@ -87,8 +88,16 @@ def safe_confidence_boost(
     for e in raw_entities:
         if ":" in e:
             etype, ename = e.split(":", 1)
-            entity_types.add(etype.lower().strip())
-            entity_names_lower.add(ename.lower().strip())
+            etype = etype.lower().strip()
+            ename = ename.lower().strip()
+            if not etype or not ename:
+                logging.warning(
+                    "Malformed entity entry with empty type or name: '%s' in entities_str='%s'",
+                    e, entities_str
+                )
+                continue
+            entity_types.add(etype)
+            entity_names_lower.add(ename)
         else:
             logging.warning(
                 "Malformed entity entry (missing ':'): '%s' in entities_str='%s'",

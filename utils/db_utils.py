@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from utils.common import now_iso, sha64
+from utils.common import now_iso, sha256_hex
 
 
 def _quote_sql_identifier(identifier: str) -> str:
@@ -356,12 +356,45 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
         """,
         (f"{title_prefix}%", title_length, title_length),
     ).fetchall()
+
+    def _split_authors(value) -> set[str]:
+        if not value:
+            return set()
+        if isinstance(value, (list, tuple, set)):
+            parts = value
+        else:
+            text = str(value)
+            text = text.replace(" and ", ",")
+            text = text.replace(" & ", ",")
+            parts = text.split(",")
+        return {
+            str(part).strip().lower()
+            for part in parts
+            if str(part).strip()
+        }
+
+    metadata_authors = _split_authors(metadata.get("authors"))
     for candidate_id, candidate_title in candidates:
         if not candidate_title:
             continue
         score = SequenceMatcher(None, title, _normalize_text(candidate_title)).ratio()
         if score >= 0.97:
-            return candidate_id
+            candidate_authors = con.execute(
+                "SELECT authors FROM sources WHERE source_id = ? LIMIT 1",
+                (candidate_id,),
+            ).fetchone()
+            candidate_authors = candidate_authors[0] if candidate_authors else None
+            candidate_author_set = _split_authors(candidate_authors)
+            author_overlap = bool(metadata_authors and candidate_author_set and metadata_authors.intersection(candidate_author_set))
+            logger.warning(
+                "Potential fuzzy source dedupe candidate: source_id=%s candidate_title=%r score=%.3f input_title=%r",
+                candidate_id,
+                candidate_title,
+                score,
+                metadata.get("title"),
+            )
+            if author_overlap:
+                return candidate_id
 
     return source_id
 
@@ -444,7 +477,7 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
         if existing:
             return existing[0]
 
-    doc_id = sha64(sha256 or f"{source_id}|{file_path}")
+    doc_id = sha256_hex(sha256 or f"{source_id}|{file_path}")
     con.execute(
         """INSERT OR IGNORE INTO documents(doc_id, source_id, file_path, file_type, sha256, created_at)
            VALUES (?,?,?,?,?,?)""",
@@ -454,7 +487,7 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
 
 def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
     # Use full chunk text to avoid collisions from identical prefixes.
-    chunk_id = sha64(f"{doc_id}|{page_number}|{chunk_text}")
+    chunk_id = sha256_hex(f"{doc_id}|{page_number}|{chunk_text}")
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
            VALUES (?,?,?,?,?,?,?)""",
@@ -467,7 +500,7 @@ def upsert_tag(con, tag: str) -> str:
 
 def upsert_entity(con, entity_type: str, entity_name: str, entity_variant: Optional[str], organism: Optional[str]) -> str:
     key = f"{entity_type}|{entity_name}|{entity_variant or ''}|{organism or ''}"
-    entity_id = sha64(key)
+    entity_id = sha256_hex(key)
     con.execute(
         """INSERT OR IGNORE INTO entities(entity_id, entity_type, entity_name, entity_variant, organism, created_at)
            VALUES (?,?,?,?,?,?)""",
@@ -496,7 +529,7 @@ def insert_event(
     confidence_v: str,
 ) -> str:
     base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
-    event_id = sha64(base)
+    event_id = sha256_hex(base)
     con.execute(
         """INSERT OR IGNORE INTO research_events(
              event_id, research_domain, event_type, stage, system_context, application_context,
@@ -529,7 +562,7 @@ def insert_measurement(con, event_id: str, measurement: dict):
     # measurement_type, value, and unit are required for a valid measurement
     if mtype is None or value is None or unit is None:
         raise ValueError(f"Missing required measurement fields: measurement_type={mtype}, value={value}, unit={unit}")
-    measurement_id = sha64(f"{event_id}|{mtype}|{value}|{unit}")
+    measurement_id = sha256_hex(f"{event_id}|{mtype}|{value}|{unit}")
     con.execute(
         """INSERT OR IGNORE INTO quantitative_measurements(
              measurement_id, event_id, measurement_type, value, unit, context, created_at
@@ -539,7 +572,7 @@ def insert_measurement(con, event_id: str, measurement: dict):
 
 def insert_relationship(con, entity_id_1: str, entity_id_2: str, relationship_type: str):
     """Insert entity relationship (matches entity_relationships schema)"""
-    relationship_id = sha64(f"{entity_id_1}|{entity_id_2}|{relationship_type}")
+    relationship_id = sha256_hex(f"{entity_id_1}|{entity_id_2}|{relationship_type}")
     con.execute(
         """INSERT OR IGNORE INTO entity_relationships(
              relationship_id, source_entity_id, target_entity_id, relationship_type, created_at

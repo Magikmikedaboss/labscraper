@@ -40,7 +40,7 @@ def export_events():
                 re.event_id,
                 re.research_domain,
                 re.event_type,
-                re.stage AS study_stage,
+                re.stage,
                 re.outcome,
                 re.decision_driver,
                 re.evidence_snippet,
@@ -69,7 +69,7 @@ def export_events():
         for event in events:
             writer.writerow([
                 event['event_id'], event['research_domain'], event['event_type'], 
-                event['study_stage'], event['outcome'], event['decision_driver'],
+                event['stage'], event['outcome'], event['decision_driver'],
                 event['evidence_snippet'], event['confidence'], event['entities'],
                 event['source_id'], event['created_at']
             ])

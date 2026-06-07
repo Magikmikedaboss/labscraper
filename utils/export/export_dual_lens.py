@@ -5,7 +5,10 @@ Applies overlay scoring to existing extraction results and exports
 with dual perspectives.
 """
 
+import logging
+import os
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 from utils.export.filters import should_skip_entity, should_suppress_entity_for_csv
@@ -36,20 +39,33 @@ from utils.entity_normalizer import (
 from utils.axon_domains import load_all_domains
 
 
-VALID_DOMAIN_IDS = frozenset(
-    load_all_domains(str(Path(__file__).resolve().parents[2] / "config" / "domains")).keys()
-)
+logger = logging.getLogger(__name__)
 
 
-def _is_special_db_identifier(db_path: str) -> bool:
-    return db_path == ":memory:" or db_path.startswith(("file:", "sqlite://"))
+@lru_cache(maxsize=1)
+def _get_valid_domain_ids() -> frozenset[str]:
+    domains_dir = Path(__file__).resolve().parents[2] / "config" / "domains"
+    if not domains_dir.exists() or not domains_dir.is_dir():
+        logger.warning("Domain profiles directory missing: %s", domains_dir)
+        return frozenset()
+    try:
+        domains = load_all_domains(str(domains_dir))
+    except Exception as exc:
+        logger.error("Failed to load domain profiles from %s: %s", domains_dir, exc)
+        raise RuntimeError(f"Failed to load domain profiles from {domains_dir}") from exc
+    return frozenset(domains.keys())
+
+def _is_special_db_identifier(db_path) -> bool:
+    db_path_str = os.fspath(db_path)
+    return db_path_str == ":memory:" or db_path_str.startswith(("file:", "sqlite://"))
 
 
 def _validate_known_domain_id(domain_id: str) -> str:
     safe_domain_id = validate_domain_id(domain_id)
-    if safe_domain_id not in VALID_DOMAIN_IDS:
+    valid_domain_ids = _get_valid_domain_ids()
+    if safe_domain_id not in valid_domain_ids:
         raise ValueError(
-            f"Invalid domain_id: {safe_domain_id}. Valid domains: {', '.join(sorted(VALID_DOMAIN_IDS))}"
+            f"Invalid domain_id: {safe_domain_id}. Valid domains: {', '.join(sorted(valid_domain_ids))}"
         )
     return safe_domain_id
 
@@ -59,15 +75,16 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
     print("=" * 70)
 
     domain_id = _validate_known_domain_id(domain_id)
+    db_path = os.fspath(db_path)
 
-    db_path_obj = Path(db_path)
-    if not db_path_obj.exists() or not db_path_obj.is_file():
-        if _is_special_db_identifier(db_path):
-            pass
-        else:
+    if _is_special_db_identifier(db_path):
+        db_path_obj = None
+    else:
+        db_path_obj = Path(db_path)
+        if not db_path_obj.exists() or not db_path_obj.is_file():
             raise FileNotFoundError(f"Database file not found on disk: {db_path_obj}")
+        db_path = str(db_path_obj)
 
-    db_path = str(db_path_obj)
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -193,7 +210,7 @@ if __name__ == "__main__":
         domain_id = _validate_known_domain_id(domain_id)
     except ValueError:
         print(f"❌ Invalid domain_id: {domain_id}")
-        print(f"Valid domains: {', '.join(sorted(VALID_DOMAIN_IDS))}")
+        print(f"Valid domains: {', '.join(sorted(_get_valid_domain_ids()))}")
         sys.exit(1)
 
 

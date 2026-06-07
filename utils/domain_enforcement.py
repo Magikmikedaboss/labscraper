@@ -16,20 +16,28 @@ ALLOWED_ENTITY_TYPES_BY_DOMAIN = {
         "property", "properties"
     },
     "biohacking_longevity": {
-        "peptide", "compound", "target", "pathway", "indication", 
-        "model", "stem_cell", "neural_cell", "assay"
+        "peptide", "compound", "target", "pathway", "indication",
+        "model", "stem_cell", "neural_cell", "assay", "biomarker"
+    },
+    "neuroscience_cognition": {
+        "peptide", "compound", "target", "pathway", "indication",
+        "model", "stem_cell", "neural_cell", "assay", "biomarker"
     },
     "neuroscience": {
         "peptide", "compound", "target", "pathway", "indication",
-        "model", "stem_cell", "neural_cell", "assay"
+        "model", "stem_cell", "neural_cell", "assay", "biomarker"
+    },
+    "stem_cells_regen": {
+        "peptide", "compound", "target", "pathway", "indication",
+        "model", "stem_cell", "neural_cell", "assay", "biomarker"
     },
     "drug_discovery": {
         "peptide", "compound", "target", "pathway", "indication",
-        "model", "stem_cell", "neural_cell", "assay"
+        "model", "stem_cell", "neural_cell", "assay", "biomarker"
     },
     "methods_tooling": {
         "peptide", "compound", "target", "pathway", "indication",
-        "model", "stem_cell", "neural_cell", "assay"
+        "model", "stem_cell", "neural_cell", "assay", "biomarker"
     }
 }
 
@@ -92,7 +100,7 @@ def get_contaminated_entity_types(domain):
     
     all_possible_types = {
         "peptide", "compound", "target", "pathway", "indication",
-        "model", "stem_cell", "neural_cell", "assay",
+        "model", "stem_cell", "neural_cell", "assay", "biomarker",
         "material", "materials", "system", "systems",
         "failure_mode", "failure_modes", "environment", "environments",
         "hazard", "hazards", "test_method", "test_methods",

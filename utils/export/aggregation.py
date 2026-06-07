@@ -7,8 +7,8 @@ from typing import Any, Mapping, Sequence, Tuple
 
 logger = logging.getLogger(__name__)
 
-SCORE_SCALE_FACTOR = 2  # Each event contributes 2 points to the max score (tune for sensitivity)
-MIN_SCORE_THRESHOLD = 10  # Minimum score threshold to avoid overly low max scores for rare entities
+SCORE_SCALE_FACTOR = 2  # SCORE_SCALE_FACTOR is set to 2 so each event adds roughly 2 scoring points, which keeps score growth sensitive without overreacting to noise.
+MIN_SCORE_THRESHOLD = 10  # MIN_SCORE_THRESHOLD is set to 10 to avoid very low max scores for rare entities and to compress low-frequency buckets less aggressively.
 
 RowLike = Mapping[str, Any]
 RowSeq = Sequence[RowLike]
@@ -123,7 +123,9 @@ def build_entity_scores(
     entity_scores = {}
 
     for entity in entities:
-        if not isinstance(entity, dict):
+        if isinstance(entity, sqlite3.Row):
+            entity = dict(entity)
+        elif not isinstance(entity, dict):
             logger.warning("Skipping malformed entity (not a dict): %r", entity)
             continue
 
@@ -152,8 +154,9 @@ def build_entity_scores(
                 entity_models=models_list,
             )
 
-            # Scale max_score by event count, but enforce a minimum threshold for rare entities.
-            max_score = max(len(event_ids) * SCORE_SCALE_FACTOR, MIN_SCORE_THRESHOLD)
+            # Scale max_score by event count, cap extreme values, and enforce a minimum threshold for rare entities.
+            capped_score = min(len(event_ids) * SCORE_SCALE_FACTOR, 10000)
+            max_score = max(capped_score, MIN_SCORE_THRESHOLD)
             bucket = scorer.bucket_score(final_score, max_score)
 
             entity_scores[entity_id][overlay_id] = {

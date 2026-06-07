@@ -22,7 +22,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements-lock.txt
-        pip install ruff bandit safety==3.*
+        pip install ruff bandit safety==3.8.1
     
     - name: Lint with ruff
       run: ruff check .
@@ -30,16 +30,18 @@ jobs:
     - name: Security check
       run: |
         set +e
-        bandit -l -f json -o bandit-report.json -x "utils/test_*.py,tools/demo_*.py,utils/reporting_utils.py,utils/run_multi_folder_scrape.py,utils/export/reporting.py,utils/scrape_pdfs_parallel.py" $(find utils tools -name '*.py' -print)
+        bandit -l -f json -o bandit-report.json $(find utils tools -name '*.py' -print | grep -vE '^(utils/test_|tools/demo_|utils/reporting_utils\.py|utils/run_multi_folder_scrape\.py|utils/export/reporting\.py|utils/scrape_pdfs_parallel\.py)')
         bandit_exit=$?
-        safety check -r requirements-lock.txt --json > safety-report.json
+        safety check --json -r requirements.txt -r requirements-lock.txt -r requirements_ui.txt > safety-report.json 2> safety-report.stderr
         safety_exit=$?
         set -e
         if [ $bandit_exit -ne 0 ]; then
           echo "::warning file=bandit-report.json::Bandit found security issues. See bandit-report.json."
+          python .github/scripts/summarize_security_report.py bandit-report.json bandit
         fi
         if [ $safety_exit -ne 0 ]; then
           echo "::warning file=safety-report.json::Safety found insecure packages. See safety-report.json."
+          python .github/scripts/summarize_security_report.py safety-report.json safety
         fi
         if [ $bandit_exit -ne 0 ] || [ $safety_exit -ne 0 ]; then
           exit 1
@@ -52,6 +54,7 @@ jobs:
         path: |
           bandit-report.json
           safety-report.json    
+          safety-report.stderr
     
     - name: Run tests and check coverage
       run: |

@@ -1,8 +1,12 @@
 """
 Initialize a test SQLite database with all required tables for CI and local testing.
 """
+import logging
 import sqlite3
 from pathlib import Path
+
+
+logger = logging.getLogger(__name__)
 
 def init_test_db(db_path="test.db"):
     """Initialize schema at ``db_path`` for test use.
@@ -27,7 +31,8 @@ def init_test_db(db_path="test.db"):
     with sqlite3.connect(str(target_db)) as con:
         con.execute("PRAGMA foreign_keys = ON")
         con.executescript(schema_sql)
-    print(f"Initialized test DB at {target_db}")
+    logger.info(f"Initialized test DB at {target_db}")
+    return target_db
 
 if __name__ == "__main__":
     import sys

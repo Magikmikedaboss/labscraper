@@ -1,4 +1,4 @@
-import re
+import regex as re
 from utils.common import get_compound_seeds, get_target_seeds, get_model_seeds
 
 
@@ -31,6 +31,41 @@ NEURAL_CELL_KEYWORDS = [
     "microglial",
 ]
 
+PEPTIDE_DENYLIST = {
+    "CANADIAN",
+    "CLIMATE",
+    "PREFACE",
+    "PRINCIPAL",
+    "SERVICE",
+    "PACIFIC",
+}
+
+TARGET_CONTEXT_TERMS = (
+    "protein",
+    "gene",
+    "receptor",
+    "kinase",
+    "phosphorylation",
+    "expression",
+    "signaling",
+    "pathway",
+    "assay",
+    "cell",
+    "cells",
+    "compound",
+    "treatment",
+    "inhibitor",
+    "inhibition",
+    "mutation",
+    "disease",
+    "binding",
+)
+
+
+def _has_target_context(sentence: str) -> bool:
+    sentence_l = sentence.lower()
+    return any(term in sentence_l for term in TARGET_CONTEXT_TERMS)
+
 
 # ---------------------------------------------------------
 # COMPOUNDS
@@ -38,7 +73,7 @@ NEURAL_CELL_KEYWORDS = [
 def extract_compounds(sentence: str, SEEDS_DIR=None) -> list[dict]:
     compounds = []
     for compound in get_compound_seeds(SEEDS_DIR):
-        if re.search(r'\b' + re.escape(compound) + r'\b', sentence, re.IGNORECASE):
+        if re.search(r'(?<![\p{L}\p{N}])' + re.escape(compound) + r'(?![\p{L}\p{N}])', sentence, re.IGNORECASE):
             compounds.append({
                 "entity_type": "compound",
                 "entity_name": compound.upper(),
@@ -51,8 +86,11 @@ def extract_compounds(sentence: str, SEEDS_DIR=None) -> list[dict]:
 
 def extract_targets(sentence: str, SEEDS_DIR=None) -> list[dict]:
     targets = []
+    has_target_context = _has_target_context(sentence)
     for target in get_target_seeds(SEEDS_DIR):
-        if re.search(r'\b' + re.escape(target) + r'\b', sentence, re.IGNORECASE):
+        if len(target) <= 3 and not has_target_context:
+            continue
+        if re.search(r'(?<![\p{L}\p{N}])' + re.escape(target) + r'(?![\p{L}\p{N}])', sentence, re.IGNORECASE):
             targets.append({
                 "entity_type": "target",
                 "entity_name": target.upper(),
@@ -120,6 +158,8 @@ def extract_presented_sequences(sentence: str) -> list:
 def is_probable_peptide(seq: str, sentence: str) -> bool:
     aa_set = set("ACDEFGHIKLMNPQRSTVWY")
     seq = seq.strip().upper()
+    if seq in PEPTIDE_DENYLIST:
+        return False
     # Accept only if fullmatch of AA codes and length >=7
     if re.fullmatch(r'[ACDEFGHIKLMNPQRSTVWY]{7,}', seq):
         return True
@@ -204,6 +244,8 @@ def extract_construction_entities(sentence: str, extracted_names: set, SEEDS_DIR
 
     # Add all other entities, allow partial matches and include generic terms if paired with descriptors
     generic_skip = {"failure", "thermal", "stress"}
+    has_generic = any(re.search(r'\b' + re.escape(g) + r'\b', s_l) for g in generic_skip)
+    has_failure_context = any(re.search(r'\b' + re.escape(x) + r'\b', s_l) for x in ["crack", "fracture", "collapse", "spalling"])
     for group, entity_type in groups:
         for item in group:
             item_l = item.lower()
@@ -215,7 +257,7 @@ def extract_construction_entities(sentence: str, extracted_names: set, SEEDS_DIR
             # Only allow multi-word partial matches for true multi-token phrases and enforce minimum phrase length
             if phrase_match or (len(tokens) > 1 and len(item_l) > 4 and token_matches):
                 # Allow generic terms if a specific failure was found in the sentence
-                allow_generic = any(re.search(r'\b' + re.escape(g) + r'\b', s_l) for g in generic_skip) and any(re.search(r'\b' + re.escape(x) + r'\b', s_l) for x in ["crack", "fracture", "collapse", "spalling"])
+                allow_generic = has_generic and has_failure_context
                 if item in generic_skip and not allow_generic:
                     continue
                 name = item.upper()

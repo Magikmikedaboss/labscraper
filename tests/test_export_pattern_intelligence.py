@@ -3,6 +3,20 @@ import io
 import pytest
 from utils import export_pattern_intelligence
 
+ENTITY_NAME_IDX = 0
+ENTITY_TYPE_IDX = 1
+PATTERN_TYPE_IDX = 2
+HEALTH_SCORE_IDX = 3
+EVENT_COUNT_IDX = 4
+POSITIVE_SIGNALS_IDX = 5
+NEUTRAL_SIGNALS_IDX = 6
+NEGATIVE_SIGNALS_IDX = 7
+REPLICATION_SIGNALS_IDX = 8
+TOTAL_SIGNALS_IDX = 9
+TIME_MOMENTUM_IDX = 10
+CONFIDENCE_LEVEL_IDX = 11
+INTERPRETATION_IDX = 12
+
 class DummySignals:
     def __init__(self, p=0, n=0, neu=0, rep=0):
         self.positive = p
@@ -38,19 +52,19 @@ def test_export_to_csv(tmp_path):
     assert len(rows) == 4  # header + 3 rows
     # Check that the first data row matches DummyAnalysis(0)
     row0 = rows[1]
-    assert row0[0] == "entity_0"
-    assert row0[1] == "protein"
-    assert row0[2] == "convergence"
-    assert row0[3] == "90"
-    assert row0[4] == "5"
-    assert row0[5] == "2"  # positive_signals
-    assert row0[6] == "0"  # neutral_signals
-    assert row0[7] == "0"  # negative_signals
-    assert row0[8] == "1"  # replication_signals
-    assert row0[9] == "3"  # total_signals
-    assert row0[10] == "increasing"
-    assert row0[11] == "high"
-    assert row0[12] == "Interpretation 0"
+    assert row0[ENTITY_NAME_IDX] == "entity_0"
+    assert row0[ENTITY_TYPE_IDX] == "protein"
+    assert row0[PATTERN_TYPE_IDX] == "convergence"
+    assert row0[HEALTH_SCORE_IDX] == "90"
+    assert row0[EVENT_COUNT_IDX] == "5"
+    assert row0[POSITIVE_SIGNALS_IDX] == "2"  # positive_signals
+    assert row0[NEUTRAL_SIGNALS_IDX] == "0"  # neutral_signals
+    assert row0[NEGATIVE_SIGNALS_IDX] == "0"  # negative_signals
+    assert row0[REPLICATION_SIGNALS_IDX] == "1"  # replication_signals
+    assert row0[TOTAL_SIGNALS_IDX] == "3"  # total_signals
+    assert row0[TIME_MOMENTUM_IDX] == "increasing"
+    assert row0[CONFIDENCE_LEVEL_IDX] == "high"
+    assert row0[INTERPRETATION_IDX] == "Interpretation 0"
 
 # Optionally, test main() just for coverage (does not assert output)
 def test_main_runs(monkeypatch):

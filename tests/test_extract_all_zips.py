@@ -1,7 +1,9 @@
+import io
 import zipfile
 from tools.extract_all_zips import extract_all_zips
 import os
 import time
+from tools import extract_all_zips as extract_all_zips_module
 
 def test_extract_all_zips_blocks_path_traversal(tmp_path):
     zip_path = tmp_path / "malicious.zip"
@@ -77,3 +79,26 @@ def test_extract_all_zips_preserves_permissions_and_mtime(tmp_path):
     # Check mtime
     extracted_mtime = int(os.path.getmtime(extracted))
     assert abs(extracted_mtime - mtime) < 3  # allow small clock drift
+
+
+def test_extract_all_zips_logs_actual_byte_mismatch(tmp_path, monkeypatch, caplog):
+    zip_path = tmp_path / "mismatch.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("mismatch.txt", b"expected-bytes")
+
+    original_open = extract_all_zips_module.zipfile.ZipFile.open
+
+    def fake_open(self, member, *args, **kwargs):
+        if getattr(member, "filename", None) == "mismatch.txt":
+            return io.BytesIO(b"short")
+        return original_open(self, member, *args, **kwargs)
+
+    monkeypatch.setattr(extract_all_zips_module.zipfile.ZipFile, "open", fake_open)
+
+    with caplog.at_level("WARNING"):
+        failures = extract_all_zips(str(tmp_path))
+
+    assert failures == []
+    extracted = tmp_path / "mismatch.txt"
+    assert extracted.read_bytes() == b"short"
+    assert any("byte count mismatch" in message for message in caplog.messages)
