@@ -3,7 +3,7 @@ import re
 import feedparser
 from typing import List, Dict, Optional
 
-PDF_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.pdf(?:\?[^\s<>"\']*)?', re.IGNORECASE)
+PDF_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.pdf(?:\?[^\s<>"\']*)?(?:#[^\s<>"\']*)?', re.IGNORECASE)
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
 def parse_feed(url: str, raise_on_error: bool = False):

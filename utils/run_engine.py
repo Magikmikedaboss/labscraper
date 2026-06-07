@@ -86,8 +86,11 @@ def _init_db_schema_if_needed(db_path):
 
     if is_canonical_db:
         if not _db_has_all_tables(db_path):
-            logger.info(f"Canonical DB at {canonical_path} missing schema; initializing with init_db_schema.")
-            init_db_schema(str(db_path))
+            logger.error(
+                "Canonical DB at %s is missing schema; run python init_db.py or python -m init_db first.",
+                canonical_path,
+            )
+            raise SystemExit(f"Canonical DB at {canonical_path} is missing schema. Run python init_db.py or python -m init_db.")
         else:
             logger.info(f"Canonical DB at {canonical_path} already initialized; skipping schema init.")
     else:
@@ -280,9 +283,9 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 _retry_sqlite_write(link_event_tag, con, event_id, tag)
                             for m in quantitative:
                                 _retry_sqlite_write(insert_measurement, con, event_id, m)
-                    success_count += 1
                 # Commit after each PDF is fully processed
                 _retry_sqlite_write(con.commit)
+                success_count += 1
             except KeyboardInterrupt:
                 raise
             except (PDFSyntaxError, PDFNotImplementedError, sqlite3.Error, OSError, ValueError) as e:

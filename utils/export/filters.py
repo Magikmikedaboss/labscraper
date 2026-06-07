@@ -64,7 +64,10 @@ def _load_peptides_from_file(path: Path) -> set[str] | None:
                 import yaml  # type: ignore
             except Exception:
                 return None
-            payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+            try:
+                payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+            except yaml.YAMLError:
+                return None
             candidates = _iter_peptide_candidates(payload)
         else:
             candidates = path.read_text(encoding="utf-8").splitlines()

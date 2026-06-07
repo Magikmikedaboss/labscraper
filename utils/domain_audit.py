@@ -171,7 +171,6 @@ def audit_domain(
                 f"Unable to resolve seed file {seed_file!r} for domain {domain_id!r} under {seeds_dir}. "
                 "See the audit log for attempted candidate paths."
             )
-        seed_files_missing.append(seed_file)
 
     return DomainAuditEntry(
         domain_id=domain_id,

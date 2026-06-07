@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.feed_utils import probe_feed
-from utils.validators import ValidationError, validate_feed_config, validate_file_path
+from utils.validators import ValidationError, validate_domain_name, validate_feed_config, validate_file_path
 
 # Export default_feeds for import in tests
 default_feeds = [
@@ -44,6 +44,12 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args, _ = parser.parse_known_args(argv)
+    if args.default_domain is not None:
+        try:
+            args.default_domain = validate_domain_name(args.default_domain)
+        except ValidationError as e:
+            print(f"⚠️ Invalid --default-domain: {e}")
+            return 1
     config_path = Path(args.config)
     # Default feeds fallback
     feeds = default_feeds

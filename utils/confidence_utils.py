@@ -17,6 +17,7 @@ Scoring and confidence logic for export pipeline
 # Confidence normalization for system boundaries
 def normalize_confidence(conf: str) -> str:
     """Normalize confidence to 'low', 'med', or 'high'. Unknowns become 'low'."""
+    conf = conf.lower()
     if conf not in {"low", "med", "high"}:
         return "low"
     return conf

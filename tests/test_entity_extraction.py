@@ -231,4 +231,8 @@ def test_biomedical_peptide_denylist_blocks_obvious_false_positives(word):
 
     entities = extract_entities(text, "methods_tooling")
 
-    assert not any(e["entity_type"] == "peptide" and e.get("entity_name") == word for e in entities)
+    assert not any(
+        e["entity_type"] == "peptide"
+        and word.lower() == (e.get("entity_name") or e.get("text") or "").lower()
+        for e in entities
+    )

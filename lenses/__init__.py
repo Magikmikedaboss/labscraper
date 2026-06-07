@@ -152,7 +152,7 @@ def _detect_multi_lens_internal(
         conf = item.get("confidence", "low")
         if conf not in active_confidence_rank:
             logger.warning(
-                "Unexpected confidence value %r for item event_id=%r event_type=%r; defaulting confidence rank to 0",
+                "Unexpected confidence value %r for item event_id=%r event_type=%r; defaulting confidence rank to 1",
                 conf,
                 item.get("event_id"),
                 item.get("event_type"),

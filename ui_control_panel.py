@@ -162,8 +162,7 @@ class PeptideScraperUI:
             messagebox.showerror("Configuration Error", f"Failed to load configurations: {e}")
     
     def load_domains(self):
-        """Load available domains from config/domains and seeds/domains"""
-        # First try config/domains (canonical location)
+        """Load available domains from config/domains."""
         config_domains_dir = self.config_dir / "domains"
         if config_domains_dir.exists():
             for domain_file in config_domains_dir.glob("*.json"):
@@ -173,19 +172,6 @@ class PeptideScraperUI:
                         self.domains[domain_config['id']] = domain_config
                 except Exception as e:
                     logger.exception(f"Failed to load domain from config/domains {domain_file}: {e}")
-        
-        # Then try seeds/domains (legacy location) for backward compatibility
-        seeds_domains_dir = self.seeds_dir / "domains"
-        if seeds_domains_dir.exists():
-            for domain_file in seeds_domains_dir.glob("*.json"):
-                try:
-                    with open(domain_file, 'r') as f:
-                        domain_config = json.load(f)
-                        # Only add if not already loaded from config/domains to avoid conflicts
-                        if domain_config['id'] not in self.domains:
-                            self.domains[domain_config['id']] = domain_config
-                except Exception as e:
-                    logger.exception(f"Failed to load domain from seeds/domains {domain_file}: {e}")
     
     def load_lenses(self):
         """Load available lenses from lenses directory"""
@@ -275,6 +261,25 @@ class PeptideScraperUI:
                     
             except ValidationError as e:
                 messagebox.showerror("Invalid Database", str(e))
+
+    def _normalize_db_path_field(self):
+        raw_db_path = self.db_var.get().strip()
+        if not raw_db_path:
+            messagebox.showwarning("Warning", "Please specify a database path")
+            return None
+
+        db_path = Path(raw_db_path)
+        try:
+            if db_path.exists():
+                normalized = validate_database(db_path)
+            else:
+                normalized = ensure_database_dir(db_path)
+        except ValidationError as e:
+            messagebox.showerror("Invalid Database", str(e))
+            return None
+
+        self.db_var.set(str(normalized))
+        return normalized
     
     def run_scraper(self):
         """Run the main scraper with selected configuration"""
@@ -292,7 +297,9 @@ class PeptideScraperUI:
         
         # Get paths
         input_dir = self.input_dir_var.get()
-        db_path = self.db_var.get()
+        db_path = self._normalize_db_path_field()
+        if db_path is None:
+            return
         
         # Validate paths
         if not Path(input_dir).exists():
@@ -344,11 +351,8 @@ class PeptideScraperUI:
                 return
             
             domain_id = selected_domain.split('(')[-1].rstrip(')')
-            
-            # Validate database path
-            db_path = self.db_var.get()
-            if not db_path or not db_path.strip():
-                messagebox.showwarning("Warning", "Please specify a database path")
+            db_path = self._normalize_db_path_field()
+            if db_path is None:
                 return
             
             # Run dual-lens export script with selected domain
@@ -371,7 +375,9 @@ class PeptideScraperUI:
         """Run RSS feed ingestion"""
         try:
             feeds_path = self.config_dir / "feeds.json"
-            db_path = self.db_var.get()
+            db_path = self._normalize_db_path_field()
+            if db_path is None:
+                return
 
             # Run RSS ingest script with UI-configured feeds and DB paths
             result = subprocess.run([

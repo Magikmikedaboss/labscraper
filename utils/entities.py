@@ -73,7 +73,7 @@ def _has_target_context(sentence: str) -> bool:
 def extract_compounds(sentence: str, SEEDS_DIR=None) -> list[dict]:
     compounds = []
     for compound in get_compound_seeds(SEEDS_DIR):
-        if re.search(r'(?<!\p{L}\p{N})' + re.escape(compound) + r'(?!\p{L}\p{N})', sentence, re.IGNORECASE):
+        if re.search(r'(?<![\p{L}\p{N}])' + re.escape(compound) + r'(?![\p{L}\p{N}])', sentence, re.IGNORECASE):
             compounds.append({
                 "entity_type": "compound",
                 "entity_name": compound.upper(),
@@ -90,7 +90,7 @@ def extract_targets(sentence: str, SEEDS_DIR=None) -> list[dict]:
     for target in get_target_seeds(SEEDS_DIR):
         if len(target) <= 3 and not has_target_context:
             continue
-        if re.search(r'(?<!\p{L}\p{N})' + re.escape(target) + r'(?!\p{L}\p{N})', sentence, re.IGNORECASE):
+        if re.search(r'(?<![\p{L}\p{N}])' + re.escape(target) + r'(?![\p{L}\p{N}])', sentence, re.IGNORECASE):
             targets.append({
                 "entity_type": "target",
                 "entity_name": target.upper(),

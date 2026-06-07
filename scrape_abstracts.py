@@ -125,12 +125,13 @@ def process_abstract_with_engine(abstract_url, abstract_text, domain, db_path):
     try:
         # Create stable source ID based on URL
         source_id = sha256_hex(abstract_url)
-        file_hash = sha256_hex(abstract_url)
+        file_hash = sha256_hex(abstract_text)
         
         events_count = 0
         seen_events = set()
         
         with sqlite3.connect(db_path) as con:
+            con.execute("PRAGMA foreign_keys = ON")
             # Extract metadata from URL
             metadata = {
                 "title": f"ASCE Abstract: {abstract_url.split('/')[-1][:50]}",

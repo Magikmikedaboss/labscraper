@@ -115,9 +115,8 @@ def export_candidates_domain_aware(domain_id: str = None):
                     raw_fragments = evariant.split(ENTITY_VARIANT_DELIM)
                     trimmed_fragments = [fragment.strip() for fragment in raw_fragments]
                     has_empty_fragment = any(not fragment for fragment in trimmed_fragments)
-                    normalized_variant = ENTITY_VARIANT_DELIM.join(
-                        fragment for fragment in trimmed_fragments if fragment
-                    )
+                    variants = [fragment for fragment in trimmed_fragments if fragment]
+                    normalized_variant = ENTITY_VARIANT_DELIM.join(variants)
                     if has_empty_fragment:
                         logger.warning(
                             "Malformed entity_variant split for key=%s: original=%r normalized=%r",
@@ -125,7 +124,6 @@ def export_candidates_domain_aware(domain_id: str = None):
                             evariant,
                             normalized_variant,
                         )
-                    variants = [fragment for fragment in trimmed_fragments if fragment]
                 else:
                     variants = [evariant.strip()]
                 for v in variants:

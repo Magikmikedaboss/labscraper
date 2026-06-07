@@ -309,6 +309,8 @@ def insert_event(con, source_id: str, doc_id: str, chunk_id: str, page_number: i
             source_id, doc_id, chunk_id, page_number, now
         ),
     )
+    return event_id
+
 def link_event_entity(con, event_id: str, entity_id: str, role: str):
     """Link event to entity"""
     con.execute(
@@ -403,11 +405,9 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                         section = guess_section(text.lower())
                         chunk_id = insert_chunk(con, source_id, doc_id, page_num, section, text)
                         for sent in chunk_sentences(text):
-                            ents = extract_entities(sent, domain=resolved_domain, SEEDS_DIR=SEEDS_DIR)
-                            if not ents:
-                                continue
-                            measurements = extract_quantitative_data(sent)
                             sent_l = sent.lower()
+                            ents = extract_entities(sent, domain=resolved_domain, SEEDS_DIR=SEEDS_DIR)
+                            measurements = extract_quantitative_data(sent)
                             if resolved_domain == "construction_science" and _looks_like_construction_boilerplate(sent_l):
                                 continue
                             if resolved_domain == "construction_science" and _looks_like_climate_table_row(sent_l, source_title_l):
@@ -422,7 +422,11 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                                 failure_reason = detect_failure_reason(sent_l)
                                 decision_taken = detect_decision(sent_l)
                                 decision_driver = None
+                                if not ents:
+                                    continue
                             else:
+                                if not ents:
+                                    continue
                                 method_tags = detect_method_tags(sent_l)
                                 failure_reason = detect_failure_reason(sent_l)
                                 decision_taken = detect_decision(sent_l)
@@ -476,6 +480,7 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                             for measurement in measurements:
                                 insert_measurement(con, event_id, measurement)
                             print(f"    Inserted event: {event_id} (page {page_num})")
+                    con.commit()
             except Exception as e:
                 print(f"❌ Error processing {pdf_path}: {e}")
                 # Optionally record failure status in DB for this source

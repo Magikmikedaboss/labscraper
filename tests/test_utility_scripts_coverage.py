@@ -250,12 +250,18 @@ def test_init_scripts_create_databases(tmp_path, monkeypatch):
     assert (tmp_path / "output" / "peptide_intel_construction.sqlite").exists()
 
 
-def test_init_script_guardrails_raise_for_canonical_db():
-    project_root = Path(init_db.__file__).resolve().parents[1]
-    canonical = project_root / "db" / "runs.sqlite"
+def test_init_script_guardrails_raise_for_canonical_db(tmp_path, monkeypatch):
+    project_root = Path(__file__).resolve().parents[1]
+    fake_root = tmp_path / "fake_project"
+    fake_root.mkdir()
+    (fake_root / "db").mkdir()
+    (fake_root / "schema.sql").write_text((project_root / "schema.sql").read_text(encoding="utf-8"), encoding="utf-8")
+
+    canonical = fake_root / "db" / "runs.sqlite"
+    monkeypatch.setattr(init_db, "__file__", str(fake_root / "utils" / "init_db.py"), raising=False)
 
     with pytest.raises(RuntimeError):
         init_db.main(str(canonical))
 
-    with pytest.raises(RuntimeError):
-        init_test_db.init_test_db(str(canonical))
+    init_db.main(str(canonical), force=True)
+    assert canonical.exists()

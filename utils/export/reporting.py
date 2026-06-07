@@ -125,7 +125,7 @@ def export_events_csv(
             row = {
                 "event_id": event_id,
                 "event_type": event_dict.get("event_type", ""),
-                "stage": event_dict["stage"],
+                "stage": event_dict.get("stage"),
                 "confidence_original": event_dict.get("confidence", "unknown"),
                 "evidence_snippet": snippet[:200] + ("..." if len(snippet) > 200 else ""),
             }

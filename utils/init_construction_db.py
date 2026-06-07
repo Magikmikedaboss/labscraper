@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS event_entities (
     entity_id TEXT,
     role TEXT,
     PRIMARY KEY (event_id, entity_id, role),
+    FOREIGN KEY (event_id) REFERENCES research_events(event_id) ON DELETE CASCADE,
     FOREIGN KEY (entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE
 );
 

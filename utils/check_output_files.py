@@ -19,7 +19,7 @@ def main() -> int:
                 {
                     "name": file_path.name,
                     "size": stat.st_size,
-                    "modified": datetime.datetime.fromtimestamp(stat.st_mtime),
+                    "modified": datetime.datetime.fromtimestamp(stat.st_mtime, datetime.timezone.utc),
                 }
             )
 

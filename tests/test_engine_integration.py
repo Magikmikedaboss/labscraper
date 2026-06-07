@@ -238,7 +238,7 @@ def test_main_exits_1_when_all_pdfs_fail(tmp_path):
             main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
 
 
-def test_main_invalid_domain_warns_and_continues(tmp_path, caplog):
+def test_main_invalid_domain_exits_with_error(tmp_path):
     input_dir = tmp_path / "input_pdfs"
     input_dir.mkdir()
     output_db = tmp_path / "test_output.sqlite"
@@ -246,18 +246,6 @@ def test_main_invalid_domain_warns_and_continues(tmp_path, caplog):
 
     pdf_path = input_dir / "test.pdf"
     pdf_path.write_bytes(b"%PDF-1.4 content")
-
-    mock_pdf = Mock()
-    mock_page = Mock()
-    mock_page.extract_text.return_value = "Test content"
-    mock_pdf.pages = [mock_page]
-    mock_pdf.metadata = {}
-
-    captured_metadata = {}
-
-    def upsert_source_side_effect(con, source_id, title, metadata):
-        captured_metadata.update(metadata)
-        return source_id
 
     with pytest.raises(SystemExit, match=r"Unknown domain 'not_a_real_domain'"):
         main(domain="not_a_real_domain", input_dir=str(input_dir), db_path=str(output_db))

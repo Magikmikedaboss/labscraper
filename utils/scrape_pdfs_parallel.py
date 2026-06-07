@@ -55,6 +55,7 @@ process_logger = logging.getLogger("scrape_pdfs_parallel")
 def _connect(db_path: Path) -> sqlite3.Connection:
     """Create a sqlite connection configured for concurrent writes."""
     con = sqlite3.connect(str(db_path), timeout=30.0)
+    con.execute("PRAGMA foreign_keys = ON;")
     con.execute("PRAGMA journal_mode=WAL;")
     con.execute("PRAGMA synchronous=NORMAL;")
     con.execute("PRAGMA busy_timeout=30000;")

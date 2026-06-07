@@ -49,7 +49,7 @@ def check_files():
     print("\nChecking required files...")
     required_files = {
         PROJECT_ROOT / 'schema.sql': 'Database schema',
-        PROJECT_ROOT / 'init_db.py': 'Database initialization',
+        PROJECT_ROOT / 'utils' / 'init_db.py': 'Database initialization',
         PROJECT_ROOT / 'utils/scrape_pdfs_phase1.py': 'Main scraper',
         PROJECT_ROOT / 'utils/export_csv.py': 'CSV export tool',
         PROJECT_ROOT / 'README.md': 'Documentation',
@@ -97,12 +97,7 @@ def check_database():
     
     # Check for domain-specific databases first, then fall back to general
     db_paths = [
-        Path('runs') / 'candidates_primary_neuroscience_cognition.csv',  # Neuroscience cognition
-        Path('runs') / 'candidates_primary_stem_cells_regen.csv',        # Stem cells regeneration
-        Path('runs') / 'candidates_primary_biohacking_longevity.csv',    # Biohacking longevity
-        Path('runs') / 'candidates_primary_construction_science.csv',    # Construction science
-        Path('output') / 'peptide_intel.sqlite',                         # General peptide database
-        Path('runs') / 'peptide_intel.sqlite',                           # Alternative location
+        Path('db') / 'runs.sqlite',                                      # Canonical database
     ]
     
     db_path = None
@@ -115,7 +110,7 @@ def check_database():
         print("  No database found. Expected one of:")
         for path in db_paths:
             print(f"    - {path}")
-        print("  Run: python utils/init_db.py or python -m init_db")
+        print("  Run: python init_db.py or python -m init_db")
         return True
     
     print(f"  Found database: {db_path.name}")
@@ -138,7 +133,7 @@ def check_database():
                 missing = [t for t in expected_tables if t not in table_names]
                 if missing:
                     print(f"  Database exists but missing tables: {', '.join(missing)}")
-                    print("     Run: python utils/init_db.py or python -m init_db")
+                    print("     Run: python init_db.py or python -m init_db")
                     return False
                 
                 # Check record counts
@@ -207,7 +202,7 @@ def print_summary(results):
         print("\nAll checks passed! You're ready to go!")
         print("\nNext steps:")
         print("  1. Add PDFs to input_pdfs/ folder")
-        print("  2. Run: python utils/init_db.py (if not done)")
+        print("  2. Run: python init_db.py (if not done)")
         print("  3. Run: python utils/scrape_pdfs_phase1.py")
         print("  4. Run: python utils/export_csv.py --domain construction_science")
         print("\nSee QUICKSTART.md for detailed instructions.")
@@ -215,7 +210,7 @@ def print_summary(results):
         print("\nSome checks failed. Please fix the issues above.")
         print("\nCommon fixes:")
         print("  - Install dependencies: pip install -r requirements.txt")
-        print("  - Initialize database: python utils/init_db.py")
+        print("  - Initialize database: python init_db.py")
         print("  - Check file permissions")
     print("="*60)
 

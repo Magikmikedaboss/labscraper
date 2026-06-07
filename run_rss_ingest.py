@@ -218,7 +218,7 @@ def normalize_event_key(event_type, entities, page, snippet):
     entity_str = "|".join(
         sorted(f"{e.get('entity_type')}:{e.get('entity_name')}" for e in entities)
     )
-    return f"{event_type}|{entity_str}|{page}|{sha256_hex(snippet[:100])}"
+    return f"{event_type}|{entity_str}|{page}|{sha256_hex(snippet)}"
 
 
 def has_signal(sentence_l: str):
