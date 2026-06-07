@@ -8,7 +8,7 @@ import sqlite3
 import sys
 import logging
 import argparse
-import random
+import secrets
 import time
 from utils.db_init import init_db_schema
 from utils.axon_domains import get_domain_by_id
@@ -109,7 +109,7 @@ def _retry_sqlite_write(action, *args, attempts: int = 3, base_sleep: float = 0.
             if attempt == attempts - 1:
                 break
             sleep_time = base_sleep * (2 ** attempt)
-            sleep_time += random.uniform(0, 0.05)
+            sleep_time += secrets.SystemRandom().uniform(0, 0.05)
             time.sleep(sleep_time)
 
     logger = logging.getLogger(__name__)

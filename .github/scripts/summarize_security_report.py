@@ -15,8 +15,23 @@ def summarize_bandit(report_path: Path) -> None:
 
 
 def summarize_safety(report_path: Path) -> None:
-    text = report_path.read_text(encoding="utf-16")
+    raw = report_path.read_bytes()
+
+    text = None
+    for encoding in ("utf-8", "utf-8-sig", "utf-16", "latin-1"):
+        try:
+            text = raw.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+
+    if text is None:
+        raise ValueError(f"Could not decode {report_path}")
+
     start = text.find("{")
+    if start == -1:
+        raise ValueError("No JSON object found in safety report")
+
     data, _ = json.JSONDecoder().raw_decode(text[start:])
     for vuln in data.get("vulnerabilities", [])[:10]:
         print(
