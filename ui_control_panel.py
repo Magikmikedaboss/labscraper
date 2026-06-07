@@ -274,6 +274,7 @@ class PeptideScraperUI:
                 normalized = validate_database(db_path)
             else:
                 normalized = ensure_database_dir(db_path)
+            normalized = validate_database(normalized)
         except ValidationError as e:
             messagebox.showerror("Invalid Database", str(e))
             return None

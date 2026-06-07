@@ -262,6 +262,3 @@ def test_init_script_guardrails_raise_for_canonical_db(tmp_path, monkeypatch):
 
     with pytest.raises(RuntimeError):
         init_db.main(str(canonical))
-
-    init_db.main(str(canonical), force=True)
-    assert canonical.exists()

@@ -32,12 +32,15 @@ def summarize_safety(report_path: Path) -> None:
     if not text:
         raise ValueError("Safety report is empty")
 
-    start_candidates = [idx for idx in (text.find("{"), text.find("[")) if idx != -1]
-    if not start_candidates:
-        raise ValueError("No JSON payload found in safety report")
+    parsed = json.loads(text)
+    if isinstance(parsed, dict):
+        data = parsed
+    elif isinstance(parsed, list):
+        data = {"vulnerabilities": parsed}
+    else:
+        raise ValueError("Safety report JSON must be an object or array")
 
-    data, _ = json.JSONDecoder().raw_decode(text[min(start_candidates):])
-    vulnerabilities = data.get("vulnerabilities", []) if isinstance(data, dict) else data
+    vulnerabilities = data.get("vulnerabilities", [])
 
     for vuln in vulnerabilities[:10]:
         if not isinstance(vuln, dict):

@@ -280,7 +280,14 @@ class OverlayScorer:
 
 def load_domain_config(domain_id: str) -> Dict[str, Any]:
     """Load domain configuration from JSON file"""
-    domain_path = Path("config/domains") / f"{domain_id}.json"
+    project_root = Path(__file__).resolve().parents[1]
+    domains_dir = (project_root / "config" / "domains").resolve()
+    domain_path = (domains_dir / f"{domain_id}.json").resolve()
+
+    try:
+        domain_path.relative_to(domains_dir)
+    except ValueError as exc:
+        raise ValueError(f"Invalid domain config path: {domain_path}") from exc
 
     if not domain_path.exists():
         raise FileNotFoundError(f"Domain config not found: {domain_path}")

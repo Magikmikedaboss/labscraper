@@ -49,7 +49,7 @@ def check_files():
     print("\nChecking required files...")
     required_files = {
         PROJECT_ROOT / 'schema.sql': 'Database schema',
-        PROJECT_ROOT / 'utils' / 'init_db.py': 'Database initialization',
+        PROJECT_ROOT / 'init_db.py': 'Database initialization',
         PROJECT_ROOT / 'utils/scrape_pdfs_phase1.py': 'Main scraper',
         PROJECT_ROOT / 'utils/export_csv.py': 'CSV export tool',
         PROJECT_ROOT / 'README.md': 'Documentation',

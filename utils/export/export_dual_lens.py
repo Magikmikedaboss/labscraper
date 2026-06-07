@@ -6,6 +6,7 @@ with dual perspectives.
 """
 
 import logging
+import os
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -54,8 +55,9 @@ def _get_valid_domain_ids() -> frozenset[str]:
         raise RuntimeError(f"Failed to load domain profiles from {domains_dir}") from exc
     return frozenset(domains.keys())
 
-def _is_special_db_identifier(db_path: str) -> bool:
-    return db_path == ":memory:" or db_path.startswith(("file:", "sqlite://"))
+def _is_special_db_identifier(db_path) -> bool:
+    db_path_str = os.fspath(db_path)
+    return db_path_str == ":memory:" or db_path_str.startswith(("file:", "sqlite://"))
 
 
 def _validate_known_domain_id(domain_id: str) -> str:
@@ -73,6 +75,7 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
     print("=" * 70)
 
     domain_id = _validate_known_domain_id(domain_id)
+    db_path = os.fspath(db_path)
 
     if _is_special_db_identifier(db_path):
         db_path_obj = None
