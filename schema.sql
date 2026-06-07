@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS sources (
   url TEXT,
   domain TEXT,
   pdf_file TEXT,                         -- local file name
-  imported_at TEXT
+  imported_at TEXT,
+  last_seen_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_sources_year ON sources(year);
@@ -49,7 +50,7 @@ CREATE TABLE IF NOT EXISTS chunks (
   page_number INTEGER,                   -- nullable for HTML
   section_guess TEXT,                    -- Methods / Results / Discussion / etc (optional)
   chunk_text TEXT NOT NULL,
-  created_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (doc_id) REFERENCES documents(doc_id) ON DELETE CASCADE,
   FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE
 );

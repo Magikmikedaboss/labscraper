@@ -151,6 +151,17 @@ def map_research_domain(meta: dict) -> str:
     return "methods_tooling"
 
 
+def _sha64_file(path: Path, chunk_size: int = 64 * 1024) -> str:
+    hasher = hashlib.sha256()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(chunk_size)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
 
 
 def main(input_dir="input/pdfs", db_path="db.sqlite"):
@@ -166,10 +177,9 @@ def main(input_dir="input/pdfs", db_path="db.sqlite"):
                 meta = extract_metadata(pdf_path)
                 print(f"  Metadata: {meta}")
                 # Upsert source and document
-                file_bytes = pdf_path.read_bytes()
-                source_id = sha64(file_bytes)
+                source_id = _sha64_file(pdf_path)
                 upsert_source(con, source_id, str(pdf_path), meta)
-                file_hash = hashlib.sha256(file_bytes).hexdigest()
+                file_hash = source_id
                 doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                 domain = meta.get("domain") or meta.get("research_domain") or map_research_domain(meta) or "methods_tooling"
                 with pdfplumber.open(pdf_path) as pdf:

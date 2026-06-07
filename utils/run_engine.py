@@ -247,7 +247,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                 continue
             except Exception:
                 logging.exception("Unexpected error processing %s", pdf_path)
-                continue
+                raise
         con.commit()
         if success_count == 0:
             sys.exit(1)

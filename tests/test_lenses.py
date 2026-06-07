@@ -163,6 +163,7 @@ class TestConstructionCommon:
         assert normalize_outcome("successful") == "positive"
         assert normalize_outcome("degraded") == "negative"
         assert normalize_outcome("neutral") == "neutral"
+        assert normalize_outcome("mixed_hazard") == "neutral"
 
     def test_get_source_weight_uses_source_type(self):
         from lenses.construction_common import get_source_weight

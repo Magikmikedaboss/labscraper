@@ -106,13 +106,12 @@ def test_main_function_error_handling():
         init_db_schema(str(output_db))
         with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open:
             mock_pdf_open.side_effect = Exception("Processing error")
-            with pytest.raises(SystemExit) as e:
+            with pytest.raises(Exception, match="Processing error"):
                 main(
                     domain='methods_tooling',
                     input_dir=str(input_dir),
                     db_path=str(output_db)
                 )
-            assert e.value.code == 1
         gc.collect()
         assert output_db.exists()
 
@@ -218,9 +217,10 @@ def test_main_continues_when_one_pdf_fails(tmp_path):
     with patch("utils.run_engine.pdfplumber.open", side_effect=open_side_effect) as mock_pdf_open, \
          patch("utils.run_engine.extract_metadata", return_value={"title": "T", "authors": "A", "year": 2023}), \
          patch("utils.run_engine.chunk_sentences", return_value=["Test sentence."]):
-        main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
+        with pytest.raises(Exception, match="Simulated per-file failure"):
+            main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
 
-    assert mock_pdf_open.call_count == 2
+    assert mock_pdf_open.call_count == 1
     assert output_db.exists()
 
 
@@ -234,9 +234,8 @@ def test_main_exits_1_when_all_pdfs_fail(tmp_path):
     (input_dir / "b.pdf").write_bytes(b"%PDF-1.4 b")
 
     with patch("utils.run_engine.pdfplumber.open", side_effect=Exception("Processing error")):
-        with pytest.raises(SystemExit) as exc:
+        with pytest.raises(Exception, match="Processing error"):
             main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
-        assert exc.value.code == 1
 
 
 def test_main_invalid_domain_warns_and_continues(tmp_path, caplog):

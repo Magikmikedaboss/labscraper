@@ -95,6 +95,29 @@ def test_export_candidates_domain_aware_logs_malformed_variant_split(tmp_path, m
         result = export_csv.export_candidates_domain_aware(domain_id="construction_science")
 
     assert ("compound", "Alpha") in result
+    assert not any("Malformed entity_variant split" in msg for msg in caplog.messages)
+
+
+def test_export_candidates_domain_aware_warns_on_true_malformed_variant_split(tmp_path, monkeypatch, caplog):
+    monkeypatch.chdir(tmp_path)
+    db_path = tmp_path / "runs.sqlite"
+    _init_minimal_export_db(db_path)
+
+    with sqlite3.connect(db_path) as con:
+        con.execute("INSERT INTO entities VALUES (?, ?, ?, ?)", ("e1", "compound", "Alpha", "alpha|||"))
+        con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev1", "construction_science", "s1"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("e1", "ev1"))
+
+    monkeypatch.setattr(export_csv, "DB_PATH", db_path)
+    monkeypatch.setattr(export_csv, "load_normalization_map", lambda: {})
+    monkeypatch.setattr(export_csv, "load_overlay_aliases", lambda _domain_id: {})
+    monkeypatch.setattr(export_csv, "normalize_entity", lambda entity, _norm, _aliases: entity)
+    monkeypatch.setattr(export_csv, "get_entity_role", lambda _entity, _norm: "primary")
+    monkeypatch.setattr(export_csv, "is_process_word", lambda _value: False)
+
+    with caplog.at_level("WARNING"):
+        export_csv.export_candidates_domain_aware(domain_id="construction_science")
+
     assert any("Malformed entity_variant split" in msg for msg in caplog.messages)
 
 

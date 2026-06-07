@@ -54,6 +54,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     for p in props[:6]:
         entities.append(make_entity("property", p, "property", "measurement"))
 
+    # Materials outputs follow the shared neutral fallback used by other construction lenses.
     if contains_any(s_l, POSITIVE_COMPARATORS):
         outcome = "improved"
     elif contains_any(s_l, NEGATIVE_COMPARATORS):

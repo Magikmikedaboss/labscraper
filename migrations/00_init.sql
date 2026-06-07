@@ -31,6 +31,7 @@ WHERE doi IS NOT NULL AND trim(doi) <> '';
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_documents_sha256
 ON documents(sha256)
 WHERE sha256 IS NOT NULL AND trim(sha256) <> '';
+CREATE INDEX IF NOT EXISTS idx_sources_year ON sources(year);
 
 CREATE TABLE IF NOT EXISTS chunks (
     chunk_id TEXT PRIMARY KEY,
@@ -145,14 +146,23 @@ CREATE TABLE IF NOT EXISTS quantitative_measurements (
     value TEXT NOT NULL,
     unit TEXT NOT NULL,
     context TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (event_id) REFERENCES research_events (event_id) ON DELETE CASCADE
 );
+CREATE INDEX IF NOT EXISTS idx_events_domain ON research_events(research_domain);
+CREATE INDEX IF NOT EXISTS idx_events_type ON research_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_events_outcome ON research_events(outcome);
+CREATE INDEX IF NOT EXISTS idx_events_failure ON research_events(failure_reason);
+CREATE INDEX IF NOT EXISTS idx_events_decision ON research_events(decision_taken);
 CREATE INDEX IF NOT EXISTS idx_documents_source_id ON documents(source_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_doc_id ON chunks(doc_id);
+CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(entity_type);
+CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(entity_name);
 CREATE INDEX IF NOT EXISTS idx_research_events_source_id ON research_events(source_id);
 CREATE INDEX IF NOT EXISTS idx_relationships_type ON entity_relationships(relationship_type);
 CREATE INDEX IF NOT EXISTS idx_relationships_source ON entity_relationships(source_entity_id);
 CREATE INDEX IF NOT EXISTS idx_relationships_target ON entity_relationships(target_entity_id);
 CREATE INDEX IF NOT EXISTS idx_event_entities_entity_id ON event_entities(entity_id);
+CREATE INDEX IF NOT EXISTS idx_event_entities_role ON event_entities(role);
 CREATE INDEX IF NOT EXISTS idx_quantitative_measurements_event_id ON quantitative_measurements(event_id);
+CREATE INDEX IF NOT EXISTS idx_measurements_type ON quantitative_measurements(measurement_type);

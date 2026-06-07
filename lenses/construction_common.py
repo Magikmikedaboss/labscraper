@@ -34,6 +34,7 @@ OUTCOME_MAP = {
     "negative": "negative",
     "neutral": "neutral",
     "mixed": "neutral",
+    "mixed_hazard": "neutral",
     "stable": "neutral",
     "unknown": "unknown",
 }

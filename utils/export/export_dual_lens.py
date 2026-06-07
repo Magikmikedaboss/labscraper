@@ -41,6 +41,10 @@ VALID_DOMAIN_IDS = frozenset(
 )
 
 
+def _is_special_db_identifier(db_path: str) -> bool:
+    return db_path == ":memory:" or db_path.startswith(("file:", "sqlite://"))
+
+
 def _validate_known_domain_id(domain_id: str) -> str:
     safe_domain_id = validate_domain_id(domain_id)
     if safe_domain_id not in VALID_DOMAIN_IDS:
@@ -58,7 +62,10 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
 
     db_path_obj = Path(db_path)
     if not db_path_obj.exists() or not db_path_obj.is_file():
-        print(f"⚠️  Database file not found on disk: {db_path_obj}. Continuing; downstream loaders may use non-file-backed stores (for example, in-memory or remote databases).")
+        if _is_special_db_identifier(db_path):
+            pass
+        else:
+            raise FileNotFoundError(f"Database file not found on disk: {db_path_obj}")
 
     db_path = str(db_path_obj)
     output_path = Path(output_dir)

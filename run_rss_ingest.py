@@ -177,30 +177,13 @@ def ensure_db_schema(db_path: Path):
         raise SystemExit(f"Missing schema file: {schema_path}")
 
     schema_sql = schema_path.read_text(encoding="utf-8")
-    statements = []
-    statement = ""
-    for line in schema_sql.splitlines():
-        if line.strip().startswith("--"):
-            continue
-        statement += line + "\n"
-        if sqlite3.complete_statement(statement):
-            statements.append(statement.strip())
-            statement = ""
-
     with sqlite3.connect(db_path) as con:
         try:
-            con.execute("BEGIN")
-            for sql in statements:
-                try:
-                    con.execute(sql)
-                except sqlite3.Error as e:
-                    con.rollback()
-                    msg = f"[ensure_db_schema] Error in SQL: {sql[:80]}...\nException: {e}"
-                    raise RuntimeError(msg) from e
+            con.executescript(schema_sql)
             con.commit()
-        except Exception:
+        except sqlite3.Error as e:
             con.rollback()
-            raise
+            raise RuntimeError(f"[ensure_db_schema] Error executing schema script: {e}") from e
 
 # ---------------------------------------------------------
 # HELPERS

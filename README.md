@@ -346,8 +346,7 @@ labscraper/
 │   ├── common.py                   # Common helpers (hashing, etc.)
 │   ├── entity_extractor.py         # (legacy) Entity extraction logic
 │   ├── entity_normalizer.py        # (legacy) Variant normalization
-│   ├── init_db.py                  # Legacy utility module (use root init_db.py to initialize db/runs.sqlite)
-│   └── scrape_pdfs_phase1.py       # Base scraper functions
+│   ├── init_db.py                  # Isolated DB initialization (guarded against db/runs.sqlite)│   └── scrape_pdfs_phase1.py       # Base scraper functions
 ├── schema.sql                  # Database schema
 ├── config/                     # Configuration files
 │   ├── domains/               # Domain-specific configurations

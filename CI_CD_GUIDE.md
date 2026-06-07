@@ -44,7 +44,7 @@ The main test job runs on Ubuntu latest and performs the following steps:
 
 5. **Testing**
   - **Unit Tests**: Runs `pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing`
-  - **Coverage Check**: Enforces minimum 50% code coverage with `pytest --cov=utils --cov=tools --cov-fail-under=50`
+  - **Coverage Check**: Enforces minimum 70% code coverage with `pytest --cov=utils --cov=tools --cov-fail-under=70`
 ## Quality Gates
 
 ### Code Quality
@@ -53,7 +53,7 @@ The main test job runs on Ubuntu latest and performs the following steps:
 - **Dependency Security**: Safety checks for known vulnerabilities in dependencies
 
 ### Test Coverage
-- **Minimum Coverage**: 50% code coverage required (current baseline)
+- **Minimum Coverage**: 70% code coverage required (current baseline)
 - **Coverage Reporting**: Detailed coverage reports with missing lines highlighted
 - **Test Execution**: All tests must pass for pipeline to succeed
 
