@@ -15,6 +15,9 @@ from pdfminer.psparser import PSException
 from utils.pdf_metadata_parser import extract_year_from_creation_date, parse_first_page_text
 
 
+logger = logging.getLogger(__name__)
+AUTHOR_SEPARATOR = "; "
+
 
 def _extract_meta_from_pdf(pdf, meta):
     """
@@ -64,9 +67,14 @@ def extract_metadata(pdf_path: Union[str, Path], pdf=None) -> Dict[str, Any]:
         else:
             _extract_meta_from_pdf(pdf, meta)
     except (OSError, PDFException, PSException) as e:
-        logging.exception("Error extracting metadata from %s", pdf_path)
+        logger.exception("Error extracting metadata from %s", pdf_path)
         meta["error"] = str(e)
-    # Clean up authors (strip whitespace)
-    if meta["authors"] and isinstance(meta["authors"], str):
+    # Authors may arrive as a string or a sequence; serialize sequences with a separator that
+    # preserves names containing commas for downstream storage and dedupe.
+    if isinstance(meta["authors"], list):
+        meta["authors"] = AUTHOR_SEPARATOR.join(str(author).strip() for author in meta["authors"] if author is not None)
+    elif isinstance(meta["authors"], str):
         meta["authors"] = meta["authors"].strip()
+    elif meta["authors"] is not None:
+        meta["authors"] = str(meta["authors"]).strip()
     return meta

@@ -34,6 +34,8 @@ from utils.db_init import init_db_schema
 # Add SEEDS_DIR definition (mirroring run_engine.py)
 project_root = Path(__file__).parent.parent.resolve()
 SEEDS_DIR = project_root / "input" / "seeds"
+if not SEEDS_DIR.exists():
+    SEEDS_DIR = project_root / "seeds"
 
 CONSTRUCTION_EVENT_PATTERNS = [
     (
@@ -145,6 +147,33 @@ CLIMATE_BUILDING_CONTEXT_TERMS = {
     "load",
 }
 
+CONSTRUCTION_CONTEXT_TERMS = {
+    "building",
+    "buildings",
+    "construction",
+    "structural",
+    "structure",
+    "wall",
+    "roof",
+    "foundation",
+    "slab",
+    "beam",
+    "column",
+    "assembly",
+    "envelope",
+    "insulation",
+    "material",
+    "masonry",
+    "concrete",
+    "steel",
+    "frame",
+    "facade",
+    "cladding",
+    "building envelope",
+    "roof assembly",
+    "wall assembly",
+}
+
 CLIMATE_MONTH_TERMS = {
     "jan",
     "january",
@@ -172,10 +201,18 @@ CLIMATE_MONTH_TERMS = {
     "december",
 }
 
+ENTITY_NAME_BLACKLIST = {
+    "temperature",
+    "exposure",
+    "pressure",
+    "humidity",
+    "uv",
+    "thermal",
+}
+
 
 def _looks_like_construction_boilerplate(sentence_l: str) -> bool:
-    sentence = sentence_l.lower()
-    if ("climate normals" in sentence or "normales climatiques" in sentence) and not _has_climate_building_context(sentence):
+    if ("climate normals" in sentence_l or "normales climatiques" in sentence_l) and not _has_climate_building_context(sentence_l):
         return True
     front_matter_terms = {
         "table of contents",
@@ -192,19 +229,23 @@ def _looks_like_construction_boilerplate(sentence_l: str) -> bool:
         "bibliography",
         "about this report",
     }
-    if any(term in sentence for term in front_matter_terms):
+    if any(term in sentence_l for term in front_matter_terms):
         return True
     boilerplate_terms = {"temperature", "humidity", "pressure", "volume", "table", "normals"}
     action_terms = {"load", "performance", "failure", "damage", "strategy", "control", "reference", "issue"}
-    if len(boilerplate_terms.intersection(sentence.split())) >= 3 and not any(term in sentence for term in action_terms):
+    if len(boilerplate_terms.intersection(sentence_l.split())) >= 3 and not any(term in sentence_l for term in action_terms):
         return True
-    if "climate" in sentence and "pressure" in sentence and "temperature" in sentence and "humidity" in sentence:
+    if "climate" in sentence_l and "pressure" in sentence_l and "temperature" in sentence_l and "humidity" in sentence_l:
         return True
     return False
 
 
 def _has_climate_building_context(sentence_l: str) -> bool:
     return any(term in sentence_l for term in CLIMATE_BUILDING_CONTEXT_TERMS)
+
+
+def _has_construction_context(sentence_l: str) -> bool:
+    return any(term in sentence_l for term in CONSTRUCTION_CONTEXT_TERMS)
 
 
 def _looks_like_climate_table_row(sentence_l: str, source_title_l: str) -> bool:
@@ -236,6 +277,8 @@ def _classify_construction_event(sentence_l: str) -> str | None:
     if any(term in sentence for term in ("climate zone", "climate load", "degree days", "heating degree days", "cooling degree days", "climate normals")):
         if _has_climate_building_context(sentence):
             return "climate_load"
+    if not _has_construction_context(sentence):
+        return None
     for event_type, primary_terms, context_terms in CONSTRUCTION_EVENT_PATTERNS:
         if not any(term in sentence for term in primary_terms):
             continue
@@ -280,8 +323,7 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                 # Upsert source and document
                 source_id = _sha256_file(pdf_path)
                 upsert_source(con, source_id, str(pdf_path), meta)
-                file_hash = source_id
-                doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
+                doc_id = insert_document(con, source_id, str(pdf_path), source_id)
                 source_title_l = str(meta.get("title") or pdf_path.stem).lower()
                 resolved_domain = (
                     domain
@@ -294,21 +336,25 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                     for page_num, page in enumerate(pdf.pages, start=1):
                         text = page.extract_text() or ""
                         section = guess_section(text.lower())
-                        chunk_id = insert_chunk(con, source_id, doc_id, page_num, section, text)
+                        chunk_id = insert_chunk(con, doc_id, page_num, section, text)
                         for sent in chunk_sentences(text):
                             sent_l = sent.lower()
-                            ents = extract_entities(sent, domain=resolved_domain, SEEDS_DIR=SEEDS_DIR)
-                            measurements = extract_quantitative_data(sent)
                             if resolved_domain == "construction_science" and _looks_like_construction_boilerplate(sent_l):
                                 continue
                             if resolved_domain == "construction_science" and _looks_like_climate_table_row(sent_l, source_title_l):
                                 continue
+                            ents = extract_entities(sent, domain=resolved_domain, SEEDS_DIR=SEEDS_DIR)
+                            measurements = extract_quantitative_data(sent)
                             if resolved_domain == "construction_science":
                                 event_type = _classify_construction_event(sent_l)
                                 if not event_type:
                                     continue
                                 if event_type == "climate_load" and not _has_climate_building_context(sent_l):
                                     continue
+                                ents = [
+                                    ent for ent in ents
+                                    if ent.get("entity_name", "").strip().lower() not in ENTITY_NAME_BLACKLIST
+                                ]
                                 method_tags = detect_method_tags(sent_l)
                                 failure_reason = detect_failure_reason(sent_l)
                                 decision_taken = detect_decision(sent_l)
@@ -369,7 +415,10 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                                 link_event_entity(con, event_id, entity_id, ent.get("role", "unknown"))
                             # Persist measurements and link to event
                             for measurement in measurements:
-                                insert_measurement(con, event_id, measurement)
+                                try:
+                                    insert_measurement(con, event_id, measurement)
+                                except ValueError as exc:
+                                    print(f"                                Skipping invalid measurement {measurement!r}: {exc}")
                             print(f"    Inserted event: {event_id} (page {page_num})")
                     con.commit()
             except Exception as e:

@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 
 import pytest
 
@@ -87,7 +88,7 @@ def test_export_events_csv_formats_scores_and_defaults(tmp_path):
     assert rows[1]["ov1_score"] == "+0.0"
 
 
-def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch):
+def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch, caplog):
     monkeypatch.chdir(tmp_path)
 
     entities_file = tmp_path / "entities.csv"
@@ -104,6 +105,19 @@ def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch):
     assert latest_events is not None
     assert latest_events.exists()
 
+    def fail_unlink(*args, **kwargs):
+        raise OSError("unlink failed")
+
+    monkeypatch.setattr(Path, "unlink", fail_unlink, raising=False)
+    monkeypatch.setattr(reporting.os, "replace", lambda *args, **kwargs: (_ for _ in ()).throw(OSError("replace failed")))
+
+    with caplog.at_level("WARNING"):
+        result, error = reporting._publish_latest_file(entities_file, tmp_path / "latest.csv")
+
+    assert result is None
+    assert isinstance(error, OSError)
+    assert any("Failed to clean up temp file" in msg for msg in caplog.messages)
+
     with pytest.raises(ValueError):
         reporting.publish_latest_entities(entities_file, "../bad")
 
@@ -111,7 +125,7 @@ def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch):
 def test_write_dual_lens_report_handles_empty_overlays(tmp_path, caplog):
     report_file = tmp_path / "dual_lens_report.txt"
 
-    with caplog.at_level("WARNING"):
+    with caplog.at_level("INFO"):
         reporting.write_dual_lens_report(
             report_file=report_file,
             domain_config="not-a-dict",

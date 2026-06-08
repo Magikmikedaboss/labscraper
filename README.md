@@ -119,6 +119,15 @@ Captures measurable data such as:
 The data model supports entity relationships via `entity_relationships`.
 Automated relationship extraction exists in utility modules and is still being hardened for broad production use.
 
+## Roadmap and Architecture
+
+The current planning docs live here:
+
+- [AXON Architecture](AXON_ARCHITECTURE.md)
+- [AXON Todo / Roadmap](AXON_TODO.md)
+
+Those files track the current ingest simplification work, the canonical engine decision, and the remaining cleanup items.
+
 ### Multi-Domain Architecture
 
 AXON supports multiple research domains using configurable overlays.
@@ -160,9 +169,10 @@ Instead of storing documents, AXON extracts knowledge.
 
 ## 🛣 Roadmap
 
-### Phase 1: Research Engine
+### Phase 1: Canonical Ingest Engine
 
-- PDF ingestion
+- RSS discovery and PDF acquisition
+- HTML abstract fallback when PDFs are missing
 - Entity extraction
 - Event extraction
 - Measurement extraction
@@ -198,9 +208,9 @@ Instead of storing documents, AXON extracts knowledge.
 
 **Status:** Active Development
 
-AXON currently functions as a production-capable research extraction engine with multi-domain PDF analysis, structured intelligence extraction, RSS discovery, and export pipelines.
+AXON currently functions as a production-capable research extraction engine with a canonical hybrid ingest path, structured intelligence extraction, RSS discovery, and export pipelines.
 
-Development is focused on source intelligence, metadata tracking, dashboard infrastructure, and advanced knowledge discovery features.
+Development is focused on canonical ingest simplification, extraction quality, source intelligence, and construction signal cleanup.
 
 ## Current State (Implemented)
 
@@ -215,7 +225,7 @@ Current workflow:
 5. Persist results to SQLite (`db/runs.sqlite` or `db/rss.sqlite`)
 6. Export structured outputs to CSV
 
-Note: RSS is used for discovery. PDFs remain the primary intelligence source when available.
+Note: RSS is used for discovery, PDF acquisition, and HTML fallback when a PDF is not available.
 
 ---
 
@@ -356,7 +366,8 @@ labscraper/
 │   ├── common.py                   # Common helpers (hashing, etc.)
 │   ├── entity_extractor.py         # (legacy) Entity extraction logic
 │   ├── entity_normalizer.py        # (legacy) Variant normalization
-│   ├── init_db.py                  # Isolated DB initialization (guarded against db/runs.sqlite)│   └── scrape_pdfs_phase1.py       # Base scraper functions
+│   ├── init_db.py                  # Isolated DB initialization (guarded against db/runs.sqlite)
+│   └── scrape_pdfs_phase1.py       # Base scraper functions
 ├── schema.sql                  # Database schema
 ├── config/                     # Configuration files
 │   ├── domains/               # Domain-specific configurations

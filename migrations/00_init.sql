@@ -120,8 +120,8 @@ CREATE TABLE IF NOT EXISTS entity_relationships (
     target_entity_id TEXT NOT NULL,
     relationship_type TEXT NOT NULL,
     created_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (source_entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE,
-    FOREIGN KEY (target_entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE
+    FOREIGN KEY (source_entity_id) REFERENCES entities(entity_id) ON DELETE RESTRICT,
+    FOREIGN KEY (target_entity_id) REFERENCES entities(entity_id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS tags (

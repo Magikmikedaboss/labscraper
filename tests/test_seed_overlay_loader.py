@@ -31,12 +31,11 @@ def test_merge_seed_dict_nested():
     assert sorted(merged["a"]["b"]) == [1, 2]
     assert merged["a"]["c"] == [3]
 
-def test_load_core_seeds(tmp_path, monkeypatch):
+def test_load_core_seeds(tmp_path):
     # Create fake seeds dir with one json and one txt
     (tmp_path / "assays.json").write_text(json.dumps(["a"]), encoding="utf-8")
     (tmp_path / "compounds.txt").write_text("x\ny\n", encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
-    seeds = seed_overlay_loader.load_core_seeds("")
+    seeds = seed_overlay_loader.load_core_seeds(str(tmp_path))
     assert "assays" in seeds and "compounds" in seeds
     assert seeds["assays"] == ["a"]
     assert seeds["compounds"] == ["x", "y"]
@@ -77,3 +76,10 @@ def test_get_overlay_info(tmp_path):
     assert info["notes"] == "n"
     assert info["exclusions"] == {"x": 1}
     assert "foo" in info["entity_categories"]
+
+
+def test_get_overlay_aliases_for_construction_science():
+    aliases = seed_overlay_loader.get_overlay_aliases("construction_science")
+    assert aliases["cement"] == "concrete"
+    assert aliases["rebar"] == "steel"
+    assert aliases["xps"] == "insulation"

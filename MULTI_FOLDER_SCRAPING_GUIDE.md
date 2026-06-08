@@ -1,15 +1,15 @@
-﻿# Multi-Folder Scraping Guide
+# Multi-Folder Scraping Guide
 
 ## What's Happening Now
 
 We're scraping **two folders** into **one combined database**:
 
-### Folder 1: `input_pdfs/`  RUNNING
+### Folder 1: `input/pdfs/`  RUNNING
 - **65 PDFs** (stem cell, peptide, longevity research)
 - **Status:** Currently processing (2% complete)
 - **ETA:** ~20-30 minutes
 
-### Folder 2: `input_pdfs/biohacking/`  WAITING
+### Folder 2: `input/pdfs/biohacking/`  WAITING
 - **Unknown count** of PDFs
 - **Status:** Will start after Folder 1 completes
 - **ETA:** TBD
@@ -32,12 +32,12 @@ The scraper uses `INSERT OR IGNORE` in the database, which means:
 ```bash
 python utils/scrape_pdfs_phase1.py \
   --domain biohacking_longevity \
-  --input-dir input_pdfs \
+  --input-dir input/pdfs \
   --output-db output/combined_biohacking_all.sqlite
 ```
 
 **What it does:**
-- Reads 65 PDFs from `input_pdfs/`
+- Reads 65 PDFs from `input/pdfs/`
 - Extracts research events (efficacy, toxicity, decisions, etc.)
 - Extracts entities (compounds, targets, models, assays, pathways, indications)
 - Stores in `output/combined_biohacking_all.sqlite`
@@ -46,12 +46,12 @@ python utils/scrape_pdfs_phase1.py \
 ```bash
 python utils/scrape_pdfs_phase1.py \
   --domain biohacking_longevity \
-  --input-dir input_pdfs/biohacking \
+  --input-dir input/pdfs/biohacking \
   --output-db output/combined_biohacking_all.sqlite
 ```
 
 **What it does:**
-- Reads PDFs from `input_pdfs/biohacking/`
+- Reads PDFs from `input/pdfs/biohacking/`
 - Extracts same types of data
 - **APPENDS** to the same database (no overwrite!)
 - Skips duplicates automatically
@@ -176,10 +176,10 @@ Same data, different insights:
 Can add more folders anytime:
 ```bash
 # Add folder 3
-python utils/scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdfs/new_batch --output-db output/combined_biohacking_all.sqlite
+python utils/scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input/pdfs/new_batch --output-db output/combined_biohacking_all.sqlite
 
 # Add folder 4
-python utils/scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input_pdfs/another_batch --output-db output/combined_biohacking_all.sqlite
+python utils/scrape_pdfs_phase1.py --domain biohacking_longevity --input-dir input/pdfs/another_batch --output-db output/combined_biohacking_all.sqlite
 ```
 
 ### 4. Deduplication

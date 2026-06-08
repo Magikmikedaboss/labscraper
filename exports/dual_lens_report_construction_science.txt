@@ -3,13 +3,75 @@ DUAL-LENS ANALYSIS REPORT
 ======================================================================
 
 Domain: Construction Science & Engineering
-Overlays: 
-Total Events: 4341
-Total Entities: 222
+Overlays: construction_research_v1, science_research_v1
+Total Events: 44
+Total Entities: 24
+
+======================================================================
+TOP 20 ENTITIES - CONSTRUCTION_RESEARCH_V1
+======================================================================
+
+ 1. beam                           (system      ) Score:  14.18 [exploratory    ] Events:  12
+ 2. wall                           (system      ) Score:   8.80 [promising      ] Events:   7
+ 3. fiber                          (material    ) Score:   4.50 [exploratory    ] Events:   3
+ 4. bending                        (test_method ) Score:   4.50 [exploratory    ] Events:   3
+ 5. composite                      (material    ) Score:   4.50 [exploratory    ] Events:   3
+ 6. foundation                     (system      ) Score:   4.20 [exploratory    ] Events:   3
+ 7. strength                       (test_method ) Score:   3.00 [stalled        ] Events:   2
+ 8. glass                          (material    ) Score:   2.80 [stalled        ] Events:   2
+ 9. panel                          (material    ) Score:   1.50 [deprioritized  ] Events:   1
+10. column                         (system      ) Score:   1.50 [deprioritized  ] Events:   1
+11. stiffness                      (test_method ) Score:   1.50 [deprioritized  ] Events:   1
+12. insulation                     (material    ) Score:   1.50 [deprioritized  ] Events:   1
+13. instability                    (failure_mode) Score:   1.50 [deprioritized  ] Events:   1
+14. lattice collapse               (failure_mode) Score:   1.50 [deprioritized  ] Events:   1
+15. collapse                       (failure_mode) Score:   1.50 [deprioritized  ] Events:   1
+16. thermal analysis               (test_method ) Score:   1.50 [deprioritized  ] Events:   1
+17. corrosion                      (hazard      ) Score:   1.50 [deprioritized  ] Events:   1
+18. polymer                        (material    ) Score:   1.00 [deprioritized  ] Events:   1
+19. modulus                        (test_method ) Score:   1.00 [deprioritized  ] Events:   1
+20. compression                    (test_method ) Score:   1.00 [deprioritized  ] Events:   1
+
+======================================================================
+TOP 20 ENTITIES - SCIENCE_RESEARCH_V1
+======================================================================
+
+ 1. beam                           (system      ) Score:  12.00 [exploratory    ] Events:  12
+ 2. wall                           (system      ) Score:   7.43 [exploratory    ] Events:   7
+ 3. strength                       (test_method ) Score:   3.00 [stalled        ] Events:   2
+ 4. glass                          (material    ) Score:   3.00 [stalled        ] Events:   2
+ 5. fiber                          (material    ) Score:   3.00 [stalled        ] Events:   3
+ 6. bending                        (test_method ) Score:   3.00 [stalled        ] Events:   3
+ 7. composite                      (material    ) Score:   3.00 [stalled        ] Events:   3
+ 8. foundation                     (system      ) Score:   2.00 [stalled        ] Events:   3
+ 9. polymer                        (material    ) Score:   1.50 [deprioritized  ] Events:   1
+10. modulus                        (test_method ) Score:   1.50 [deprioritized  ] Events:   1
+11. panel                          (material    ) Score:   1.00 [deprioritized  ] Events:   1
+12. compression                    (test_method ) Score:   1.00 [deprioritized  ] Events:   1
+13. column                         (system      ) Score:   1.00 [deprioritized  ] Events:   1
+14. insulation                     (material    ) Score:   1.00 [deprioritized  ] Events:   1
+15. instability                    (failure_mode) Score:   1.00 [deprioritized  ] Events:   1
+16. lattice collapse               (failure_mode) Score:   1.00 [deprioritized  ] Events:   1
+17. collapse                       (failure_mode) Score:   1.00 [deprioritized  ] Events:   1
+18. window                         (system      ) Score:   1.00 [deprioritized  ] Events:   1
+19. thermal analysis               (test_method ) Score:   1.00 [deprioritized  ] Events:   1
+20. yielding                       (failure_mode) Score:   1.00 [deprioritized  ] Events:   1
 
 ======================================================================
 BUCKET DISTRIBUTION
 ======================================================================
 
-No bucket data available (no overlays configured in this run).
+construction_research_v1:
+  strong         :    0 (  0.0%)
+  promising      :    1 (  4.2%)
+  exploratory    :    5 ( 20.8%)
+  stalled        :    2 (  8.3%)
+  deprioritized  :   16 ( 66.7%)
+
+science_research_v1:
+  strong         :    0 (  0.0%)
+  promising      :    0 (  0.0%)
+  exploratory    :    2 (  8.3%)
+  stalled        :    6 ( 25.0%)
+  deprioritized  :   16 ( 66.7%)
 

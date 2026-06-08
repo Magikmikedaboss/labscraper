@@ -1,6 +1,5 @@
 import csv
 import io
-import pytest
 from utils import export_pattern_intelligence
 
 ENTITY_NAME_IDX = 0
@@ -66,11 +65,28 @@ def test_export_to_csv(tmp_path):
     assert row0[CONFIDENCE_LEVEL_IDX] == "high"
     assert row0[INTERPRETATION_IDX] == "Interpretation 0"
 
-# Optionally, test main() just for coverage (does not assert output)
-def test_main_runs(monkeypatch):
+def test_main_runs(monkeypatch, tmp_path):
+    dummy_results = [DummyAnalysis(0)]
+
+    called = {}
+
+    def fake_analyze_patterns(top_n):
+        called["top_n"] = top_n
+        return dummy_results
+
+    monkeypatch.setattr(export_pattern_intelligence, "analyze_patterns", fake_analyze_patterns)
+    output_file = tmp_path / "pattern_intelligence_export.csv"
+    monkeypatch.setattr(export_pattern_intelligence, "OUTPUT_FILE", output_file)
     monkeypatch.setattr("builtins.print", lambda *a, **k: None)
-    try:
-        result = export_pattern_intelligence.main()
-    except Exception as e:
-        pytest.fail(f"main() raised an exception: {e}")
-    assert result is None
+
+    export_pattern_intelligence.main()
+
+    assert called["top_n"] == 50
+    assert output_file.exists()
+
+    csv_text = output_file.read_text(encoding="utf-8")
+    reader = csv.reader(io.StringIO(csv_text))
+    rows = list(reader)
+    assert rows[0][0:4] == ["entity_name", "entity_type", "pattern_type", "health_score"]
+    assert rows[1][ENTITY_NAME_IDX] == "entity_0"
+    assert rows[1][PATTERN_TYPE_IDX] == "convergence"

@@ -30,4 +30,6 @@ def test_parse_first_page_text_fallbacks():
     """
     meta = pdf_metadata_parser.parse_first_page_text(text)
     assert meta["title"] == "Short"
-    assert meta["authors"] == "No DOI here"
+    assert meta["authors"] is None
+    assert meta["doi"] is None
+    assert meta["year"] is None

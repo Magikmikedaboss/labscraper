@@ -2,6 +2,29 @@ import copy
 from typing import Any, Callable, Optional
 
 
+ENTITY_STOP_WORDS = {
+    "a",
+    "an",
+    "this",
+    "that",
+    "the",
+    "of",
+    "and",
+    "for",
+    "with",
+}
+
+
+ENTITY_FRAGMENT_DENYLIST = {
+    "a failure",
+    "the failure",
+    "of failure",
+    "explain failure",
+    "a collapse",
+    "the collapse",
+}
+
+
 GLOBAL_TYPE_MAPPINGS = {
     "neural_cell": {
         "microglia", "astrocyte", "neuron", "neurons",
@@ -61,6 +84,17 @@ def normalize_entity_type(name: str, entity_type: str, domain_id: str) -> str:
 
     return entity_type
 
+
+def _is_fragment_entity_name(canonical_name: str) -> bool:
+    canonical = canonical_name.lower().strip()
+    if canonical in ENTITY_FRAGMENT_DENYLIST:
+        return True
+
+    tokens = [token for token in canonical.split() if token]
+    if len(tokens) < 2:
+        return False
+    return tokens[0] in ENTITY_STOP_WORDS or tokens[-1] in ENTITY_STOP_WORDS
+
 def build_canonical_entities(
     entities: list,
     domain_id: str,
@@ -81,7 +115,10 @@ def build_canonical_entities(
 
     for entity in entities:
         if not isinstance(entity, dict):
-            continue
+            try:
+                entity = dict(entity)
+            except (TypeError, ValueError):
+                continue
 
         name = entity.get("entity_name")
         entity_type = entity.get("entity_type")
@@ -104,6 +141,8 @@ def build_canonical_entities(
 
         canonical_name = str(normalized_name).strip()
         if not canonical_name:
+            continue
+        if _is_fragment_entity_name(canonical_name):
             continue
         canonical_key = canonical_name.lower()
 
@@ -131,7 +170,7 @@ def build_canonical_entities(
                 canonical_entity["original_names"].append(name)
 
         orig_id = entity.get("entity_id")
-        if orig_id is not None:
+        if orig_id is not None and str(orig_id).strip():
             entity_id_mapping[orig_id] = entity_id_str
 
     return list(entity_canonical.values()), entity_id_mapping

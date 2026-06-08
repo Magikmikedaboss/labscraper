@@ -28,7 +28,7 @@ def main(db_path="db.sqlite", force=False):
     canonical_db_path = (project_root / "db" / "runs.sqlite").resolve()
     db_path_resolved = Path(db_path).resolve()
     if not force and db_path_resolved == canonical_db_path:
-        raise RuntimeError(f"Refusing to initialize the canonical root DB at {canonical_db_path}. Choose a different path or modify this guardrail if intentional.")
+        raise RuntimeError(f"Refusing to initialize the canonical root DB at {canonical_db_path}. Choose a different path, use --force to override, or modify this guardrail if intentional.")
     schema_path = project_root / "schema.sql"
     if not schema_path.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")

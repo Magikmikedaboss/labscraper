@@ -152,15 +152,15 @@ def analyze_construction_results():
         
         # Summary statistics
         print("📊 SUMMARY STATISTICS:")
-        cursor.execute('SELECT COUNT(*) FROM research_events WHERE research_domain = "construction_science"')
+        cursor.execute('SELECT COUNT(*) FROM research_events WHERE research_domain = \'construction_science\'')
         total_events = cursor.fetchone()[0]
         print(f"  Total events: {total_events}")
         
-        cursor.execute('SELECT COUNT(DISTINCT e.entity_id) FROM entities e JOIN event_entities ee ON e.entity_id = ee.entity_id JOIN research_events re ON ee.event_id = re.event_id WHERE re.research_domain = "construction_science"')
+        cursor.execute('SELECT COUNT(DISTINCT e.entity_id) FROM entities e JOIN event_entities ee ON e.entity_id = ee.entity_id JOIN research_events re ON ee.event_id = re.event_id WHERE re.research_domain = \'construction_science\'')
         total_entities = cursor.fetchone()[0]
         print(f"  Total unique entities: {total_entities}")
         
-        cursor.execute('SELECT COUNT(DISTINCT re.source_id) FROM research_events re WHERE re.research_domain = "construction_science"')
+        cursor.execute('SELECT COUNT(DISTINCT re.source_id) FROM research_events re WHERE re.research_domain = \'construction_science\'')
         total_sources = cursor.fetchone()[0]
         print(f"  Total sources (PDFs): {total_sources}")
         

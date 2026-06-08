@@ -25,6 +25,68 @@
       "enabled": true
     },
     {
+      "name": "ORNL News",
+      "url": "https://www.ornl.gov/rss.xml",
+      "domain": "construction_science",
+      "enabled": false
+    },
+    {
+      "name": "ORNL Building Technologies Collector",
+      "url": "https://www.ornl.gov/buildingtechnologies",
+      "domain": "construction_science",
+      "source_kind": "collector",
+      "collector_mode": "html_archive",
+      "max_pages": 10,
+      "same_path_prefix": "/buildingtechnologies",
+      "collector_max_depth": 2,
+      "enabled": true
+    },
+    {
+      "name": "NIST Buildings and Construction",
+      "url": "https://www.nist.gov/news-events/Buildings%20and%20Construction/rss.xml",
+      "domain": "construction_science",
+      "enabled": true
+    },
+    {
+      "name": "NIST News",
+      "url": "https://www.nist.gov/news-events/news/rss.xml",
+      "domain": "construction_science",
+      "enabled": false
+    },
+    {
+      "name": "DOE Building Technologies RSS",
+      "url": "https://www.energy.gov/rss/cmei-buildings/853926",
+      "domain": "construction_science",
+      "enabled": false
+    },
+    {
+      "name": "DOE Building Technologies Collector",
+      "url": "https://www.energy.gov/cmei/buildings/listings/news",
+      "domain": "construction_science",
+      "source_kind": "collector",
+      "collector_mode": "html_archive",
+      "max_pages": 10,
+      "same_path_prefix": "/cmei/buildings/",
+      "collector_max_depth": 2,
+      "enabled": true
+    },
+    {
+      "name": "NOAA NCEI News",
+      "url": "https://www.ncei.noaa.gov/news.xml",
+      "domain": "construction_science",
+      "enabled": false
+    },
+    {
+      "name": "NOAA NCEI Collector",
+      "url": "https://www.ncei.noaa.gov/news",
+      "domain": "construction_science",
+      "source_kind": "collector",
+      "collector_mode": "html_archive",
+      "max_pages": 8,
+      "collector_max_depth": 2,
+      "enabled": false
+    },
+    {
       "name": "NREL News (National Renewable Energy Laboratory)",
       "url": "https://www.nrel.gov/news/rss.xml",
       "domain": "construction_science",
@@ -37,7 +99,7 @@
       "enabled": false
     },
     {
-      "name": "NIST News",
+      "name": "NIST News (Legacy CMS RSS)",
       "url": "https://www.nist.gov/news-events/cms-rss.xml",
       "domain": "construction_science",
       "enabled": false
@@ -46,13 +108,13 @@
       "name": "arXiv Applied Physics",
       "url": "https://export.arxiv.org/rss/physics.app-ph",
       "domain": "construction_science",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "arXiv Materials Science",
       "url": "https://export.arxiv.org/rss/cond-mat.mtrl-sci",
       "domain": "construction_science",
-      "enabled": true
+      "enabled": false
     }
   ]
 }

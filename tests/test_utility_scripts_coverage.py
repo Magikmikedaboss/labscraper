@@ -75,7 +75,7 @@ def test_show_all_exports_script_some_missing(tmp_path, monkeypatch, capsys):
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "events_export_v4.csv").write_text("h\n", encoding="utf-8")
 
-    assert show_all_exports.main() == 0
+    assert show_all_exports.main() == 1
     output = capsys.readouterr().out
     assert "Missing" in output
     assert "Found 1 file(s)" in output

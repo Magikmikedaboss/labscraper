@@ -54,7 +54,7 @@ def test_detect_outcome():
 def test_classify_event_type():
     s = "The sample was toxic and showed corrosion."
     tags = []
-    event_type = event_classification.classify_event_type(s.lower(), tags, "toxicity_flag", "unknown")
+    event_type = event_classification.classify_event_type(s.lower(), tags, "unknown", "unknown")
     assert event_type == "toxicity_flag"
 
 def test_evidence_strength():

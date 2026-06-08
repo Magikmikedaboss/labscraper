@@ -1,4 +1,6 @@
-﻿#  Testing Guide - Seed File System
+# Legacy Testing Guide - Seed File System
+
+This document describes the legacy seed system. For the current seed system, use the active seed files under `seeds/base/life_sciences/`.
 
 ##  Simple Step-by-Step Instructions
 

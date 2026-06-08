@@ -85,7 +85,7 @@ def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dic
     Returns:
         dict with normalized 'entity_type', 'entity_name', 'entity_variant', preserving extra keys
     Notes:
-        Keys are matched case-sensitively, but mapped values from overlay_aliases and norm_map will be lowercased for consistency (see etype, name).
+        Input fields (etype, name, variant) are normalized to lowercase before matching. Matching against overlay_aliases and norm_map is case-insensitive because the code compares against v.lower(), and mapped values are lowercased for consistency.
     """
     copy = dict(entity)
     name = (entity.get('entity_name') or '').strip().lower()
@@ -93,9 +93,11 @@ def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dic
     variant = (entity.get('entity_variant') or '').strip().lower()
     # Overlay alias normalization (mapped values are lowercased)
     if overlay_aliases and name in overlay_aliases:
-        name = overlay_aliases[name].lower()
+        mapped_name = overlay_aliases[name]
+        name = mapped_name.lower() if isinstance(mapped_name, str) else str(mapped_name).lower()
     if overlay_aliases and variant in overlay_aliases:
-        variant = overlay_aliases[variant].lower()
+        mapped_variant = overlay_aliases[variant]
+        variant = mapped_variant.lower() if isinstance(mapped_variant, str) else str(mapped_variant).lower()
     # Normalization map: match input name to any variant in norm_map[etype] and set to canonical_name
     # Supported shapes for variants_entry:
     #   list:  ["a", "b"]

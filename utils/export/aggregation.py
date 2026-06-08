@@ -1,8 +1,7 @@
 import sqlite3
 import logging
 from collections import defaultdict
-from contextlib import closing
-from typing import Any, Mapping, Sequence, Tuple
+from typing import Any, Mapping, Protocol, Sequence, Tuple
 
 
 logger = logging.getLogger(__name__)
@@ -14,9 +13,26 @@ RowLike = Mapping[str, Any]
 RowSeq = Sequence[RowLike]
 
 
+class OverlayScorerProtocol(Protocol):
+    def apply_event_scores(self, event: dict[str, Any]) -> dict[str, float]:
+        ...
+
+    def calculate_entity_score(
+        self,
+        entity: dict[str, Any],
+        event_scores: list[float],
+        overlay_id: str,
+        entity_models: list[str] | None = None,
+    ) -> float:
+        ...
+
+    def bucket_score(self, score: float, max_score: float = 100) -> str:
+        ...
+
+
 def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowSeq]:
     try:
-        with closing(sqlite3.connect(db_path)) as con:
+        with sqlite3.connect(db_path) as con:
             con.row_factory = sqlite3.Row
             cur = con.cursor()
 
@@ -50,12 +66,14 @@ def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowS
 
     return events, entities, event_entities, model_rows
 
-def build_event_overlay_scores(events: Sequence[RowLike], scorer: Any) -> dict[str, dict[str, float]]:
+def build_event_overlay_scores(events: Sequence[RowLike], scorer: OverlayScorerProtocol) -> dict[str, dict[str, float]]:
     event_overlay_scores = {}
 
     for event in events:
         event_dict = dict(event)
         scores = scorer.apply_event_scores(event_dict)
+        if not isinstance(scores, dict):
+            raise TypeError("build_event_overlay_scores expected apply_event_scores() to return a dict[str, float]")
         event_id = event_dict.get("event_id")
         if not isinstance(event_id, str) or not event_id:
             logger.warning("Skipping event without valid event_id in overlay scoring: %r", event_dict)
@@ -103,7 +121,7 @@ def build_event_models(model_rows):
 
     return event_models
 
-def build_entity_models_map(entity_events, event_models):
+def build_entity_models_map(entity_events, event_models) -> dict[str, set[str]]:
     entity_models_map = defaultdict(set)
 
     for entity_id, event_ids in entity_events.items():
@@ -129,9 +147,11 @@ def build_entity_scores(
             logger.warning("Skipping malformed entity (not a dict): %r", entity)
             continue
 
-        entity_id = entity.get("entity_id")
+        local_entity = dict(entity)
+
+        entity_id = local_entity.get("entity_id")
         if not isinstance(entity_id, str) or not entity_id:
-            logger.warning("Skipping malformed entity without valid entity_id: %r", entity)
+            logger.warning("Skipping malformed entity without valid entity_id: %r", local_entity)
             continue
 
         event_ids = entity_events.get(entity_id, [])
@@ -144,11 +164,11 @@ def build_entity_scores(
                 for event_id in event_ids
             ]
 
-            entity_dict = dict(entity)
-            entity_dict["event_count"] = len(event_ids)
+            # Intentionally inject event_count so scorer.calculate_entity_score can use it.
+            local_entity["event_count"] = len(event_ids)
 
             final_score = scorer.calculate_entity_score(
-                entity_dict,
+                local_entity,
                 event_scores_list,
                 overlay_id,
                 entity_models=models_list,

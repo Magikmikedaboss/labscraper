@@ -1,4 +1,7 @@
 import copy
+import sqlite3
+
+import pytest
 
 from utils.confidence_utils import normalize_confidence, safe_confidence_boost
 from utils.domain_enforcement import (
@@ -7,6 +10,32 @@ from utils.domain_enforcement import (
     is_entity_type_allowed_for_domain,
 )
 from utils.export.normalization import build_canonical_entities, normalize_entity_type
+
+
+@pytest.fixture(scope="module")
+def fake_normalize_entity():
+    def _fake_normalize_entity(entity, norm_map, overlay_aliases):
+        out = copy.deepcopy(entity)
+        out["entity_name"] = str(entity["entity_name"]).strip()
+        return out
+
+    return _fake_normalize_entity
+
+
+@pytest.fixture(scope="module")
+def fake_get_entity_role():
+    def _fake_get_entity_role(entity, norm_map):
+        return "primary"
+
+    return _fake_get_entity_role
+
+
+@pytest.fixture(scope="module")
+def fake_should_skip():
+    def _fake_should_skip(entity_type, canonical_name, role):
+        return canonical_name.lower() == "skipme"
+
+    return _fake_should_skip
 
 
 def test_normalize_confidence_unknown_to_low() -> None:
@@ -67,7 +96,11 @@ def test_normalize_entity_type_global_and_domain_mappings() -> None:
     assert normalize_entity_type("unmapped", "target", "construction_science") == "target"
 
 
-def test_build_canonical_entities_dedupes_and_maps_ids() -> None:
+def test_build_canonical_entities_dedupes_and_maps_ids(
+    fake_normalize_entity,
+    fake_get_entity_role,
+    fake_should_skip,
+) -> None:
     entities = [
         {"entity_id": "a", "entity_type": "target", "entity_name": "Neuron"},
         {"entity_id": "b", "entity_type": "target", "entity_name": "neuron"},
@@ -75,17 +108,6 @@ def test_build_canonical_entities_dedupes_and_maps_ids() -> None:
         "not-a-dict",
         {"entity_id": "missing_type", "entity_name": "x"},
     ]
-
-    def fake_normalize_entity(entity, norm_map, overlay_aliases):
-        out = copy.deepcopy(entity)
-        out["entity_name"] = str(entity["entity_name"]).strip()
-        return out
-
-    def fake_get_entity_role(entity, norm_map):
-        return "primary"
-
-    def fake_should_skip(entity_type, canonical_name, role):
-        return canonical_name.lower() == "skipme"
 
     canonical_entities, mapping = build_canonical_entities(
         entities,
@@ -122,3 +144,52 @@ def test_build_canonical_entities_skips_invalid_normalized_payload() -> None:
 
     assert canonical_entities == []
     assert mapping == {}
+
+
+def test_build_canonical_entities_handles_sqlite_rows(fake_normalize_entity, fake_get_entity_role, fake_should_skip) -> None:
+    with sqlite3.connect(":memory:") as con:
+        con.row_factory = sqlite3.Row
+        con.execute(
+            "CREATE TABLE entities (entity_id TEXT, entity_type TEXT, entity_name TEXT, entity_variant TEXT)"
+        )
+        con.execute(
+            "INSERT INTO entities VALUES (?, ?, ?, ?)",
+            ("a", "target", "Neuron", None),
+        )
+        row = con.execute("SELECT * FROM entities").fetchone()
+
+    canonical_entities, mapping = build_canonical_entities(
+        [row],
+        domain_id="drug_discovery",
+        norm_map={},
+        overlay_aliases={},
+        normalize_entity=fake_normalize_entity,
+        get_entity_role=fake_get_entity_role,
+        should_skip_entity=fake_should_skip,
+    )
+
+    assert len(canonical_entities) == 1
+    assert mapping == {"a": "neural_cell:neuron"}
+
+
+def test_build_canonical_entities_filters_fragment_like_names(fake_get_entity_role, fake_should_skip) -> None:
+    entities = [
+        {"entity_id": "x1", "entity_type": "target", "entity_name": "a failure"},
+        {"entity_id": "x2", "entity_type": "target", "entity_name": "explain failure"},
+        {"entity_id": "x3", "entity_type": "target", "entity_name": "structural collapse"},
+        {"entity_id": "x4", "entity_type": "target", "entity_name": "the collapse"},
+    ]
+
+    canonical_entities, mapping = build_canonical_entities(
+        entities,
+        domain_id="drug_discovery",
+        norm_map={},
+        overlay_aliases={},
+        normalize_entity=lambda entity, norm_map, overlay_aliases: {**entity, "entity_name": entity["entity_name"].strip()},
+        get_entity_role=fake_get_entity_role,
+        should_skip_entity=fake_should_skip,
+    )
+
+    assert len(canonical_entities) == 1
+    assert canonical_entities[0]["entity_name"] == "structural collapse"
+    assert mapping == {"x3": "target:structural collapse"}

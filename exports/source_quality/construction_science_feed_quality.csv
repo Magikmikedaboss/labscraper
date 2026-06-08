@@ -1,0 +1,5 @@
+feed_name,feed_url,source_kind,domain,enabled,entries_found,html_pages_collected,pdf_links_found,pdfs_downloaded,pdfs_scanned,html_pages_scanned,keep,review,skip,construction_science,materials_science,physics,biomedical,mixed,unknown,keep_pct,review_pct,skip_pct
+DOE Building Technologies Collector,https://www.energy.gov/cmei/buildings/listings/news,collector,construction_science,True,10,10,0,0,0,10,0,0,0,0,0,0,0,0,0,0.0,0.0,0.0
+ORNL Building Technologies Collector,https://www.ornl.gov/buildingtechnologies,collector,construction_science,True,6,6,0,0,0,6,0,0,0,0,0,0,0,0,0,0.0,0.0,0.0
+NIST Buildings and Construction,https://www.nist.gov/news-events/Buildings%20and%20Construction/rss.xml,rss,construction_science,True,40,0,16,12,16,0,1,15,0,1,4,0,0,0,11,6.2,93.8,0.0
+Building Science - Building Science Corporation,https://buildingscience.com/rss.xml,rss,construction_science,True,10,0,9,9,9,0,8,1,0,8,0,0,0,1,0,88.9,11.1,0.0

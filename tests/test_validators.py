@@ -42,8 +42,7 @@ def test_validate_directory_and_file_paths(tmp_path):
 def test_validate_database_accepts_new_sqlite_paths(tmp_path):
 
     db_path = tmp_path / "nested" / "runs.sqlite"
-    with pytest.raises(ValidationError):
-        validate_database(db_path, must_exist=False)
+    assert validate_database(db_path, must_exist=False) == db_path
 
     validated = ensure_database_dir(db_path)
 

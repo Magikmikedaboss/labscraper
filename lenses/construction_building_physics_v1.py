@@ -46,7 +46,11 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         "lower heat loss", "lower energy use", "lower energy consumption",
         "improved r-value", "improved r value", "reduced infiltration"
     ])
-    # Flexible positive: require reducer + energy phrase (consumption/use/demand) within ENERGY_WORD_WINDOW words.
+    # energy_phrase matches energy consumption/use/demand.
+    # between_tokens allows up to ENERGY_WORD_WINDOW words with non-word separators between the two phrases.
+    # reduc\w* covers reduce, reduced, reduction, reducing, and similar forms.
+    # pattern1 matches reducer before the energy phrase; pattern2 matches the energy phrase before the reducer.
+    # flexible_positive becomes true when either pattern is found in s_l.
     flexible_positive = False
     energy_phrase = r"\benergy\s+(?:consumption|use|demand)\b"
     between_tokens = rf"(?:\W*\b\w+\b){{0,{ENERGY_WORD_WINDOW}}}\W*"

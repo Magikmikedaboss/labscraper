@@ -1,15 +1,27 @@
 """Shared utilities for RSS feed operations"""
 import re
 import feedparser
+import requests
 from typing import List, Dict, Optional
 
 PDF_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.pdf(?:\?[^\s<>"\']*)?(?:#[^\s<>"\']*)?', re.IGNORECASE)
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
-def parse_feed(url: str, raise_on_error: bool = False):
-    """Parse an RSS/Atom feed"""
+def parse_feed(url: str, raise_on_error: bool = False, timeout: int = 20):
+    """Parse an RSS/Atom feed with a timeout-bound fetch."""
+    if not isinstance(url, str) or not url.strip():
+        if raise_on_error:
+            raise ValueError("url must be a non-empty string")
+        return {}
     try:
-        return feedparser.parse(url)
+        response = requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT})
+        response.raise_for_status()
+        parsed = feedparser.parse(response.content)
+        if isinstance(parsed, dict):
+            parsed.setdefault('status', response.status_code)
+        else:
+            setattr(parsed, 'status', getattr(parsed, 'status', response.status_code))
+        return parsed
     except Exception:
         if raise_on_error:
             raise
@@ -35,7 +47,7 @@ def extract_pdf_links(entry: Dict) -> List[str]:
                 pdf_links.extend(found_list)
     return list(dict.fromkeys(pdf_links))
 
-def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
+def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None, timeout: int = 20) -> Dict:
     """
     Probe a feed and return results
     
@@ -52,7 +64,7 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) 
 
     print(f"Testing {name}: {url}")
     try:
-        feed = parse_feed(url, raise_on_error=True)
+        feed = parse_feed(url, raise_on_error=True, timeout=timeout)
         
         # Handle both dict and feedparser object for compatibility
         if isinstance(feed, dict):

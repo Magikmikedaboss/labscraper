@@ -17,12 +17,8 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def _apply_rename_context_columns_migration_if_needed(con: sqlite3.Connection, project_root: Path) -> None:
-    """Apply migration 01 only when legacy context columns are present."""
-    migration_path = project_root / "migrations" / "01_rename_research_event_context_columns.sql"
-    if not migration_path.exists():
-        return
-
+def ensure_research_events_columns_renamed(con: sqlite3.Connection) -> None:
+    """Rename legacy research_events context columns only when needed."""
     columns = {
         row[1]
         for row in con.execute("PRAGMA table_info(research_events)").fetchall()
@@ -32,10 +28,16 @@ def _apply_rename_context_columns_migration_if_needed(con: sqlite3.Connection, p
 
     should_apply = legacy_cols.issubset(columns) and target_cols.isdisjoint(columns)
     if should_apply:
-        con.executescript(migration_path.read_text(encoding="utf-8"))
-        logger.info("Applied migration: %s", migration_path.name)
+        con.executescript(
+            """
+            ALTER TABLE research_events RENAME COLUMN study_stage TO stage;
+            ALTER TABLE research_events RENAME COLUMN biological_system TO system_context;
+            ALTER TABLE research_events RENAME COLUMN application_area TO application_context;
+            """
+        )
+        logger.info("Applied migration: 01_rename_research_event_context_columns.sql")
     else:
-        logger.debug("Skipped migration %s due to current research_events column set", migration_path.name)
+        logger.debug("Skipped migration 01_rename_research_event_context_columns.sql due to current research_events column set")
 
 def init_db_schema(db_path):
     """
@@ -57,7 +59,7 @@ def init_db_schema(db_path):
     db_path_resolved = Path(db_path).resolve()
     canonical_path = (project_root / 'db' / 'runs.sqlite').resolve()
     if db_path_resolved == canonical_path:
-        raise ValueError(f"Refusing to initialize canonical persistent DB: {db_path_resolved}")
+        raise RuntimeError(f"Refusing to initialize canonical persistent DB: {db_path_resolved}")
 
     db_path_resolved.parent.mkdir(parents=True, exist_ok=True)
 
@@ -67,8 +69,9 @@ def init_db_schema(db_path):
     schema_sql = schema_path.read_text(encoding='utf-8')
 
     with sqlite3.connect(db_path_resolved) as con:
+        con.execute("PRAGMA foreign_keys = ON")
         con.executescript(schema_sql)
-        _apply_rename_context_columns_migration_if_needed(con, project_root)
+        ensure_research_events_columns_renamed(con)
 
 
 # Backward-compatible alias for any external imports.

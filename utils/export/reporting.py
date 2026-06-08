@@ -21,8 +21,13 @@ def _publish_latest_file(source_file: Path, latest_file: Path):
         if temp_path.exists():
             try:
                 temp_path.unlink()
-            except Exception:
-                pass
+            except Exception as cleanup_exc:
+                logger.warning(
+                    "Failed to clean up temp file %s after publish failure: %s",
+                    temp_path,
+                    cleanup_exc,
+                    exc_info=True,
+                )
         return None, e
 
 def export_entities_csv(
@@ -55,8 +60,14 @@ def export_entities_csv(
         writer = csv.DictWriter(f, fieldnames=base_cols + overlay_cols)
         writer.writeheader()
 
-        for entity in filtered_entities:
+        for index, entity in enumerate(filtered_entities):
             if not isinstance(entity, dict):
+                logger.warning(
+                    "Skipping malformed entity at index %s: type=%s repr=%r",
+                    index,
+                    type(entity).__name__,
+                    entity,
+                )
                 continue
 
             entity_id = entity.get("entity_id")
@@ -207,7 +218,7 @@ def write_dual_lens_report(
         f.write("=" * 70 + "\n\n")
 
         if not overlay_ids:
-            logger.warning("No overlays configured; bucket distribution is empty")
+            logger.info("No overlays configured; bucket distribution is empty")
             f.write("No bucket data available (no overlays configured).\n")
 
         for overlay_id in overlay_ids:

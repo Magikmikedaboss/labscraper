@@ -145,7 +145,7 @@ def export_candidates_domain_aware(domain_id: str = None):
             writer.writerow(['entity_name', 'entity_type', 'entity_variant', 'event_count'])
             # Only write rows if there are any entities
             for (etype, canonical_name), data in canonical_entities.items():
-                variant_str = ','.join(sorted(data["entity_variant"])) if data["entity_variant"] else ''
+                variant_str = ENTITY_VARIANT_DELIM.join(sorted(data["entity_variant"])) if data["entity_variant"] else ''
                 writer.writerow([
                     canonical_name,
                     etype,
@@ -162,7 +162,7 @@ def export_candidates_domain_aware(domain_id: str = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--domain", type=str, required=True)
+    parser.add_argument("--domain", type=str, required=False, default=None, help="optional domain id")
     args = parser.parse_args()
 
 

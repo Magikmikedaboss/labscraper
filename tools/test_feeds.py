@@ -55,6 +55,7 @@ def main(argv=None):
     feeds = default_feeds
     config = None
     feed_domains = {}
+    feed_metadata = {}
 
     print("\n📡 Testing feeds...")
     print("=" * 60)
@@ -71,6 +72,14 @@ def main(argv=None):
         feeds = [(feed["url"], feed["name"]) for feed in config.get("feeds", [])]
         feed_domains = {
             (feed.get("url"), feed.get("name")): feed.get("domain")
+            for feed in config.get("feeds", [])
+        }
+        feed_metadata = {
+            (feed.get("url"), feed.get("name")): {
+                key: feed[key]
+                for key in ("source_kind", "collector_mode", "max_pages", "same_domain_only", "keywords", "notes")
+                if key in feed
+            }
             for feed in config.get("feeds", [])
         }
 
@@ -116,16 +125,20 @@ def main(argv=None):
     # SAVE WORKING FEEDS
     # ---------------------------------------------------------
     if args.save_working and working:
+        sanitized_feeds = []
+        for r in working:
+            domain = r.get("domain") or feed_domains.get((r.get("url"), r.get("name"))) or args.default_domain
+            if not domain:
+                print(f"⚠️ Skipping feed without a domain: {r.get('name')} ({r.get('url')})")
+                continue
+            feed_entry = {"name": r["name"], "url": r["url"], "domain": domain, "enabled": True}
+            feed_entry.update(feed_metadata.get((r.get("url"), r.get("name")), {}))
+            for optional_key in ("source_kind", "collector_mode", "max_pages", "same_domain_only", "keywords", "notes"):
+                if optional_key in r:
+                    feed_entry[optional_key] = r[optional_key]
+            sanitized_feeds.append(feed_entry)
         output = {
-            "feeds": [
-                {
-                    "name": r["name"],
-                    "url": r["url"],
-                    "domain": r.get("domain") or feed_domains.get((r.get("url"), r.get("name"))) or args.default_domain,
-                    "enabled": True,
-                }
-                for r in working
-            ]
+            "feeds": sanitized_feeds
         }
         save_path = config_path.with_name(config_path.stem + "_working.json")
         save_path.parent.mkdir(parents=True, exist_ok=True)

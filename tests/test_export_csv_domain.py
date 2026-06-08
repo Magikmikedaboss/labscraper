@@ -71,7 +71,7 @@ def test_export_candidates_domain_aware_writes_domain_csv(tmp_path, monkeypatch)
     assert "PCR,assay,v1,1" in content
 
 
-def test_export_candidates_domain_aware_logs_malformed_variant_split(tmp_path, monkeypatch, caplog):
+def test_export_candidates_domain_aware_accepts_whitespace_padded_variants(tmp_path, monkeypatch, caplog):
     monkeypatch.chdir(tmp_path)
     db_path = tmp_path / "runs.sqlite"
     _init_minimal_export_db(db_path)

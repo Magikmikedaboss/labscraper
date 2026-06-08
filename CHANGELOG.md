@@ -2,6 +2,14 @@
 
 All notable improvements and changes to the Peptide Research Scraper.
 
+## [Unreleased]
+
+### Breaking Changes
+
+- `export_construction_results.py` now writes to `db/runs.sqlite` instead of `runs/construction_test_final.sqlite`.
+- To migrate existing data, copy or move the old SQLite file to the new path and update any scripts, configs, or workflows that referenced the previous location.
+- Temporary compatibility option: set `DB_PATH` to the legacy file path or create a symlink from `db/runs.sqlite` to the old database file.
+
 ## [2.1.0] - Bug Fixes & Parallel Processing Enhancement
 
 ### 🐛 Critical Bug Fixes

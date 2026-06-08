@@ -41,7 +41,8 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     for d in driver_hits[:5]:
         entities.append(make_entity("failure_driver", d, "driver", "cause"))
 
-    # Outcome (normalized later to negative/neutral buckets)
+    # Outcome values: 'failed', 'negative', or 'unknown' (normalized later if needed)
+    # mode_hits and has_causal drive the mapping below.
     if mode_hits:
         outcome = "failed"
     elif has_causal:

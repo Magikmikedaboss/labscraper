@@ -5,9 +5,17 @@ from utils.common import get_compound_seeds, get_target_seeds, get_model_seeds
 # ---------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------
-def normalize_name(name: str) -> str:
-    """Normalize entity name for deduplication."""
-    return re.sub(r'[\s\-_,.;:]+', '', name.strip().lower())
+def normalize_name(name: str, preserve_spaces: bool = False) -> str:
+    """Normalize entity text for deduplication or matching.
+
+    When preserve_spaces is False, whitespace and punctuation are removed.
+    When preserve_spaces is True, repeated whitespace is collapsed to single
+    spaces and punctuation is preserved.
+    """
+    normalized = name.strip().lower()
+    if preserve_spaces:
+        return re.sub(r"\s+", " ", normalized)
+    return re.sub(r"[\s\-_,.;:]+", "", normalized)
 
 
 STEM_CELL_KEYWORDS = [
@@ -39,6 +47,58 @@ PEPTIDE_DENYLIST = {
     "SERVICE",
     "PACIFIC",
 }
+
+FALLBACK_MODELS = ["mouse", "rat", "human", "hela", "hek293"]
+
+CONSTRUCTION_MATERIALS = {
+    "concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation",
+    "polymer", "composite", "asphalt", "aluminum", "copper", "gypsum", "plaster",
+    "ceramic", "stone", "aggregate", "fiber", "foam", "bitumen", "pvc", "eps",
+    "xps", "hdpe", "ldpe",
+}
+
+CONSTRUCTION_SYSTEMS = {
+    "wall", "roof", "foundation", "floor", "column", "beam", "slab", "girder",
+    "truss", "panel", "joint", "window", "door", "façade", "cladding",
+    "insulation system", "partition", "rafter", "stud", "joist", "lintel",
+}
+
+CONSTRUCTION_FAILURE_MODES = {
+    "crack", "cracking", "shear failure", "buckling", "fatigue", "delamination",
+    "fracture", "rupture", "collapse", "spalling", "yielding", "debonding",
+    "creep", "shrinkage", "corrosion fatigue", "brittle fracture", "ductile fracture",
+    "plastic hinge", "instability", "microcrack", "macrocrack",
+}
+
+CONSTRUCTION_ENVIRONMENTS = {
+    "temperature", "thermal cycling", "humidity", "moisture", "wind", "rain", "fire",
+    "freeze", "frost", "uv", "solar", "environmental stress", "exposure",
+    "condensation", "weather", "climate", "precipitation", "snow", "hail",
+    "thermal shock",
+}
+
+CONSTRUCTION_TEST_METHODS = {
+    "compression", "tension", "shear", "bending", "torsion", "impact", "flexure",
+    "creep test", "fatigue test", "tensile test", "load test", "stress test",
+    "thermal analysis", "modulus", "stiffness", "ductility", "hardness", "strength",
+    "yield strength", "ultimate strength", "elasticity", "plasticity",
+}
+
+CONSTRUCTION_HAZARDS = {
+    "flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload",
+    "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction",
+    "subsidence", "settlement", "liquefaction", "tsunami", "landslide", "storm",
+    "hurricane", "typhoon", "cyclone",
+}
+
+CONSTRUCTION_ENTITY_GROUPS = [
+    (CONSTRUCTION_MATERIALS, "material"),
+    (CONSTRUCTION_SYSTEMS, "system"),
+    (CONSTRUCTION_FAILURE_MODES, "failure_mode"),
+    (CONSTRUCTION_ENVIRONMENTS, "environment"),
+    (CONSTRUCTION_TEST_METHODS, "test_method"),
+    (CONSTRUCTION_HAZARDS, "hazard"),
+]
 
 TARGET_CONTEXT_TERMS = (
     "protein",
@@ -126,8 +186,7 @@ def extract_models(sentence: str, SEEDS_DIR=None) -> list[dict]:
                 })
                 seen.add(name)
 
-    fallback_models = ["mouse", "rat", "human", "hela", "hek293"]
-    for fm in fallback_models:
+    for fm in FALLBACK_MODELS:
         if re.search(r'\b' + re.escape(fm) + r'\b', sentence, re.IGNORECASE):
             name = fm.upper()
             if name not in seen:
@@ -183,54 +242,31 @@ def extract_entities(sentence: str, domain: str = "methods_tooling", SEEDS_DIR=N
     return extract_biomedical_entities(sentence, extracted_names, SEEDS_DIR=SEEDS_DIR)
 
 
+def _find_specific_failure_phrases(sentence: str) -> list[str]:
+    patterns = [
+        r"(shear|fatigue|stress|thermal|brittle|ductile|creep|shrinkage|corrosion) (failure|crack|fracture|collapse|spalling)",
+        r"(failure|crack|fracture|collapse|spalling) (due to|from|by) (shear|fatigue|stress|thermal|creep|corrosion)",
+        r"([a-z]+) (fracture|crack|failure|collapse)",
+        r"(fracture|crack|failure|collapse) of ([a-z]+)",
+    ]
+    matches = []
+    for pattern in patterns:
+        for match in re.findall(pattern, sentence.lower()):
+            if isinstance(match, tuple):
+                matches.append(" ".join([word for word in match if word]))
+            else:
+                matches.append(match)
+    return matches
+
+
 # ---------------------------------------------------------
 # CONSTRUCTION DOMAIN
 def extract_construction_entities(sentence: str, extracted_names: set, SEEDS_DIR=None) -> list[dict]:
     ents = []
     s_l = sentence.lower()
 
-    # Expanded and more specific groups (boosted with more keywords)
-    groups = [
-        (set(x.lower() for x in [
-            "concrete", "steel", "wood", "glass", "brick", "timber", "mortar", "insulation", "polymer", "composite", "asphalt", "aluminum", "copper", "gypsum", "plaster", "ceramic", "stone", "aggregate", "fiber", "foam", "bitumen", "PVC", "EPS", "XPS", "HDPE", "LDPE"
-        ]), "material"),
-        (set(x.lower() for x in [
-            "wall", "roof", "foundation", "floor", "column", "beam", "slab", "girder", "truss", "panel", "joint", "window", "door", "façade", "cladding", "insulation system", "partition", "rafter", "stud", "joist", "lintel"
-        ]), "system"),
-        (set(x.lower() for x in [
-            "crack", "cracking", "shear failure", "buckling", "fatigue", "delamination", "fracture", "rupture", "collapse", "spalling", "yielding", "debonding", "creep", "shrinkage", "corrosion fatigue", "brittle fracture", "ductile fracture", "plastic hinge", "instability", "microcrack", "macrocrack"
-        ]), "failure_mode"),
-        (set(x.lower() for x in [
-            "temperature", "thermal cycling", "humidity", "moisture", "wind", "rain", "fire", "freeze", "frost", "uv", "solar", "environmental stress", "exposure", "condensation", "weather", "climate", "precipitation", "snow", "hail", "thermal shock"
-        ]), "environment"),
-        (set(x.lower() for x in [
-            "compression", "tension", "shear", "bending", "torsion", "impact", "flexure", "creep test", "fatigue test", "tensile test", "load test", "stress test", "thermal analysis", "modulus", "stiffness", "ductility", "hardness", "strength", "yield strength", "ultimate strength", "elasticity", "plasticity"
-        ]), "test_method"),
-        (set(x.lower() for x in [
-            "flood", "seismic", "earthquake", "corrosion", "erosion", "vibration", "overload", "fire hazard", "chemical attack", "abrasion", "freeze-thaw", "alkali-silica reaction", "subsidence", "settlement", "liquefaction", "tsunami", "landslide", "storm", "hurricane", "typhoon", "cyclone"
-        ]), "hazard"),
-    ]
-
-    # Helper: look for multi-word descriptors near generic terms
-    def find_specific_failure(sentence):
-        # e.g., "shear failure", "fatigue crack", "stress corrosion"
-        patterns = [
-            r"(shear|fatigue|stress|thermal|brittle|ductile|creep|shrinkage|corrosion) (failure|crack|fracture|collapse|spalling)",
-            r"(failure|crack|fracture|collapse|spalling) (due to|from|by) (shear|fatigue|stress|thermal|creep|corrosion)",
-            r"([a-z]+) (fracture|crack|failure|collapse)",
-            r"(fracture|crack|failure|collapse) of ([a-z]+)"
-        ]
-        matches = []
-        for pat in patterns:
-            for m in re.findall(pat, sentence.lower()):
-                if isinstance(m, tuple):
-                    matches.append(" ".join([w for w in m if w]))
-                else:
-                    matches.append(m)
-        return matches
-
     # Add specific failures first
-    for specific in find_specific_failure(sentence):
+    for specific in _find_specific_failure_phrases(sentence):
         name = specific.upper()
         norm = normalize_name(name)
         if norm not in extracted_names:
@@ -246,7 +282,7 @@ def extract_construction_entities(sentence: str, extracted_names: set, SEEDS_DIR
     generic_skip = {"failure", "thermal", "stress"}
     has_generic = any(re.search(r'\b' + re.escape(g) + r'\b', s_l) for g in generic_skip)
     has_failure_context = any(re.search(r'\b' + re.escape(x) + r'\b', s_l) for x in ["crack", "fracture", "collapse", "spalling"])
-    for group, entity_type in groups:
+    for group, entity_type in CONSTRUCTION_ENTITY_GROUPS:
         for item in group:
             item_l = item.lower()
             # Whole-phrase match (single correct assignment)

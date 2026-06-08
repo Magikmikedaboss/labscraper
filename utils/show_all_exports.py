@@ -69,7 +69,7 @@ def main() -> int:
             else:
                 print(f"  xdg-open output/{filename}")
 
-    return 0
+    return 1 if missing_files else 0
 
 
 if __name__ == "__main__":

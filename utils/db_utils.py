@@ -1,7 +1,9 @@
 """Shared utilities for database inspection"""
 
 from difflib import SequenceMatcher
+from decimal import Decimal, InvalidOperation
 import logging
+import re
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -35,6 +37,8 @@ def db_has_all_tables(con, required_tables=None):
 
 
 logger = logging.getLogger(__name__)
+AUTHOR_SEPARATOR = "; "
+
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
     """Connect to database with standard settings"""
     if not Path(db_path).exists():
@@ -182,10 +186,14 @@ def show_pdf_cache(cache_dir: str = 'input/rss_cache'):
 
     # Enumerate files in the cache directory and log their details
     for f in cache_dir.iterdir():
-        if f.is_file():
-            st = f.stat()
-            mod_time = datetime.fromtimestamp(st.st_mtime).isoformat(sep=' ', timespec='seconds')
-            logger.info("  %s | %d bytes | modified: %s", f.name, st.st_size, mod_time)
+        if not f.is_file():
+            continue
+        if f.suffix.lower() != ".pdf":
+            logger.warning("Skipping unexpected non-PDF cache file: %s", f.name)
+            continue
+        st = f.stat()
+        mod_time = datetime.fromtimestamp(st.st_mtime).isoformat(sep=' ', timespec='seconds')
+        logger.info("  %s | %d bytes | modified: %s", f.name, st.st_size, mod_time)
 
 def get_entity_distribution(conn: sqlite3.Connection):
     """Show entity distribution across types"""
@@ -278,7 +286,8 @@ def _normalize_doi(value: Any) -> str:
 
 def _table_columns(con: sqlite3.Connection, table_name: str) -> set[str]:
     safe_table_name = _quote_sql_identifier(table_name)
-    rows = con.execute(f"PRAGMA table_info({safe_table_name})").fetchall()
+    # _table_columns relies on _quote_sql_identifier to strictly validate table_name before interpolation.
+    rows = con.execute(f"PRAGMA table_info({safe_table_name})").fetchall()  # nosec B608
     return {row[1] for row in rows}
 
 
@@ -366,7 +375,10 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
             text = str(value)
             text = text.replace(" and ", ",")
             text = text.replace(" & ", ",")
-            parts = text.split(",")
+            if ";" in text or "|" in text:
+                parts = re.split(r"\s*[;|]\s*", text)
+            else:
+                parts = text.split(",")
         return {
             str(part).strip().lower()
             for part in parts
@@ -407,7 +419,8 @@ def upsert_source(con: sqlite3.Connection, source_id: str, pdf_file: str, metada
 
     authors = metadata.get("authors")
     if isinstance(authors, (list, tuple)):
-        authors = ", ".join(str(a) for a in authors if a)
+        # Authors are stored as a separator-delimited string to preserve names that contain commas.
+        authors = AUTHOR_SEPARATOR.join(str(a).strip() for a in authors if a)
 
     year = metadata.get("year")
     if isinstance(year, str) and year.isdigit():
@@ -485,8 +498,16 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
     )
     return doc_id
 
-def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
+def insert_chunk(con, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
     # Use full chunk text to avoid collisions from identical prefixes.
+    source_row = con.execute(
+        "SELECT source_id FROM documents WHERE doc_id = ? LIMIT 1",
+        (doc_id,),
+    ).fetchone()
+    if not source_row:
+        raise ValueError(f"Unknown document: {doc_id}")
+
+    source_id = source_row[0]
     chunk_id = sha256_hex(f"{doc_id}|{page_number}|{chunk_text}")
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
@@ -528,7 +549,12 @@ def insert_event(
     evidence_strength_v: str,
     confidence_v: str,
 ) -> str:
-    base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
+    # Include the full evidence snippet plus context so distinct events do not collapse
+    # onto the same event_id when they share a long prefix.
+    base = (
+        f"{source_id}|{doc_id}|{page_number}|{domain}|{event_type}|{stage}|{outcome}|"
+        f"{failure_reason}|{decision_taken}|{evidence_snippet}"
+    )
     event_id = sha256_hex(base)
     con.execute(
         """INSERT OR IGNORE INTO research_events(
@@ -547,14 +573,35 @@ def insert_event(
     return event_id
 
 def link_event_entity(con, event_id: str, entity_id: str, role: str):
-    con.execute(
-        """INSERT OR IGNORE INTO event_entities(event_id, entity_id, role)
-           VALUES (?,?,?)""",
+    cursor = con.execute(
+        "SELECT 1 FROM event_entities WHERE event_id = ? AND entity_id = ? AND role = ? LIMIT 1",
         (event_id, entity_id, role),
     )
+    try:
+        if cursor.fetchone() is not None:
+            logger.warning(
+                "Skipping duplicate event_entities link for event_id=%s entity_id=%s role=%s",
+                event_id,
+                entity_id,
+                role,
+            )
+            return False
+    finally:
+        cursor.close()
+
+    con.execute(
+        "INSERT INTO event_entities(event_id, entity_id, role) VALUES (?,?,?)",
+        (event_id, entity_id, role),
+    )
+    return True
 
 def insert_measurement(con, event_id: str, measurement: dict):
-    """Insert quantitative measurement. Tolerates missing fields and raises ValueError for required ones."""
+    """Insert a quantitative measurement.
+
+    measurement_type, value, and unit are required. The function raises
+    ValueError if any of those fields are missing, or if value is empty,
+    non-numeric, or non-finite. context is optional and may be omitted.
+    """
     mtype = measurement.get('measurement_type')
     value = measurement.get('value')
     unit = measurement.get('unit')
@@ -562,12 +609,23 @@ def insert_measurement(con, event_id: str, measurement: dict):
     # measurement_type, value, and unit are required for a valid measurement
     if mtype is None or value is None or unit is None:
         raise ValueError(f"Missing required measurement fields: measurement_type={mtype}, value={value}, unit={unit}")
-    measurement_id = sha256_hex(f"{event_id}|{mtype}|{value}|{unit}")
+    value_text = str(value).strip()
+    if not value_text:
+        raise ValueError("Measurement value must be a non-empty numeric string")
+    try:
+        decimal_value = Decimal(value_text)
+    except InvalidOperation as exc:
+        raise ValueError(f"Measurement value must be numeric: {value!r}") from exc
+    if not decimal_value.is_finite():
+        raise ValueError(f"Measurement value must be finite: {value!r}")
+
+    normalized_value = str(decimal_value)
+    measurement_id = sha256_hex(f"{event_id}|{mtype}|{normalized_value}|{unit}")
     con.execute(
         """INSERT OR IGNORE INTO quantitative_measurements(
              measurement_id, event_id, measurement_type, value, unit, context, created_at
            ) VALUES (?,?,?,?,?,?,?)""",
-        (measurement_id, event_id, mtype, value, unit, context, now_iso()),
+        (measurement_id, event_id, mtype, normalized_value, unit, context, now_iso()),
     )
 
 def insert_relationship(con, entity_id_1: str, entity_id_2: str, relationship_type: str):

@@ -8,8 +8,8 @@ Use this as the primary export guide.
 
 ## Data Source
 
-Export files are generated from records already stored in SQLite (typically `db/runs.sqlite`).
-The normal chain is: PDF processing -> SQLite records -> CSV/TXT exports.
+Export files are generated from records already stored in SQLite, and this guide assumes the canonical ingest output lives in `db/runs.sqlite`.
+The normal chain is: ingest -> `db/runs.sqlite` -> CSV/TXT exports.
 
 ## Typical Workflow
 

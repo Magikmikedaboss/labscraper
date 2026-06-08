@@ -13,8 +13,7 @@ def validate_domain_id(domain_id: str) -> str:
     if not stripped_domain_id:
         raise ValueError("domain_id must be a non-empty string")
     if domain_id != stripped_domain_id:
-        raise ValueError("domain_id must be a non-empty string")
-    domain_id = stripped_domain_id
+        raise ValueError("domain_id must not contain leading or trailing whitespace")
     if ".." in domain_id:
         raise ValueError("Invalid domain_id: parent path traversal is not allowed")
     if any(sep in domain_id for sep in ("/", "\\")):

@@ -150,24 +150,33 @@ def detect_outcome(sentence_l: str) -> str:
 
 def classify_event_type(sentence_l: str, method_tags: List[str], failure_reason: str, decision_taken: str) -> str:
     s = sentence_l
+    # Check regulatory risk first because nitrosamine or a regulatory failure reason should override broader categories.
     if "nitrosamine" in method_tags or failure_reason == "regulatory":
         return "regulatory_risk"
+    # Toxicity comes next: explicit toxicity flags or toxic/cytotoxic language should win over broader failure patterns.
     if failure_reason == "toxicity_flag" or any(_contains_phrase(s, k) for k in ("toxic", "toxicity", "cytotoxic")):
         return "toxicity_flag"
+    # Stability failure is narrower than the broader degradation keyword group below.
     if failure_reason == "stability_failure":
         return "stability_issue"
+    # Degradation terms map to degradation_event unless the sentence has already matched a more specific branch.
     if any(_contains_phrase(s, k) for k in ("degradation", "degraded", "corrosion", "instability", "unstable", "poor stability")):
         return "degradation_event"
+    # Efficacy results cover no_activity and common potency keywords before manufacturing/scalability branches.
     if failure_reason == "no_activity" or any(_contains_phrase(s, k) for k in ("activity", "efficacy", "potent", "ic50", "ec50")):
         return "efficacy_result"
+    # Manufacturing constraints capture scale-up and yield issues before the broader method-evaluation fallback.
     if failure_reason == "scalability" or any(_contains_phrase(s, k) for k in ("manufacturing", "scale-up", "yield", "production")):
         return "manufacturing_constraint"
+    # method_tags means the sentence is methodological; cost-related language should override the generic method branch.
     if method_tags:
         if any(_contains_phrase(s, k) for k in ("cost-intensive", "expensive", "time-consuming", "efficient", "cost-effective")):
             return "cost_tradeoff"
         return "method_evaluation"
+    # decision_taken values like approved/rejected should be classified after the domain-specific branches above.
     if decision_taken != "unknown":
         return "decision_point"
+    # Default bucket for sentences that do not match any higher-priority rule.
     return "other"
 
 

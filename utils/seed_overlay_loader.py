@@ -150,6 +150,37 @@ def load_overlay(domain_id: str, overlays_dir: str = "seeds/overlays") -> Option
     return load_json(str(path))
 
 
+def get_overlay_aliases(domain_id: str, overlays_dir: str = "seeds/overlays") -> Dict[str, str]:
+    """Load alias-to-canonical mappings from a domain overlay file."""
+    overlay = load_overlay(domain_id, overlays_dir)
+    if not overlay:
+        return {}
+
+    aliases_section = overlay.get("entities", {}).get("aliases", {})
+    if not isinstance(aliases_section, dict):
+        return {}
+
+    alias_map: Dict[str, str] = {}
+    for canonical_name, alias_values in aliases_section.items():
+        if not canonical_name:
+            continue
+        canonical_lower = str(canonical_name).strip().lower()
+        if isinstance(alias_values, list):
+            candidates = alias_values
+        else:
+            candidates = [alias_values]
+
+        for alias_value in candidates:
+            if alias_value is None:
+                continue
+            alias_text = str(alias_value).strip().lower()
+            if not alias_text:
+                continue
+            alias_map[alias_text] = canonical_lower
+
+    return alias_map
+
+
 def load_seeds_with_overlay(domain_id: Optional[str] = None, 
                             seeds_dir: str = "seeds",
                             overlays_dir: str = "seeds/overlays") -> Dict[str, Any]:

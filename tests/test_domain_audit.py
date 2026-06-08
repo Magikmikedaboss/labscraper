@@ -1,7 +1,7 @@
 import pytest
 from types import SimpleNamespace
 
-from utils.domain_audit import audit_domains, audit_feeds
+from utils.domain_audit import _resolve_seed_file, audit_domains, audit_feeds
 from utils.domain_audit import audit_domain
 from utils.entities import extract_entities
 from utils.run_engine import main as run_engine_main
@@ -90,3 +90,64 @@ def test_audit_domain_uses_custom_banned_entity_map(tmp_path, monkeypatch):
     )
 
     assert entry.biomedical_leakage == ["compound"]
+
+
+def test_resolve_seed_file_prefers_exact_candidate(tmp_path):
+    seeds_dir = tmp_path / "seeds"
+    seeds_dir.mkdir()
+    exact = seeds_dir / "seed.json"
+    exact.write_text("{}", encoding="utf-8")
+
+    assert _resolve_seed_file("seed.json", seeds_dir, "custom_domain") == exact
+
+
+def test_resolve_seed_file_falls_back_to_domain_base(tmp_path):
+    seeds_dir = tmp_path / "seeds"
+    target = seeds_dir / "base" / "custom_domain" / "seed.json"
+    target.parent.mkdir(parents=True)
+    target.write_text("{}", encoding="utf-8")
+
+    assert _resolve_seed_file("seed.json", seeds_dir, "custom_domain") == target
+
+
+def test_resolve_seed_file_falls_back_to_life_sciences_base(tmp_path):
+    seeds_dir = tmp_path / "seeds"
+    target = seeds_dir / "base" / "life_sciences" / "seed.json"
+    target.parent.mkdir(parents=True)
+    target.write_text("{}", encoding="utf-8")
+
+    assert _resolve_seed_file("seed.json", seeds_dir, "custom_domain") == target
+
+
+def test_resolve_seed_file_supports_alternate_extensions(tmp_path):
+    seeds_dir = tmp_path / "seeds"
+    top_level_json = seeds_dir / "seed.json"
+    top_level_json.parent.mkdir(parents=True)
+    top_level_json.write_text("{}", encoding="utf-8")
+
+    base_txt = seeds_dir / "base" / "custom_domain" / "other.txt"
+    base_txt.parent.mkdir(parents=True)
+    base_txt.write_text("[]", encoding="utf-8")
+
+    assert _resolve_seed_file("seed.txt", seeds_dir, "custom_domain") == top_level_json
+    assert _resolve_seed_file("other.json", seeds_dir, "custom_domain") == base_txt
+
+
+def test_resolve_seed_file_skips_base_fallback_when_seed_file_contains_base_path(tmp_path):
+    seeds_dir = tmp_path / "seeds"
+    fallback = seeds_dir / "base" / "custom_domain" / "seed.json"
+    fallback.parent.mkdir(parents=True)
+    fallback.write_text("{}", encoding="utf-8")
+
+    assert _resolve_seed_file("base/seed.txt", seeds_dir, "custom_domain") is None
+
+
+def test_resolve_seed_file_returns_none_and_logs_attempts(tmp_path, caplog):
+    seeds_dir = tmp_path / "seeds"
+    seeds_dir.mkdir()
+
+    with caplog.at_level("WARNING"):
+        resolved = _resolve_seed_file("missing.json", seeds_dir, "custom_domain")
+
+    assert resolved is None
+    assert any("attempted candidates" in record.message for record in caplog.records)

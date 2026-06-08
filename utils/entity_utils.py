@@ -2,6 +2,7 @@
 Entity normalization, role assignment, and counting utilities
 """
 
+from __future__ import annotations
 
 import logging
 from typing import Tuple, Dict

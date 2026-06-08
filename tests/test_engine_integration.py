@@ -7,6 +7,8 @@ import tempfile
 import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
+from pdfplumber.utils.exceptions import PdfminerException
+from utils.source_triage import TriagedSource
 
 from utils.run_engine import main
 from utils.db_init import init_db_schema
@@ -182,6 +184,57 @@ def test_main_function_domain_specific_processing():
             assert output_db.exists()
 
 
+def test_main_triangulates_construction_cache_before_processing(tmp_path, monkeypatch):
+    input_dir = tmp_path / "cache" / "rss"
+    input_dir.mkdir(parents=True)
+    keep_pdf = input_dir / "keep.pdf"
+    skip_pdf = input_dir / "skip.pdf"
+    keep_pdf.write_bytes(b"%PDF-1.4 keep")
+    skip_pdf.write_bytes(b"%PDF-1.4 skip")
+
+    output_db = tmp_path / "test_output.sqlite"
+    init_db_schema(str(output_db))
+
+    triage_map = {
+        keep_pdf: TriagedSource(
+            file_path=str(keep_pdf),
+            title="Keep paper",
+            detected_domain="construction_science",
+            keep_skip_review="review",
+            confidence="med",
+            construction_signals="wall",
+            contamination_signals="",
+            reason="construction-oriented",
+        ),
+        skip_pdf: TriagedSource(
+            file_path=str(skip_pdf),
+            title="Skip paper",
+            detected_domain="biomedical",
+            keep_skip_review="skip",
+            confidence="high",
+            construction_signals="",
+            contamination_signals="stem cell",
+            reason="biomedical contamination",
+        ),
+    }
+
+    mock_pdf = Mock()
+    mock_page = Mock()
+    mock_page.extract_text.return_value = "Test content"
+    mock_pdf.pages = [mock_page]
+    mock_pdf.metadata = {}
+
+    monkeypatch.setattr("utils.run_engine.scan_pdf", lambda pdf_path, first_pages=4, max_chars=3000: triage_map[pdf_path])
+
+    with patch('utils.run_engine.pdfplumber.open') as mock_pdf_open, \
+         patch('utils.run_engine.extract_metadata', return_value={'title': 'Test', 'authors': 'Test Author', 'year': 2023}), \
+         patch('utils.run_engine.chunk_sentences', return_value=['Test sentence.']):
+        mock_pdf_open.return_value.__enter__.return_value = mock_pdf
+        main(domain='construction_science', input_dir=str(input_dir), db_path=str(output_db))
+
+    assert mock_pdf_open.call_count == 1
+
+
 def test_main_raises_when_pdf_fails(tmp_path):
     input_dir = tmp_path / "input_pdfs"
     input_dir.mkdir()
@@ -235,6 +288,19 @@ def test_main_exits_1_when_all_pdfs_fail(tmp_path):
 
     with patch("utils.run_engine.pdfplumber.open", side_effect=Exception("Processing error")):
         with pytest.raises(Exception, match="Processing error"):
+            main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
+
+
+def test_main_skips_pdfminer_exception_and_exits_1_when_all_pdfs_fail(tmp_path):
+    input_dir = tmp_path / "input_pdfs"
+    input_dir.mkdir()
+    output_db = tmp_path / "test_output.sqlite"
+    init_db_schema(str(output_db))
+
+    (input_dir / "bad.pdf").write_bytes(b"%PDF-1.4 bad")
+
+    with patch("utils.run_engine.pdfplumber.open", side_effect=PdfminerException("No /Root object! - Is this really a PDF?")):
+        with pytest.raises(SystemExit, match=r"1"):
             main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
 
 

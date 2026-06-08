@@ -6,6 +6,7 @@ from utils.entities import extract_entities
 from utils.entities import extract_compounds
 from utils.entities import extract_targets, extract_models
 from utils.entities import extract_biomedical_entities
+from utils.entities import _find_specific_failure_phrases
 
 
 class TestEntityExtraction:
@@ -125,6 +126,14 @@ class TestConstructionEntities:
 
         failure_entities = [e for e in entities if e["entity_type"] == "failure_mode"]
         assert len(failure_entities) > 0
+
+    def test_find_specific_failure_phrases(self):
+        phrases = _find_specific_failure_phrases(
+            "The beam experienced shear failure and crack due to fatigue under load."
+        )
+
+        assert "shear failure" in phrases
+        assert any("crack due to fatigue" in phrase for phrase in phrases)
 
     def test_extract_construction_test_methods(self):
         """Test extraction of test methods"""

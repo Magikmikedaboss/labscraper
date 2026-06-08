@@ -24,11 +24,16 @@ def _init_basic_entities_db(db_path: Path):
             CREATE TABLE entities (
                 entity_id TEXT PRIMARY KEY,
                 entity_type TEXT,
-                entity_name TEXT
+                entity_name TEXT,
+                entity_variant TEXT,
+                organism TEXT,
+                created_at TEXT
             );
             CREATE TABLE event_entities (
                 entity_id TEXT,
-                event_id TEXT
+                event_id TEXT,
+                role TEXT,
+                PRIMARY KEY (entity_id, event_id, role)
             );
             CREATE TABLE research_events (
                 event_id TEXT PRIMARY KEY,
@@ -64,7 +69,7 @@ def test_check_biohacking_compounds_runs(tmp_path, monkeypatch, capsys):
     _init_basic_entities_db(db_path)
     with sqlite3.connect(db_path) as con:
         con.execute("INSERT INTO entities(entity_id, entity_type, entity_name) VALUES (?, ?, ?)", ("e1", "compound", "NMN"))
-        con.execute("INSERT INTO event_entities(entity_id, event_id) VALUES (?, ?)", ("e1", "ev1"))
+        con.execute("INSERT INTO event_entities(entity_id, event_id, role) VALUES (?, ?, ?)", ("e1", "ev1", "subject"))
 
     check_biohacking_compounds.check_biohacking_compounds()
     output = capsys.readouterr().out
@@ -143,7 +148,7 @@ def test_check_confidence_distribution_and_entity_types(tmp_path, monkeypatch, c
             "INSERT INTO research_events(event_id, event_type, stage, confidence, evidence_snippet) VALUES (?, ?, ?, ?, ?)",
             ("ev1", "test", "preclinical", "high", "snippet"),
         )
-        con.execute("INSERT INTO event_entities(entity_id, event_id) VALUES (?, ?)", ("e1", "ev1"))
+        con.execute("INSERT INTO event_entities(entity_id, event_id, role) VALUES (?, ?, ?)", ("e1", "ev1", "subject"))
 
     check_confidence.check_confidence_distribution()
     confidence_output = capsys.readouterr().out

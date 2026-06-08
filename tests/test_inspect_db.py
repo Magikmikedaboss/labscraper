@@ -62,6 +62,8 @@ def test_inspect_database_handles_many_tables(tmp_path, caplog):
     with sqlite3.connect(db_path) as con:
         table_names = [f"t_{idx}" for idx in range(60)]
         for table_name in table_names:
+            # Safe because table_name is validated with re.fullmatch(r"t_\d+", table_name) before use.
+            # Do not remove or bypass that regex check if this f-string pattern is reused elsewhere.
             assert re.fullmatch(r"t_\d+", table_name)
             con.execute(f"CREATE TABLE {table_name} (id INTEGER)")
 

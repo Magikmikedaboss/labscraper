@@ -7,7 +7,6 @@ from pathlib import Path, PurePosixPath
 import datetime
 import time
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 MAX_FILE_COUNT = 10_000

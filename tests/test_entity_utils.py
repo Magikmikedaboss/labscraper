@@ -1,4 +1,5 @@
 from utils import entity_utils
+from utils.entity_normalizer import normalize_entity
 
 def test_count_entities_by_role_basic():
     s = "protein:TP53; cell:HeLa"
@@ -31,7 +32,26 @@ def test_load_overlay_aliases_safe_none():
     assert entity_utils.load_overlay_aliases_safe() == {}
 
 def test_load_overlay_aliases_safe_importerror(monkeypatch):
-    import sys
-    monkeypatch.delitem(sys.modules, "utils.entity_normalizer", raising=False)
-    # Should not raise, should return {}
+    import builtins
+
+    original_import = builtins.__import__
+
+    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "utils.entity_normalizer":
+            raise ImportError("forced import failure")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
     assert entity_utils.load_overlay_aliases_safe("foo") == {}
+
+
+def test_normalize_entity_coerces_non_string_overlay_aliases():
+    entity = {"entity_type": "assay", "entity_name": "ms", "entity_variant": "variant"}
+    normalized = normalize_entity(
+        entity,
+        norm_map={},
+        overlay_aliases={"ms": 123, "variant": None},
+    )
+
+    assert normalized["entity_name"] == "123"
+    assert normalized["entity_variant"] == "none"

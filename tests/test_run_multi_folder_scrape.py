@@ -1,6 +1,8 @@
 import sys
 from unittest.mock import Mock
 
+import pytest
+
 from utils import run_multi_folder_scrape
 
 def test_run_scraper_invokes_script(monkeypatch, tmp_path):
@@ -43,3 +45,21 @@ def test_run_scraper_invokes_script(monkeypatch, tmp_path):
     assert cmd[idx + 1] == expected_output
     assert called['kwargs'].get('capture_output') is False
     assert called['kwargs'].get('timeout') == 600
+
+
+def test_validate_configs_rejects_empty_paths(capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        run_multi_folder_scrape.validate_configs([
+            {"input_dir": "", "output_db": "output.sqlite", "domain": "domain-a"},
+        ])
+
+    assert excinfo.value.code == 1
+    assert "domain 'domain-a'" in capsys.readouterr().out
+
+    with pytest.raises(SystemExit) as excinfo:
+        run_multi_folder_scrape.validate_configs([
+            {"input_dir": "input", "output_db": "", "domain": "domain-b"},
+        ])
+
+    assert excinfo.value.code == 1
+    assert "domain 'domain-b'" in capsys.readouterr().out

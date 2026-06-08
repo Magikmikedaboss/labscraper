@@ -1,15 +1,24 @@
 
+"""Convenience helpers for the construction lens suite.
+
+Registry entries in LENS_REGISTRY are detector callables with the signature
+detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]
+as used by the detector(sentence, source_type=source_type) call site.
+"""
+
 from __future__ import annotations
+
+# ruff: noqa: E402
+
 import traceback
 import logging
-from typing import Iterable, List, Optional, Tuple, Dict, Union
+from typing import Iterable, List, Optional, Protocol, Tuple, Dict, Union
+from .construction_common import LensEvent
 from .construction_building_physics_v1 import detect as detect_building_physics
 from .construction_climate_v1 import detect as detect_climate
 from .construction_compliance_v1 import detect as detect_compliance
 from .construction_failure_v1 import detect as detect_failure
 from .construction_materials_v1 import detect as detect_materials
-
-"""Convenience helpers for the construction lens suite."""
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +27,16 @@ DEFAULT_CONFIDENCE_RANK = {"low": 1, "med": 2, "medium": 2, "high": 3}
 DEFAULT_CONTEXT_RANK = {"weak": 1, "moderate": 2, "strong": 3}
 
 
-LENS_REGISTRY = {
+class LensDetector(Protocol):
+    def __call__(
+        self,
+        sentence: str,
+        source_type: str = "research_paper",
+    ) -> Tuple[Optional[LensEvent], List[dict]]:
+        ...
+
+
+LENS_REGISTRY: Dict[str, LensDetector] = {
     "building_physics": detect_building_physics,
     "climate": detect_climate,
     "compliance": detect_compliance,
@@ -157,10 +175,18 @@ def _detect_multi_lens_internal(
                 item.get("event_id"),
                 item.get("event_type"),
             )
+        context_strength = item.get("context_strength", "weak")
+        if context_strength not in active_context_rank:
+            logger.warning(
+                "Unexpected context_strength value %r for item event_id=%r event_type=%r; defaulting context rank to 1",
+                context_strength,
+                item.get("event_id"),
+                item.get("event_type"),
+            )
         return (
             item.get("source_weight", 0.0),
             active_confidence_rank.get(conf, 1),
-            active_context_rank.get(item.get("context_strength", "weak"), 0),
+            active_context_rank.get(context_strength, 1),
         )
 
     results.sort(

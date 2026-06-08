@@ -21,11 +21,11 @@ AXON is a modular research intelligence engine for extracting structured signals
 
 Most users can skip manual DB setup.
 
-The engine auto-initializes the production/dev database at `db/runs.sqlite` on first run.
-This is the default quick-start path.
+The first run of `utils/run_engine.py` auto-initializes the default production/dev database at `db/runs.sqlite`.
+That is the normal quick-start path.
 
-Use manual initialization only when you need an isolated database for local testing or CI.
-In that case, initialize `db/local.sqlite` explicitly before running tests or custom flows.
+Run `python utils/init_db.py db/local.sqlite` only when you need an isolated local or CI test database.
+Use `db/local.sqlite` for scratch/test runs and `db/runs.sqlite` for the default shared database.
 
 ```bash
 # Optional isolated local/CI test DB initialization
@@ -71,7 +71,14 @@ python utils/export_csv.py --domain construction_science
 python utils/export/export_dual_lens.py db/runs.sqlite construction_science
 ```
 
-⚠ **Current Limitation**
+⚠ **Recovery / Reinitialization**
+
+If `db/runs.sqlite` becomes corrupted or you need a clean restart, the safer recovery path is:
+
+1. `python utils/init_db.py db/runs.sqlite` to create a fresh schema in `db/runs.sqlite`.
+2. Re-run ingestion with `python utils/run_engine.py ... --output-db db/runs.sqlite` to repopulate the database.
+
+Be aware that `python utils/run_engine.py ... --output-db db/runs.sqlite` will both reinitialize the database and reprocess PDFs, so it is not just a schema-only reset. Use `utils/init_db.py` when you want to create the database first and ingest documents separately.
 
 `utils/export_csv.py` currently reads from `db/runs.sqlite`.
 

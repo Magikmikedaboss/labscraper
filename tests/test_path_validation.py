@@ -15,7 +15,7 @@ def test_validate_domain_id_accepts_safe_value():
         ("some\\domain", "path separators"),
         ("", "non-empty string"),
         ("   ", "non-empty string"),
-        ("  safe_id  ", "non-empty string"),
+        ("  safe_id  ", "leading or trailing whitespace"),
         ("domain$name!", "only letters"),
     ],
 )

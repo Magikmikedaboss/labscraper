@@ -1,6 +1,5 @@
 import io
 import zipfile
-from tools.extract_all_zips import extract_all_zips
 import os
 import time
 from tools import extract_all_zips as extract_all_zips_module
@@ -10,7 +9,7 @@ def test_extract_all_zips_blocks_path_traversal(tmp_path):
     # Create a zip with a member that tries to escape the extraction root
     with zipfile.ZipFile(zip_path, "w") as zf:
         zf.writestr("../escaped.txt", "malicious data")
-    failures = extract_all_zips(str(tmp_path))
+    failures = extract_all_zips_module.extract_all_zips(str(tmp_path))
     # Should report an unsafe member with reason == "unsafe member" and member containing "../escaped.txt"
     assert any(f.get("reason") == "unsafe member" and "../escaped.txt" in f.get("member", "") for f in failures)
     # The file should not exist outside the extraction root
@@ -30,7 +29,7 @@ def test_extract_all_zips_with_good_zip(tmp_path):
         zf.write(testfile, arcname="f.txt")
     # Remove the original file before extraction to ensure it must be extracted
     testfile.unlink()
-    failures = extract_all_zips(str(tmp_path))
+    failures = extract_all_zips_module.extract_all_zips(str(tmp_path))
     assert failures == []
     # Check that the extracted file exists at the expected location and has the correct content
     extracted_file = tmp_path / "f.txt"
@@ -40,7 +39,7 @@ def test_extract_all_zips_with_good_zip(tmp_path):
 def test_extract_all_zips_with_invalid_zip(tmp_path):
     fake_zip = tmp_path / "bad.zip"
     fake_zip.write_text("not a zip")
-    failures = extract_all_zips(str(tmp_path))
+    failures = extract_all_zips_module.extract_all_zips(str(tmp_path))
     # Find the failure entry for the fake zip
     failure_entry = next((f for f in failures if f.get("zip_path") == str(fake_zip)), None)
     assert failure_entry is not None
@@ -67,7 +66,7 @@ def test_extract_all_zips_preserves_permissions_and_mtime(tmp_path):
             zf.writestr(info, f.read())
 
     # Extract and check
-    failures = extract_all_zips(str(tmp_path))
+    failures = extract_all_zips_module.extract_all_zips(str(tmp_path))
     assert failures == []
     extracted = tmp_path / "permfile.txt"
     assert extracted.exists()
@@ -96,7 +95,7 @@ def test_extract_all_zips_logs_actual_byte_mismatch(tmp_path, monkeypatch, caplo
     monkeypatch.setattr(extract_all_zips_module.zipfile.ZipFile, "open", fake_open)
 
     with caplog.at_level("WARNING"):
-        failures = extract_all_zips(str(tmp_path))
+        failures = extract_all_zips_module.extract_all_zips(str(tmp_path))
 
     assert failures == []
     extracted = tmp_path / "mismatch.txt"

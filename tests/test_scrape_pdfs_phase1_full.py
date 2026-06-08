@@ -16,6 +16,7 @@ def mock_phase1_pipeline():
          patch("utils.scrape_pdfs_phase1_full.detect_failure_reason") as detect_failure_reason_mock, \
          patch("utils.scrape_pdfs_phase1_full.detect_decision") as detect_decision_mock, \
          patch("utils.scrape_pdfs_phase1_full.detect_outcome") as detect_outcome_mock, \
+         patch("utils.scrape_pdfs_phase1_full.extract_quantitative_data") as extract_quantitative_data_mock, \
          patch("utils.scrape_pdfs_phase1_full.evidence_strength") as evidence_strength_mock, \
          patch("utils.scrape_pdfs_phase1_full.confidence_score") as confidence_score_mock:
         pdf_open.return_value.__enter__.return_value = Mock()
@@ -28,6 +29,7 @@ def mock_phase1_pipeline():
             "detect_failure_reason": detect_failure_reason_mock,
             "detect_decision": detect_decision_mock,
             "detect_outcome": detect_outcome_mock,
+            "extract_quantitative_data": extract_quantitative_data_mock,
             "evidence_strength": evidence_strength_mock,
             "confidence_score": confidence_score_mock,
         }
@@ -69,6 +71,7 @@ def test_phase1_domain_override_respects_explicit_construction_science(
     mock_phase1_pipeline["detect_failure_reason"].return_value = "unknown"
     mock_phase1_pipeline["detect_decision"].return_value = "unknown"
     mock_phase1_pipeline["detect_outcome"].return_value = "neutral"
+    mock_phase1_pipeline["extract_quantitative_data"].return_value = []
     mock_phase1_pipeline["evidence_strength"].return_value = "low"
     mock_phase1_pipeline["confidence_score"].return_value = "low"
     main(input_dir=str(input_dir), db_path=str(db_path), domain="construction_science")
@@ -185,6 +188,76 @@ def test_phase1_suppresses_raw_climate_normal_table_rows(tmp_path, mock_phase1_p
         event_count = con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0]
 
     assert event_count == 0
+
+
+def test_phase1_requires_construction_context_for_generic_thermal_terms(tmp_path, mock_phase1_pipeline):
+    input_dir = tmp_path / "input_pdfs"
+    input_dir.mkdir()
+    pdf_path = input_dir / "thermal_noise.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 thermal noise")
+    db_path = tmp_path / "output.sqlite"
+
+    noisy_sentence = "The culture was incubated at 37 C and the temperature increased during analysis."
+
+    mock_pdf = Mock()
+    mock_page = Mock()
+    mock_page.extract_text.return_value = noisy_sentence
+    mock_pdf.pages = [mock_page]
+    mock_pdf.metadata = {}
+
+    mock_phase1_pipeline["pdf_open"].return_value.__enter__.return_value = mock_pdf
+    mock_phase1_pipeline["extract_metadata"].return_value = {}
+    mock_phase1_pipeline["chunk_sentences"].return_value = [noisy_sentence]
+    mock_phase1_pipeline["extract_entities"].return_value = [
+        {"entity_type": "environment", "entity_name": "TEMPERATURE", "entity_variant": "", "role": "environment"}
+    ]
+    mock_phase1_pipeline["detect_method_tags"].return_value = []
+    mock_phase1_pipeline["detect_failure_reason"].return_value = "unknown"
+    mock_phase1_pipeline["detect_decision"].return_value = "unknown"
+    mock_phase1_pipeline["detect_outcome"].return_value = "unknown"
+    mock_phase1_pipeline["evidence_strength"].return_value = "low"
+    mock_phase1_pipeline["confidence_score"].return_value = "low"
+    main(input_dir=str(input_dir), db_path=str(db_path), domain="construction_science")
+
+    with sqlite3.connect(db_path) as con:
+        event_count = con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0]
+
+    assert event_count == 0
+
+
+def test_phase1_keeps_construction_thermal_context(tmp_path, mock_phase1_pipeline):
+    input_dir = tmp_path / "input_pdfs"
+    input_dir.mkdir()
+    pdf_path = input_dir / "construction_thermal.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 construction thermal")
+    db_path = tmp_path / "output.sqlite"
+
+    sentence = "The concrete wall assembly showed thermal performance loss at elevated temperature."
+
+    mock_pdf = Mock()
+    mock_page = Mock()
+    mock_page.extract_text.return_value = sentence
+    mock_pdf.pages = [mock_page]
+    mock_pdf.metadata = {}
+
+    mock_phase1_pipeline["pdf_open"].return_value.__enter__.return_value = mock_pdf
+    mock_phase1_pipeline["extract_metadata"].return_value = {}
+    mock_phase1_pipeline["chunk_sentences"].return_value = [sentence]
+    mock_phase1_pipeline["extract_entities"].return_value = [
+        {"entity_type": "material", "entity_name": "CONCRETE", "entity_variant": "", "role": "material"}
+    ]
+    mock_phase1_pipeline["detect_method_tags"].return_value = []
+    mock_phase1_pipeline["detect_failure_reason"].return_value = "unknown"
+    mock_phase1_pipeline["detect_decision"].return_value = "unknown"
+    mock_phase1_pipeline["detect_outcome"].return_value = "negative"
+    mock_phase1_pipeline["evidence_strength"].return_value = "moderate"
+    mock_phase1_pipeline["confidence_score"].return_value = "med"
+    main(input_dir=str(input_dir), db_path=str(db_path), domain="construction_science")
+
+    with sqlite3.connect(db_path) as con:
+        rows = con.execute("SELECT event_type FROM research_events").fetchall()
+
+    assert rows == [("thermal_performance",)]
 
 
 def test_phase1_keeps_climate_load_when_tied_to_building_context(tmp_path, mock_phase1_pipeline):

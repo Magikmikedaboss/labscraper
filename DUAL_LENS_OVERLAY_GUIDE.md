@@ -141,7 +141,7 @@ The domain file is configured for dual-lens mode:
 **Single Run:**
 ```bash
 python utils/run_engine.py \
-  --input-dir input_pdfs/longevity_v1 \
+  --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity
 ```
 

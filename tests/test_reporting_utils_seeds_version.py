@@ -1,3 +1,5 @@
+import subprocess
+
 from utils.reporting_utils import resolve_seeds_version
 
 def test_env_var(monkeypatch):
@@ -12,7 +14,6 @@ def test_git_success(monkeypatch):
 
 def test_git_timeout(monkeypatch):
     monkeypatch.delenv("SEEDS_VERSION", raising=False)
-    import subprocess
 
     def fake_run_cmd(cmd, **kwargs):
         raise subprocess.TimeoutExpired(cmd="git", timeout=1.0)

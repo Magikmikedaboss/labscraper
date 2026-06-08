@@ -105,7 +105,8 @@ def _resolve_seed_file(seed_file: str, seeds_dir: Path, domain_id: str) -> Path 
     suffix = seed_path.suffix
 
     search_paths = []
-    if "base/" not in seed_file and "base\\" not in seed_file:
+    allow_base_fallback = "base" not in seed_path.parts
+    if allow_base_fallback:
         search_paths.extend([
             seeds_dir / "base" / domain_id / seed_file,
             seeds_dir / "base" / "life_sciences" / seed_file,
@@ -113,11 +114,12 @@ def _resolve_seed_file(seed_file: str, seeds_dir: Path, domain_id: str) -> Path 
 
     if suffix:
         alternate_suffix = ".txt" if suffix.lower() != ".txt" else ".json"
-        search_paths.extend([
-            seeds_dir / "base" / domain_id / f"{stem}{alternate_suffix}",
-            seeds_dir / "base" / "life_sciences" / f"{stem}{alternate_suffix}",
-            seeds_dir / f"{stem}{alternate_suffix}",
-        ])
+        if allow_base_fallback:
+            search_paths.extend([
+                seeds_dir / "base" / domain_id / f"{stem}{alternate_suffix}",
+                seeds_dir / "base" / "life_sciences" / f"{stem}{alternate_suffix}",
+            ])
+        search_paths.append(seeds_dir / f"{stem}{alternate_suffix}")
 
     attempted_paths = [str(candidate), *(str(path) for path in search_paths)]
     for path in search_paths:
@@ -141,7 +143,6 @@ def audit_domain(
     overlays_dir: str | Path = "seeds/overlays",
     seeds_dir: str | Path = "seeds",
     domain_banned_entity_map: dict[str, Iterable[str]] | None = None,
-    overlay_mapping_required_by_domain: dict[str, bool] | None = None,
 ) -> DomainAuditEntry:
     domains_dir = Path(domains_dir)
     overlays_dir = Path(overlays_dir)
@@ -158,7 +159,11 @@ def audit_domain(
     overlay_files = [f"{overlay_id}.json" for overlay_id in profile.overlays]
     overlay_files_missing = _find_missing(overlay_files, overlays_dir)
     overlay_mapping_file = OVERLAY_MAPPING.get(domain_id)
-    overlay_mapping_exists = bool(overlay_mapping_file and (overlays_dir / overlay_mapping_file).exists())
+    overlay_mapping_exists = bool(
+        overlay_mapping_file
+        and isinstance(overlay_mapping_file, str)
+        and (overlays_dir / overlay_mapping_file).exists()
+    )
     construction_lenses = list(LENS_REGISTRY.keys()) if domain_id == "construction_science" else []
     active_banned_entity_map = domain_banned_entity_map or BANNED_ENTITY_TYPES_BY_DOMAIN
     banned_entity_types = set(active_banned_entity_map.get(domain_id, []))
@@ -167,10 +172,15 @@ def audit_domain(
     for seed_file in profile.get_seed_files():
         resolved_seed = _resolve_seed_file(seed_file, seeds_dir, domain_id)
         if resolved_seed is None:
-            raise FileNotFoundError(
-                f"Unable to resolve seed file {seed_file!r} for domain {domain_id!r} under {seeds_dir}. "
-                "See the audit log for attempted candidate paths."
-            )
+            seed_files_missing.append(seed_file)
+
+    if seed_files_missing:
+        # Seed files are mandatory for a valid domain configuration; missing
+        # entries indicate a broken or incomplete domain setup.
+        raise FileNotFoundError(
+            f"Unable to resolve seed files {seed_files_missing!r} for domain {domain_id!r} under {seeds_dir}. "
+            "See the audit log for attempted candidate paths."
+        )
 
     return DomainAuditEntry(
         domain_id=domain_id,
@@ -253,7 +263,6 @@ def audit_domains(
             overlays_dir=overlays_dir,
             seeds_dir=seeds_dir,
             domain_banned_entity_map=domain_banned_entity_map,
-            overlay_mapping_required_by_domain=active_overlay_mapping_required_by_domain,
         )
         domain_entries.append(entry)
         if entry.overlay_files_missing:

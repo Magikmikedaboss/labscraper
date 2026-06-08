@@ -25,6 +25,14 @@ class DummyCon:
     def close(self): pass
 
 
+class DummySqlite3:
+    @staticmethod
+    def connect(*a, **k):
+        return DummyCon()
+
+    Row = object
+
+
 def test_export_dual_lens_smoke(monkeypatch, tmp_path):
     import importlib
     module = importlib.import_module("utils.export.export_dual_lens")
@@ -33,12 +41,6 @@ def test_export_dual_lens_smoke(monkeypatch, tmp_path):
 
     db_path = tmp_path / "runs.sqlite"
     sqlite3.connect(db_path).close()
-
-    class DummySqlite3:
-        @staticmethod
-        def connect(*a, **k):
-            return DummyCon()
-        Row = object
 
     import utils.export.aggregation
     monkeypatch.setattr(utils.export.aggregation, "sqlite3", DummySqlite3)

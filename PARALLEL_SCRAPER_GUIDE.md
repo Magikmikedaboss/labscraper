@@ -42,17 +42,17 @@ con.close()
 
 ### Basic (4 workers - default)
 ```bash
-python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input/pdfs --output-db output/combined.sqlite --workers 4
 ```
 
 ### Fast (8 workers - recommended for modern CPUs)
 ```bash
-python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 8
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input/pdfs --output-db output/combined.sqlite --workers 8
 ```
 
 ### Conservative (2 workers - for older machines)
 ```bash
-python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 2
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input/pdfs --output-db output/combined.sqlite --workers 2
 ```
 
 ---
@@ -173,10 +173,10 @@ Combine parallel processing with multi-folder scraping:
 
 ```bash
 # Folder 1 (parallel, 4 workers)
-python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/combined.sqlite --workers 4
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input/pdfs --output-db output/combined.sqlite --workers 4
 
 # Folder 2 (parallel, 4 workers, same DB)
-python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs/biohacking --output-db output/combined.sqlite --workers 4
+python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input/pdfs/biohacking --output-db output/combined.sqlite --workers 4
 
 # Apply dual-lens export
 python utils/export/export_dual_lens.py output/combined.sqlite biohacking_longevity
@@ -261,7 +261,7 @@ python utils/export/export_dual_lens.py output/combined.sqlite biohacking_longev
 
 1. **Try it now:**
    ```bash
-   python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input_pdfs --output-db output/test_parallel.sqlite --workers 4
+   python utils/scrape_pdfs_parallel.py --domain biohacking_longevity --input-dir input/pdfs --output-db output/test_parallel.sqlite --workers 4
    ```
 
 2. **Compare results:**

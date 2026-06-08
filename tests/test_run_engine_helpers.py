@@ -5,26 +5,23 @@ from unittest.mock import Mock
 
 import pytest
 
-from utils.run_engine import (
-    chunk_sentences,
+from utils import metadata_utils
+from utils.event_classification import ConfidenceInput, DECISION_PHRASES
+from utils.data_extractors import extract_relationships
+from utils.common import now_iso
+from utils.common import sha256_hex, sha256_short
+from utils.deduplication import normalize_event_key
+from utils.data_extractors import extract_quantitative_data
+from utils.event_classification import (
     classify_event_type,
     confidence_score,
     detect_decision,
     detect_failure_reason,
     detect_method_tags,
     detect_outcome,
-    extract_metadata,
-    extract_quantitative_data,
-    guess_section,
-    guess_stage,
-    sha256_short,
-    sha256_hex,
 )
-from utils import metadata_utils
-from utils.event_classification import ConfidenceInput, DECISION_PHRASES
-from utils.data_extractors import extract_relationships
-from utils.common import now_iso
-from utils.deduplication import normalize_event_key
+from utils.metadata_utils import extract_metadata
+from utils.text_utils import chunk_sentences, guess_section, guess_stage
 
 
 def test_basic_helpers_return_expected_formats():
@@ -154,6 +151,8 @@ def test_detection_classification_and_confidence_helpers_work_together():
             {"entity_name": "COMPOUNDB"},
         ],
     )
+    # Intentionally build event_key via normalize_event_key for a different event_type
+    # than the detected stability_issue so this test validates normalize_event_key independently.
     event_key = normalize_event_key("efficacy_result", [{"entity_name": "COMPOUNDA"}], 1, sentence)
 
     measurement_types = {item["measurement_type"] for item in measurements}

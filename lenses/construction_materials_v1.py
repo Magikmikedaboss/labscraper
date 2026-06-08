@@ -34,9 +34,9 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     props = list_hits(s_l, PROPERTIES)
 
 
-    # Signal is true when: (1) material/property pair co-occurs, (2) a property is quantified via
-    # has_unit_signal(s_l) or has_number(s_l), or (3) mats/props co-occur with contains_any(s_l, TEST_MARKERS)
-    # to catch test/assay-style lines.
+    # Signal is true when: (1) material and property co-occur, (2) a property is quantified via
+    # has_unit_signal(s_l) or has_number(s_l), or (3) TEST_MARKERS co-occur with either a material or
+    # a property via contains_any(s_l, TEST_MARKERS) to catch test/assay-style lines.
     signal = (
         (bool(mats) and bool(props))
         or (bool(props) and (has_unit_signal(s_l) or has_number(s_l)))

@@ -9,14 +9,14 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def check_python_version():
-    """Check if Python version is 3.8+"""
+    """Check if Python version is 3.11+"""
     print("Checking Python version...")
     version = sys.version_info
-    if (version.major, version.minor) >= (3, 8):
+    if (version.major, version.minor) >= (3, 11):
         print(f"  Python {version.major}.{version.minor}.{version.micro} (OK)")
         return True
     else:
-        print(f"  Python {version.major}.{version.minor}.{version.micro} (Need 3.8+)")
+        print(f"  Python {version.major}.{version.minor}.{version.micro} (Need 3.11+)")
         return False
 
 def check_dependencies():
@@ -97,7 +97,7 @@ def check_database():
     
     # Check for domain-specific databases first, then fall back to general
     db_paths = [
-        Path('db') / 'runs.sqlite',                                      # Canonical database
+        PROJECT_ROOT / 'db' / 'runs.sqlite',                             # Canonical database
     ]
     
     db_path = None

@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from pathlib import Path
 
 
+logger = logging.getLogger(__name__)
+
+
 def summarize_bandit(report_path: Path) -> None:
     data = json.loads(report_path.read_text(encoding="utf-8"))
-    for issue in data.get("results", [])[:10]:
+    results = data.get("results", []) if isinstance(data, dict) else []
+    for issue in results[:10]:
+        if not isinstance(issue, dict):
+            continue
         print(
             f"Bandit {issue.get('test_id')} {issue.get('issue_text')} "
             f"({issue.get('filename')}:{issue.get('line_number')})"
@@ -21,11 +28,13 @@ def summarize_safety(report_path: Path) -> None:
     for encoding in ("utf-8", "utf-8-sig", "utf-16", "latin-1"):
         try:
             text = raw.decode(encoding)
+            logger.debug("Decoded %s using %s", report_path, encoding)
             break
         except UnicodeDecodeError:
             continue
 
     if text is None:
+        logger.error("Failed to decode %s with utf-8, utf-8-sig, utf-16, or latin-1", report_path)
         raise ValueError(f"Could not decode {report_path}")
 
     text = text.strip()
@@ -61,7 +70,8 @@ def main(argv: list[str]) -> int:
     report_type = argv[2]
 
     if not report_path.exists():
-        return 0
+        logger.error("Report file not found: %s", report_path)
+        return 1
 
     try:
         if report_type == "bandit":
@@ -73,6 +83,7 @@ def main(argv: list[str]) -> int:
             return 2
     except Exception as exc:
         print(f"Failed to summarize {report_path.name}: {exc}")
+        return 1
 
     return 0
 

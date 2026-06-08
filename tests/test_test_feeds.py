@@ -1,7 +1,6 @@
 import pytest
 import json
 from utils.validators import validate_feed_config, validate_file_path, ValidationError
-import feedparser
 import os
 from utils.feed_utils import probe_feed
 
@@ -27,21 +26,45 @@ def test_validate_feed_config_invalid(tmp_path):
     with pytest.raises(ValidationError, match="Missing required field"):
         validate_feed_config(loaded)
 
+def test_validate_feed_config_allows_collector_metadata():
+    config = {
+        "feeds": [
+            {
+                "name": "Collector Feed",
+                "url": "http://example.com/rss",
+                "domain": "construction_science",
+                "source_kind": "collector",
+                "collector_mode": "html_archive",
+                "same_domain_only": False,
+                "max_pages": 7,
+            }
+        ]
+    }
+
+    loaded = validate_feed_config(config)
+
+    feed = loaded["feeds"][0]
+    assert feed["source_kind"] == "collector"
+    assert feed["collector_mode"] == "html_archive"
+    assert feed["same_domain_only"] is False
+    assert feed["max_pages"] == 7
+
 # Add more tests for probe_feed, error handling, and save-working logic as needed
 
 def test_probe_feed_success(monkeypatch):
     # Mock feedparser.parse to return a valid feed with entries and a PDF link
-    class FakeFeed:
-        def __init__(self):
-            self.entries = [{
+    monkeypatch.setattr(
+        "utils.feed_utils.parse_feed",
+        lambda *args, **kwargs: {
+            'entries': [{
                 'summary': 'See https://example.com/test.pdf',
                 'title': 'Test Entry',
                 'content': [],
                 'links': [{'href': 'https://example.com/test.pdf'}],
-            }]
-            self.feed = {'title': 'Test Feed'}
-            self.status = 200
-    monkeypatch.setattr(feedparser, "parse", lambda url: FakeFeed())
+            }],
+            'feed': {'title': 'Test Feed'},
+        },
+    )
     result = probe_feed("http://example.com/rss", "Test Feed")
     assert result['success'] is True
     assert result['entries'] == 1
@@ -50,12 +73,10 @@ def test_probe_feed_success(monkeypatch):
 
 def test_probe_feed_http_error(monkeypatch):
     # Mock feedparser.parse to return a feed with HTTP error status
-    class FakeFeed:
-        def __init__(self):
-            self.entries = []
-            self.feed = {'title': 'Test Feed'}
-            self.status = 404
-    monkeypatch.setattr(feedparser, "parse", lambda url: FakeFeed())
+    monkeypatch.setattr(
+        "utils.feed_utils.parse_feed",
+        lambda *args, **kwargs: {'entries': [], 'feed': {'title': 'Test Feed'}, 'status': 404},
+    )
     result = probe_feed("http://example.com/rss", "Test Feed")
     assert result['success'] is False
     assert 'error' in result
@@ -63,9 +84,9 @@ def test_probe_feed_http_error(monkeypatch):
 
 def test_probe_feed_exception(monkeypatch):
     # Mock feedparser.parse to raise an exception
-    def raise_exc(url):
+    def raise_exc(*args, **kwargs):
         raise Exception("network error")
-    monkeypatch.setattr(feedparser, "parse", raise_exc)
+    monkeypatch.setattr("utils.feed_utils.parse_feed", raise_exc)
     result = probe_feed("http://example.com/rss", "Test Feed")
     assert result['success'] is False
     assert 'network error' in result['error']
@@ -76,6 +97,24 @@ def test_save_working_logic(tmp_path, monkeypatch):
     from tools import test_feeds
     # output variable removed (was unused)
     save_path = tmp_path / "feeds.json"
+    save_path.write_text(
+        json.dumps(
+            {
+                "feeds": [
+                    {
+                        "name": "Collector Feed",
+                        "url": "http://example.com/rss",
+                        "domain": "construction_science",
+                        "source_kind": "collector",
+                        "collector_mode": "html_archive",
+                        "same_domain_only": False,
+                        "max_pages": 7,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
     # Patch open to simulate atomic write
     orig_open = builtins.open
     written = {}
@@ -110,6 +149,12 @@ def test_save_working_logic(tmp_path, monkeypatch):
     # Compare absolute paths as strings for cross-platform compatibility
     expected_written = save_path.with_name(save_path.stem + "_working.json")
     assert os.path.abspath(str(written['file'])) == os.path.abspath(str(expected_written))
+    saved_config = json.loads(written['content'])
+    saved_feed = saved_config["feeds"][0]
+    assert saved_feed["source_kind"] == "collector"
+    assert saved_feed["collector_mode"] == "html_archive"
+    assert saved_feed["same_domain_only"] is False
+    assert saved_feed["max_pages"] == 7
 
 def test_probe_feed_with_invalid_config(monkeypatch):
     # probe_feed should return failure when config is missing 'url'

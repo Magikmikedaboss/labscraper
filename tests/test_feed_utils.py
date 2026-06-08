@@ -3,6 +3,16 @@ from unittest.mock import Mock, patch
 from utils.feed_utils import extract_pdf_links, parse_feed, probe_feed
 
 
+class _FakeResponse:
+    def __init__(self, content=b"<rss></rss>", status_code=200):
+        self.content = content
+        self.status_code = status_code
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise Exception(f"HTTP {self.status_code}")
+
+
 class TestExtractPDFLinks:
     """Test PDF link extraction from feed entries"""
     
@@ -68,9 +78,11 @@ class TestExtractPDFLinks:
 class TestParseFeed:
     """Test feed parsing functionality"""
     
+    @patch('utils.feed_utils.requests.get')
     @patch('utils.feed_utils.feedparser.parse')
-    def test_parse_feed_valid_url(self, mock_parse):
+    def test_parse_feed_valid_url(self, mock_parse, mock_get):
         """Test parsing a valid feed URL"""
+        mock_get.return_value = _FakeResponse()
         mock_feed = Mock()
         mock_feed.entries = [
             {'title': 'Test Entry', 'summary': 'Test summary', 'links': []}
@@ -80,27 +92,27 @@ class TestParseFeed:
         result = parse_feed('https://example.com/feed.rss')
         
         assert result == mock_feed
-        mock_parse.assert_called_once_with('https://example.com/feed.rss')
+        mock_get.assert_called_once()
+        mock_parse.assert_called_once()
 
+    @patch('utils.feed_utils.requests.get')
     @patch('utils.feed_utils.feedparser.parse')
-    def test_parse_feed_invalid_url(self, mock_parse):
+    def test_parse_feed_invalid_url(self, mock_parse, mock_get):
         """Test error handling for invalid feed URLs"""
-        # feedparser returns empty dict for bad URLs
-        mock_parse.return_value = {'entries': []}
+        mock_get.side_effect = Exception("bad url")
         
         result = parse_feed('not-a-valid-url')
         
-        assert isinstance(result, dict)
-        assert result['entries'] == []
+        assert result == {}
 
+    @patch('utils.feed_utils.requests.get')
     @patch('utils.feed_utils.feedparser.parse')
-    def test_parse_feed_network_error(self, mock_parse):
+    def test_parse_feed_network_error(self, mock_parse, mock_get):
         """Test handling of network errors during feed parsing"""
-        mock_parse.side_effect = Exception("Network error")
+        mock_get.side_effect = Exception("Network error")
         
         result = parse_feed('https://example.com/feed.rss')
         
-        assert isinstance(result, dict)
         assert result == {}
 
 
