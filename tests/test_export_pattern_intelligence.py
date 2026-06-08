@@ -90,3 +90,4 @@ def test_main_runs(monkeypatch, tmp_path):
     assert rows[0][0:4] == ["entity_name", "entity_type", "pattern_type", "health_score"]
     assert rows[1][ENTITY_NAME_IDX] == "entity_0"
     assert rows[1][PATTERN_TYPE_IDX] == "convergence"
+
