@@ -71,7 +71,7 @@ def test_classify_triage_review_climate_normals_boilerplate():
 
     assert result.keep_skip_review == "review"
     assert result.detected_domain == "construction_science"
-    assert result.construction_signals == "code"
+    assert "code" in result.construction_signals
 
 
 def test_classify_triage_review_does_not_keep_on_substring_matches():
@@ -96,7 +96,7 @@ def test_classify_triage_review_when_no_building_context_is_present():
     )
 
     assert result.keep_skip_review == "review"
-    assert result.detected_domain in {"materials_science", "physics", "unknown", "mixed"}
+    assert result.detected_domain == "physics"
 
 
 def test_classify_triage_review_does_not_treat_generic_building_usage_as_context():
@@ -108,7 +108,7 @@ def test_classify_triage_review_does_not_treat_generic_building_usage_as_context
     )
 
     assert result.keep_skip_review == "review"
-    assert result.detected_domain in {"unknown", "biomedical", "mixed"}
+    assert result.detected_domain == "biomedical"
 
 
 def test_classify_triage_review_physics_bucket():

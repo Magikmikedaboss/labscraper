@@ -29,12 +29,13 @@ def main(db_path="db.sqlite", force=False):
     db_path_resolved = Path(db_path).resolve()
     if not force and db_path_resolved == canonical_db_path:
         raise RuntimeError(f"Refusing to initialize the canonical root DB at {canonical_db_path}. Choose a different path, use --force to override, or modify this guardrail if intentional.")
+    if not force and db_path_resolved.exists() and db_path_resolved.is_file() and db_path_resolved.stat().st_size > 0:
+        raise RuntimeError(f"Refusing to overwrite existing non-empty database at {db_path_resolved}. Use --force to override if intentional.")
     schema_path = project_root / "schema.sql"
     if not schema_path.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")
     schema_sql = schema_path.read_text(encoding="utf-8")
-    with sqlite3.connect(db_path_resolved) as con:
-        con.execute("PRAGMA foreign_keys = ON")
+    with get_connection_with_foreign_keys(db_path_resolved) as con:
         con.executescript(schema_sql)
     print(f"Initialized database at {db_path_resolved}")
 

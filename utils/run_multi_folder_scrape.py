@@ -3,10 +3,14 @@ Multi-Folder Scraper
 Run the scraper against multiple PDF folders and combine results into one database
 """
 
+import logging
 import os
 import subprocess  # nosec B404 - controlled local scraper invocation
 import sys
 from pathlib import Path
+
+
+logger = logging.getLogger(__name__)
 
 def run_scraper(input_dir: str, domain: str, output_db: str):
     """Run scraper on a specific folder"""
@@ -49,8 +53,11 @@ def validate_configs(configs: list[dict[str, str]]) -> None:
         output_raw = config.get("output_db", "")
         domain = config.get("domain", "(unknown domain)")
 
-        if not input_raw or not output_raw:
-            print(f"ERROR: Invalid config for domain '{domain}': input_dir does not exist or is not a directory: {input_raw or '(empty)'}")
+        missing_fields = [key for key, value in (("input_dir", input_raw), ("output_db", output_raw)) if not value]
+        if missing_fields:
+            message = f"ERROR: Invalid config for domain '{domain}': missing or empty fields: {', '.join(missing_fields)}"
+            print(message)
+            logger.error("Invalid config for domain '%s': missing or empty fields: %s", domain, ", ".join(missing_fields))
             sys.exit(1)
 
         input_dir = Path(input_raw).expanduser()
@@ -58,15 +65,18 @@ def validate_configs(configs: list[dict[str, str]]) -> None:
 
         if not input_dir.exists() or not input_dir.is_dir():
             print(f"ERROR: Invalid config for domain '{domain}': input_dir does not exist or is not a directory: {input_dir}")
+            logger.error("Invalid config for domain '%s': input_dir does not exist or is not a directory: %s", domain, input_dir)
             sys.exit(1)
 
         output_parent = output_db.parent
         if not output_parent.exists() or not output_parent.is_dir():
             print(f"ERROR: Invalid config for domain '{domain}': output_db parent directory does not exist or is not a directory: {output_parent}")
+            logger.error("Invalid config for domain '%s': output_db parent directory does not exist or is not a directory: %s", domain, output_parent)
             sys.exit(1)
 
         if not os.access(output_parent, os.W_OK):
             print(f"ERROR: Invalid config for domain '{domain}': output_db parent directory is not writable: {output_parent}")
+            logger.error("Invalid config for domain '%s': output_db parent directory is not writable: %s", domain, output_parent)
             sys.exit(1)
 
 

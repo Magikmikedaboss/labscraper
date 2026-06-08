@@ -58,7 +58,8 @@ def test_load_seeds_with_overlay(tmp_path):
     overlays_dir = tmp_path / "overlays"
     overlays_dir.mkdir()
     overlay_data = {"entities": {"assays": ["b"]}, "overlay_id": "id", "domain": "d"}
-    (overlays_dir / "stem_cells_overlay_v1.json").write_text(json.dumps(overlay_data), encoding="utf-8")
+    overlay_filename = seed_overlay_loader.OVERLAY_MAPPING["stem_cells_regen"]
+    (overlays_dir / overlay_filename).write_text(json.dumps(overlay_data), encoding="utf-8")
     seeds = seed_overlay_loader.load_seeds_with_overlay("stem_cells_regen", str(tmp_path), str(overlays_dir))
     assert "assays" in seeds
     assert "b" in seeds["assays"]
@@ -69,7 +70,8 @@ def test_get_overlay_info(tmp_path):
     overlays_dir = tmp_path / "overlays"
     overlays_dir.mkdir()
     overlay_data = {"entities": {"foo": ["bar"]}, "overlay_id": "id", "domain": "d", "notes": "n", "exclusions": {"x": 1}}
-    (overlays_dir / "stem_cells_overlay_v1.json").write_text(json.dumps(overlay_data), encoding="utf-8")
+    overlay_filename = seed_overlay_loader.OVERLAY_MAPPING["stem_cells_regen"]
+    (overlays_dir / overlay_filename).write_text(json.dumps(overlay_data), encoding="utf-8")
     info = seed_overlay_loader.get_overlay_info("stem_cells_regen", str(overlays_dir))
     assert info["overlay_id"] == "id"
     assert info["domain"] == "d"

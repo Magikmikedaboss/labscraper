@@ -108,8 +108,11 @@ def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch, caplog):
     def fail_unlink(*args, **kwargs):
         raise OSError("unlink failed")
 
+    def fail_replace(*args, **kwargs):
+        raise OSError("replace failed")
+
     monkeypatch.setattr(Path, "unlink", fail_unlink, raising=False)
-    monkeypatch.setattr(reporting.os, "replace", lambda *args, **kwargs: (_ for _ in ()).throw(OSError("replace failed")))
+    monkeypatch.setattr(reporting.os, "replace", fail_replace)
 
     with caplog.at_level("WARNING"):
         result, error = reporting._publish_latest_file(entities_file, tmp_path / "latest.csv")

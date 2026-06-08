@@ -3,8 +3,9 @@
 Validate parallel scraper results
 """
 
-import sqlite3
 from pathlib import Path
+
+from utils.db_utils import connect_with_foreign_keys
 
 def validate_parallel_results():
     db_path = Path('runs/construction_parallel_test.sqlite')
@@ -15,7 +16,7 @@ def validate_parallel_results():
     print('🏗️  VALIDATING PARALLEL SCRAPER RESULTS')
     print('=' * 50)
     
-    with sqlite3.connect(db_path) as con:
+    with connect_with_foreign_keys(db_path) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
         

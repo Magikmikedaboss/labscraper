@@ -34,6 +34,11 @@ def has_signal(sentence_l: str) -> bool:
 
 
 def scan_cache(cache_dir: Path) -> None:
+    if not cache_dir.exists():
+        raise FileNotFoundError(f"Cache directory does not exist: {cache_dir}")
+    if not cache_dir.is_dir():
+        raise NotADirectoryError(f"Cache path is not a directory: {cache_dir}")
+
     pdfs = sorted(cache_dir.glob("*.pdf"))
     results: list[dict[str, object]] = []
     summary = Counter()
@@ -98,7 +103,7 @@ def scan_cache(cache_dir: Path) -> None:
         print(
             f"{row['signals']:>4} signals | {row['sentences']:>4} sentences | "
             f"{row['text_pages']:>2}/{row['pages']:>2} text/pages | {row['file']}"
-        , flush=True)
+            , flush=True)
 
     print("\nDEAD WEIGHT CANDIDATES")
     for row in sorted(
@@ -108,7 +113,7 @@ def scan_cache(cache_dir: Path) -> None:
         status = "INVALID" if not row["valid"] else "OK"
         print(
             f"{status:7} | text_pages={row['text_pages']:>2} | chars={row['chars']:>6} | {row['file']}"
-        , flush=True)
+            , flush=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -118,7 +123,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     cache_dir = args.cache_dir_flag or args.cache_dir or "data/cache/rss"
-    scan_cache(Path(cache_dir))
+    try:
+        scan_cache(Path(cache_dir))
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        print(f"ERROR: {exc}")
+        return 1
     return 0
 
 

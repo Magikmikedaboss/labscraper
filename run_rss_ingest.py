@@ -17,11 +17,14 @@ from urllib.parse import urljoin, urlparse
 
 import pdfplumber
 import requests
+from pdfminer.pdfexceptions import PDFNotImplementedError
+from pdfminer.pdfparser import PDFSyntaxError
+from pdfplumber.utils.exceptions import PdfminerException
 
 from utils.abstract_collectors import extract_abstract_text_from_url, find_abstract_links
 from utils.common import sha256_hex
 from utils.data_extractors import extract_quantitative_data
-from utils.db_init import ensure_research_events_columns_renamed
+from utils.db_init import init_db_schema
 from utils.db_utils import (
     insert_chunk,
     insert_document,
@@ -125,7 +128,24 @@ def has_signal(sentence_l: str) -> bool:
 
 
 def _triage_construction_pdf(pdf_path: Path, triage_rows: list[TriagedSource]) -> bool:
-    triage = scan_pdf(pdf_path)
+    try:
+        triage = scan_pdf(pdf_path)
+    except (PDFSyntaxError, PDFNotImplementedError, PdfminerException, OSError, ValueError, Exception) as exc:
+        logger.exception("Failed to triage construction PDF %s", pdf_path)
+        triage_rows.append(
+            TriagedSource(
+                file_path=str(pdf_path),
+                title=pdf_path.stem,
+                detected_domain="unknown",
+                keep_skip_review="review",
+                confidence="low",
+                construction_signals="",
+                contamination_signals="",
+                reason=f"failed to scan PDF ({exc.__class__.__name__}) — see logs",
+            )
+        )
+        return False
+
     triage_rows.append(triage)
     return triage.keep_skip_review == "keep"
 
@@ -165,51 +185,6 @@ def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sen
     key = normalize_event_key(event_type, entities, page_number, sent)
     if key in seen:
         return False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     seen.add(key)
 
@@ -258,16 +233,10 @@ def ensure_db_schema(db_path: Path):
     if not schema_path.exists():
         raise SystemExit(f"Missing schema file: {schema_path}")
 
-    schema_sql = schema_path.read_text(encoding="utf-8")
-    with sqlite3.connect(db_path) as con:
-        try:
-            con.execute("PRAGMA foreign_keys = ON")
-            con.executescript(schema_sql)
-            ensure_research_events_columns_renamed(con, PROJECT_ROOT)
-            con.commit()
-        except sqlite3.Error as exc:
-            con.rollback()
-            raise RuntimeError(f"[ensure_db_schema] Error executing schema script: {exc}") from exc
+    try:
+        init_db_schema(db_path)
+    except sqlite3.Error as exc:
+        raise RuntimeError(f"[ensure_db_schema] Error executing schema script: {exc}") from exc
 
 
 def get_pdf_links_from_entry(entry: dict[str, Any]) -> list[str]:

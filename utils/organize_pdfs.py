@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import logging
 import os
 import shutil
 from dataclasses import dataclass
@@ -18,6 +19,7 @@ from utils.source_triage import TriagedSource, scan_pdf
 
 DEFAULT_INPUT_ROOTS = [Path("cache/rss"), Path("input/pdfs")]
 DEFAULT_OUTPUT_ROOT = Path("organized_pdfs")
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -91,7 +93,10 @@ def organize_pdfs(
                     shutil.move(str(pdf_path), str(destination_path))
                 except (OSError, shutil.Error):
                     shutil.copy2(pdf_path, destination_path)
-                    os.remove(pdf_path)
+                    try:
+                        os.remove(pdf_path)
+                    except OSError:
+                        logger.exception("Failed to remove original PDF after copy fallback: %s", pdf_path)
             else:
                 shutil.copy2(pdf_path, destination_path)
 

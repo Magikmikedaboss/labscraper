@@ -15,7 +15,6 @@ def parse_feed(url: str, raise_on_error: bool = False, timeout: int = 20):
         return {}
     try:
         response = requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT})
-        response.raise_for_status()
         parsed = feedparser.parse(response.content)
         if isinstance(parsed, dict):
             parsed.setdefault('status', response.status_code)

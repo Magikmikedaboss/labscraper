@@ -1,5 +1,6 @@
-import sqlite3
 from pathlib import Path
+
+from utils.db_utils import connect_with_foreign_keys
 
 def check_biohacking_compounds():
     """Check which compounds were found in the biohacking scrape"""
@@ -10,7 +11,7 @@ def check_biohacking_compounds():
         print(f"❌ Database not found: {db_path}")
         return
     
-    with sqlite3.connect(db_path) as con:
+    with connect_with_foreign_keys(db_path) as con:
         cur = con.cursor()
         # Get all compounds found
         results = cur.execute(

@@ -1,5 +1,6 @@
-import sqlite3
 from pathlib import Path
+
+from utils.db_utils import connect_with_foreign_keys
 
 DB_PATH = Path("runs") / "peptide_intel.sqlite"
 
@@ -7,7 +8,7 @@ def main():
     if not DB_PATH.exists():
         print(f"\u274c Database file not found: {DB_PATH}")
         return
-    with sqlite3.connect(DB_PATH) as con:
+    with connect_with_foreign_keys(DB_PATH) as con:
         cur = con.cursor()
         print("\n" + "="*60)
         print("TARGET EXTRACTION INVESTIGATION")

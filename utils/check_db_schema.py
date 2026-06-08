@@ -21,7 +21,7 @@ def main(argv=None):
         return 1
     try:
         check_db_schema(args[1])
-    except Exception as error:
+    except (sqlite3.Error, OSError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
     return 0

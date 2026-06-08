@@ -1,10 +1,10 @@
 entity_name,entity_type,entity_variant,event_count,construction_research_v1_score,construction_research_v1_bucket,science_research_v1_score,science_research_v1_bucket
-beam,system,,12,14.18,exploratory,12.00,exploratory
-panel,material,,1,1.50,deprioritized,1.00,deprioritized
-wall,system,,7,8.80,promising,7.43,exploratory
+beam,system,,12,12.82,exploratory,12.00,exploratory
+panel,material,,1,1.00,deprioritized,1.00,deprioritized
+wall,system,,7,7.00,exploratory,7.43,exploratory
 strength,test_method,,2,3.00,stalled,3.00,stalled
-glass,material,,2,2.80,stalled,3.00,stalled
 polymer,material,,1,1.00,deprioritized,1.50,deprioritized
+glass,material,,2,2.80,stalled,3.00,stalled
 modulus,test_method,,1,1.00,deprioritized,1.50,deprioritized
 compression,test_method,,1,1.00,deprioritized,1.00,deprioritized
 column,system,,1,1.50,deprioritized,1.00,deprioritized
@@ -18,8 +18,8 @@ lattice collapse,failure_mode,,1,1.50,deprioritized,1.00,deprioritized
 collapse,failure_mode,,1,1.50,deprioritized,1.00,deprioritized
 window,system,,1,1.00,deprioritized,1.00,deprioritized
 thermal analysis,test_method,,1,1.50,deprioritized,1.00,deprioritized
-yielding,failure_mode,,1,1.00,deprioritized,1.00,deprioritized
+yielding,failure_mode,,1,1.50,deprioritized,1.00,deprioritized
 impact,hazard,,1,1.00,deprioritized,1.00,deprioritized
-foundation,system,,3,4.20,exploratory,2.00,stalled
+foundation,system,,3,3.60,stalled,2.00,stalled
 corrosion,hazard,,1,1.50,deprioritized,-2.00,deprioritized
 copper,material,,1,1.00,deprioritized,1.00,deprioritized

@@ -316,6 +316,7 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
         pdfs = list(input_dir.rglob("*.pdf"))
         print(f"Found {len(pdfs)} PDFs in {input_dir} (including subfolders)")
         for pdf_path in pdfs:
+            meta = {}
             try:
                 print(f"\nProcessing: {pdf_path.name}")
                 meta = extract_metadata(pdf_path)
@@ -323,7 +324,8 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                 # Upsert source and document
                 source_id = _sha256_file(pdf_path)
                 upsert_source(con, source_id, str(pdf_path), meta)
-                doc_id = insert_document(con, source_id, str(pdf_path), source_id)
+                file_hash = _sha256_file(pdf_path)
+                doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                 source_title_l = str(meta.get("title") or pdf_path.stem).lower()
                 resolved_domain = (
                     domain
@@ -430,17 +432,30 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                         fail_source_id = _sha256_file(pdf_path)
                     except Exception:
                         fail_source_id = sha256_hex(str(pdf_path))
-                    upsert_source(
-                        con,
-                        fail_source_id,
-                        str(pdf_path),
-                        {
-                            "title": f"[FAILED] {str(e)[:200]}",
-                            "authors": "",
-                            "year": None,
-                            "doi": None,
-                        }
+                    existing_source = con.execute(
+                        "SELECT title, authors, doi FROM sources WHERE source_id = ? LIMIT 1",
+                        (fail_source_id,),
+                    ).fetchone()
+                    has_valid_metadata = bool(
+                        existing_source
+                        and any(
+                            str(value).strip()
+                            for value in (existing_source[0], existing_source[1], existing_source[2])
+                            if value is not None
+                        )
                     )
+                    if not has_valid_metadata:
+                        failure_meta = dict(meta) if isinstance(meta, dict) else {}
+                        failure_meta.setdefault("title", pdf_path.stem)
+                        failure_meta.setdefault("authors", "")
+                        failure_meta.setdefault("year", None)
+                        failure_meta.setdefault("doi", None)
+                        upsert_source(
+                            con,
+                            fail_source_id,
+                            str(pdf_path),
+                            failure_meta,
+                        )
                 except Exception as db_e:
                     print(f"   (DB error while recording failure for {pdf_path}: {db_e})")
                 continue

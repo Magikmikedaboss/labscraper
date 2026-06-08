@@ -10,6 +10,8 @@ Built for researchers, engineers, analysts, and technical teams who need more th
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Parallel Processing](https://img.shields.io/badge/Parallel-4x%20Speedup-green.svg)](https://github.com/Magikmikedaboss/labscraper)
 
+Python 3.11+ is required because the codebase uses modern typing syntax and standard-library behavior introduced in Python 3.11.
+
 ---
 
 ## 🎯 What It Does
@@ -514,7 +516,7 @@ entity_relationships (
 )
 ```
 
-This table stores directed entity relationships, and its cascading foreign keys mean deleting an entity removes linked inbound and outbound relationships.
+This table stores directed entity relationships, and its restrictive foreign keys mean deleting an entity is blocked while linked inbound or outbound relationships still exist.
 
 ---
 

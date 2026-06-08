@@ -75,10 +75,12 @@ python utils/export/export_dual_lens.py db/runs.sqlite construction_science
 
 If `db/runs.sqlite` becomes corrupted or you need a clean restart, the safer recovery path is:
 
-1. `python utils/init_db.py db/runs.sqlite` to create a fresh schema in `db/runs.sqlite`.
+1. `python utils/init_db.py db/runs.sqlite --force` to create a fresh schema in `db/runs.sqlite`.
 2. Re-run ingestion with `python utils/run_engine.py ... --output-db db/runs.sqlite` to repopulate the database.
 
-Be aware that `python utils/run_engine.py ... --output-db db/runs.sqlite` will both reinitialize the database and reprocess PDFs, so it is not just a schema-only reset. Use `utils/init_db.py` when you want to create the database first and ingest documents separately.
+Be aware that `python utils/run_engine.py ... --output-db db/runs.sqlite` will both reinitialize the database and reprocess PDFs, so it is not just a schema-only reset. Use the project-root `init_db.py` when you want to create the database first and ingest documents separately. The helper in `utils/db_init.py` raises a `RuntimeError` for the canonical `db/runs.sqlite` path, so the root script is the supported entrypoint for this recovery flow.
+
+`utils/db_init.py` is test-only and should not be used for this recovery flow.
 
 `utils/export_csv.py` currently reads from `db/runs.sqlite`.
 

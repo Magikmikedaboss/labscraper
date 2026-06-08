@@ -9,6 +9,84 @@ from pathlib import Path
 from typing import Dict, List, Any
 
 
+CONSTRUCTION_TERM_CONTEXT_RULES = {
+    "beam": {
+        "required_any": (
+            "structural",
+            "load",
+            "load-bearing",
+            "load bearing",
+            "building",
+            "roof",
+            "column",
+            "slab",
+            "truss",
+            "girder",
+            "frame",
+            "span",
+            "bridge",
+            "construction",
+        ),
+        "forbidden_any": (
+            "laser beam",
+            "probe beam",
+            "electron beam",
+            "atomic beam",
+            "optical beam",
+            "light beam",
+            "beam splitter",
+            "beamline",
+        ),
+    },
+    "wall": {
+        "required_any": (
+            "building",
+            "building envelope",
+            "envelope",
+            "assembly",
+            "fire",
+            "sound",
+            "insulation",
+            "roof",
+            "structural",
+            "shear wall",
+            "retaining wall",
+            "masonry wall",
+            "partition",
+            "exterior wall",
+            "interior wall",
+        ),
+        "forbidden_any": (
+            "cell wall",
+            "domain wall",
+            "magnetic domain wall",
+        ),
+    },
+    "foundation": {
+        "required_any": (
+            "slab",
+            "soil",
+            "settlement",
+            "footing",
+            "basement",
+            "building",
+            "structural",
+            "pile",
+            "retaining",
+            "foundation wall",
+        ),
+        "forbidden_any": (
+            "foundation model",
+            "ai model",
+            "machine learning",
+            "language model",
+            "deep learning",
+            "llm",
+        ),
+    },
+}
+
+
 class OverlayScorer:
     """Applies overlay scoring to events and entities with model weighting"""
     
@@ -85,7 +163,8 @@ class OverlayScorer:
             # Apply boost terms
             boost_terms = overlay.get('boost_terms', {})
             for term, weight in boost_terms.items():
-                if term.lower() in text_lower:
+                term_lower = term.lower()
+                if self._term_is_contextually_allowed(overlay_id, term_lower, text_lower):
                     score += weight
             
             # Apply demote terms (weights are negative)
@@ -109,6 +188,19 @@ class OverlayScorer:
                     scores[overlay_id] -= 1.0
 
         return scores
+
+    def _term_is_contextually_allowed(self, overlay_id: str, term_lower: str, text_lower: str) -> bool:
+        if overlay_id != "construction_research_v1":
+            return term_lower in text_lower
+
+        rule = CONSTRUCTION_TERM_CONTEXT_RULES.get(term_lower)
+        if not rule:
+            return term_lower in text_lower
+
+        if any(phrase in text_lower for phrase in rule["forbidden_any"]):
+            return False
+
+        return any(phrase in text_lower for phrase in rule["required_any"])
     
     def apply_entity_priority(self, entity_type: str, overlay_id: str) -> float:
         """

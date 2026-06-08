@@ -118,13 +118,12 @@ def extract_all_zips(base_dir):
                                         dst.write(chunk)
                                         bytes_written += len(chunk)
                                 if bytes_written != member.file_size:
-                                    logger.warning(
-                                        "Extracted byte count mismatch for %s in %s: expected %s bytes, wrote %s bytes",
-                                        orig_name,
-                                        zip_path,
-                                        member.file_size,
-                                        bytes_written,
+                                    error_message = (
+                                        f"Extracted byte count mismatch for {orig_name} in {zip_path}: "
+                                        f"expected {member.file_size} bytes, wrote {bytes_written} bytes"
                                     )
+                                    logger.error(error_message)
+                                    raise RuntimeError(error_message)
                                 extracted_file_count += 1
                                 total_extracted_bytes += bytes_written
                             # Set permissions and timestamps for both files and directories

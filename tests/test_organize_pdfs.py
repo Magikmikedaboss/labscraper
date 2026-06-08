@@ -6,6 +6,10 @@ from utils.organize_pdfs import _destination_path, organize_pdfs, write_organiza
 from utils.source_triage import TriagedSource, classify_triage
 
 
+def raise_pdfminer_error(pdf_path, first_pages=2, max_chars=1600):
+    raise PdfminerException("No /Root object! - Is this really a PDF?")
+
+
 def test_destination_path_groups_by_domain_and_status():
     output_root = Path("organized_pdfs")
     input_root = Path("cache/rss")
@@ -94,9 +98,7 @@ def test_organize_pdfs_skips_unreadable_pdfs(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         "utils.organize_pdfs.scan_pdf",
-        lambda pdf_path, first_pages=2, max_chars=1600: (_ for _ in ()).throw(
-            PdfminerException("No /Root object! - Is this really a PDF?")
-        ),
+        raise_pdfminer_error,
     )
 
     rows = organize_pdfs(

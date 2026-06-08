@@ -242,16 +242,21 @@ def extract_entities(sentence: str, domain: str = "methods_tooling", SEEDS_DIR=N
     return extract_biomedical_entities(sentence, extracted_names, SEEDS_DIR=SEEDS_DIR)
 
 
+FAILURE_PATTERNS = (
+    r"(shear|fatigue|stress|thermal|brittle|ductile|creep|shrinkage|corrosion) (failure|crack|fracture|collapse|spalling)",
+    r"(failure|crack|fracture|collapse|spalling) (due to|from|by) (shear|fatigue|stress|thermal|creep|corrosion)",
+    r"([a-z]+) (fracture|crack|failure|collapse)",
+    r"(fracture|crack|failure|collapse) of ([a-z]+)",
+)
+
+COMPILED_FAILURE_REGEX = [re.compile(pattern) for pattern in FAILURE_PATTERNS]
+
+
 def _find_specific_failure_phrases(sentence: str) -> list[str]:
-    patterns = [
-        r"(shear|fatigue|stress|thermal|brittle|ductile|creep|shrinkage|corrosion) (failure|crack|fracture|collapse|spalling)",
-        r"(failure|crack|fracture|collapse|spalling) (due to|from|by) (shear|fatigue|stress|thermal|creep|corrosion)",
-        r"([a-z]+) (fracture|crack|failure|collapse)",
-        r"(fracture|crack|failure|collapse) of ([a-z]+)",
-    ]
     matches = []
-    for pattern in patterns:
-        for match in re.findall(pattern, sentence.lower()):
+    lowered_sentence = sentence.lower()
+    for pattern in COMPILED_FAILURE_REGEX:
+        for match in pattern.findall(lowered_sentence):
             if isinstance(match, tuple):
                 matches.append(" ".join([word for word in match if word]))
             else:

@@ -8,6 +8,8 @@ import csv
 import sys
 from pathlib import Path
 
+from utils.db_init import ensure_research_events_columns_renamed
+
 DB_PATH = Path("db/runs.sqlite")
 OUTPUT_DIR = Path("output")
 DOMAIN_ID = "construction_science"
@@ -23,6 +25,13 @@ def ensure_db_exists():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _open_connection():
+    con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA foreign_keys = ON")
+    ensure_research_events_columns_renamed(con)
+    return con
+
+
 
 
 # ---------------------------------------------------------
@@ -31,7 +40,7 @@ def ensure_db_exists():
 def export_events():
     print("🏗️  Exporting construction science events...")
 
-    with sqlite3.connect(DB_PATH) as con:
+    with _open_connection() as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
 
@@ -84,7 +93,7 @@ def export_events():
 def export_entities():
     print("🏗️  Exporting construction science entities...")
 
-    with sqlite3.connect(DB_PATH) as con:
+    with _open_connection() as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
 
@@ -130,7 +139,7 @@ def export_entities():
 def export_event_entities():
     print("🏗️  Exporting event-entity relationships...")
 
-    with sqlite3.connect(DB_PATH) as con:
+    with _open_connection() as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
 

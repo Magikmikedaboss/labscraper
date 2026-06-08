@@ -83,6 +83,7 @@ def test_main_function_database_creation():
         assert output_db.exists()
 
         conn = sqlite3.connect(str(output_db))
+        conn.execute("PRAGMA foreign_keys = ON")
         cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = [row[0] for row in cursor.fetchall()]
         assert 'sources' in tables
@@ -297,7 +298,8 @@ def test_main_skips_pdfminer_exception_and_exits_1_when_all_pdfs_fail(tmp_path):
     output_db = tmp_path / "test_output.sqlite"
     init_db_schema(str(output_db))
 
-    (input_dir / "bad.pdf").write_bytes(b"%PDF-1.4 bad")
+    for name in ["bad1.pdf", "bad2.pdf", "bad3.pdf"]:
+        (input_dir / name).write_bytes(b"%PDF-1.4 bad")
 
     with patch("utils.run_engine.pdfplumber.open", side_effect=PdfminerException("No /Root object! - Is this really a PDF?")):
         with pytest.raises(SystemExit, match=r"1"):
@@ -340,6 +342,8 @@ def test_main_duplicate_pdf_content_uses_same_source_id(tmp_path):
         main(domain="methods_tooling", input_dir=str(input_dir), db_path=str(output_db))
 
     with sqlite3.connect(str(output_db)) as con:
+        con.execute("PRAGMA foreign_keys = ON")
+        assert con.execute("PRAGMA foreign_keys").fetchone()[0] == 1
         sources_count = con.execute("SELECT COUNT(*) FROM sources").fetchone()[0]
         documents_count = con.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
 

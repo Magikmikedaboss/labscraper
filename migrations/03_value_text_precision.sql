@@ -1,3 +1,9 @@
+-- Migration rollback / recovery notes:
+-- If the copy verification below fails, the script aborts before dropping quantitative_measurements_old.
+-- Re-enable foreign keys with PRAGMA foreign_keys = ON after rolling back or rerunning the migration.
+-- The transaction should remain intact until the row-count check passes.
+-- If the INSERT or verification fails, rerun the migration after fixing the source data and re-enabling foreign keys.
+
 PRAGMA foreign_keys = OFF;
 
 BEGIN TRANSACTION;
@@ -39,6 +45,23 @@ SELECT
   context,
   created_at
 FROM quantitative_measurements_old;
+
+-- Verify that the copy preserved every row before removing the old table.
+CREATE TEMP TABLE migration_verification (
+  pass INTEGER NOT NULL CHECK (pass = 1)
+);
+
+INSERT INTO migration_verification (pass)
+SELECT CASE
+  WHEN (
+    SELECT COUNT(*) FROM quantitative_measurements
+  ) = (
+    SELECT COUNT(*) FROM quantitative_measurements_old
+  ) THEN 1
+  ELSE 0
+END;
+
+DROP TABLE migration_verification;
 
 DROP TABLE quantitative_measurements_old;
 

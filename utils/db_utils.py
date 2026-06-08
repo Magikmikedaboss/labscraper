@@ -20,13 +20,23 @@ def _quote_sql_identifier(identifier: str) -> str:
     return f'"{identifier}"'
 
 
+# Fuzzy title matching is intentionally conservative: these thresholds limit the
+# candidate set before SequenceMatcher is applied and keep tuning centralized.
+TITLE_PREFIX_LEN = 12
+LENGTH_DIFF_THRESHOLD = 20
+SIMILARITY_THRESHOLD = 0.97
+
+
+REQUIRED_TABLES = [
+    "sources", "documents", "chunks", "entities", "research_events",
+    "event_entities", "event_tags", "quantitative_measurements", "entity_relationships", "tags"
+]
+
+
 def db_has_all_tables(con, required_tables=None):
     """Check if all required tables exist in the database connection."""
     if required_tables is None:
-        required_tables = [
-            "sources", "documents", "chunks", "entities", "research_events",
-            "event_entities", "event_tags", "quantitative_measurements", "entity_relationships", "tags"
-        ]
+        required_tables = REQUIRED_TABLES
     cursor = con.cursor()
     try:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
@@ -39,12 +49,24 @@ def db_has_all_tables(con, required_tables=None):
 logger = logging.getLogger(__name__)
 AUTHOR_SEPARATOR = "; "
 
+_sqlite3_connect = sqlite3.connect
+
+
+def connect_with_foreign_keys(*args, **kwargs) -> sqlite3.Connection:
+    """Open a SQLite connection with foreign-key enforcement enabled."""
+    conn = _sqlite3_connect(*args, **kwargs)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+sqlite3.connect = connect_with_foreign_keys
+
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
     """Connect to database with standard settings"""
     if not Path(db_path).exists():
         raise FileNotFoundError(f"Database not found: {db_path}")
     
-    conn = sqlite3.connect(db_path)
+    conn = connect_with_foreign_keys(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -351,7 +373,7 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
     if exact:
         return exact[0]
 
-    title_prefix = title[:12]
+    title_prefix = title[:TITLE_PREFIX_LEN]
     title_length = len(title)
     candidates = con.execute(
         """
@@ -360,10 +382,10 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
         WHERE title IS NOT NULL
           AND trim(title) <> ''
           AND lower(trim(title)) LIKE ?
-          AND abs(length(lower(trim(title))) - ?) <= 20
-        ORDER BY abs(length(lower(trim(title))) - ?), source_id
+                    AND abs(length(lower(trim(title))) - ?) <= ?
+                ORDER BY abs(length(lower(trim(title))) - ?), source_id
         """,
-        (f"{title_prefix}%", title_length, title_length),
+                (f"{title_prefix}%", title_length, LENGTH_DIFF_THRESHOLD, title_length),
     ).fetchall()
 
     def _split_authors(value) -> set[str]:
@@ -390,7 +412,7 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
         if not candidate_title:
             continue
         score = SequenceMatcher(None, title, _normalize_text(candidate_title)).ratio()
-        if score >= 0.97:
+        if score >= SIMILARITY_THRESHOLD:
             candidate_authors = con.execute(
                 "SELECT authors FROM sources WHERE source_id = ? LIMIT 1",
                 (candidate_id,),
@@ -549,11 +571,20 @@ def insert_event(
     evidence_strength_v: str,
     confidence_v: str,
 ) -> str:
-    # Include the full evidence snippet plus context so distinct events do not collapse
-    # onto the same event_id when they share a long prefix.
+    evidence_snippet_stored = evidence_snippet[:500]
+    if len(evidence_snippet) > len(evidence_snippet_stored):
+        logger.warning(
+            "Truncating evidence_snippet for event_id storage and hashing to 500 characters (source_id=%s, doc_id=%s, page_number=%s, event_type=%s)",
+            source_id,
+            doc_id,
+            page_number,
+            event_type,
+        )
+
+    # Keep the event_id aligned with the stored snippet so deduplication is stable.
     base = (
         f"{source_id}|{doc_id}|{page_number}|{domain}|{event_type}|{stage}|{outcome}|"
-        f"{failure_reason}|{decision_taken}|{evidence_snippet}"
+        f"{failure_reason}|{decision_taken}|{evidence_snippet_stored}"
     )
     event_id = sha256_hex(base)
     con.execute(
@@ -566,7 +597,7 @@ def insert_event(
         (
             event_id, domain, event_type, stage, system_context, application_context,
             outcome, failure_reason, decision_taken, decision_driver,
-            evidence_snippet[:500], evidence_strength_v, confidence_v,
+            evidence_snippet_stored, evidence_strength_v, confidence_v,
             source_id, doc_id, chunk_id, page_number, now_iso()
         ),
     )
@@ -649,28 +680,14 @@ def link_event_tag(con, event_id: str, tag: str):
 
 def _db_has_all_tables(db_path: Path) -> bool:
     """Check if all required tables exist in the DB."""
-    required_tables = {
-        "sources",
-        "documents",
-        "chunks",
-        "entities",
-        "research_events",
-        "event_entities",
-        "tags",
-        "event_tags",
-        "quantitative_measurements",
-        "entity_relationships",
-    }
     try:
         with sqlite3.connect(db_path, timeout=30.0) as con:
-            tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-            table_names = {t[0] for t in tables}
-            return required_tables.issubset(table_names)
+            return db_has_all_tables(con, REQUIRED_TABLES)
     except Exception as e:
         logger.debug(
             "_db_has_all_tables failed for db_path=%s required_tables=%s: %s",
             db_path,
-            sorted(required_tables),
+            sorted(REQUIRED_TABLES),
             e,
             exc_info=True,
         )

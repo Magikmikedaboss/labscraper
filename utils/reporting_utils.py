@@ -30,6 +30,11 @@ def get_overlay_version(domain) -> str:
     return "v1"
 
 def _ensure_set(value):
+    """Normalize input to a set.
+
+    Accepts None, an existing set, or any iterable; returns an empty set for None,
+    the original set if one is provided, or a new set built from the iterable.
+    """
     if value is None:
         return set()
     if isinstance(value, set):

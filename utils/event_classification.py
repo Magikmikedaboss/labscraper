@@ -7,6 +7,9 @@ import re
 from typing import List
 
 
+# Overlapping phrases are intentional here: detect_method_tags() should return every matching tag,
+# even when the same phrase appears in multiple tag groups (for example, mass spectrometry terms
+# are shared across lc-ms/ms and mass_spec).
 METHOD_TAGS = {
     "lc-ms/ms": ["lc-ms/ms", "lc ms/ms", "lc-ms", "mass spectrometry", "ms/ms", "mass spec"],
     "mass_spec": ["mass spectrometry", "mass spec", "ms", "ms/ms"],
@@ -102,6 +105,10 @@ HIGH_SIGNAL_TERMS = (
 
 HIGH_CONF_THRESHOLD = 6
 MED_CONF_THRESHOLD = 3
+HIGH_SIGNAL_THRESHOLD = 3
+MED_SIGNAL_THRESHOLD = 2
+SIGNAL_SCORE_HIGH = 2
+SIGNAL_SCORE_MED = 1
 
 
 @dataclass(frozen=True)
@@ -150,33 +157,44 @@ def detect_outcome(sentence_l: str) -> str:
 
 def classify_event_type(sentence_l: str, method_tags: List[str], failure_reason: str, decision_taken: str) -> str:
     s = sentence_l
-    # Check regulatory risk first because nitrosamine or a regulatory failure reason should override broader categories.
-    if "nitrosamine" in method_tags or failure_reason == "regulatory":
-        return "regulatory_risk"
-    # Toxicity comes next: explicit toxicity flags or toxic/cytotoxic language should win over broader failure patterns.
-    if failure_reason == "toxicity_flag" or any(_contains_phrase(s, k) for k in ("toxic", "toxicity", "cytotoxic")):
-        return "toxicity_flag"
-    # Stability failure is narrower than the broader degradation keyword group below.
-    if failure_reason == "stability_failure":
-        return "stability_issue"
-    # Degradation terms map to degradation_event unless the sentence has already matched a more specific branch.
-    if any(_contains_phrase(s, k) for k in ("degradation", "degraded", "corrosion", "instability", "unstable", "poor stability")):
-        return "degradation_event"
-    # Efficacy results cover no_activity and common potency keywords before manufacturing/scalability branches.
-    if failure_reason == "no_activity" or any(_contains_phrase(s, k) for k in ("activity", "efficacy", "potent", "ic50", "ec50")):
-        return "efficacy_result"
-    # Manufacturing constraints capture scale-up and yield issues before the broader method-evaluation fallback.
-    if failure_reason == "scalability" or any(_contains_phrase(s, k) for k in ("manufacturing", "scale-up", "yield", "production")):
-        return "manufacturing_constraint"
-    # method_tags means the sentence is methodological; cost-related language should override the generic method branch.
-    if method_tags:
-        if any(_contains_phrase(s, k) for k in ("cost-intensive", "expensive", "time-consuming", "efficient", "cost-effective")):
-            return "cost_tradeoff"
-        return "method_evaluation"
-    # decision_taken values like approved/rejected should be classified after the domain-specific branches above.
-    if decision_taken != "unknown":
-        return "decision_point"
-    # Default bucket for sentences that do not match any higher-priority rule.
+    rules = [
+        (lambda: "nitrosamine" in method_tags or failure_reason == "regulatory", "regulatory_risk"),
+        (
+            lambda: failure_reason == "toxicity_flag"
+            or any(_contains_phrase(s, k) for k in ("toxic", "toxicity", "cytotoxic")),
+            "toxicity_flag",
+        ),
+        (lambda: failure_reason == "stability_failure", "stability_issue"),
+        (
+            lambda: any(
+                _contains_phrase(s, k)
+                for k in ("degradation", "degraded", "corrosion", "instability", "unstable", "poor stability")
+            ),
+            "degradation_event",
+        ),
+        (
+            lambda: failure_reason == "no_activity"
+            or any(_contains_phrase(s, k) for k in ("activity", "efficacy", "potent", "ic50", "ec50")),
+            "efficacy_result",
+        ),
+        (
+            lambda: failure_reason == "scalability"
+            or any(_contains_phrase(s, k) for k in ("manufacturing", "scale-up", "yield", "production")),
+            "manufacturing_constraint",
+        ),
+        (
+            lambda: bool(method_tags)
+            and any(_contains_phrase(s, k) for k in ("cost-intensive", "expensive", "time-consuming", "efficient", "cost-effective")),
+            "cost_tradeoff",
+        ),
+        (lambda: bool(method_tags), "method_evaluation"),
+        (lambda: decision_taken != "unknown", "decision_point"),
+        (lambda: True, "other"),
+    ]
+
+    for predicate, label in rules:
+        if predicate():
+            return label
     return "other"
 
 
@@ -214,10 +232,10 @@ def confidence_score(input_data: ConfidenceInput) -> str:
         score += 2
 
     signal_count = sum(1 for term in HIGH_SIGNAL_TERMS if _contains_phrase(ci.sentence_l, term))
-    if signal_count >= 3:
-        score += 2
-    elif signal_count >= 2:
-        score += 1
+    if signal_count >= HIGH_SIGNAL_THRESHOLD:
+        score += SIGNAL_SCORE_HIGH
+    elif signal_count >= MED_SIGNAL_THRESHOLD:
+        score += SIGNAL_SCORE_MED
 
     if score >= HIGH_CONF_THRESHOLD:
         return "high"

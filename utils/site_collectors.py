@@ -4,7 +4,9 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from html.parser import HTMLParser
+import ipaddress
 import logging
+import socket
 from time import monotonic
 from urllib.parse import urljoin, urlparse
 
@@ -33,6 +35,23 @@ _ASSET_EXTENSIONS = {
     ".zip",
 }
 _MAX_FETCH_BYTES = 10 * 1024 * 1024
+_BLOCKED_HOSTNAMES = {
+    "localhost",
+    "metadata",
+    "metadata.google.internal",
+    "instance-data",
+    "instance-data.local",
+}
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+]
 
 
 class _PageParser(HTMLParser):
@@ -109,6 +128,46 @@ def _normalize_url(base_url: str, href: str) -> str:
     return urljoin(base_url, href) if href else ""
 
 
+def _is_blocked_ip(address: str) -> bool:
+    try:
+        ip_address = ipaddress.ip_address(address)
+    except ValueError:
+        return True
+
+    if any(ip_address in network for network in _BLOCKED_NETWORKS):
+        return True
+
+    return (
+        ip_address.is_private
+        or ip_address.is_loopback
+        or ip_address.is_link_local
+        or ip_address.is_multicast
+        or ip_address.is_unspecified
+        or ip_address.is_reserved
+    )
+
+
+def _is_safe_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+
+    hostname = parsed.hostname.strip().lower().rstrip(".")
+    if hostname in _BLOCKED_HOSTNAMES or hostname.endswith(".localhost"):
+        return False
+
+    try:
+        resolved = socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        return False
+
+    resolved_addresses = {entry[4][0] for entry in resolved if entry and entry[4]}
+    if not resolved_addresses:
+        return False
+
+    return all(not _is_blocked_ip(address) for address in resolved_addresses)
+
+
 def _extract_page(parser_source: str) -> tuple[str, list[str], str]:
     parser = _PageParser()
     parser.feed(parser_source)
@@ -117,33 +176,50 @@ def _extract_page(parser_source: str) -> tuple[str, list[str], str]:
 
 def fetch_page(url: str, timeout: int = 20) -> str:
     normalized_url = url.strip()
-    parsed = urlparse(normalized_url)
-    if parsed.scheme.lower() not in {"http", "https"}:
-        raise ValueError(f"Unsupported URL scheme: {parsed.scheme or 'missing'}")
+    if not _is_safe_url(normalized_url):
+        raise ValueError(f"Unsafe or unsupported URL blocked: {normalized_url}")
 
     headers = {"User-Agent": USER_AGENT}
-    with requests.get(normalized_url, timeout=timeout, headers=headers, stream=True) as response:
-        response.raise_for_status()
+    current_url = normalized_url
+    for _ in range(5):
+        if not _is_safe_url(current_url):
+            raise ValueError(f"Unsafe URL blocked: {current_url}")
 
-        content_length = response.headers.get("Content-Length")
-        if content_length is not None:
-            try:
-                content_length_value = int(content_length)
-            except ValueError:
-                content_length_value = None
-            if content_length_value is not None and content_length_value > _MAX_FETCH_BYTES:
-                raise ValueError(f"Response too large: {content_length_value} bytes")
+        with requests.get(current_url, timeout=timeout, headers=headers, stream=True, allow_redirects=False) as response:
+            response.raise_for_status()
 
-        body = bytearray()
-        for chunk in response.iter_content(chunk_size=8192):
-            if not chunk:
+            if 300 <= response.status_code < 400:
+                location = response.headers.get("Location")
+                if not location:
+                    raise ValueError(f"Redirect missing Location header: {current_url}")
+                stripped_location = location.strip()
+                current_url = urljoin(current_url, stripped_location)
                 continue
-            body.extend(chunk)
-            if len(body) > _MAX_FETCH_BYTES:
-                raise ValueError(f"Response exceeded {_MAX_FETCH_BYTES} bytes")
 
-        encoding = response.encoding or response.apparent_encoding or "utf-8"
-        return body.decode(encoding, errors="replace")
+            if not _is_safe_url(response.url):
+                raise ValueError(f"Unsafe redirected URL blocked: {response.url}")
+
+            content_length = response.headers.get("Content-Length")
+            if content_length is not None:
+                try:
+                    content_length_value = int(content_length)
+                except ValueError:
+                    content_length_value = None
+                if content_length_value is not None and content_length_value > _MAX_FETCH_BYTES:
+                    raise ValueError(f"Response too large: {content_length_value} bytes")
+
+            body = bytearray()
+            for chunk in response.iter_content(chunk_size=8192):
+                if not chunk:
+                    continue
+                body.extend(chunk)
+                if len(body) > _MAX_FETCH_BYTES:
+                    raise ValueError(f"Response exceeded {_MAX_FETCH_BYTES} bytes")
+
+            encoding = response.encoding or response.apparent_encoding or "utf-8"
+            return body.decode(encoding, errors="replace")
+
+    raise ValueError(f"Too many redirects for URL: {normalized_url}")
 
 
 def collect_documents(

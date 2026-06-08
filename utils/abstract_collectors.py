@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import re
+import ipaddress
+import socket
 from html.parser import HTMLParser
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -16,6 +18,25 @@ _ABSTRACT_LINK_PATTERNS = (
     re.compile(r"https?://(?:www\.)?ascelibrary\.org/[^\s<>\"']+", re.IGNORECASE),
     re.compile(r"https?://arxiv\.org/abs/[^\s<>\"']+", re.IGNORECASE),
 )
+
+_BLOCKED_HOSTNAMES = {
+    "localhost",
+    "metadata",
+    "metadata.google.internal",
+    "instance-data",
+    "instance-data.local",
+}
+
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+]
 
 
 def _normalize_whitespace(text: str) -> str:
@@ -37,6 +58,46 @@ def _is_candidate_abstract_link(href: str) -> bool:
         return True
 
     return False
+
+
+def _is_blocked_ip(address: str) -> bool:
+    try:
+        ip_address = ipaddress.ip_address(address)
+    except ValueError:
+        return True
+
+    if any(ip_address in network for network in _BLOCKED_NETWORKS):
+        return True
+
+    return (
+        ip_address.is_private
+        or ip_address.is_loopback
+        or ip_address.is_link_local
+        or ip_address.is_multicast
+        or ip_address.is_unspecified
+        or ip_address.is_reserved
+    )
+
+
+def _is_safe_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+
+    hostname = parsed.hostname.strip().lower().rstrip(".")
+    if hostname in _BLOCKED_HOSTNAMES or hostname.endswith(".localhost"):
+        return False
+
+    try:
+        resolved = socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        return False
+
+    resolved_addresses = {entry[4][0] for entry in resolved if entry and entry[4]}
+    if not resolved_addresses:
+        return False
+
+    return all(not _is_blocked_ip(address) for address in resolved_addresses)
 
 
 class _AbstractParser(HTMLParser):
@@ -139,12 +200,29 @@ def extract_abstract_text_from_url(url: str, timeout: int = 30) -> str | None:
         return None
 
     headers = {"User-Agent": USER_AGENT}
-    try:
-        response = requests.get(url, headers=headers, timeout=timeout)
-        response.raise_for_status()
-    except requests.RequestException:
-        return None
-    return extract_abstract_text_from_html(response.text)
+    current_url = url
+    for _ in range(5):
+        if not _is_safe_url(current_url):
+            return None
+
+        try:
+            response = requests.get(current_url, headers=headers, timeout=timeout, allow_redirects=False)
+            response.raise_for_status()
+        except requests.RequestException:
+            return None
+
+        if 300 <= response.status_code < 400:
+            location = response.headers.get("Location")
+            if not location:
+                return None
+            current_url = urljoin(current_url, location)
+            continue
+
+        if not _is_safe_url(response.url):
+            return None
+        return extract_abstract_text_from_html(response.text)
+
+    return None
 
 
 __all__ = [

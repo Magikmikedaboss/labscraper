@@ -39,8 +39,10 @@ class TestNeuroscienceCognitionDomain:
         text = "Experiments were performed in HEK293 cells and in a mouse model of neurodegeneration."
         entities = extract_entities(text, "neuroscience_cognition", SEEDS_DIR=SEEDS_DIR)
         types = [e["entity_type"] for e in entities]
+        names = [e.get("entity_name", "").lower() for e in entities]
         assert "model" in types
-        assert any("hek293" in e.get("entity_name", "").lower() or "mouse" in e.get("entity_name", "").lower() for e in entities)
+        assert any("hek293" in name for name in names), "Expected a model entity name containing 'hek293'"
+        assert any("mouse" in name for name in names), "Expected a model entity name containing 'mouse'"
 
     def test_no_entities_from_irrelevant_text(self):
         """Purely generic text without biomedical terms returns no entities."""
@@ -53,8 +55,7 @@ class TestNeuroscienceCognitionDomain:
         text = "Dopaminergic neurons were depleted in the substantia nigra."
         entities = extract_entities(text, "neuroscience_cognition", SEEDS_DIR=SEEDS_DIR)
         neural = [e for e in entities if e.get("entity_name", "").lower() == "neurons"]
-        assert len(neural) > 0, "No 'neurons' entity extracted"
-        assert any(e.get("entity_type") == "neural_cell" for e in neural), "No 'neurons' entity typed as 'neural_cell'"
+        assert any(e.get("entity_type") == "neural_cell" for e in neural), "Expected at least one 'neurons' entity typed as 'neural_cell'"
 
 
 class TestBiohackingLongevityDomain:

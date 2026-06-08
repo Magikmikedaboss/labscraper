@@ -3,7 +3,7 @@
 set -euo pipefail
 
 set +e
-bandit -r utils tools -l -f json -o bandit-report.json \
+bandit -r utils tools tests -l -f json -o bandit-report.json \
   --exclude "utils/test_*,tools/demo_*"
 bandit_exit=$?
 safety check --json -r requirements.txt -r requirements-lock.txt -r requirements_ui.txt > safety-report.json 2> safety-report.stderr

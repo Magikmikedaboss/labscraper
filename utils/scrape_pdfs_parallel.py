@@ -143,7 +143,6 @@ def _derive_stable_source_id(pdf_path: Path, metadata: dict) -> str:
         metadata.get("year"),
         metadata.get("venue"),
         metadata.get("journal"),
-        pdf_path.stem,
     ]
     normalized_parts = [_normalize_source_part(part) for part in source_parts if part not in (None, "")]
     if normalized_parts:
@@ -326,9 +325,8 @@ def _ensure_db_schema(db_path: Path) -> None:
     """Ensure the database has the required schema initialized."""
     if _db_has_all_tables(db_path):
         print("✅ Database schema already initialized")
-        return
-    
-    print("🔧 Initializing database schema...")
+    else:
+        print("🔧 Initializing database schema...")
     init_db_schema(db_path)
     print("✅ Database schema initialized successfully")
 

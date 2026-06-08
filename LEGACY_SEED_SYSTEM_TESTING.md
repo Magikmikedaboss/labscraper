@@ -40,7 +40,7 @@ Remove-Item db/runs.sqlite -ErrorAction SilentlyContinue
 Remove-Item output/*.csv -ErrorAction SilentlyContinue
 
 # Recreate the database with fresh schema
-python utils/init_db.py
+python utils/init_db.py db/runs.sqlite --force
 ```
 
 **Expected Output:**
@@ -91,7 +91,7 @@ PDFs: 100%|| 13/13 [01:00<00:00,  4.62s/it]
 
 ###  Step 4: Export and Check Results
 
-```bash
+```powershell
 # Export data to CSV files
 python utils/export_csv.py --domain methods_tooling
 ```
@@ -118,7 +118,7 @@ Tags: 6
 
 Check what entities were extracted:
 
-```bash
+```powershell
 # Quick check of entities
 python utils/check_entity_types.py
 ```
@@ -155,9 +155,9 @@ Stem Cells: 4
 
 Let's test that you can add entities without editing Python code:
 
-```bash
+```powershell
 # Add a new compound to the seed file
-echo "ozempic" >> seeds/base/life_sciences/compounds.txt
+Add-Content -Path seeds/base/life_sciences/compounds.txt -Value "ozempic"
 
 # Re-run scraper (it will load the new seed)
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
@@ -180,12 +180,12 @@ python utils/check_entity_types.py
 ### Problem: "Seed file not found"
 
 **Solution:**
-```bash
+```powershell
 # Check if seeds folder exists
-ls seeds/base/life_sciences/
+Get-ChildItem seeds/base/life_sciences/
 
 # If missing, create it:
-mkdir seeds/base/life_sciences -Force
+New-Item -ItemType Directory -Path seeds/base/life_sciences -Force
 
 # Then create the seed files (see seeds/base/life_sciences/*.txt in this repo for canonical contents)
 ```
@@ -193,9 +193,9 @@ mkdir seeds/base/life_sciences -Force
 ### Problem: "No PDFs found"
 
 **Solution:**
-```bash
+```powershell
 # Check if input_pdfs folder has PDFs
-ls input/pdfs/methods_tooling/
+Get-ChildItem input/pdfs/methods_tooling/
 
 # Should show 13 PDF files
 # If empty, add your PDF files to this folder
@@ -204,7 +204,7 @@ ls input/pdfs/methods_tooling/
 ### Problem: "Module not found" errors
 
 **Solution:**
-```bash
+```powershell
 # Install required packages
 pip install -r requirements.txt
 ```
@@ -212,11 +212,11 @@ pip install -r requirements.txt
 ### Problem: Database is locked
 
 **Solution:**
-```bash
+```powershell
 # Close any programs that might be using the database
 # Then delete and recreate:
 Remove-Item db/runs.sqlite -Force
-python utils/init_db.py
+python utils/init_db.py db/runs.sqlite --force
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
 ```
 
@@ -260,14 +260,14 @@ Remove-Item db/runs.sqlite -ErrorAction SilentlyContinue
 Remove-Item output/*.csv -ErrorAction SilentlyContinue
 
 # Rebuild
-python utils/init_db.py
+python utils/init_db.py db/runs.sqlite --force
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
 python utils/export_csv.py --domain methods_tooling
 python utils/check_entity_types.py
 ```
 
 ### Quick Re-run (Keep Database)
-```bash
+```powershell
 # Just re-run scraper and export
 python utils/run_engine.py --domain methods_tooling --input-dir input/pdfs/methods_tooling
 python utils/export_csv.py --domain methods_tooling
@@ -275,10 +275,10 @@ python utils/check_entity_types.py
 ```
 
 ### View Results in Excel
-```bash
+```powershell
 # Open CSV files
-start output/candidates_export.csv
-start output/events_export.csv
+Start-Process output/candidates_export.csv
+Start-Process output/events_export.csv
 ```
 
 ---
@@ -325,7 +325,7 @@ A: This is normal if your PDFs don't mention the compounds in `seeds/base/life_s
 
 **Q: Can I have multiple seed files for different projects?**
 A: Yes. Run separate commands per domain, for example:
-```bash
+```powershell
 python utils/run_engine.py --domain construction_science --input-dir input/pdfs/construction_science
 python utils/run_engine.py --domain neuroscience_cognition --input-dir input/pdfs/neuroscience_cognition
 ```

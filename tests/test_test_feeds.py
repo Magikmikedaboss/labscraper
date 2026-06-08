@@ -92,10 +92,7 @@ def test_probe_feed_exception(monkeypatch):
     assert 'network error' in result['error']
 
 def test_save_working_logic(tmp_path, monkeypatch):
-    import io
-    import builtins
     from tools import test_feeds
-    # output variable removed (was unused)
     save_path = tmp_path / "feeds.json"
     save_path.write_text(
         json.dumps(
@@ -115,41 +112,15 @@ def test_save_working_logic(tmp_path, monkeypatch):
         ),
         encoding="utf-8",
     )
-    # Patch open to simulate atomic write
-    orig_open = builtins.open
-    written = {}
-    class FakeWriteHandle(io.StringIO):
-        def close(self):
-            # Save content to written['content'] on close
-            written['content'] = self.getvalue()
-            super().close()
-    def fake_open(file, mode='r', encoding=None):
-        if 'w' in mode:
-            written['file'] = file
-            handle = FakeWriteHandle()
-            written['handle'] = handle
-            return handle
-        if os.path.exists(file):
-            return orig_open(file, mode, encoding=encoding)
-        # For read mode, return the preserved content if available
-        if 'content' in written:
-            return io.StringIO(written['content'])
-        return io.StringIO()
-    monkeypatch.setattr(builtins, "open", fake_open)
     # Patch validate_feed_config to pass through
     monkeypatch.setattr(test_feeds, "validate_feed_config", lambda x: x)
     # Patch probe_feed to avoid network I/O
     monkeypatch.setattr(test_feeds, "probe_feed", lambda *a, **k: {'success': True, 'url': 'mock'})
     # Provide clean CLI args so argparse won’t see pytest’s argv
     argv = ["--config", str(save_path), "--save-working"]
-    try:
-        test_feeds.main(argv)
-    finally:
-        monkeypatch.setattr(builtins, "open", orig_open)
-    # Compare absolute paths as strings for cross-platform compatibility
     expected_written = save_path.with_name(save_path.stem + "_working.json")
-    assert os.path.abspath(str(written['file'])) == os.path.abspath(str(expected_written))
-    saved_config = json.loads(written['content'])
+    test_feeds.main(argv)
+    saved_config = json.loads(expected_written.read_text(encoding="utf-8"))
     saved_feed = saved_config["feeds"][0]
     assert saved_feed["source_kind"] == "collector"
     assert saved_feed["collector_mode"] == "html_archive"

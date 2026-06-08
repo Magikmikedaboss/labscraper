@@ -62,7 +62,7 @@ def _load_peptides_from_file(path: Path) -> set[str] | None:
         elif path.suffix.lower() in {".yml", ".yaml"}:
             try:
                 import yaml  # type: ignore
-            except Exception:
+            except ImportError:
                 return None
             try:
                 payload = yaml.safe_load(path.read_text(encoding="utf-8"))

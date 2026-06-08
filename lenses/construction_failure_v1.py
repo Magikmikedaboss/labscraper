@@ -28,7 +28,8 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     mode_hits = list_hits(s_l, FAILURE_MODES)
     driver_hits = list_hits(s_l, FAILURE_DRIVERS)
 
-    has_failure_language = contains_any(s_l, HIGH_SIGNAL) or bool(mode_hits)
+    has_high_signal = contains_any(s_l, HIGH_SIGNAL)
+    has_failure_language = bool(mode_hits) or has_high_signal
     has_causal = any(m in s_l for m in CAUSAL_MARKERS)
 
     if not has_failure_language and not has_causal:
@@ -42,10 +43,10 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         entities.append(make_entity("failure_driver", d, "driver", "cause"))
 
     # Outcome values: 'failed', 'negative', or 'unknown' (normalized later if needed)
-    # mode_hits and has_causal drive the mapping below.
+    # Causal language alone is not enough to mark a failure outcome.
     if mode_hits:
         outcome = "failed"
-    elif has_causal:
+    elif has_high_signal:
         outcome = "negative"
     else:
         outcome = "unknown"

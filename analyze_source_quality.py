@@ -45,7 +45,8 @@ def _percent(part: int, whole: int) -> str:
 def _resolve_feed_entries(feed: dict[str, Any]) -> list[dict[str, Any]]:
     try:
         parsed = parse_feed(feed["url"], timeout=int(feed.get("request_timeout", 20)))
-    except Exception:
+    except Exception as exc:
+        logger.warning("Failed to resolve feed entries for %s: %s", feed.get("url", "<missing>"), exc, exc_info=True)
         return []
     if isinstance(parsed, dict):
         return list(parsed.get("entries", []))
@@ -64,7 +65,7 @@ def _summarize_feed(feed: dict[str, Any], limit: int | None = None) -> dict[str,
     html_pages_scanned = 0
     pdf_links_found = 0
     pdfs_downloaded = 0
-    pdfs_scanned = 0
+    pdfs_attempted = 0
     seen_pdf_urls: set[str] = set()
 
     if _is_collector(feed):
@@ -88,14 +89,14 @@ def _summarize_feed(feed: dict[str, Any], limit: int | None = None) -> dict[str,
                 seen_pdf_urls.add(pdf_url)
                 pdf_links_found += 1
 
-                if limit is not None and pdfs_scanned >= limit:
+                if limit is not None and pdfs_attempted >= limit:
                     continue
 
                 pdf_path = download_pdf(pdf_url, RSS_CACHE_DIR)
+                pdfs_attempted += 1
                 if not pdf_path:
                     triage_counts["review"] += 1
                     domain_counts["unknown"] += 1
-                    pdfs_scanned += 1
                     continue
 
                 pdfs_downloaded += 1
@@ -105,10 +106,8 @@ def _summarize_feed(feed: dict[str, Any], limit: int | None = None) -> dict[str,
                     logger.exception("Failed to scan PDF %s during collector quality analysis", pdf_path)
                     triage_counts["review"] += 1
                     domain_counts["unknown"] += 1
-                    pdfs_scanned += 1
                     continue
 
-                pdfs_scanned += 1
                 triage_counts[triage.keep_skip_review] += 1
                 domain_counts[triage.detected_domain] += 1
     else:
@@ -122,14 +121,14 @@ def _summarize_feed(feed: dict[str, Any], limit: int | None = None) -> dict[str,
                 seen_pdf_urls.add(pdf_url)
                 pdf_links_found += 1
 
-                if limit is not None and pdfs_scanned >= limit:
+                if limit is not None and pdfs_attempted >= limit:
                     continue
 
                 pdf_path = download_pdf(pdf_url, RSS_CACHE_DIR)
+                pdfs_attempted += 1
                 if not pdf_path:
                     triage_counts["review"] += 1
                     domain_counts["unknown"] += 1
-                    pdfs_scanned += 1
                     continue
 
                 pdfs_downloaded += 1
@@ -139,10 +138,8 @@ def _summarize_feed(feed: dict[str, Any], limit: int | None = None) -> dict[str,
                     logger.exception("Failed to scan PDF %s during RSS quality analysis", pdf_path)
                     triage_counts["review"] += 1
                     domain_counts["unknown"] += 1
-                    pdfs_scanned += 1
                     continue
 
-                pdfs_scanned += 1
                 triage_counts[triage.keep_skip_review] += 1
                 domain_counts[triage.detected_domain] += 1
 
@@ -156,7 +153,7 @@ def _summarize_feed(feed: dict[str, Any], limit: int | None = None) -> dict[str,
         "html_pages_collected": html_pages_collected,
         "pdf_links_found": pdf_links_found,
         "pdfs_downloaded": pdfs_downloaded,
-        "pdfs_scanned": pdfs_scanned,
+        "pdfs_attempted": pdfs_attempted,
         "html_pages_scanned": html_pages_scanned,
         "keep": triage_counts["keep"],
         "review": triage_counts["review"],
@@ -177,7 +174,7 @@ def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> Path:
         "html_pages_collected",
         "pdf_links_found",
         "pdfs_downloaded",
-        "pdfs_scanned",
+        "pdfs_attempted",
         "html_pages_scanned",
         "keep",
         "review",
@@ -192,7 +189,7 @@ def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> Path:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
-            scanned = int(row["pdfs_scanned"])
+            scanned = int(row["pdfs_attempted"])
             prepared = dict(row)
             prepared["keep_pct"] = _percent(int(row["keep"]), scanned)
             prepared["review_pct"] = _percent(int(row["review"]), scanned)
@@ -209,14 +206,14 @@ def _write_markdown(rows: list[dict[str, Any]], output_path: Path) -> Path:
         "",
         "Entries found means RSS entries for feed sources or HTML pages collected for collectors.",
         "",
-        "| Feed | Kind | Entries | HTML Collected | PDF Links | PDFs Downloaded | PDFs Scanned | HTML Scanned | Keep | Review | Skip |",
+        "| Feed | Kind | Entries | HTML Collected | PDF Links | PDFs Downloaded | PDFs Attempted | HTML Scanned | Keep | Review | Skip |",
         "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
-        scanned = int(row["pdfs_scanned"])
+        scanned = int(row["pdfs_attempted"])
         lines.append(
             f"| {row['feed_name']} | {row['source_kind']} | {row['entries_found']} | {row['html_pages_collected']} | "
-            f"{row['pdf_links_found']} | {row['pdfs_downloaded']} | {row['pdfs_scanned']} | {row['html_pages_scanned']} | "
+            f"{row['pdf_links_found']} | {row['pdfs_downloaded']} | {row['pdfs_attempted']} | {row['html_pages_scanned']} | "
             f"{_percent(int(row['keep']), scanned)}% | "
             f"{_percent(int(row['review']), scanned)}% | {_percent(int(row['skip']), scanned)}% |"
         )
@@ -226,6 +223,7 @@ def _write_markdown(rows: list[dict[str, Any]], output_path: Path) -> Path:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
     parser = argparse.ArgumentParser(description="Build a feed-level construction source quality report")
     parser.add_argument("--feeds-config", type=Path, default=DEFAULT_FEEDS_CONFIG, help="Path to feeds.json")
     parser.add_argument("--output-csv", type=Path, default=DEFAULT_OUTPUT_CSV, help="CSV output path")

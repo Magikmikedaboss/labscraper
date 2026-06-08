@@ -72,7 +72,13 @@ def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "s
             logger.warning(f"seed_overlay_loader found but no loader function or alias map present for {domain_id}")
     except Exception as e:
         logger.error(f"Error loading overlay aliases for {domain_id}: {e}")
-    return overlay_map
+
+    validated_aliases: Dict[str, str] = {}
+    for alias, mapped_name in overlay_map.items():
+        if not isinstance(alias, str) or not isinstance(mapped_name, str):
+            raise ValueError(f"Invalid overlay alias entry for {domain_id}: {alias!r} -> {mapped_name!r}")
+        validated_aliases[alias.strip().lower()] = mapped_name.strip()
+    return validated_aliases
 
 
 def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dict] = None) -> dict:
@@ -94,10 +100,10 @@ def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dic
     # Overlay alias normalization (mapped values are lowercased)
     if overlay_aliases and name in overlay_aliases:
         mapped_name = overlay_aliases[name]
-        name = mapped_name.lower() if isinstance(mapped_name, str) else str(mapped_name).lower()
+        name = str(mapped_name).lower()
     if overlay_aliases and variant in overlay_aliases:
         mapped_variant = overlay_aliases[variant]
-        variant = mapped_variant.lower() if isinstance(mapped_variant, str) else str(mapped_variant).lower()
+        variant = str(mapped_variant).lower()
     # Normalization map: match input name to any variant in norm_map[etype] and set to canonical_name
     # Supported shapes for variants_entry:
     #   list:  ["a", "b"]
