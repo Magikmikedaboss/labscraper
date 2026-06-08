@@ -57,6 +57,7 @@ output/*.sqlite-wal
 *.bak
 
 # Generated security scan reports
+bandit-report*.json
 bandit-report.json
 bandit-excluded.json
 bandit-excluded2.json
