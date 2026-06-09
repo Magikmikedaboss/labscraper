@@ -14,6 +14,7 @@ def test_classify_triage_keep_construction():
 
     assert result.keep_skip_review == "keep"
     assert result.detected_domain == "construction_science"
+    assert result.building_physics_score >= 8
     assert "building envelope" in result.construction_signals
     assert "NIST" not in result.contamination_signals
 
@@ -47,6 +48,9 @@ def test_classify_triage_review_mixed_signals(tmp_path):
     written = write_triage_csv([result], csv_path)
     assert written == csv_path
     assert csv_path.exists()
+    assert csv_path.read_text(encoding="utf-8").splitlines()[0] == (
+        "title,building_physics_score,materials_score,failure_score,climate_score,decision,reason"
+    )
 
 
 def test_classify_triage_moderate_biomedical_contamination_skips() -> None:
@@ -82,9 +86,8 @@ def test_classify_triage_review_does_not_keep_on_substring_matches():
         sample_text="The paper studies structural representations in cellular networks without any building context.",
     )
 
-    assert result.keep_skip_review == "review"
-    assert "code" not in result.construction_signals
-    assert "attic" not in result.construction_signals
+    assert result.keep_skip_review == "skip"
+    assert result.detected_domain == "unknown"
 
 
 def test_classify_triage_review_when_no_building_context_is_present():
@@ -107,8 +110,8 @@ def test_classify_triage_review_does_not_treat_generic_building_usage_as_context
         sample_text="The paper discusses building a predictor for cellular signaling pathways without any construction-science content.",
     )
 
-    assert result.keep_skip_review == "review"
-    assert result.detected_domain == "biomedical"
+    assert result.keep_skip_review == "skip"
+    assert result.detected_domain == "unknown"
 
 
 def test_classify_triage_review_physics_bucket():
@@ -119,7 +122,7 @@ def test_classify_triage_review_physics_bucket():
         sample_text="The paper studies optical modulation and topological transport in a semiconductor device.",
     )
 
-    assert result.keep_skip_review == "review"
+    assert result.keep_skip_review == "skip"
     assert result.detected_domain == "physics"
 
 

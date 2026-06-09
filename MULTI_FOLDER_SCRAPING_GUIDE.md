@@ -4,12 +4,12 @@
 
 We're scraping **two folders** into **one combined database**:
 
-### Folder 1: `input/pdfs/`  RUNNING
+### Folder 1: `input/pdfs/` In Progress
 - **65 PDFs** (stem cell, peptide, longevity research)
-- **Status:** Currently processing (2% complete)
+- **Status:** In Progress (2% complete)
 - **ETA:** ~20-30 minutes
 
-### Folder 2: `input/pdfs/biohacking/`  WAITING
+### Folder 2: `input/pdfs/biohacking/` Waiting
 - **Unknown count** of PDFs
 - **Status:** Will start after Folder 1 completes
 - **ETA:** TBD
@@ -145,13 +145,13 @@ Contains:
 
 ## Current Status
 
-### Folder 1: IN PROGRESS
+### Folder 1: In Progress
 - Processing: 1/65 PDFs (2%)
 - Time per PDF: ~18 seconds
 - Estimated completion: ~20-30 minutes
 
 
-### Folder 2: WAITING
+### Folder 2: Waiting
 
 - Processing: 0 / N PDFs (waiting for Folder 1 to finish)
 - Time per PDF: N/A (queue is paused)
@@ -213,7 +213,7 @@ PDFs:   2%| | 1/65 [00:18<19:32, 18.32s/it]
 
 ---
 
-## Status:  SCRAPING IN PROGRESS
+## Status: In Progress
 
 Folder 1 is being processed. Please wait for completion before proceeding to Folder 2.
 

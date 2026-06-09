@@ -21,10 +21,12 @@ AXON is a modular research intelligence engine for extracting structured signals
 
 Most users can skip manual DB setup.
 
-The first run of `utils/run_engine.py` auto-initializes the default production/dev database at `db/runs.sqlite`.
-That is the normal quick-start path.
+The canonical production/dev database at `db/runs.sqlite` is not auto-initialized.
+Running `utils/run_engine.py` against that path will raise `SystemExit` if the schema tables are missing.
+Initialize it first with `python utils/init_db.py db/runs.sqlite`.
 
-Run `python utils/init_db.py db/local.sqlite` only when you need an isolated local or CI test database.
+Only non-canonical/test databases are auto-initialized automatically.
+Run `python utils/init_db.py db/local.sqlite` when you need an isolated local or CI test database.
 Use `db/local.sqlite` for scratch/test runs and `db/runs.sqlite` for the default shared database.
 
 ```bash

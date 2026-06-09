@@ -39,8 +39,8 @@ The main test job runs on Ubuntu latest and performs the following steps:
 4. **Code Quality Checks**
   - **Linting**: Runs `ruff check .` to catch syntax errors, style violations, and potential bugs
   - **Security Scanning**: 
-    - `bandit -r utils/ tools/ -ll -f json -o bandit-report.json` - Static security analysis report
-    - `safety check --output json > safety-report.json` - Dependency vulnerability scanning report
+    - `bandit -r utils/ tools/ -ll -f json -o bandit-report.json` - Generate the static security analysis report on demand; do not commit the JSON output
+    - `safety check --output json > safety-report.json` - Generate the dependency vulnerability report on demand
 
 5. **Testing**
   - **Unit Tests**: Runs `pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing`
@@ -90,6 +90,8 @@ ruff check .
 # Run security checks
 bandit -r utils/ tools/ -ll -f json -o bandit-report.json
 safety check --output json > safety-report.json
+
+# The report files are generated locally/CI on demand and should not be committed.
 
 # Run tests with coverage
 pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing

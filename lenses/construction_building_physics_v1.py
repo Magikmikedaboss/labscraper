@@ -49,15 +49,18 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     # energy_phrase matches energy consumption/use/demand.
     # between_tokens allows up to ENERGY_WORD_WINDOW words with non-word separators between the two phrases.
     # reduc\w* covers reduce, reduced, reduction, reducing, and similar forms.
-    # pattern1 matches reducer before the energy phrase; pattern2 matches the energy phrase before the reducer.
-    # flexible_positive becomes true when either pattern is found in s_l.
+    # A connector token must also be present in the matched span to avoid loose proximity false positives.
     flexible_positive = False
     energy_phrase = r"\benergy\s+(?:consumption|use|demand)\b"
     between_tokens = rf"(?:\W*\b\w+\b){{0,{ENERGY_WORD_WINDOW}}}\W*"
     pattern1 = rf"\breduc\w*\b{between_tokens}{energy_phrase}"
     pattern2 = rf"{energy_phrase}{between_tokens}\breduc\w*\b"
-    if re.search(pattern1, s_l) or re.search(pattern2, s_l):
-        flexible_positive = True
+    connector_pattern = r"\b(?:for|in|of|to|by|with|on|via|through|from|into|under|after|over)\b"
+    match = re.search(pattern1, s_l) or re.search(pattern2, s_l)
+    if match:
+        substring = s_l[max(0, match.start() - 20):min(len(s_l), match.end() + 20)]
+        if re.search(connector_pattern, substring):
+            flexible_positive = True
     neg = contains_any(s_l, ["higher energy", "increased leakage", "worsened", "condensation risk", "mold growth", "mold detected"])
     if neg:
         outcome = "degraded"

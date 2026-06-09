@@ -7,6 +7,7 @@ for older workflows that still invoke the abstract-only entry point.
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -20,6 +21,9 @@ from utils.validators import (
     validate_domain_name,
     validate_file_path,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -78,7 +82,16 @@ def main():
         for entry in entries:
             if args.dry_run:
                 continue
-            result = process_feed_entry(entry, domain=domain, db_path=args.db_path, dry_run=False)
+            try:
+                result = process_feed_entry(entry, domain=domain, db_path=args.db_path, dry_run=False)
+            except Exception:
+                entry_identifier = entry.get('id') or entry.get('link') or entry.get('title')
+                logger.exception(
+                    "Failed processing feed entry %r from %s",
+                    entry_identifier,
+                    feed_config.get("url"),
+                )
+                continue
             feed_processed += int(result["pdf_processed"] or 0) + int(result["abstract_processed"] or 0)
             feed_events += int(result["pdf_events"] or 0) + int(result["abstract_events"] or 0)
 

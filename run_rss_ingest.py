@@ -26,6 +26,7 @@ from utils.common import sha256_hex
 from utils.data_extractors import extract_quantitative_data
 from utils.db_init import init_db_schema
 from utils.db_utils import (
+    connect_with_foreign_keys,
     insert_chunk,
     insert_document,
     insert_event,
@@ -51,7 +52,7 @@ from utils.event_classification import (
 )
 from utils.feed_utils import extract_pdf_links, parse_feed
 from utils.source_triage import TriagedSource, load_keep_manifest, scan_pdf, write_keep_manifest, write_triage_csv
-from utils.site_collectors import collect_documents, extract_pdf_links_from_page
+from utils.site_collectors import _is_safe_url, collect_documents, extract_pdf_links_from_page
 from utils.text_utils import chunk_sentences, guess_section, guess_stage
 
 
@@ -152,6 +153,56 @@ def _triage_construction_pdf(pdf_path: Path, triage_rows: list[TriagedSource]) -
 
 def _is_construction_keep_path(pdf_path: Path, keep_paths: set[str]) -> bool:
     return str(pdf_path) in keep_paths
+
+
+def _process_pdf_urls(
+    pdf_urls: list[str],
+    domain: str,
+    db_path: Path,
+    source_title: str,
+    *,
+    dry_run: bool = False,
+    source_triage_rows: list[TriagedSource] | None = None,
+    construction_keep_paths: set[str] | None = None,
+    construction_keep_manifest_enabled: bool = False,
+) -> dict[str, int | bool]:
+    pdf_events = 0
+    pdf_processed = 0
+
+    for pdf_url in pdf_urls:
+        if dry_run:
+            pdf_processed += 1
+            continue
+
+        pdf = download_pdf(pdf_url, RSS_CACHE_DIR)
+        if not pdf:
+            continue
+        if not is_valid_pdf(pdf):
+            print("⚠️ Skipping invalid PDF")
+            continue
+
+        if domain == "construction_science":
+            if construction_keep_manifest_enabled:
+                if construction_keep_paths is not None and not _is_construction_keep_path(pdf, construction_keep_paths):
+                    print("⚠️ Skipping PDF not listed in keep manifest")
+                    continue
+            elif source_triage_rows is not None:
+                keep_pdf = _triage_construction_pdf(pdf, source_triage_rows)
+                if keep_pdf and construction_keep_paths is not None:
+                    construction_keep_paths.add(str(pdf))
+                if not keep_pdf:
+                    print("⚠️ Skipping PDF after source triage")
+                    continue
+
+        count = process_pdf(pdf, domain, db_path, source_url=pdf_url, source_title=source_title)
+        pdf_processed += 1
+        pdf_events += count
+
+    return {
+        "pdf_links": len(pdf_urls),
+        "pdf_processed": pdf_processed,
+        "pdf_events": pdf_events,
+    }
 
 
 def _process_sentence(con, source_id, doc_id, chunk_id, page_number, domain, sent, section, seen):
@@ -261,6 +312,9 @@ def get_pdf_links_from_entry(entry: dict[str, Any]) -> list[str]:
     pdf_urls = [url for url in found_urls if DOC_LINK_REGEX.search(url)]
 
     if not pdf_urls and entry_link:
+        if not _is_safe_url(entry_link):
+            logger.warning("Skipping unsafe HTML discovery URL: %s", entry_link)
+            return []
         host = urlparse(entry_link).netloc.lower()
         now = time.monotonic()
         last_request_at = _HTML_DISCOVERY_LAST_REQUEST_AT.get(host)
@@ -408,8 +462,7 @@ def process_pdf(
     if con is None:
         if db_path is None:
             raise ValueError("db_path or con must be provided")
-        with sqlite3.connect(db_path, timeout=30) as con:
-            con.execute("PRAGMA foreign_keys = ON")
+        with connect_with_foreign_keys(db_path, timeout=30) as con:
             con.execute("PRAGMA busy_timeout = 30000")
             con.execute("PRAGMA journal_mode = WAL")
             return process_pdf(
@@ -479,8 +532,7 @@ def process_html_document(
     if con is None:
         if db_path is None:
             raise ValueError("db_path or con must be provided")
-        with sqlite3.connect(db_path, timeout=30) as con:
-            con.execute("PRAGMA foreign_keys = ON")
+        with connect_with_foreign_keys(db_path, timeout=30) as con:
             con.execute("PRAGMA busy_timeout = 30000")
             con.execute("PRAGMA journal_mode = WAL")
             return process_html_document(
@@ -543,44 +595,24 @@ def process_feed_entry(
     pdf_urls = get_pdf_links_from_entry(entry)
     abstract_links = find_abstract_links(entry)
     triage_rows = source_triage_rows
-    pdf_events = 0
-    pdf_processed = 0
 
     if pdf_urls:
-        for pdf_url in pdf_urls:
-            if dry_run:
-                pdf_processed += 1
-                continue
+        pdf_summary = _process_pdf_urls(
+            pdf_urls,
+            domain,
+            db_path,
+            title,
+            dry_run=dry_run,
+            source_triage_rows=triage_rows,
+            construction_keep_paths=construction_keep_paths,
+            construction_keep_manifest_enabled=construction_keep_manifest_enabled,
+        )
 
-            pdf = download_pdf(pdf_url, RSS_CACHE_DIR)
-            if not pdf:
-                continue
-            if not is_valid_pdf(pdf):
-                print("⚠️ Skipping invalid PDF")
-                continue
-
-            if domain == "construction_science":
-                if construction_keep_manifest_enabled:
-                    if construction_keep_paths is not None and not _is_construction_keep_path(pdf, construction_keep_paths):
-                        print("⚠️ Skipping PDF not listed in keep manifest")
-                        continue
-                elif triage_rows is not None:
-                    keep_pdf = _triage_construction_pdf(pdf, triage_rows)
-                    if keep_pdf and construction_keep_paths is not None:
-                        construction_keep_paths.add(str(pdf))
-                    if not keep_pdf:
-                        print("⚠️ Skipping PDF after source triage")
-                        continue
-
-            count = process_pdf(pdf, domain, db_path, source_url=pdf_url, source_title=title)
-            pdf_processed += 1
-            pdf_events += count
-
-        if pdf_processed > 0 or (domain == "construction_science" and (construction_keep_manifest_enabled or triage_rows is not None)):
+        if pdf_summary["pdf_processed"] > 0 or (domain == "construction_science" and (construction_keep_manifest_enabled or triage_rows is not None)):
             return {
-                "pdf_links": len(pdf_urls),
-                "pdf_processed": pdf_processed,
-                "pdf_events": pdf_events,
+                "pdf_links": pdf_summary["pdf_links"],
+                "pdf_processed": pdf_summary["pdf_processed"],
+                "pdf_events": pdf_summary["pdf_events"],
                 "abstract_links": len(abstract_links),
                 "abstract_processed": 0,
                 "abstract_events": 0,
@@ -615,8 +647,8 @@ def process_feed_entry(
 
     return {
         "pdf_links": len(pdf_urls),
-        "pdf_processed": pdf_processed,
-        "pdf_events": pdf_events,
+        "pdf_processed": pdf_summary["pdf_processed"] if pdf_urls else 0,
+        "pdf_events": pdf_summary["pdf_events"] if pdf_urls else 0,
         "abstract_links": len(abstract_links),
         "abstract_processed": abstract_processed,
         "abstract_events": abstract_events,
@@ -652,15 +684,15 @@ def main():
     for feed in feeds.get("feeds", []):
         if not feed.get("enabled", True):
             continue
-        if "url" not in feed:
+        source_kind = str(feed.get("source_kind", "rss")).strip().lower()
+        if source_kind != "pdf_list" and "url" not in feed:
             print(f"⚠️ Skipping feed entry missing 'url': {feed}")
             continue
 
-        print(f"📡 {feed.get('name', feed['url'])}")
+        print(f"📡 {feed.get('name') or feed.get('url') or source_kind}")
         domain = feed.get("domain", "methods_tooling")
         if domain == "construction_science":
             triage_enabled = True
-        source_kind = str(feed.get("source_kind", "rss")).strip().lower()
 
         if source_kind == "collector":
             max_pages = int(feed.get("max_pages", 20))
@@ -677,8 +709,7 @@ def main():
             )
             print(f"[DEBUG] Pages found: {len(collected_documents)}")
 
-            with sqlite3.connect(db_path) as con:
-                con.execute("PRAGMA foreign_keys = ON")
+            with connect_with_foreign_keys(db_path) as con:
                 con.execute("PRAGMA busy_timeout = 30000")
                 con.execute("PRAGMA journal_mode = WAL")
                 seen_pdf_urls = set()
@@ -732,6 +763,29 @@ def main():
                         print(f"      ✅ {count} events")
                         time.sleep(1)
 
+            continue
+
+        if source_kind == "pdf_list":
+            pdf_urls = [str(url).strip() for url in feed.get("pdf_urls", []) if str(url).strip()]
+            if not pdf_urls:
+                print("⚠️ Skipping pdf_list feed with no pdf_urls")
+                continue
+
+            if args.dry_run:
+                print(f"   PDF list entries: {len(pdf_urls)}")
+                continue
+
+            result = _process_pdf_urls(
+                pdf_urls,
+                domain,
+                db_path,
+                feed.get("name", "Unknown"),
+            )
+            print(f"   📎 PDF links: {result['pdf_links']}")
+            if result["pdf_processed"] > 0:
+                print(f"   ✅ Processed: {result['pdf_events']} events")
+            else:
+                print("   ⚠️  No usable PDFs extracted")
             continue
 
         feed_url = feed["url"]

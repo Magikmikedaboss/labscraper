@@ -51,6 +51,18 @@ CREATE TEMP TABLE migration_verification (
   pass INTEGER NOT NULL CHECK (pass = 1)
 );
 
+CREATE TEMP TRIGGER migration_verification_abort
+AFTER INSERT ON migration_verification
+BEGIN
+  SELECT CASE
+    WHEN (
+      SELECT COUNT(*) FROM quantitative_measurements
+    ) <> (
+      SELECT COUNT(*) FROM quantitative_measurements_old
+    ) THEN RAISE(ABORT, 'Row count mismatch')
+  END;
+END;
+
 INSERT INTO migration_verification (pass)
 SELECT CASE
   WHEN (
@@ -61,6 +73,7 @@ SELECT CASE
   ELSE 0
 END;
 
+DROP TRIGGER migration_verification_abort;
 DROP TABLE migration_verification;
 
 DROP TABLE quantitative_measurements_old;

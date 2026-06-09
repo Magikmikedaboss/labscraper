@@ -1,5 +1,6 @@
 import copy
 import sqlite3
+from typing import Any, Callable
 
 import pytest
 
@@ -146,7 +147,11 @@ def test_build_canonical_entities_skips_invalid_normalized_payload() -> None:
     assert mapping == {}
 
 
-def test_build_canonical_entities_handles_sqlite_rows(fake_normalize_entity, fake_get_entity_role, fake_should_skip) -> None:
+def test_build_canonical_entities_handles_sqlite_rows(
+    fake_normalize_entity: Callable[..., Any],
+    fake_get_entity_role: Callable[..., Any],
+    fake_should_skip: Callable[..., Any],
+) -> None:
     with sqlite3.connect(":memory:") as con:
         con.row_factory = sqlite3.Row
         con.execute(
@@ -172,7 +177,10 @@ def test_build_canonical_entities_handles_sqlite_rows(fake_normalize_entity, fak
     assert mapping == {"a": "neural_cell:neuron"}
 
 
-def test_build_canonical_entities_filters_fragment_like_names(fake_get_entity_role, fake_should_skip) -> None:
+def test_build_canonical_entities_filters_fragment_like_names(
+    fake_get_entity_role: Callable[..., Any],
+    fake_should_skip: Callable[..., Any],
+) -> None:
     entities = [
         {"entity_id": "x1", "entity_type": "target", "entity_name": "a failure"},
         {"entity_id": "x2", "entity_type": "target", "entity_name": "explain failure"},

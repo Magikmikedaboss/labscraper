@@ -27,6 +27,14 @@ def extract_all_zips(base_dir):
                         total_extracted_bytes = 0
                         extracted_file_count = 0
                         for member in zip_ref.infolist():
+                            if getattr(member, "is_symlink", lambda: False)():
+                                print(f"  ⚠️  Skipping symlink entry in {zip_path}: {member.filename}")
+                                failures.append({
+                                    "zip_path": str(zip_path),
+                                    "member": member.filename,
+                                    "reason": "symlink member"
+                                })
+                                continue
                             # Sanitize member.filename
                             orig_name = member.filename
                             p = PurePosixPath(orig_name)

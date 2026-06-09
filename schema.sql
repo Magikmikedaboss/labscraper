@@ -225,8 +225,8 @@ CREATE TABLE IF NOT EXISTS entity_relationships (
   relationship_type TEXT NOT NULL,      -- more_stable_than | more_potent_than | analog_of | 
                                         -- derivative_of | less_toxic_than | etc
   created_at TEXT DEFAULT (datetime('now')),
-  FOREIGN KEY (source_entity_id) REFERENCES entities(entity_id) ON DELETE RESTRICT,
-  FOREIGN KEY (target_entity_id) REFERENCES entities(entity_id) ON DELETE RESTRICT
+  FOREIGN KEY (source_entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE,
+  FOREIGN KEY (target_entity_id) REFERENCES entities(entity_id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_relationships_type ON entity_relationships(relationship_type);

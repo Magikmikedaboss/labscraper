@@ -111,7 +111,7 @@ def test_analyze_patterns_and_display_results(monkeypatch, tmp_path, capsys):
             """
             CREATE TABLE entities (entity_id TEXT PRIMARY KEY, entity_name TEXT, entity_type TEXT);
             CREATE TABLE research_events (event_id TEXT PRIMARY KEY, evidence_snippet TEXT, confidence TEXT);
-            CREATE TABLE event_entities (event_id TEXT, entity_id TEXT);
+            CREATE TABLE event_entities (event_id TEXT, entity_id TEXT, role TEXT, PRIMARY KEY (event_id, entity_id, role));
             """
         )
         con.execute("INSERT INTO entities VALUES (?, ?, ?)", ("e1", "Protein A", "target"))
@@ -121,9 +121,9 @@ def test_analyze_patterns_and_display_results(monkeypatch, tmp_path, capsys):
         con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev2", "improved outcomes", "med"))
         con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev3", "failure observed", "low"))
 
-        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("ev1", "e1"))
-        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("ev2", "e1"))
-        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("ev3", "e2"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("ev1", "e1", "primary"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("ev2", "e1", "primary"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("ev3", "e2", "primary"))
 
     monkeypatch.setattr(pattern_intelligence, "DB_PATH", db_path)
     monkeypatch.setattr(

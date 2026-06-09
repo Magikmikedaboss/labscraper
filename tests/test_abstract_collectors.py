@@ -9,9 +9,9 @@ def test_find_abstract_links_collects_doi_and_asce_links():
         "summary": "See https://doi.org/10.1234/example for details",
         "links": [
             {"href": "https://ascelibrary.org/doi/abs/10.1115/1.1234567", "title": "abstract"},
-          {"href": "https://notdoi.org/abs/10.9999/fake", "title": "fake abstract"},
-          {"href": "https://ascelibrary.org.evil.com/doi/abs/10.1115/1.9999999", "title": "fake asce"},
-          {"href": "https://arxiv.org/abs/1234.5678", "title": "arxiv abstract"},
+            {"href": "https://notdoi.org/abs/10.9999/fake", "title": "fake abstract"},
+            {"href": "https://ascelibrary.org.evil.com/doi/abs/10.1115/1.9999999", "title": "fake asce"},
+            {"href": "https://arxiv.org/abs/1234.5678", "title": "arxiv abstract"},
             {"href": "https://example.com/doc.pdf", "title": "pdf"},
         ],
         "content": [{"value": "More text with https://doi.org/10.5678/other"}],

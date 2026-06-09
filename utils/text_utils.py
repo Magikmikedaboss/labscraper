@@ -62,8 +62,11 @@ def _unmask_sentence_fragments(text: str, replacements: dict[str, str]) -> str:
 def chunk_sentences(text: str) -> List[str]:
     """Split text into sentences while preserving common abbreviations.
 
-    Known limitations: URLs such as www.example.com, ellipses (...), and
-    decimal numbers can still affect boundary detection in edge cases.
+    _mask_sentence_fragments() masks URLs, ellipses, and decimal numbers before
+    splitting, and ABBREV_MAP temporarily masks common abbreviations as part of
+    the same boundary-detection pass. _unmask_sentence_fragments() restores the
+    original text afterward. This masking reduces sentence-boundary errors, but
+    rare edge cases may still remain.
     """
     norm = text.replace("\n", " ")
     norm, fragment_masks = _mask_sentence_fragments(norm)

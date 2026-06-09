@@ -15,7 +15,10 @@ def load_text_seed_file(path: Path) -> list:
     """
     values = []
     for raw_line in path.read_text(encoding="utf-8").splitlines():
-        value = raw_line.split("#", 1)[0].strip()
+        hash_index = raw_line.find("#")
+        if hash_index != -1 and (hash_index == 0 or raw_line[hash_index - 1].isspace()):
+            raw_line = raw_line[:hash_index]
+        value = raw_line.strip()
         if value:
             values.append(value)
     return values

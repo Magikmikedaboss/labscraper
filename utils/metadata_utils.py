@@ -34,7 +34,7 @@ def _extract_meta_from_pdf(pdf, meta):
         meta["year"] = year_from_creation
     if doc_meta.get("Subject") and "doi" in doc_meta["Subject"].lower():
         subject = doc_meta["Subject"]
-        doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Z0-9<>%+,]+", subject, re.I)
+        doi_match = re.search(r"10\.\d{4,9}/[-._;()/:A-Za-z0-9<>%+,]+", subject, re.I)
         if doi_match:
             doi_value = doi_match.group(0).rstrip(".,;:")
             if re.search(r"\([^)]+\)$", doi_value):

@@ -97,7 +97,9 @@ def test_extract_all_zips_logs_actual_byte_mismatch(tmp_path, monkeypatch, caplo
     with caplog.at_level("WARNING"):
         failures = extract_all_zips_module.extract_all_zips(str(tmp_path))
 
-    assert failures == []
+    assert len(failures) == 1
+    assert failures[0]["reason"] == "error"
+    assert "byte count mismatch" in failures[0]["error"]
     extracted = tmp_path / "mismatch.txt"
     assert extracted.read_bytes() == b"short"
     assert any("byte count mismatch" in message for message in caplog.messages)

@@ -15,8 +15,10 @@ from collections import Counter
 from typing import Dict, List
 from dataclasses import dataclass
 
+from utils.db_utils import connect_with_foreign_keys
+
 # Paths
-DB_PATH = Path("output") / "peptide_intel.sqlite"
+DB_PATH = Path("db") / "runs.sqlite"
 SEEDS_DIR = Path("seeds")
 
 # Lazy-loaded outcome signals
@@ -342,7 +344,7 @@ def analyze_patterns(top_n: int = 20) -> List[PatternAnalysis]:
         return []
 
     print(f"\n📂 Connecting to database: {DB_PATH}")
-    with sqlite3.connect(DB_PATH) as con:
+    with connect_with_foreign_keys(DB_PATH) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
 

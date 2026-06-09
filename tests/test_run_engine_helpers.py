@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import pytest
 
 from utils import metadata_utils
-from utils.event_classification import ConfidenceInput, DECISION_PHRASES
+from utils.event_classification import ConfidenceInput
 from utils.data_extractors import extract_relationships
 from utils.common import now_iso
 from utils.common import sha256_hex, sha256_short

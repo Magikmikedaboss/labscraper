@@ -1,10 +1,13 @@
 from pathlib import Path
 from types import SimpleNamespace
+import sqlite3
 
 import pytest
 from unittest.mock import patch
 
-from run_rss_ingest import get_pdf_links_from_feed, process_feed_entry
+from run_rss_ingest import get_pdf_links_from_feed, process_feed_entry, _process_pdf_urls
+from run_rss_ingest import process_html_document
+from utils.db_init import init_db_schema
 from utils.source_triage import TriagedSource
 
 
@@ -175,3 +178,52 @@ class TestHybridFeedEntryProcessing:
         assert result["used_abstract_fallback"] is False
         mock_process_pdf.assert_not_called()
         mock_process_html_document.assert_not_called()
+
+
+def test_process_html_document_writes_rows(tmp_path):
+    db_path = tmp_path / "db" / "runs.sqlite"
+    init_db_schema(db_path)
+
+    events = process_html_document(
+        source_url="https://example.com/abstract",
+        source_title="Abstract Entry",
+        text="The wall assembly was analyzed in vitro using mass spectrometry and the optimized design reduced heat loss in the building envelope.",
+        domain="construction_science",
+        db_path=db_path,
+        source_type="abstract_fallback",
+    )
+
+    assert events >= 1
+
+    with sqlite3.connect(db_path) as con:
+        assert con.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 1
+        assert con.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 1
+        assert con.execute("SELECT COUNT(*) FROM chunks").fetchone()[0] == 1
+        assert con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0] >= 1
+
+
+def test_process_pdf_urls_handles_direct_pdf_lists(monkeypatch, tmp_path):
+    db_path = tmp_path / "db" / "runs.sqlite"
+    init_db_schema(db_path)
+
+    pdf_path = tmp_path / "cache" / "rss" / "fema.pdf"
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    pdf_path.write_bytes(b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF")
+
+    monkeypatch.setattr("run_rss_ingest.download_pdf", lambda url, cache_dir: pdf_path)
+    monkeypatch.setattr("run_rss_ingest.is_valid_pdf", lambda path: True)
+    monkeypatch.setattr("run_rss_ingest.process_pdf", lambda *args, **kwargs: 2)
+
+    result = _process_pdf_urls(
+        [
+            "https://www.fema.gov/sites/default/files/documents/fema_hmd_p-2422-building-codes-enforcement-playbook_06202025.pdf",
+            "https://www.fema.gov/sites/default/files/documents/fema_mitsaves-factsheet_2018.pdf",
+        ],
+        "construction_science",
+        db_path,
+        "FEMA Building Science Publications",
+    )
+
+    assert result["pdf_links"] == 2
+    assert result["pdf_processed"] == 2
+    assert result["pdf_events"] == 4

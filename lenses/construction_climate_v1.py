@@ -1,6 +1,7 @@
 # lenses/construction_climate_v1.py
 from __future__ import annotations
 
+import re
 from typing import List, Tuple, Optional
 from .construction_common import (
     LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
@@ -28,6 +29,23 @@ CONSTRUCTION_SYSTEMS = [
     "façade", "cladding", "curtain wall", "window", "door", "ventilation", "HVAC", "heating", "cooling",
     "drainage", "plumbing", "electrical", "mechanical", "structural system", "building envelope"
 ]
+
+NEGATION_TOKENS = ("not", "never", "no", "without", "failed to", "no longer")
+NEGATION_PATTERNS = tuple(
+    re.compile(rf"\b{re.escape(token)}\b") if " " not in token else re.compile(re.escape(token))
+    for token in NEGATION_TOKENS
+)
+
+
+def _has_non_negated_signal(text_lower: str, phrases: list[str]) -> bool:
+    for phrase in phrases:
+        for match in re.finditer(re.escape(phrase), text_lower):
+            prefix_tokens = re.findall(r"\b\w+\b", text_lower[: match.start()])
+            window = " ".join(prefix_tokens[-5:])
+            if any(pattern.search(window) for pattern in NEGATION_PATTERNS):
+                continue
+            return True
+    return False
 
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     """Detect climate-resilience lens events in construction sentences.
@@ -66,8 +84,8 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         entities.append(make_entity("resilience_term", r, "concept", "context"))
 
     # Classify outcome from hazard and valence signals.
-    has_negative = contains_any(s_l, ["increased risk", "risk increased", "worsened", "exacerbated", "higher vulnerability"])
-    has_positive = contains_any(s_l, ["reduced", "mitigated", "improved", "enhanced"])
+    has_negative = _has_non_negated_signal(s_l, ["increased risk", "risk increased", "worsened", "exacerbated", "higher vulnerability"])
+    has_positive = _has_non_negated_signal(s_l, ["reduced", "mitigated", "improved", "enhanced"])
 
     outcome = "neutral"
     if has_negative and has_positive:

@@ -48,6 +48,7 @@ def db_has_all_tables(con, required_tables=None):
 
 logger = logging.getLogger(__name__)
 AUTHOR_SEPARATOR = "; "
+EVIDENCE_SNIPPET_MAX_LENGTH = 500
 
 _sqlite3_connect = sqlite3.connect
 
@@ -57,9 +58,6 @@ def connect_with_foreign_keys(*args, **kwargs) -> sqlite3.Connection:
     conn = _sqlite3_connect(*args, **kwargs)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
-
-
-sqlite3.connect = connect_with_foreign_keys
 
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
     """Connect to database with standard settings"""
@@ -570,11 +568,13 @@ def insert_event(
     evidence_snippet: str,
     evidence_strength_v: str,
     confidence_v: str,
+    evidence_snippet_max_length: int = EVIDENCE_SNIPPET_MAX_LENGTH,
 ) -> str:
-    evidence_snippet_stored = evidence_snippet[:500]
+    evidence_snippet_stored = evidence_snippet[:evidence_snippet_max_length]
     if len(evidence_snippet) > len(evidence_snippet_stored):
         logger.warning(
-            "Truncating evidence_snippet for event_id storage and hashing to 500 characters (source_id=%s, doc_id=%s, page_number=%s, event_type=%s)",
+            "Truncating evidence_snippet for event_id storage and hashing to %s characters (source_id=%s, doc_id=%s, page_number=%s, event_type=%s)",
+            evidence_snippet_max_length,
             source_id,
             doc_id,
             page_number,

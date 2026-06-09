@@ -1,0 +1,78 @@
+{
+  "feeds": [
+    {
+      "name": "Building Science - Building Science Corporation",
+      "url": "https://buildingscience.com/rss.xml",
+      "domain": "construction_science",
+      "enabled": true
+    },
+    {
+      "name": "FEMA Building Science Publications",
+      "domain": "construction_science",
+      "source_kind": "pdf_list",
+      "pdf_urls": [
+        "https://www.fema.gov/sites/default/files/documents/fema_hmd_p-2422-building-codes-enforcement-playbook_06202025.pdf",
+        "https://www.fema.gov/sites/default/files/documents/fema_mitsaves-factsheet_2018.pdf",
+        "https://www.fema.gov/sites/default/files/documents/fema_p-2196-building-codes-adoption-playbook-for-authorities-having-jurisdictions.pdf",
+        "https://www.fema.gov/sites/default/files/documents/fema_three-little-pigs-activity-sheet.pdf"
+      ],
+      "enabled": true
+    },
+    {
+      "name": "IBHS Wildfire",
+      "url": "https://ibhs.org/wildfire/",
+      "domain": "construction_science",
+      "source_kind": "collector",
+      "collector_mode": "html_archive",
+      "max_pages": 10,
+      "same_path_prefix": "/wildfire/",
+      "collector_max_depth": 2,
+      "enabled": true
+    },
+    {
+      "name": "IBHS Hail",
+      "url": "https://ibhs.org/hail/",
+      "domain": "construction_science",
+      "source_kind": "collector",
+      "collector_mode": "html_archive",
+      "max_pages": 10,
+      "same_path_prefix": "/hail/",
+      "collector_max_depth": 2,
+      "enabled": true
+    },
+    {
+      "name": "ORNL Building Technologies Collector",
+      "url": "https://www.ornl.gov/buildingtechnologies",
+      "domain": "construction_science",
+      "source_kind": "collector",
+      "collector_mode": "html_archive",
+      "max_pages": 10,
+      "same_path_prefix": "/buildingtechnologies/",
+      "collector_max_depth": 2,
+      "enabled": true
+    },
+    {
+      "name": "NIST Buildings and Construction",
+      "url": "https://www.nist.gov/news-events/Buildings%20and%20Construction/rss.xml",
+      "domain": "construction_science",
+      "enabled": true
+    },
+    {
+      "name": "DOE Building Technologies RSS",
+      "url": "https://www.energy.gov/rss/cmei-buildings/853926",
+      "domain": "construction_science",
+      "enabled": true
+    },
+    {
+      "name": "DOE Building Technologies Collector",
+      "url": "https://www.energy.gov/cmei/buildings/listings/news",
+      "domain": "construction_science",
+      "source_kind": "collector",
+      "collector_mode": "html_archive",
+      "max_pages": 10,
+      "same_path_prefix": "/cmei/buildings/",
+      "collector_max_depth": 2,
+      "enabled": true
+    }
+  ]
+}

@@ -12,8 +12,10 @@ from typing import Iterable
 
 import pdfplumber
 
+from lenses import detect_building_physics, detect_climate, detect_failure, detect_materials
 from utils.metadata_utils import extract_metadata
 from utils.path_validation import validate_domain_id
+from utils.text_utils import chunk_sentences
 
 
 logger = logging.getLogger(__name__)
@@ -136,6 +138,10 @@ class TriagedSource:
     construction_signals: str
     contamination_signals: str
     reason: str
+    building_physics_score: int = 0
+    materials_score: int = 0
+    failure_score: int = 0
+    climate_score: int = 0
 
 
 def _normalize_text(value: str | None) -> str:
@@ -158,6 +164,61 @@ def _collect_matches(text: str, patterns: list[tuple[str, list[str], int]]) -> t
     return sorted(set(matches)), score
 
 
+LENS_CONFIDENCE_SCORES = {"low": 1, "med": 3, "medium": 3, "high": 5}
+LENS_CONTEXT_BONUS = {"weak": 0, "moderate": 1, "strong": 2}
+FAILURE_KEYWORDS = [
+    "failure",
+    "failed",
+    "collapse",
+    "fracture",
+    "cracking",
+    "crack",
+    "spalling",
+    "buckling",
+    "leakage",
+    "water intrusion",
+    "mold",
+    "corrosion",
+    "settlement",
+]
+
+
+def _score_lens_event(event: object, entities: list[dict]) -> int:
+    if event is None:
+        return 0
+
+    confidence = getattr(event, "confidence", "")
+    context_strength = getattr(event, "context_strength", "weak")
+    outcome = getattr(event, "outcome", "")
+    tags = getattr(event, "tags", [])
+
+    score = LENS_CONFIDENCE_SCORES.get(str(confidence).lower(), 1)
+    score += LENS_CONTEXT_BONUS.get(str(context_strength).lower(), 0)
+    if outcome in {"positive", "negative", "degraded"}:
+        score += 1
+    if tags:
+        score += 1
+    if entities:
+        score += 1
+    return min(score, 10)
+
+
+def _score_lens_text(text: str, detector) -> int:
+    score = 0
+    for sentence in chunk_sentences(text):
+        event, entities = detector(sentence)
+        score += _score_lens_event(event, entities)
+    return min(score, 10)
+
+
+def _keyword_support_score(text: str, keywords: list[str], per_hit: int = 2) -> int:
+    normalized = _normalize_text(text)
+    hits = 0
+    for keyword in keywords:
+        normalized_keyword = _normalize_text(keyword)
+        if normalized_keyword and re.search(rf"\b{re.escape(normalized_keyword)}\b", normalized):
+            hits += 1
+    return min(hits * per_hit, 10)
 def _classify_review_domain(
     *,
     combined_text: str,
@@ -189,74 +250,80 @@ def classify_triage(
     building_context_signals, building_context_score = _collect_matches(combined_text, BUILDING_CONTEXT_PATTERNS)
     contamination_signals, contamination_score = _collect_matches(combined_text, CONTAMINATION_PATTERNS)
     climate_signals, climate_score = _collect_matches(combined_text, CLIMATE_BOILERPLATE_PATTERNS)
-    has_strong_construction_signal = any(signal in STRONG_CONSTRUCTION_SIGNALS for signal in construction_signals)
-    has_strong_building_context_signal = any(
-        signal in STRONG_BUILDING_CONTEXT_SIGNALS for signal in building_context_signals
+    score_text = "\n".join([text for text in (title, metadata_text, sample_text) if text])
+    building_physics_score = max(
+        _score_lens_text(score_text, detect_building_physics),
+        construction_score,
     )
+    materials_score = max(
+        _score_lens_text(score_text, detect_materials),
+        _keyword_support_score(combined_text, list(MATERIALS_RESEARCH_KEYWORDS)),
+    )
+    failure_score = max(
+        _score_lens_text(score_text, detect_failure),
+        _keyword_support_score(combined_text, FAILURE_KEYWORDS),
+    )
+    climate_score_lens = max(
+        _score_lens_text(score_text, detect_climate),
+        climate_score,
+    )
+    total_score = building_physics_score + materials_score + failure_score + climate_score_lens
+    biomedical_score = contamination_score
 
-    if climate_score > 0 and not has_strong_construction_signal:
+    biomedical_dominates = biomedical_score >= 3 and biomedical_score >= total_score
+    if biomedical_dominates:
+        keep_skip_review = "skip"
+    elif building_physics_score >= 8 or materials_score >= 8 or failure_score >= 8:
+        keep_skip_review = "keep"
+    elif total_score >= 4:
         keep_skip_review = "review"
-        if construction_score > contamination_score:
-            detected_domain = "construction_science"
-        elif contamination_score > construction_score:
-            detected_domain = "biomedical"
-        else:
-            detected_domain = "mixed"
+    else:
+        keep_skip_review = "skip"
 
-    elif construction_score == 0 and contamination_score == 0:
-        keep_skip_review = "review"
+    if biomedical_dominates:
+        detected_domain = "biomedical"
+    elif keep_skip_review == "keep":
+        detected_domain = "construction_science"
+    elif climate_score_lens > 0 and construction_score > contamination_score:
+        detected_domain = "construction_science"
+    else:
         detected_domain = _classify_review_domain(
             combined_text=combined_text,
             construction_signals=construction_signals,
             building_context_signals=building_context_signals,
         )
-    elif contamination_score >= 3 and contamination_score >= construction_score:
-        keep_skip_review = "skip"
-        detected_domain = "biomedical"
-    elif (
-        construction_score >= 5
-        and has_strong_construction_signal
-        and has_strong_building_context_signal
-        and (construction_score - contamination_score) >= 3
-    ):
-        keep_skip_review = "keep"
-        detected_domain = "construction_science"
-    else:
-        keep_skip_review = "review"
-        if contamination_score > construction_score:
-            detected_domain = "biomedical"
-        else:
-            detected_domain = _classify_review_domain(
-                combined_text=combined_text,
-                construction_signals=construction_signals,
-                building_context_signals=building_context_signals,
-            )
 
-    score_gap = abs(construction_score - contamination_score)
-    if keep_skip_review == "review":
-        confidence = "low" if score_gap <= 1 else "med"
-    elif score_gap >= 4:
+    if (
+        keep_skip_review == "skip"
+        and not biomedical_dominates
+        and detected_domain in {"physics", "materials_science"}
+        and construction_signals
+        and not building_context_signals
+    ):
+        keep_skip_review = "review"
+
+    if total_score >= 8:
         confidence = "high"
-    elif score_gap >= 2:
+    elif total_score >= 4:
         confidence = "med"
     else:
         confidence = "low"
 
     if keep_skip_review == "keep":
         reason = (
-            f"construction + building context outweigh contamination: {', '.join(construction_signals) or 'none'}; "
-            f"building_context={', '.join(building_context_signals) or 'none'}"
+            f"lens scores strong enough for keep; building_physics={building_physics_score}, "
+            f"materials={materials_score}, failure={failure_score}, climate={climate_score_lens}"
         )
-    elif keep_skip_review == "skip":
+    elif keep_skip_review == "review":
         reason = (
-            f"strong biomedical contamination: {', '.join(contamination_signals) or 'none'}"
+            f"lens scores warrant review; building_physics={building_physics_score}, materials={materials_score}, "
+            f"failure={failure_score}, climate={climate_score_lens}, total={total_score}"
         )
     else:
         reason = (
-            f"mixed or weak signals; construction={', '.join(construction_signals) or 'none'}; "
-            f"building_context={', '.join(building_context_signals) or 'none'}; "
-            f"contamination={', '.join(contamination_signals) or 'none'}; "
-            f"climate={', '.join(climate_signals) or 'none'}"
+            f"skip; building_physics={building_physics_score}, materials={materials_score}, "
+            f"failure={failure_score}, climate={climate_score_lens}, total={total_score}, "
+            f"biomedical={biomedical_score}"
         )
 
     return TriagedSource(
@@ -268,6 +335,10 @@ def classify_triage(
         construction_signals="; ".join(construction_signals),
         contamination_signals="; ".join(contamination_signals),
         reason=reason,
+        building_physics_score=building_physics_score,
+        materials_score=materials_score,
+        failure_score=failure_score,
+        climate_score=climate_score_lens,
     )
 
 
@@ -290,7 +361,7 @@ def _read_sample_text(pdf_path: Path, first_pages: int, max_chars: int) -> tuple
     return title, " | ".join(bit for bit in metadata_bits if bit), sample_text
 
 
-def scan_pdf(pdf_path: Path, first_pages: int = 2, max_chars: int = 1600) -> TriagedSource:
+def scan_pdf(pdf_path: Path, first_pages: int = 3, max_chars: int = 1600) -> TriagedSource:
     title, metadata_text, sample_text = _read_sample_text(pdf_path, first_pages, max_chars)
     return classify_triage(
         file_path=pdf_path,
@@ -300,7 +371,7 @@ def scan_pdf(pdf_path: Path, first_pages: int = 2, max_chars: int = 1600) -> Tri
     )
 
 
-def scan_pdfs(input_dir: Path, first_pages: int = 2, max_chars: int = 1600, limit: int | None = None) -> list[TriagedSource]:
+def scan_pdfs(input_dir: Path, first_pages: int = 3, max_chars: int = 1600, limit: int | None = None) -> list[TriagedSource]:
     pdf_paths = sorted(input_dir.rglob("*.pdf"))
     if limit is not None:
         pdf_paths = pdf_paths[:limit]
@@ -329,20 +400,29 @@ def scan_pdfs(input_dir: Path, first_pages: int = 2, max_chars: int = 1600, limi
 def write_triage_csv(rows: Iterable[TriagedSource], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
-        "file_path",
         "title",
-        "detected_domain",
-        "keep_skip_review",
-        "confidence",
-        "construction_signals",
-        "contamination_signals",
+        "building_physics_score",
+        "materials_score",
+        "failure_score",
+        "climate_score",
+        "decision",
         "reason",
     ]
     with output_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
-            writer.writerow({field: getattr(row, field) for field in fieldnames})
+            writer.writerow(
+                {
+                    "title": row.title,
+                    "building_physics_score": row.building_physics_score,
+                    "materials_score": row.materials_score,
+                    "failure_score": row.failure_score,
+                    "climate_score": row.climate_score,
+                    "decision": row.keep_skip_review,
+                    "reason": row.reason,
+                }
+            )
     return output_path
 
 
@@ -398,7 +478,7 @@ def main() -> int:
         help="Path to the triage CSV report",
     )
     parser.add_argument("--domain", type=str, default="construction_science", help="Target domain label")
-    parser.add_argument("--first-pages", type=int, default=2, help="Number of first pages to sample")
+    parser.add_argument("--first-pages", type=int, default=3, help="Number of first pages to sample")
     parser.add_argument("--max-chars", type=int, default=1600, help="Maximum sampled text characters per PDF")
     parser.add_argument("--limit", type=int, default=None, help="Optional limit for quick smoke tests")
     args = parser.parse_args()

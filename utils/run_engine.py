@@ -40,6 +40,7 @@ from utils.event_classification import (
 )
 from utils.db_utils import (
     _db_has_all_tables,
+    connect_with_foreign_keys,
     upsert_source,
     insert_document,
     insert_chunk,
@@ -272,7 +273,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
         raise SystemExit("No PDFs found.")
 
 
-    with sqlite3.connect(str(db_path), timeout=30.0) as con:
+    with connect_with_foreign_keys(str(db_path), timeout=30.0) as con:
         success_count = 0
         for pdf_path in tqdm(pdfs, desc="PDFs"):
             print(f"Processing: {pdf_path.name}")

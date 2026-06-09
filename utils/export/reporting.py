@@ -9,6 +9,14 @@ from utils.path_validation import validate_domain_id
 
 logger = logging.getLogger(__name__)
 
+BUCKET_NAMES = (
+    "strong",
+    "promising",
+    "exploratory",
+    "stalled",
+    "deprioritized",
+)
+
 
 def _publish_latest_file(source_file: Path, latest_file: Path):
     temp_path = latest_file.with_suffix(".tmp")
@@ -234,13 +242,7 @@ def write_dual_lens_report(
                     bucket = overlay_scores["bucket"]
                     bucket_counts[bucket] += 1
             total = sum(bucket_counts.values())
-            for bucket in [
-                "strong",
-                "promising",
-                "exploratory",
-                "stalled",
-                "deprioritized",
-            ]:
+            for bucket in BUCKET_NAMES:
                 count = bucket_counts.get(bucket, 0)
                 pct = (count / total * 100) if total else 0
                 f.write(f"  {bucket:15s}: {count:4d} ({pct:5.1f}%)\n")

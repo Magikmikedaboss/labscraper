@@ -26,7 +26,7 @@ def test_export_candidates_domain_aware_smoke(monkeypatch, tmp_path):
     mock_cursor.fetchall.return_value = [
         ("entity-1", "compound", "Aspirin", "active", 2, "src-1,src-2"),
     ]
-    monkeypatch.setattr(export_csv.sqlite3, "connect", lambda *a, **k: mock_con)
+    monkeypatch.setattr(export_csv, "connect_with_foreign_keys", lambda *a, **k: mock_con)
     monkeypatch.setattr(export_csv, "load_normalization_map", lambda: {})
     monkeypatch.setattr(export_csv, "load_overlay_aliases", lambda _domain_id: {})
     monkeypatch.setattr(export_csv, "normalize_entity", lambda entity, _norm, _aliases: entity)

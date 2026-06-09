@@ -139,7 +139,7 @@ def test_check_recent_run_invalid_timestamp_returns_error(tmp_path, monkeypatch,
 
 def test_check_confidence_distribution_and_entity_types(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
-    db_path = tmp_path / "output" / "peptide_intel.sqlite"
+    db_path = tmp_path / "db" / "runs.sqlite"
     _init_basic_entities_db(db_path)
     with sqlite3.connect(db_path) as con:
         con.execute("INSERT INTO entities(entity_id, entity_type, entity_name) VALUES (?, ?, ?)", ("e1", "compound", "X"))
@@ -161,7 +161,7 @@ def test_check_confidence_distribution_and_entity_types(tmp_path, monkeypatch, c
 
 def test_check_confidence_distribution_zero_total(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
-    db_path = tmp_path / "output" / "peptide_intel.sqlite"
+    db_path = tmp_path / "db" / "runs.sqlite"
     _init_basic_entities_db(db_path)
 
     check_confidence.check_confidence_distribution()

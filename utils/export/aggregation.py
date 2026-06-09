@@ -50,11 +50,11 @@ def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowS
                 """
             ).fetchall()
             event_entities = cur.execute(
-                "SELECT entity_id, event_id FROM event_entities"
+                "SELECT entity_id, event_id, role FROM event_entities"
             ).fetchall()
             model_rows = cur.execute(
                 """
-                SELECT ee.event_id, e.entity_name
+                SELECT ee.event_id, ee.role, e.entity_name
                 FROM event_entities ee
                 JOIN entities e ON ee.entity_id = e.entity_id
                 WHERE e.entity_type = 'model'

@@ -10,6 +10,7 @@ from utils.export.aggregation import (
 from utils.export.filters import (
     DEFAULT_KNOWN_PEPTIDES,
     is_valid_export_peptide,
+    get_known_peptides,
     load_known_peptides,
     should_skip_entity,
     should_suppress_entity_for_csv,
@@ -58,6 +59,37 @@ def test_load_known_peptides_env_and_fallback(tmp_path):
     malformed_path.write_text("{not-json", encoding="utf-8")
 
     assert load_known_peptides(config_path=malformed_path, env={}) == set(DEFAULT_KNOWN_PEPTIDES)
+
+
+def test_get_known_peptides_caches_loaded_values(monkeypatch):
+    import utils.export.filters as filters
+
+    filters._KNOWN_PEPTIDES = None
+    calls = []
+
+    def fake_load_known_peptides():
+        calls.append("load")
+        return {"OCTREOTIDE"}
+
+    monkeypatch.setattr(filters, "load_known_peptides", fake_load_known_peptides)
+
+    assert get_known_peptides() == {"OCTREOTIDE"}
+    assert get_known_peptides() == {"OCTREOTIDE"}
+    assert calls == ["load"]
+
+
+def test_get_known_peptides_falls_back_on_value_error(monkeypatch):
+    import utils.export.filters as filters
+
+    filters._KNOWN_PEPTIDES = None
+
+    def fake_load_known_peptides():
+        raise ValueError("bad peptide config")
+
+    monkeypatch.setattr(filters, "load_known_peptides", fake_load_known_peptides)
+
+    assert get_known_peptides() == set(DEFAULT_KNOWN_PEPTIDES)
+    assert get_known_peptides() == set(DEFAULT_KNOWN_PEPTIDES)
 
 
 def test_should_suppress_entity_for_csv_threshold_and_none_events():

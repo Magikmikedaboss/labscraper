@@ -13,6 +13,8 @@ import sqlite3
 import logging
 from pathlib import Path
 
+from utils.db_utils import connect_with_foreign_keys
+
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +70,7 @@ def init_db_schema(db_path):
 
     schema_sql = schema_path.read_text(encoding='utf-8')
 
-    with sqlite3.connect(db_path_resolved) as con:
-        con.execute("PRAGMA foreign_keys = ON")
+    with connect_with_foreign_keys(db_path_resolved) as con:
         con.executescript(schema_sql)
         ensure_research_events_columns_renamed(con)
 

@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 from setuptools import find_packages, setup
@@ -7,10 +8,26 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 README_PATH = PROJECT_ROOT / "README.md"
 VERSION_PATH = PROJECT_ROOT / "labscraper" / "__version__.py"
 version_namespace: dict[str, str] = {}
-# Load __version__ from a simple trusted file at VERSION_PATH.
-# This uses exec, so VERSION_PATH must not be user-controlled; if that is not
-# guaranteed, prefer parsing the file or importing a module instead.
-exec(VERSION_PATH.read_text(encoding="utf-8"), version_namespace)
+# Load __version__ from a trusted file using a literal-only parse.
+version_module = ast.parse(VERSION_PATH.read_text(encoding="utf-8"), filename=str(VERSION_PATH))
+for node in version_module.body:
+    if isinstance(node, ast.Assign):
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == "__version__":
+                if isinstance(node.value, ast.Constant):
+                    if isinstance(node.value.value, str):
+                        version_namespace["__version__"] = node.value.value
+                    else:
+                        raise ValueError("__version__ must be assigned a literal string")
+                elif isinstance(node.value, ast.Str):
+                    version_namespace["__version__"] = node.value.s
+                else:
+                    raise ValueError("__version__ must be assigned a literal string")
+                break
+        if "__version__" in version_namespace:
+            break
+if "__version__" not in version_namespace:
+    raise ValueError("__version__ assignment not found in VERSION_PATH")
 
 long_description = README_PATH.read_text(encoding="utf-8") if README_PATH.exists() else ""
 
@@ -25,7 +42,7 @@ setup(
     long_description_content_type="text/markdown",
     author="LabScraper contributors",
     author_email="",
-    url="https://github.com/labscraper/labscraper",
+    url="https://github.com/Magikmikedaboss/labscraper",
     license="MIT",
     classifiers=[
         "Programming Language :: Python :: 3",

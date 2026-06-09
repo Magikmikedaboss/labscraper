@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from utils.db_init import ensure_research_events_columns_renamed
+from utils.db_utils import connect_with_foreign_keys
 
 DB_PATH = Path("db/runs.sqlite")
 OUTPUT_DIR = Path("output")
@@ -23,12 +24,12 @@ def ensure_db_exists():
         print(f"❌ Database file not found: {DB_PATH}")
         sys.exit(1)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    with connect_with_foreign_keys(DB_PATH) as con:
+        ensure_research_events_columns_renamed(con)
 
 
 def _open_connection():
-    con = sqlite3.connect(DB_PATH)
-    con.execute("PRAGMA foreign_keys = ON")
-    ensure_research_events_columns_renamed(con)
+    con = connect_with_foreign_keys(DB_PATH)
     return con
 
 

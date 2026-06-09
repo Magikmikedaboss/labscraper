@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import hashlib
-import sqlite3
 import pdfplumber
 from utils.common import sha256_hex
 from utils.metadata_utils import extract_metadata
@@ -21,6 +20,7 @@ from utils.event_classification import (
     evidence_strength,
 )
 from utils.db_utils import (
+    connect_with_foreign_keys,
     upsert_source,
     insert_document,
     insert_chunk,
@@ -273,7 +273,7 @@ def _looks_like_climate_table_row(sentence_l: str, source_title_l: str) -> bool:
 
 
 def _classify_construction_event(sentence_l: str) -> str | None:
-    sentence = sentence_l.lower()
+    sentence = sentence_l
     if any(term in sentence for term in ("climate zone", "climate load", "degree days", "heating degree days", "cooling degree days", "climate normals")):
         if _has_climate_building_context(sentence):
             return "climate_load"
@@ -311,8 +311,7 @@ def _sha256_file(path: Path, chunk_size: int = 64 * 1024) -> str:
 def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None):
     input_dir = Path(input_dir)
     init_db_schema(db_path)
-    with sqlite3.connect(db_path) as con:
-        con.execute("PRAGMA foreign_keys = ON")
+    with connect_with_foreign_keys(db_path) as con:
         pdfs = list(input_dir.rglob("*.pdf"))
         print(f"Found {len(pdfs)} PDFs in {input_dir} (including subfolders)")
         for pdf_path in pdfs:
@@ -322,9 +321,9 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                 meta = extract_metadata(pdf_path)
                 print(f"  Metadata: {meta}")
                 # Upsert source and document
-                source_id = _sha256_file(pdf_path)
-                upsert_source(con, source_id, str(pdf_path), meta)
                 file_hash = _sha256_file(pdf_path)
+                source_id = file_hash
+                upsert_source(con, source_id, str(pdf_path), meta)
                 doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                 source_title_l = str(meta.get("title") or pdf_path.stem).lower()
                 resolved_domain = (

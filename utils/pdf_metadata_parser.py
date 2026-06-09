@@ -66,8 +66,6 @@ def parse_first_page_text(text: str, max_header_scan: int = 10) -> Dict[str, Any
         break
     if author_candidate:
         meta["authors"] = author_candidate
-    elif len(nonempty) > 1 and _is_valid_author_line(nonempty[1]):
-        meta["authors"] = nonempty[1]
     # DOI extraction: only set if valid regex or clean 'doi:' suffix
     for line in lines:
         if "doi" in line.lower() and not meta["doi"]:

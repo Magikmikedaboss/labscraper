@@ -19,7 +19,7 @@ def normalize_event_key(
         entities = []
     # Defensive: skip None items and only use dict-like objects
     def safe_entity_name(e: Optional[Dict[str, Any]]) -> str:
-        if e is None:
+        if e is None or not isinstance(e, dict):
             return ""
         return str(e.get("entity_name", ""))
 

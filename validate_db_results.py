@@ -3,6 +3,7 @@
 Quick validation script for database results
 """
 
+import sqlite3
 from pathlib import Path
 
 from utils.db_utils import connect_with_foreign_keys

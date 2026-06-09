@@ -1,0 +1,76 @@
+Context validation report
+Database: tmp\organized_pdfs_construction.sqlite
+Entities: beam, wall, foundation, column
+Labels: construction context | materials context | physics context | biomedical context | other
+
+[BEAM]
+Context tally: physics context=4, other=1
+1. [physics context] (event) p.2 | Compact Continuous Cold Atomic Beam from a Single Cell with 3D Cooling and Ultra-low Light Shift
+   This off-axis OM geometry, velocity is given by implementedviacustomin-vacuummirrorswithaninte- grated beam-output aperture, eliminates pushing-beam λ v = δ , (1) light shifts and suppresses fluorescence leakage, thereby cosθ OM minimizing decoherence.
+   source: 5dfb9f8566d808e10add5a7c827cbda518d1e04aae6d309df4172fdb92bb9a71
+2. [other] (event) p.3 | Correlative Microstructural Analysis of a Weathered Nantan Meteorite Fragment
+   LocalPhaseIdentification+CrystallographicMapping Electron microscopy was performed on a Tescan AMBER-X plasma focused ion beam-scanning electron microscope(pFIB-SEM).Alldatawascapturedusinga10nAbeamcurrentand20kVacceleratingvoltage.EBSD wasperformedusinganOxfordInstrumentsSymmetryS2detectorandthesampleloadedintoa70◦pre-tiltedsample holder.EDSdatawascapturedusinganOxfordInstrumentsUltimMax170detectorandthePulsePileupcorrection wasenabled.
+   source: d7d4e418e1aec2cb2c95aae12fd55857b3d7f00ff6e34752923a6c9055ff42c8
+3. [physics context] (event) p.4 | Thermal conductivity tuning of scalable nanopatterned silicon membranes measured with a three-probe method
+   Magnitude Description Q Heat flux [W] G Conductance [W/K] θ Thermal difference with respect to the bath temperature [K] R Resistance (electrical) [Ω] R Resistance (thermal) [K/W] P Applied power (dissipated) [W] Ψ Absorbance [-] x Position of the laser beam [m] L Sample length [m] Subscripts Description X Contact C X Platform beam b X Bridge (sample + contacts) BT X Nanostructure NS X Left side L X Right side R X Position of the laser 0 X Heater side H X Sensor side S Superscripts Description X∗
+   source: eaa1cac3ef513da05e1b7b295379986f2ebbcfc3cba07eac3b43a22146c77c20
+4. [physics context] (event) p.4 | Propagation of laser-generated GHz surface acoustic wavepackets in FeRh/MgO(001) below and above the antiferromagnetic-ferromagnetic phase transition
+   This beam is subsequently split into the probe and reference beams within the interferometer.
+   source: dd5fcd249e4650c1e480c09a9dd3dc37168db8c42d98e54d72bd470d013548e8
+5. [physics context] (event) p.5 | Direct Laser Micromachining of
+   Although the laser beam spot size is close to the diffraction limit ( µm), the resulting trench width and machining depth expand to approximately 10 µm and 6.4 µm, respectively, indicating that the characteristic length scale ≈1.4 of the process is governed by thermal properties rather than optical resolution.
+   source: 9dad8ff5582215b51a2f3a4f4e572ac163d0d39c812d0584e377e33487bbc503
+
+[WALL]
+Context tally: biomedical context=3, other=2
+1. [biomedical context] (event) p.3 | Traffic of p24 Proteins and COPII Coat Composition Mutually Influence Membrane Scaffolding
+   Yeast GPI-APs are major constituents of the cell RESULTS wall,andaresegregatedintoCOPIIstructuresthataredistinct from those that contain polytopic plasma membrane proteins Our previous systematic screen for Sec13p-bypass mutants [19,20].However,GPI-APdepletionfromERESsalonedoesnot identifiedonecomponent,Erv29p,thatfunctionsasacargore- fully explain the Sec13p-bypass phenomenon, because many ceptorforsolublelumenalproteinsanddoesnotdirectlypartic- mutantsthathavedelaysinGPI-APmaturationarenotBSTm
+   source: 10.1016/j.cub.2015.03.029
+2. [biomedical context] (event) p.9 | 83069637
+   249 250 Gas1 remains anchored to the plasma membrane, whereas Cwp2 is transferred and 251 linked to the cell wall (van der Vaart et al., 1995).
+   source: 10.64898/2026.04.13.718349
+3. [biomedical context] (event) p.9 | 83069637
+   253 Cwp2-VENUS may be transported from the Golgi apparatus or plasma membrane to the 254 vacuole before being incorporated into the cell wall.
+   source: 10.64898/2026.04.13.718349
+4. [other] (event) p.11 | Transcriptional Coordination of Synaptogenesis and Neurotransmitter Signaling
+   Notably, another glr-4 regulatory fragment (938 bp) synaptogenesis is a common theme in MN differentiation, we that contains a COE motif is sufficient to drive expression in turnedtocholinergicMNsintheventralnervecord(VNC),which theventralnervecordneuronsbutnotinSABMNs,andmutation form synapses with body-wall muscles along the body of the of that COE motif (938 bp COE2 MUT) abolishes ventral nerve animal.
+   source: 10.1016/j.cub.2015.03.028
+5. [other] (event) p.13 | Togaram Ensures Axial Alignment of the Sperm Neck
+   For example, they could play regulatory roles by binding the microtubule lattice, or 341 the microtubules of the centriole wall.
+   source: 10.64898/2026.04.15.718719
+
+[FOUNDATION]
+Context tally: biomedical context=2, physics context=2, materials context=1
+1. [biomedical context] (event) p.6 | Transcriptomic Models for Immunotherapy Response Prediction
+   This pretrained foundation is subsequently fine-tuned on multiple ICI-treated cohorts using linear or partial fine-tuning strategies, aiming to enhance cross-cohort transferability.
+   source: a0817586013eea001c59a7ef4c5e9567b10fdb6140af6ccc381ec3623d42dbb6
+2. [biomedical context] (event) p.11 | Reprogramming Fibroblasts into Bipotential Hepatic Stem Cells by Defined Factors
+   Lau (Roswell Park andthenwasplacedat37(cid:3)Cfor30mintoformthegel.Cellsofclone2or6(13 CancerInstitute,USA),GangWang(ChineseAcademyofSciences,China), 105)weresuspended inhepaticdifferentiationmedium(HDM)(DMEM/F12 andLixinFeng(ShanghaiJiaoTongUniversitySchoolofMedicine)forhelpful medium supplemented with 10% fetal bovine serum [HyClone], 20 ng/ml discussion.ThisworkwasfundedbyNationalKeyBasicResearchandDevel- Oncostatin M, 20 ng/ml EGF [both from R&D], 10 ng/ml nicotinamide, opmentProgramofChina(
+   source: 10.1016/j.stem.2013.06.017
+3. [physics context] (event) p.13 | Generative design of inorganic materials
+   In inorganic materials, A-Lab integrates ab initio phase-stability screening, literature-trained natural- language models that propose solid-state synthesis recipes, robotic execution, and ML analysis of X-ray diffraction, with active learning that closes the loop by proposing improved follow-up recipes from observed outcomes and failures.3 In chemistry, mobile-robot platforms have demonstrated closed-loop synthesis–analysis–decision cycles that fuse orthogonal measurements (for example, NMR plu
+   source: f4ba35e85d7d8630234632867dca10f56da61d7cb6f4c275e4d2d556fcf0dd79
+4. [materials context] (event) p.14 | Generative design of inorganic materials
+   Green hydrogen production presents a materials grand challenge due to the need for advanced materials that can facilitate efficient and sustainable hydrogen generation.93,94 One promising method, electrolysis, where water is split into hydrogen and oxygen using electricity, demands materials capable of driving the process with minimal energy loss, must resist corrosion in an aqueous environment, and must remain effective over long periods to make green hydrogen a viable alternative to fossil fue
+   source: f4ba35e85d7d8630234632867dca10f56da61d7cb6f4c275e4d2d556fcf0dd79
+5. [physics context] (chunk) p.1 | Configuration-dependent electronic and optical properties of 2D Mo$_{1-x}$W$_x$S$_2$ alloys across the full composition range
+   such as band-edge energies, effective masses, valley en- ergetics,opticalselectionrules,andexcitonicproperties In addition, the resulting first-principles database canexhibitsignificantsensitivitytothelocalatomicar- provides a foundation for a cluster-expansion Hamilto- rangement,whichisnotcapturedbyaveragedorvirtual- nian describing the energetics of the alloy.
+   source: 6bbb76483a0870ededf1595da5fe2861fbb2b07f055b5455353ecc02e6ed5e0a
+
+[COLUMN]
+Context tally: biomedical context=2, other=2, physics context=1
+1. [biomedical context] (event) p.9 | Hierarchical Bayesian inference for community detection and connectivity of functional brain networks
+   idatetheperformanceofgroup-levelfunctionalconnectivity The column indices in MLAPM are then transformed into estimation by evaluating the similarity between posterior a vector of labels and a label-switching algorithm [21] is ap- mean and real mean, and between posterior variance and plied.
+   source: 1c5e20900179564faf40cace1d6834831dd34bca43db2d68f670dc308aa9f1ae
+2. [other] (event) p.15 | Identification of the peptide Vulnusin, a wound signal that mediates mechanical-injury-induced nociception in Drosophila
+   HPLCfractionationofsamples Acidified and centrifugally clarified (16,100g, 30 min, 4 ◦C) samples were separated on a Phenomenex Kinetex XB-C18 column (2.1mm× 100mm,5μmparticlesize, 100A˚ pore size)usingaq.acetonitrile gradient from2to 30%(in constant0.1%formic acid)over70minusinga0.35mL/minflowrate.Foradetailedgradientprogram,seefollowing: HPLCgradientprogram Step Time(min) BufferA% BufferB% Flowrate(mL/min) 0 0 98 2 0.35 1 10 98 2 0.35 2 70 70 30 0.35 3 72 10 90 0.35 (Continuedonnextpage) Neuro
+   source: 10.1016/j.neuron.2025.09.007
+3. [other] (chunk) p.1 | First-principles study of infrared, Raman, piezoelectric and elastic properties of Mg-IV-N\textsubscript{2} (IV = Ge, Si, Sn)
+   COMPUTATIONAL METHOD bilities as the group II elements can be taken from the IIA (Be, Bg, Ca) or IIB (Zn, Cd, Hg) columns or even Our calculations are based on density functional the- the VIIB column (Mn) and each of these can be com- ory (DFT) and density functional perturbation theory bined with IV=Si, Ge, Sn.
+   source: 3164cc1b00beba07ed8ac8f8c5158e05d8aa5f41cde30b994e8bac1857476836
+4. [physics context] (chunk) p.1 | Physics-informed tritium fuel cycle modelling workflow for fusion reactors
+   Second,anintermediate-fidelitycomponentmodelbasedoncoupled one-dimensional ordinary differential equations is developed to describe tritium mass transfer in a liquid metal bubble columnreactorandvalidatedagainstpublishedliteraturebeforeintegrationintothefullfuelcycle.
+   source: 7b4b5f162d8e65b03b04f0654473f30ad5346efe89d51d3776dc4d1130ba5979
+5. [biomedical context] (chunk) p.2 | A Replicase Clamp-Binding Dynamin-like Protein Promotes Colocalization of Nascent DNA Strands and Equipartitioning of Chromosomes in E.&nbsp;coli
+   To turally resembles eukaryotic dynamin, which forms spiral uncover as-yet-unidentified clamp functions, we searched for homomultimers thatdirectlybindtothecellmembraneforthe clamp-bindingfactorsinE.coliusingaclamp-conjugatedaffinity promotion of membrane fission during endocytosis and mito- column.
+   source: 10.1016/j.celrep.2013.07.040

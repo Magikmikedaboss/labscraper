@@ -63,3 +63,4 @@ def test_validate_configs_rejects_empty_paths(capsys):
 
     assert excinfo.value.code == 1
     assert "domain 'domain-b'" in capsys.readouterr().out
+

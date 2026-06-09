@@ -3,7 +3,9 @@ Test Phase 1 Results - Analyze entity extraction
 """
 from pathlib import Path
 
-DB_PATH = Path("output") / "peptide_intel.sqlite"
+from utils.db_utils import connect_with_foreign_keys
+
+DB_PATH = Path("db") / "runs.sqlite"
 
 def analyze_phase1_results():
     if not DB_PATH.exists():

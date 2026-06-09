@@ -10,7 +10,22 @@ logger = logging.getLogger(__name__)
 
 
 def summarize_bandit(report_path: Path) -> None:
-    data = json.loads(report_path.read_text(encoding="utf-8"))
+    raw = report_path.read_bytes()
+
+    text = None
+    for encoding in ("utf-8", "utf-8-sig", "utf-16", "latin-1"):
+        try:
+            text = raw.decode(encoding)
+            logger.debug("Decoded %s using %s", report_path, encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+
+    if text is None:
+        logger.error("Failed to decode %s with utf-8, utf-8-sig, utf-16, or latin-1", report_path)
+        raise ValueError(f"Could not decode {report_path}")
+
+    data = json.loads(text)
     results = data.get("results", []) if isinstance(data, dict) else []
     for issue in results[:10]:
         if not isinstance(issue, dict):

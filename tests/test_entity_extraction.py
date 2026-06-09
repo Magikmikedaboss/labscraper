@@ -106,6 +106,35 @@ class TestConstructionEntities:
         system_entities = [e for e in entities if e["entity_type"] == "system"]
         assert len(system_entities) > 0
 
+    def test_extract_construction_systems_rejects_ambiguous_non_construction_contexts(self):
+        """Test that ambiguous system nouns are rejected outside construction context"""
+        text = (
+            "The laser beam split into probe beams. "
+            "Cell wall mechanics and magnetic domain wall motion were measured. "
+            "The foundation model was fine-tuned with machine learning. "
+            "The chromatography column separated the sample."
+        )
+
+        entities = extract_entities(text, "construction_science")
+
+        names = {e["entity_name"].lower() for e in entities}
+        assert "beam" not in names
+        assert "wall" not in names
+        assert "foundation" not in names
+        assert "column" not in names
+
+    def test_extract_construction_systems_accepts_structural_contexts(self):
+        """Test that genuine construction contexts still extract ambiguous systems"""
+        text = "The structural beam carried load across the roof assembly and foundation wall."
+
+        entities = extract_entities(text, "construction_science")
+
+        names = {e["entity_name"].lower() for e in entities}
+        assert "beam" in names
+        assert "wall" in names
+        assert "foundation" in names
+        assert any(e["entity_type"] == "system" for e in entities)
+
     def test_extract_construction_environments(self):
         """Test extraction of environmental exposures"""
         text = "The material was exposed to temperature, humidity, and moisture."

@@ -14,18 +14,24 @@ def parse_feed(url: str, raise_on_error: bool = False, timeout: int = 20):
             raise ValueError("url must be a non-empty string")
         return {}
     try:
-        response = requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT})
-        parsed = feedparser.parse(response.content)
-        if isinstance(parsed, dict):
-            parsed.setdefault('status', response.status_code)
-        else:
-            setattr(parsed, 'status', getattr(parsed, 'status', response.status_code))
-        return parsed
+        response = requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT}, verify=True)
     except Exception:
         if raise_on_error:
             raise
-        # Return empty dict on error (matches test expectation)
         return {}
+
+    try:
+        parsed = feedparser.parse(response.content)
+    except Exception:
+        if raise_on_error:
+            raise
+        return {}
+
+    if isinstance(parsed, dict):
+        parsed.setdefault('status', response.status_code)
+    else:
+        setattr(parsed, 'status', getattr(parsed, 'status', response.status_code))
+    return parsed
 
 def extract_pdf_links(entry: Dict) -> List[str]:
     """Extract PDF links from a feed entry"""
@@ -41,9 +47,7 @@ def extract_pdf_links(entry: Dict) -> List[str]:
     for link in entry.get('links', []):
         href = link.get('href', '')
         if href:
-            found_list = PDF_LINK_REGEX.findall(href)
-            if found_list:
-                pdf_links.extend(found_list)
+            pdf_links.extend(PDF_LINK_REGEX.findall(href))
     return list(dict.fromkeys(pdf_links))
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None, timeout: int = 20) -> Dict:
@@ -134,6 +138,6 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None, 
         return {'success': False, 'error': str(e)}
 
 
-def test_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
+def test_feed(url: str, name: str, check_keywords: Optional[List[str]] = None, timeout: int = 20) -> Dict:
     """Backward-compatible alias for older scripts."""
-    return probe_feed(url, name, check_keywords=check_keywords)
+    return probe_feed(url, name, check_keywords=check_keywords, timeout=timeout)

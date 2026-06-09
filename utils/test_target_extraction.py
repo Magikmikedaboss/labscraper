@@ -2,7 +2,7 @@ from pathlib import Path
 
 from utils.db_utils import connect_with_foreign_keys
 
-DB_PATH = Path("runs") / "peptide_intel.sqlite"
+DB_PATH = Path("db") / "runs.sqlite"
 
 def main():
     if not DB_PATH.exists():

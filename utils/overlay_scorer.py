@@ -197,6 +197,9 @@ class OverlayScorer:
         if not rule:
             return term_lower in text_lower
 
+        if term_lower not in text_lower:
+            return False
+
         if any(phrase in text_lower for phrase in rule["forbidden_any"]):
             return False
 

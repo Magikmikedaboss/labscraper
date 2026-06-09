@@ -115,8 +115,8 @@ def analyze_construction_results():
             print(f"  {stage}: {count} events")
         print()
         
-        # Get biological systems (should be construction systems)
-        print("🏗️  Biological Systems (Construction Context):")
+        # Get construction systems
+        print("🏗️  Construction Systems (Construction Context):")
         cursor.execute('''
         SELECT re.system_context, COUNT(*) as count
         FROM research_events re

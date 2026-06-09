@@ -1,9 +1,10 @@
-"""Organize PDFs into domain/status folders without deleting the originals."""
+"""Organize PDFs into domain/status folders while skipping duplicate content."""
 
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import logging
 import os
 import shutil
@@ -31,11 +32,22 @@ class OrganizedPdf:
     confidence: str
     title: str
     reason: str
+    content_hash: str
+    is_duplicate: bool
+    duplicate_of: str
 
 
 def _safe_label(value: str) -> str:
     cleaned = "".join(char if char.isalnum() or char in {"-", "_"} else "_" for char in value.strip().lower())
     return cleaned or "unknown"
+
+
+def _pdf_sha256(pdf_path: Path, chunk_size: int = 1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with pdf_path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _iter_pdf_paths(input_roots: list[Path], limit: int | None = None) -> list[tuple[Path, Path]]:
@@ -69,24 +81,57 @@ def organize_pdfs(
     action: str = "copy",
 ) -> list[OrganizedPdf]:
     results: list[OrganizedPdf] = []
+    seen_by_hash: dict[str, OrganizedPdf] = {}
     output_root.mkdir(parents=True, exist_ok=True)
 
     for input_root, pdf_path in _iter_pdf_paths(input_roots, limit=limit):
-        try:
-            triage = scan_pdf(pdf_path, first_pages=first_pages, max_chars=max_chars)
-        except (PDFSyntaxError, PDFNotImplementedError, PdfminerException, OSError, ValueError) as exc:
+        content_hash = _pdf_sha256(pdf_path)
+        canonical_row = seen_by_hash.get(content_hash)
+        if canonical_row is None:
+            try:
+                triage = scan_pdf(pdf_path, first_pages=first_pages, max_chars=max_chars)
+            except (PDFSyntaxError, PDFNotImplementedError, PdfminerException, OSError, ValueError) as exc:
+                triage = TriagedSource(
+                    file_path=str(pdf_path),
+                    title=pdf_path.stem,
+                    detected_domain="unknown",
+                    keep_skip_review="review",
+                    confidence="low",
+                    construction_signals="",
+                    contamination_signals="",
+                    reason=f"failed to scan PDF ({exc.__class__.__name__}) — see logs",
+                )
+            is_duplicate = False
+            duplicate_of = ""
+        else:
             triage = TriagedSource(
                 file_path=str(pdf_path),
-                title=pdf_path.stem,
-                detected_domain="unknown",
-                keep_skip_review="review",
-                confidence="low",
+                title=canonical_row.title,
+                detected_domain=canonical_row.detected_domain,
+                keep_skip_review=canonical_row.keep_skip_review,
+                confidence=canonical_row.confidence,
                 construction_signals="",
                 contamination_signals="",
-                reason=f"failed to scan PDF ({exc.__class__.__name__}) — see logs",
+                reason=canonical_row.reason,
             )
+            is_duplicate = True
+            duplicate_of = str(canonical_row.destination_path)
         destination_path = _destination_path(output_root, input_root, pdf_path, triage)
-        if not dry_run:
+        if not is_duplicate:
+            seen_by_hash[content_hash] = OrganizedPdf(
+                source_path=pdf_path,
+                destination_path=destination_path,
+                detected_domain=triage.detected_domain,
+                keep_skip_review=triage.keep_skip_review,
+                confidence=triage.confidence,
+                title=triage.title,
+                reason=triage.reason,
+                content_hash=content_hash,
+                is_duplicate=False,
+                duplicate_of="",
+            )
+
+        if not dry_run and not is_duplicate:
             destination_path.parent.mkdir(parents=True, exist_ok=True)
             if action == "move":
                 try:
@@ -109,6 +154,9 @@ def organize_pdfs(
                 confidence=triage.confidence,
                 title=triage.title,
                 reason=triage.reason,
+                content_hash=content_hash,
+                is_duplicate=is_duplicate,
+                duplicate_of=duplicate_of,
             )
         )
 
@@ -127,6 +175,9 @@ def write_organization_index(rows: list[OrganizedPdf], output_root: Path) -> Pat
             "confidence",
             "title",
             "reason",
+            "content_hash",
+            "is_duplicate",
+            "duplicate_of",
         ])
         for row in rows:
             writer.writerow([
@@ -137,12 +188,15 @@ def write_organization_index(rows: list[OrganizedPdf], output_root: Path) -> Pat
                 row.confidence,
                 row.title,
                 row.reason,
+                row.content_hash,
+                str(row.is_duplicate).lower(),
+                row.duplicate_of,
             ])
     return index_path
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Organize PDFs into domain and triage folders")
+    parser = argparse.ArgumentParser(description="Organize PDFs into domain and triage folders while skipping duplicates")
     parser.add_argument(
         "--input-root",
         action="append",
@@ -172,7 +226,8 @@ def main() -> int:
 
     index_path = write_organization_index(rows, args.output_root)
     print(f"Wrote organization index: {index_path}")
-    print(f"Processed {len(rows)} PDFs into {args.output_root}")
+    duplicate_count = sum(1 for row in rows if row.is_duplicate)
+    print(f"Processed {len(rows)} PDFs into {args.output_root} ({duplicate_count} duplicates skipped)")
     return 0
 
 

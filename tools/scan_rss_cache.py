@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from itertools import chain
 from pathlib import Path
 import sys
 
@@ -16,6 +17,15 @@ if str(ROOT) not in sys.path:
 from utils.event_classification import FAILURE_PHRASES, DECISION_PHRASES, METHOD_TAGS  # noqa: E402
 from utils.text_utils import chunk_sentences  # noqa: E402
 
+MERGED_SIGNAL_PHRASES = frozenset(
+    phrase.lower()
+    for phrase in chain(
+        *FAILURE_PHRASES.values(),
+        *DECISION_PHRASES.values(),
+        *METHOD_TAGS.values(),
+    )
+)
+
 
 def is_valid_pdf(path: Path) -> bool:
     try:
@@ -25,12 +35,9 @@ def is_valid_pdf(path: Path) -> bool:
         return False
 
 
-def has_signal(sentence_l: str) -> bool:
-    return (
-        any(p in sentence_l for lst in FAILURE_PHRASES.values() for p in lst)
-        or any(p in sentence_l for lst in DECISION_PHRASES.values() for p in lst)
-        or any(p in sentence_l for lst in METHOD_TAGS.values() for p in lst)
-    )
+def has_signal(sentence: str) -> bool:
+    sentence_l = sentence.lower()
+    return any(phrase in sentence_l for phrase in MERGED_SIGNAL_PHRASES)
 
 
 def scan_cache(cache_dir: Path) -> None:
@@ -67,7 +74,7 @@ def scan_cache(cache_dir: Path) -> None:
                     info["chars"] += len(text)
                     sentences = chunk_sentences(text)
                     info["sentences"] += len(sentences)
-                    info["signals"] += sum(1 for sentence in sentences if has_signal(sentence.lower()))
+                    info["signals"] += sum(1 for sentence in sentences if has_signal(sentence))
         except (OSError, IOError, PDFSyntaxError) as exc:
             info["error"] = f"{type(exc).__name__}: {exc}"
 

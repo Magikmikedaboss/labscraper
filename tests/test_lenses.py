@@ -339,6 +339,13 @@ class TestClimateLens:
         assert event is not None
         assert event.outcome == "negative"
 
+    def test_positive_outcome_ignores_no_inside_knowledge(self):
+        from lenses.construction_climate_v1 import detect
+        sentence = "The knowledge model reduced flood risk for the coastal wall."
+        event, _ = detect(sentence)
+        assert event is not None
+        assert event.outcome == "positive"
+
     def test_irrelevant_sentence_returns_none(self):
         from lenses.construction_climate_v1 import detect
         event, entities = detect("The shareholders voted for the dividend increase.")

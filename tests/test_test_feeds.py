@@ -1,7 +1,6 @@
 import pytest
 import json
 from utils.validators import validate_feed_config, validate_file_path, ValidationError
-import os
 from utils.feed_utils import probe_feed
 
 # Test for tools/test_feeds.py coverage (lines 40–57, 51–55, 92–93, 95)

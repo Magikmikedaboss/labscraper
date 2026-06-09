@@ -240,6 +240,8 @@ def collect_documents(
         normalized_path_prefix = f"/{normalized_path_prefix}"
     if normalized_path_prefix == "/":
         normalized_path_prefix = None
+    if normalized_path_prefix:
+        normalized_path_prefix = normalized_path_prefix.rstrip("/") + "/"
 
     collected: list[CollectedDocument] = []
     seen_urls: set[str] = set()
@@ -280,7 +282,7 @@ def collect_documents(
             if same_domain_only and not _is_same_domain(start_url, candidate_url):
                 continue
             if normalized_path_prefix:
-                candidate_path = (urlparse(candidate_url).path or "")
+                candidate_path = (urlparse(candidate_url).path or "").rstrip("/") + "/"
                 if not candidate_path.startswith(normalized_path_prefix):
                     continue
             queue.append((candidate_url, depth + 1))

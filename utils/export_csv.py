@@ -41,13 +41,13 @@ def export_candidates_domain_aware(domain_id: str = None):
                 entities_data = []
             else:
                 # canonical_name is currently just entity_name; if normalization/aliasing is added, update here
-                entities_data = cur.execute("""
+                entities_data = cur.execute(f"""
                     SELECT 
                         MIN(e.entity_id) as entity_id,
                         e.entity_type,
                         e.entity_name as canonical_name,
                         (
-                            SELECT GROUP_CONCAT(v.entity_variant, '|||')
+                            SELECT GROUP_CONCAT(v.entity_variant, '{ENTITY_VARIANT_DELIM}')
                             FROM (
                                 SELECT DISTINCT e2.entity_variant AS entity_variant
                                 FROM entities e2

@@ -63,6 +63,111 @@ CONSTRUCTION_SYSTEMS = {
     "insulation system", "partition", "rafter", "stud", "joist", "lintel",
 }
 
+CONSTRUCTION_SYSTEM_CONTEXT_RULES = {
+    "beam": {
+        "required_any": (
+            "structural",
+            "load",
+            "load-bearing",
+            "load bearing",
+            "building",
+            "roof",
+            "column",
+            "slab",
+            "truss",
+            "girder",
+            "frame",
+            "span",
+            "bridge",
+            "construction",
+        ),
+        "forbidden_any": (
+            "laser beam",
+            "probe beam",
+            "electron beam",
+            "atomic beam",
+            "optical beam",
+            "light beam",
+            "beam splitter",
+            "beamline",
+        ),
+    },
+    "wall": {
+        "required_any": (
+            "building",
+            "building envelope",
+            "envelope",
+            "assembly",
+            "fire",
+            "sound",
+            "insulation",
+            "roof",
+            "structural",
+            "shear wall",
+            "retaining wall",
+            "masonry wall",
+            "partition",
+            "exterior wall",
+            "interior wall",
+        ),
+        "forbidden_any": (
+            "cell wall",
+            "domain wall",
+            "magnetic domain wall",
+        ),
+    },
+    "foundation": {
+        "required_any": (
+            "slab",
+            "soil",
+            "settlement",
+            "footing",
+            "basement",
+            "building",
+            "structural",
+            "pile",
+            "retaining",
+            "foundation wall",
+        ),
+        "forbidden_any": (
+            "foundation model",
+            "ai model",
+            "machine learning",
+            "language model",
+            "deep learning",
+            "llm",
+        ),
+    },
+    "column": {
+        "required_any": (
+            "structural",
+            "load",
+            "load-bearing",
+            "load bearing",
+            "building",
+            "beam",
+            "slab",
+            "foundation",
+            "girder",
+            "frame",
+            "support",
+            "bridge",
+            "construction",
+            "steel",
+            "concrete",
+        ),
+        "forbidden_any": (
+            "column indices",
+            "data column",
+            "database column",
+            "hplc column",
+            "chromatography column",
+            "bubble column reactor",
+            "table column",
+        ),
+    },
+}
+
 CONSTRUCTION_FAILURE_MODES = {
     "crack", "cracking", "shear failure", "buckling", "fatigue", "delamination",
     "fracture", "rupture", "collapse", "spalling", "yielding", "debonding",
@@ -125,6 +230,21 @@ TARGET_CONTEXT_TERMS = (
 def _has_target_context(sentence: str) -> bool:
     sentence_l = sentence.lower()
     return any(term in sentence_l for term in TARGET_CONTEXT_TERMS)
+
+
+def _is_construction_system_contextually_allowed(item: str, sentence: str) -> bool:
+    rule = CONSTRUCTION_SYSTEM_CONTEXT_RULES.get(item.lower())
+    if rule is None:
+        return True
+
+    sentence_l = sentence.lower()
+    if not any(phrase in sentence_l for phrase in rule["required_any"]):
+        return False
+
+    if any(phrase in sentence_l for phrase in rule["forbidden_any"]):
+        return False
+
+    return True
 
 
 # ---------------------------------------------------------
@@ -299,7 +419,9 @@ def extract_construction_entities(sentence: str, extracted_names: set, SEEDS_DIR
             if phrase_match or (len(tokens) > 1 and len(item_l) > 4 and token_matches):
                 # Allow generic terms if a specific failure was found in the sentence
                 allow_generic = has_generic and has_failure_context
-                if item in generic_skip and not allow_generic:
+                if item_l in generic_skip and not allow_generic:
+                    continue
+                if item_l in CONSTRUCTION_SYSTEM_CONTEXT_RULES and not _is_construction_system_contextually_allowed(item, sentence):
                     continue
                 name = item.upper()
                 norm = normalize_name(name)
