@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import sqlite3
-
 from utils.db_utils import connect_with_foreign_keys
 
 DB_PATH = Path("db") / "runs.sqlite"
