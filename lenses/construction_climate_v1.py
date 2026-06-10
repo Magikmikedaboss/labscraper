@@ -4,14 +4,8 @@ from __future__ import annotations
 import re
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits, has_construction_context
+    LensEvent, RouteDecision, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits, has_construction_context
 )
-
-
-class RouteDecision:
-    def __init__(self, decision: str, reason: str) -> None:
-        self.decision = decision
-        self.reason = reason
 
 HAZARDS = [
     "flood", "storm surge", "sea-level rise", "sea level rise",
@@ -88,6 +82,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     resil = list_hits(s_l, RESILIENCE_TERMS)
     construction_context = has_construction_context(s_l)
 
+    # Climate lens requires construction context first, then hazard/resilience terms.
     if not haz and not resil:
         return None, []
 

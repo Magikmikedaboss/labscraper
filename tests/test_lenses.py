@@ -280,6 +280,91 @@ class TestMaterialsLens:
 
 
 # ---------------------------------------------------------------------------
+# construction_insurance_risk_v1
+# ---------------------------------------------------------------------------
+
+class TestInsuranceRiskLens:
+    @pytest.mark.parametrize(
+        "sentence, expected_event_type, expected_outcome",
+        [
+            (
+                "Hail damage to asphalt shingles increased roof replacement claims after the storm.",
+                "claim_driver",
+                "negative",
+            ),
+            (
+                "Water intrusion behind stucco caused mold growth and interior wall damage.",
+                "claim_driver",
+                "negative",
+            ),
+            (
+                "Installing impact-resistant roofing reduced expected wind and hail losses.",
+                "risk_mitigation",
+                "positive",
+            ),
+            (
+                "The policy excluded flood damage below the elevated foundation.",
+                "claim_driver",
+                "negative",
+            ),
+        ],
+    )
+    def test_insurance_risk_sentence_triggers_detection(self, sentence, expected_event_type, expected_outcome):
+        from lenses.construction_insurance_risk_v1 import detect
+
+        event, entities = detect(sentence)
+
+        _assert_event(event)
+        _assert_entities(entities)
+        assert event.event_type == expected_event_type
+        assert event.outcome == expected_outcome
+        assert event.lens == "insurance_risk"
+
+    @pytest.mark.parametrize(
+        "sentence",
+        [
+            "Stem cells showed improved survival after oxidative stress.",
+            "The laser beam was focused through a glass lens.",
+            "The foundation model was trained on clinical datasets.",
+        ],
+    )
+    def test_irrelevant_sentences_do_not_fire(self, sentence):
+        from lenses.construction_insurance_risk_v1 import detect
+
+        event, entities = detect(sentence)
+
+        assert event is None
+        assert entities == []
+
+    def test_insurance_risk_is_registered_in_multi_lens(self):
+        from lenses import detect_multi_lens
+
+        sentence = "Hail damage to asphalt shingles increased roof replacement claims after the storm."
+        results = detect_multi_lens(sentence, enabled_lenses=["insurance_risk"])
+
+        assert len(results) == 1
+        assert results[0]["lens"] == "insurance_risk"
+        assert results[0]["event_type"] == "claim_driver"
+        assert results[0]["outcome"] == "negative"
+
+    @pytest.mark.parametrize(
+        "sentence",
+        [
+            "collapse of photon field",
+            "wind and solar are intermittent",
+            "pain mitigation",
+        ],
+    )
+    def test_false_positive_sentences_do_not_fire(self, sentence):
+        from lenses.construction_insurance_risk_v1 import detect
+
+        event, entities = detect(sentence)
+
+        assert event is None
+        assert entities == []
+
+
+# ---------------------------------------------------------------------------
 # construction_building_physics_v1
 # ---------------------------------------------------------------------------
 

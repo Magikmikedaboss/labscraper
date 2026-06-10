@@ -26,6 +26,7 @@ def detect(
     entities: List[dict] = []
     if route_decision is None:
         route_decision = route_construction_sentence(s_l)
+    # Compliance is routed by construction relevance plus standards/code tokens, not by a separate has_construction_context gate.
     if route_decision.decision == "skip":
         return None, []
 

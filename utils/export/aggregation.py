@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 SCORE_SCALE_FACTOR = 2  # SCORE_SCALE_FACTOR is set to 2 so each event adds roughly 2 scoring points, which keeps score growth sensitive without overreacting to noise.
 MIN_SCORE_THRESHOLD = 10  # MIN_SCORE_THRESHOLD is set to 10 to avoid very low max scores for rare entities and to compress low-frequency buckets less aggressively.
+CONSTRUCTION_SCIENCE_DOMAIN = "construction_science"
 
 RowLike = Mapping[str, Any]
 RowSeq = Sequence[RowLike]
-SQLITE_ERROR = getattr(sqlite3, "Error", Exception)
 
 
 class OverlayScorerProtocol(Protocol):
@@ -31,31 +31,40 @@ class OverlayScorerProtocol(Protocol):
         ...
 
 
-def _select_research_event_stage_column(cur: sqlite3.Cursor) -> str:
-    columns = {
-        row[1]
-        for row in cur.execute("PRAGMA table_info(research_events)").fetchall()
-    }
-    if "stage" in columns:
-        return "stage"
-    if "study_stage" in columns:
-        return "study_stage"
-    return "NULL"
-
-
 def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowSeq]:
     try:
         with sqlite3.connect(db_path) as con:
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            stage_column = _select_research_event_stage_column(cur)
-            events = cur.execute(
-                f"""
-                SELECT event_id, event_type, {stage_column} AS stage, confidence, evidence_snippet,
-                       source_id, doc_id, chunk_id, page_number, created_at
-                FROM research_events
-                """
-            ).fetchall()
+            columns = {
+                row[1]
+                for row in cur.execute("PRAGMA table_info(research_events)").fetchall()
+            }
+
+            if "stage" in columns:
+                events = cur.execute(
+                    """
+                    SELECT event_id, event_type, stage AS stage, confidence, evidence_snippet,
+                           source_id, doc_id, chunk_id, page_number, created_at
+                    FROM research_events
+                    """
+                ).fetchall()
+            elif "study_stage" in columns:
+                events = cur.execute(
+                    """
+                    SELECT event_id, event_type, study_stage AS stage, confidence, evidence_snippet,
+                           source_id, doc_id, chunk_id, page_number, created_at
+                    FROM research_events
+                    """
+                ).fetchall()
+            else:
+                events = cur.execute(
+                    """
+                    SELECT event_id, event_type, NULL AS stage, confidence, evidence_snippet,
+                           source_id, doc_id, chunk_id, page_number, created_at
+                    FROM research_events
+                    """
+                ).fetchall()
             entities = cur.execute(
                 """
                 SELECT entity_id, entity_type, entity_name, entity_variant, organism, created_at
@@ -73,7 +82,7 @@ def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowS
                 WHERE e.entity_type = 'model'
                 """
             ).fetchall()
-    except SQLITE_ERROR as e:
+    except sqlite3.Error as e:
         logger.error("Failed loading events/entities from %s: %s", db_path, e)
         raise
 
@@ -150,7 +159,14 @@ def build_entity_scores(
     entity_models_map,
     event_overlay_scores,
     scorer,
+    domain_id: str | None = None,
 ):
+    allowed_values = {None, CONSTRUCTION_SCIENCE_DOMAIN}
+    if domain_id not in allowed_values:
+        raise ValueError(
+            f"Invalid domain_id {domain_id!r}; expected one of {sorted(value for value in allowed_values if value is not None)!r}"
+        )
+
     entity_scores = {}
 
     for entity in entities:
@@ -187,9 +203,12 @@ def build_entity_scores(
                 entity_models=models_list,
             )
 
-            # Scale max_score by event count, cap extreme values, and enforce a minimum threshold for rare entities.
+            # Scale max_score by event count and cap extreme values.
             capped_score = min(len(event_ids) * SCORE_SCALE_FACTOR, 10000)
-            max_score = max(capped_score, MIN_SCORE_THRESHOLD)
+            if domain_id == CONSTRUCTION_SCIENCE_DOMAIN:
+                max_score = capped_score
+            else:
+                max_score = max(capped_score, MIN_SCORE_THRESHOLD)
             bucket = scorer.bucket_score(final_score, max_score)
 
             entity_scores[entity_id][overlay_id] = {

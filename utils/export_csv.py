@@ -47,7 +47,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                         e.entity_type,
                         e.entity_name as canonical_name,
                         (
-                            SELECT GROUP_CONCAT(v.entity_variant, '|||')
+                            SELECT GROUP_CONCAT(v.entity_variant, ?)
                             FROM (
                                 SELECT DISTINCT e2.entity_variant AS entity_variant
                                 FROM entities e2
@@ -68,7 +68,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                     WHERE re.research_domain = ?
                     GROUP BY e.entity_type, e.entity_name
                     ORDER BY event_count DESC
-                """, (domain_id, domain_id)).fetchall()
+                """, (ENTITY_VARIANT_DELIM, domain_id, domain_id)).fetchall()
         else:
             entities_data = cur.execute("""
                 SELECT 

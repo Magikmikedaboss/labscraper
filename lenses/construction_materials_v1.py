@@ -3,14 +3,8 @@ from __future__ import annotations
 
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, RouteDecision, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
-
-
-class RouteDecision:
-    def __init__(self, decision: str, reason: str) -> None:
-        self.decision = decision
-        self.reason = reason
 
 MATERIALS = [
     "concrete", "reinforced concrete", "cement", "fly ash", "slag", "silica fume",
@@ -49,6 +43,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     props = list_hits(s_l, PROPERTIES)
 
 
+    # Materials is a signal-led lens: material/property/test markers are enough, and it does not require construction-context gating.
     # Signal is true when: (1) material and property co-occur, (2) a property is quantified via
     # has_unit_signal(s_l) or has_number(s_l), or (3) TEST_MARKERS co-occur with either a material or
     # a property via contains_any(s_l, TEST_MARKERS) to catch test/assay-style lines.

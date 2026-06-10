@@ -4,14 +4,8 @@ from __future__ import annotations
 import re
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, RouteDecision, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
-
-
-class RouteDecision:
-    def __init__(self, decision: str, reason: str) -> None:
-        self.decision = decision
-        self.reason = reason
 
 ASSEMBLIES = [
     "envelope", "wall", "roof", "attic", "basement", "slab", "window", "glazing",
@@ -42,6 +36,7 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     asm = list_hits(s_l, ASSEMBLIES)
     terms = list_hits(s_l, PHYSICS_TERMS)
 
+    # Building physics is signal-led: physics terms are sufficient, and no separate construction-context gate is applied here.
     if not terms:
         return None, []
 

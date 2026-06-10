@@ -280,7 +280,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
             try:
                 content_hash = _sha256_file(pdf_path)
                 source_id = content_hash
-                with pdfplumber.open(str(pdf_path)) as pdf:
+                with pdfplumber.open(pdf_path) as pdf:
                     metadata = extract_metadata(pdf_path, pdf)
                     metadata.setdefault("domain", research_domain)
                     metadata.setdefault("publication_date", metadata.get("year"))

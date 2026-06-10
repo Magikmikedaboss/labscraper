@@ -166,7 +166,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
             events_count = 0
             seen_events = set()
 
-            with pdfplumber.open(str(pdf_path)) as pdf:
+            with pdfplumber.open(pdf_path) as pdf:
                 metadata = extract_metadata(pdf_path, pdf)
                 metadata.setdefault("domain", domain)
                 metadata.setdefault("publication_date", metadata.get("year"))

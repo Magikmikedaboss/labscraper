@@ -1,0 +1,16 @@
+pdf_name,page_number,event_type,outcome,confidence,context_strength,entity_count,entities,sentence
+1e6e5e855ba8ede7ce7206aefe648c26.pdf,3,property_loss_event,negative,med,weak,1,loss_cause:collapse,"interactionbetweenthephotonfieldandthematterfield photons[52, 53, 55], phenomena such as the collapse and"
+34444b25e66fd1189b4ff2101056ae6352ab55760bd9fe763d86bce8e3a7abdf.pdf,1,property_loss_event,negative,med,weak,1,loss_cause:fire,WILDLAND FIRE EMBERS AND FLAMES:
+34444b25e66fd1189b4ff2101056ae6352ab55760bd9fe763d86bce8e3a7abdf.pdf,2,risk_mitigation,neutral,med,moderate,2,insurance_term:mitigation; mitigation:mitigation,Wildfire Mitigation Issues in Brief..............................................................................................................................................................................
+34444b25e66fd1189b4ff2101056ae6352ab55760bd9fe763d86bce8e3a7abdf.pdf,3,property_loss_event,negative,med,weak,1,loss_cause:fire,Wildland Fire Embers and Flames: Home Mitigations That Matter discusses available literature on the
+34444b25e66fd1189b4ff2101056ae6352ab55760bd9fe763d86bce8e3a7abdf.pdf,3,risk_mitigation,neutral,high,moderate,3,loss_cause:fire; building_system:roof; mitigation:fire resistant,to ember accumulation and eventual ignition if the roof is not fire resistant.
+34444b25e66fd1189b4ff2101056ae6352ab55760bd9fe763d86bce8e3a7abdf.pdf,3,property_loss_event,negative,med,weak,1,loss_cause:wind,"Winds carry debris and embers during wildfires, which settle near homes as the wind"
+34444b25e66fd1189b4ff2101056ae6352ab55760bd9fe763d86bce8e3a7abdf.pdf,3,property_loss_event,negative,med,weak,1,loss_cause:fire,Combustible fences provide a path of fuel for fire to reach a home.
+34444b25e66fd1189b4ff2101056ae6352ab55760bd9fe763d86bce8e3a7abdf.pdf,3,property_loss_event,negative,med,weak,1,loss_cause:fire,Installing a noncombustible fence inside Zone 0 breaks the path of fire to a
+82786849a63aacf9054a5a9564a484d0.pdf,1,property_loss_event,negative,med,weak,1,loss_cause:wind,"and cost-effective, as many clean energy sources, such as wind and solar, are intermittent and require"
+651d057955a5c730db38440bf8070a4c.pdf,2,property_loss_event,negative,med,weak,1,loss_cause:wind,5 (cid:9) Wind/Vent (cid:9) 1982 (cid:9) $ 5.00
+aac3aec00f8da1de7266658589af34b9.pdf,2,property_loss_event,negative,med,weak,1,loss_cause:collapse,with the field scale at which multidomain states collapse in
+b7b5a50c645e645e06496b3396b23ad4b9cfc3929475825723055a396d2dc78b.pdf,3,risk_mitigation,neutral,med,moderate,2,insurance_term:mitigation; mitigation:mitigation,and identified promising candidate targets for pain mitigation (7).
+buildin_physics_heat_air_leseprobe.pdf,1,property_loss_event,negative,med,weak,1,loss_cause:wind,mains such as heat and mass transfer building acoustics mation has been added on wind pressure and the evalua-
+buildin_physics_heat_air_leseprobe.pdf,1,property_loss_event,negative,med,weak,1,loss_cause:fire,"building engineering practice and, in some countries fire safety."
+building-physics.pdf,1,property_loss_event,negative,med,weak,1,loss_cause:fire,"of fire safety engineering, a growing field of activities"

@@ -40,7 +40,14 @@ def test_audit_domains_reports_current_domain_and_lens_layout():
     }
 
     construction = next(entry for entry in report.domains if entry.domain_id == "construction_science")
-    assert set(construction.construction_lenses) == {"building_physics", "climate", "compliance", "failure", "materials"}
+    assert set(construction.construction_lenses) == {
+        "building_physics",
+        "climate",
+        "compliance",
+        "failure",
+        "insurance_risk",
+        "materials",
+    }
     assert construction.preferred_types_not_allowed == []
     assert construction.biomedical_leakage == []
     assert report.issues == []

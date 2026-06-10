@@ -20,6 +20,8 @@ from .construction_climate_v1 import detect as detect_climate
 from .construction_climate_v1 import route_climate_sentence
 from .construction_compliance_v1 import detect as detect_compliance
 from .construction_failure_v1 import detect as detect_failure
+from . import construction_insurance_risk_v1
+from .construction_insurance_risk_v1 import route_insurance_risk_sentence
 from .construction_materials_v1 import detect as detect_materials
 from .construction_materials_v1 import route_materials_sentence
 from utils.domain_router import route_construction_sentence
@@ -45,6 +47,7 @@ LENS_REGISTRY: Dict[str, LensDetector] = {
     "climate": detect_climate,
     "compliance": detect_compliance,
     "failure": detect_failure,
+    "insurance_risk": construction_insurance_risk_v1.detect,
     "materials": detect_materials,
 }
 
@@ -52,6 +55,7 @@ DEFAULT_CONSTRUCTION_LENS_NAMES = frozenset(LENS_REGISTRY.keys())
 DEFAULT_CONSTRUCTION_LENS_ROUTERS = {
     "building_physics": route_building_physics_sentence,
     "climate": route_climate_sentence,
+    "insurance_risk": route_insurance_risk_sentence,
     "materials": route_materials_sentence,
     "compliance": route_construction_sentence,
     "failure": route_construction_sentence,
@@ -142,6 +146,7 @@ def _detect_multi_lens_internal(
     sentence_route = None
     route_decisions = {}
     if selected_default_lenses:
+        # The shared router only gates lenses that need construction framing; signal-led lenses run their own checks.
         if any(name in {"compliance", "failure"} for name in selected_default_lenses):
             sentence_route = route_construction_sentence(sentence)
         for name in selected_default_lenses:

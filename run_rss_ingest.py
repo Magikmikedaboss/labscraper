@@ -512,7 +512,7 @@ def process_pdf(
                 metadata["doi"] = doi_match.group(0).rstrip(".,;:")
         source_id = upsert_source(con, initial_source_id, str(pdf_path), metadata)
 
-        with pdfplumber.open(str(pdf_path)) as pdf:
+        with pdfplumber.open(pdf_path) as pdf:
             try:
                 doc_id = insert_document(con, source_id, str(pdf_path), file_hash)
                 doc_row = con.execute("SELECT source_id FROM documents WHERE doc_id = ? LIMIT 1", (doc_id,)).fetchone()

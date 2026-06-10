@@ -15,7 +15,7 @@ def main():
     
     for pdf_path in pdfs:
         try:
-            with pdfplumber.open(str(pdf_path)) as pdf:
+            with pdfplumber.open(pdf_path) as pdf:
                 full_text = ""
                 for page in pdf.pages:
                     text = page.extract_text() or ""

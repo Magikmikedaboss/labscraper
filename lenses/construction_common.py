@@ -52,6 +52,12 @@ SOURCE_WEIGHTS = {
     "code_standard": 1.0,
 }
 
+
+@dataclass
+class RouteDecision:
+    decision: str
+    reason: str
+
 STRONG_RESULT_TERMS = [
     "improved", "enhanced", "higher", "reduced", "lower", "decreased",
     "failed", "collapse", "non-compliant", "complies", "meets", "worsened", "exacerbated"

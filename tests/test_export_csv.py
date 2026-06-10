@@ -55,7 +55,7 @@ def test_export_candidates_domain_aware_smoke(monkeypatch, tmp_path):
     assert mock_cursor.execute.call_args_list[0].args[0] == "SELECT COUNT(*) FROM research_events WHERE research_domain = ?"
     assert mock_cursor.execute.call_args_list[0].args[1] == ("test_domain",)
     assert "FROM entities e" in mock_cursor.execute.call_args_list[1].args[0]
-    assert mock_cursor.execute.call_args_list[1].args[1] == ("test_domain", "test_domain")
+    assert mock_cursor.execute.call_args_list[1].args[1] == ("|||", "test_domain", "test_domain")
 
     csv_output = writes.getvalue()
     rows = list(csv.reader(io.StringIO(csv_output)))

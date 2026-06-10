@@ -1,0 +1,67 @@
+======================================================================
+DUAL-LENS ANALYSIS REPORT
+======================================================================
+
+Domain: Construction Science & Engineering
+Overlays: construction_research_v1, science_research_v1
+Total Events: 29
+Total Entities: 15
+
+======================================================================
+TOP 20 ENTITIES - CONSTRUCTION_RESEARCH_V1
+======================================================================
+
+ 1. beam                           (system      ) Score:  11.74 [relevant       ] Events:  11
+ 2. wall                           (system      ) Score:   5.00 [relevant       ] Events:   5
+ 3. fiber                          (material    ) Score:   4.50 [major          ] Events:   3
+ 4. composite                      (material    ) Score:   4.50 [major          ] Events:   3
+ 5. bending                        (test_method ) Score:   3.00 [major          ] Events:   2
+ 6. glass                          (material    ) Score:   1.50 [major          ] Events:   1
+ 7. stiffness                      (test_method ) Score:   1.50 [major          ] Events:   1
+ 8. insulation                     (material    ) Score:   1.50 [major          ] Events:   1
+ 9. lattice collapse               (failure_mode) Score:   1.50 [major          ] Events:   1
+10. collapse                       (failure_mode) Score:   1.50 [major          ] Events:   1
+11. instability                    (failure_mode) Score:   1.50 [major          ] Events:   1
+12. thermal analysis               (test_method ) Score:   1.50 [major          ] Events:   1
+13. window                         (system      ) Score:   1.00 [relevant       ] Events:   1
+14. yielding                       (failure_mode) Score:   1.00 [relevant       ] Events:   1
+15. impact                         (hazard      ) Score:   1.00 [relevant       ] Events:   1
+
+======================================================================
+TOP 20 ENTITIES - SCIENCE_RESEARCH_V1
+======================================================================
+
+ 1. beam                           (system      ) Score:  11.00 [relevant       ] Events:  11
+ 2. wall                           (system      ) Score:   5.60 [relevant       ] Events:   5
+ 3. fiber                          (material    ) Score:   3.00 [relevant       ] Events:   3
+ 4. composite                      (material    ) Score:   3.00 [relevant       ] Events:   3
+ 5. bending                        (test_method ) Score:   2.00 [relevant       ] Events:   2
+ 6. glass                          (material    ) Score:   1.00 [relevant       ] Events:   1
+ 7. insulation                     (material    ) Score:   1.00 [relevant       ] Events:   1
+ 8. lattice collapse               (failure_mode) Score:   1.00 [relevant       ] Events:   1
+ 9. collapse                       (failure_mode) Score:   1.00 [relevant       ] Events:   1
+10. instability                    (failure_mode) Score:   1.00 [relevant       ] Events:   1
+11. window                         (system      ) Score:   1.00 [relevant       ] Events:   1
+12. thermal analysis               (test_method ) Score:   1.00 [relevant       ] Events:   1
+13. yielding                       (failure_mode) Score:   1.00 [relevant       ] Events:   1
+14. impact                         (hazard      ) Score:   1.00 [relevant       ] Events:   1
+15. stiffness                      (test_method ) Score:  -2.00 [noise          ] Events:   1
+
+======================================================================
+BUCKET DISTRIBUTION
+======================================================================
+
+construction_research_v1:
+  critical       :    0 (  0.0%)
+  major          :   10 ( 66.7%)
+  relevant       :    5 ( 33.3%)
+  minor          :    0 (  0.0%)
+  noise          :    0 (  0.0%)
+
+science_research_v1:
+  critical       :    0 (  0.0%)
+  major          :    0 (  0.0%)
+  relevant       :   14 ( 93.3%)
+  minor          :    0 (  0.0%)
+  noise          :    1 (  6.7%)
+

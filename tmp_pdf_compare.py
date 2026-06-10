@@ -5,7 +5,9 @@ import re
 from pathlib import Path
 from difflib import SequenceMatcher
 
+from pdfminer.pdfexceptions import PDFException
 from pdfminer.pdfparser import PDFSyntaxError
+from pdfminer.psexceptions import PSSyntaxError
 import pdfplumber
 
 DEFAULT_PDF_PATHS = [
@@ -37,7 +39,7 @@ def main() -> int:
     records = []
     for path in pdf_paths:
         try:
-            with pdfplumber.open(str(path)) as pdf:
+            with pdfplumber.open(path) as pdf:
                 meta = pdf.metadata or {}
                 texts = []
                 for page in pdf.pages:
@@ -56,13 +58,13 @@ def main() -> int:
                         "sentences": sentences,
                     }
                 )
-        except (FileNotFoundError, OSError, PDFSyntaxError, Exception) as exc:
+        except (FileNotFoundError, OSError, PDFSyntaxError, PSSyntaxError, PDFException) as exc:
             records.append({"name": path.name, "error": str(exc)})
             print(f"ERROR {path.name}: {exc}")
             continue
 
     if len(records) != 2 or any("error" in record for record in records):
-        return 0
+        return 1
 
     left, right = records
     text_similarity = SequenceMatcher(None, left["normalized_text"], right["normalized_text"]).ratio()

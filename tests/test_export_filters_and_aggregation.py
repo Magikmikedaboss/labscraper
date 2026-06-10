@@ -1,12 +1,15 @@
 import json
 
 from utils.export.aggregation import (
+    CONSTRUCTION_SCIENCE_DOMAIN,
+    MIN_SCORE_THRESHOLD,
     build_entity_event_map,
     build_entity_models_map,
     build_entity_scores,
     build_event_models,
     build_event_overlay_scores,
     load_events_and_entities,
+    SCORE_SCALE_FACTOR,
 )
 from utils.export.filters import (
     DEFAULT_KNOWN_PEPTIDES,
@@ -174,11 +177,31 @@ def test_build_entity_scores_uses_construction_bucket_config():
             "evt-4": {"overlay_a": 1.0},
         },
         scorer=scorer,
-        domain_id="construction_science",
+        domain_id=CONSTRUCTION_SCIENCE_DOMAIN,
     )
 
     assert scores["ent-1"]["overlay_a"]["score"] == 4.0
-    assert scorer.last_max_score == 8
+    assert scorer.last_max_score == 4 * SCORE_SCALE_FACTOR == 8
+    assert scorer.last_max_score < MIN_SCORE_THRESHOLD
+
+
+def test_build_entity_scores_rejects_invalid_domain_id():
+    scorer = DummyScorer()
+
+    try:
+        build_entity_scores(
+            entities=[{"entity_id": "ent-1", "entity_name": "ENTITY", "entity_type": "compound"}],
+            overlay_ids=["overlay_a"],
+            entity_events={"ent-1": ["evt-1"]},
+            entity_models_map={"ent-1": set()},
+            event_overlay_scores={"evt-1": {"overlay_a": 1.0}},
+            scorer=scorer,
+            domain_id="construction_science_typo",
+        )
+    except ValueError as exc:
+        assert "Invalid domain_id" in str(exc)
+    else:
+        raise AssertionError("build_entity_scores should reject invalid domain_id values")
 
 
 def test_load_events_and_entities_supports_study_stage_schema(tmp_path):

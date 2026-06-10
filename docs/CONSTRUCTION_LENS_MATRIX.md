@@ -8,6 +8,7 @@ This matrix summarizes the current construction-science lens stack.
 | Climate | Flood, wind, wildfire, freeze-thaw, humidity, resilience, adaptation | `climate_resilience` | `hazard`, `resilience_term`, `material`, `system` | What climate hazards are mentioned? Is the structure being framed as resilient, exposed, or at risk? | `event_type`, `outcome`, `raw_outcome`, `confidence`, `context_strength`, `source_weight`, `tags`, `lens` | "Concrete facades improved resilience against freeze-thaw cycles and wind-driven rain." |
 | Compliance | Codes, standards, pass/fail language, compliance claims | `code_compliance` | `code_standard` | Does the text describe code compliance, a pass/fail result, or a standards reference? | `event_type`, `outcome`, `raw_outcome`, `confidence`, `context_strength`, `source_weight`, `tags`, `lens` | "The assembly complies with ASTM E84 and meets IECC requirements." |
 | Failure | Cracking, corrosion, collapse, water intrusion, causal failure language | `failure_analysis` | `failure_mode`, `failure_driver` | What failed, why did it fail, and what mechanisms or drivers are named? | `event_type`, `outcome`, `raw_outcome`, `confidence`, `context_strength`, `source_weight`, `tags`, `lens` | "The slab exhibited cracking due to chloride ingress and corrosion of the reinforcement." |
+| Insurance Risk | Claims, policy terms, loss causes, mitigation, building-system damage | `insurance_risk` | `loss_cause`, `building_system`, `insurance_term`, `mitigation` | What loss driver, policy issue, or mitigation strategy is being described? | `event_type`, `outcome`, `raw_outcome`, `confidence`, `context_strength`, `source_weight`, `tags`, `lens` | "Hail damage to asphalt shingles increased roof replacement claims after the storm." |
 | Materials | Concrete, steel, timber, insulation, durability, strength, material properties | `material_performance` | `material`, `property` | Which material or property is being measured, and is the result improved or degraded? | `event_type`, `outcome`, `raw_outcome`, `confidence`, `context_strength`, `source_weight`, `tags`, `lens` | "High-strength concrete showed increased compressive strength and better durability after curing." |
 
 ## Shared Scoring Fields
@@ -26,5 +27,5 @@ All construction lenses feed the same downstream event structure:
 ## Notes
 
 - The construction stack is now isolated from `biohacking_longevity`.
-- The construction domain uses the five lenses above only.
+- The construction domain uses the six lenses above only.
 - These lenses are designed to surface construction-science signals, not biomedical scoring.

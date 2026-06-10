@@ -1,0 +1,22 @@
+pdfs_scanned=116
+pdfs_with_hits=8
+pdfs_without_hits=108
+total_hits=15
+
+HITS BY EVENT TYPE
+property_loss_event: 12
+risk_mitigation: 3
+
+TOP PDFs
+   7 hits |   3/34  text/pages | 34444b25e66fd1189b4ff2101056ae6352ab55760bd9fe763d86bce8e3a7abdf.pdf
+   2 hits |   3/34  text/pages | buildin_physics_heat_air_leseprobe.pdf
+   1 hits |   3/356 text/pages | 651d057955a5c730db38440bf8070a4c.pdf
+   1 hits |   3/31  text/pages | 82786849a63aacf9054a5a9564a484d0.pdf
+   1 hits |   3/28  text/pages | building-physics.pdf
+   1 hits |   3/25  text/pages | b7b5a50c645e645e06496b3396b23ad4b9cfc3929475825723055a396d2dc78b.pdf
+   1 hits |   3/12  text/pages | 1e6e5e855ba8ede7ce7206aefe648c26.pdf
+   1 hits |   3/6   text/pages | aac3aec00f8da1de7266658589af34b9.pdf
+
+OUTPUT FILES
+c:\projects\labscraper\tmp\insurance_lens_report\insurance_lens_cache_hits.csv
+c:\projects\labscraper\tmp\insurance_lens_report\insurance_lens_cache_summary.txt
