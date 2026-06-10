@@ -146,6 +146,7 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
         entity_models_map=entity_models_map,
         event_overlay_scores=event_overlay_scores,
         scorer=scorer,
+        domain_id=domain_id,
     )
     print(f"   ✅ Calculated scores for {len(canonical_entities)} entities")
 

@@ -27,6 +27,7 @@ class DummyScorer:
         return sum(event_scores_list) + model_bonus
 
     def bucket_score(self, score, max_score):
+        self.last_max_score = max_score
         return "strong" if score >= max_score else "exploratory"
 
 
@@ -156,6 +157,28 @@ def test_build_event_map_models_and_scores_are_defensive():
 
     assert "ent-canonical" in scores
     assert "overlay_a" in scores["ent-canonical"]
+
+
+def test_build_entity_scores_uses_construction_bucket_config():
+    scorer = DummyScorer()
+
+    scores = build_entity_scores(
+        entities=[{"entity_id": "ent-1", "entity_name": "ENTITY", "entity_type": "compound"}],
+        overlay_ids=["overlay_a"],
+        entity_events={"ent-1": ["evt-1", "evt-2", "evt-3", "evt-4"]},
+        entity_models_map={"ent-1": set()},
+        event_overlay_scores={
+            "evt-1": {"overlay_a": 1.0},
+            "evt-2": {"overlay_a": 1.0},
+            "evt-3": {"overlay_a": 1.0},
+            "evt-4": {"overlay_a": 1.0},
+        },
+        scorer=scorer,
+        domain_id="construction_science",
+    )
+
+    assert scores["ent-1"]["overlay_a"]["score"] == 4.0
+    assert scorer.last_max_score == 8
 
 
 def test_load_events_and_entities_supports_study_stage_schema(tmp_path):
