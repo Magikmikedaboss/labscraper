@@ -2,25 +2,36 @@
 from __future__ import annotations
 
 import re
-from typing import List, Tuple, Optional
+from typing import Any, List, Tuple, Optional
 from .construction_common import (
     LensEvent, build_lens_event, contains_any, has_number, has_unit_signal, make_entity, dedupe_entities
 )
+from utils.domain_router import route_construction_sentence
 
 # Recognize common standards bodies + some explicit patterns
-STD_TOKENS = ["astm", "aci", "asce", "ibc", "iecc", "ashrae", "iso", "eurocode"]
+STD_TOKENS = ["astm", "aci", "asce", "ibc", "irc", "iecc", "ashrae", "nfpa", "ul", "icc", "iso", "eurocode"]
+CODE_PHRASES = ["building code", "code compliance", "code requirement", "code provisions", "code standard"]
+STD_TOKEN_PATTERN = re.compile(r"\b(?:" + "|".join(STD_TOKENS) + r")\b")
 PASS_PHRASES = ["meets", "complies", "complied with", "in accordance with", "conforms", "satisfies"]
 FAIL_PHRASES = [
     "non-compliant", "noncompliant", "does not meet", "did not comply", "fails to meet", "violation",
     "does not comply", "doesn't comply", "doesn't meet"
 ]
-def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
+def detect(
+    sentence: str,
+    source_type: str = "research_paper",
+    route_decision: Any | None = None,
+) -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
+    if route_decision is None:
+        route_decision = route_construction_sentence(s_l)
+    if route_decision.decision == "skip":
+        return None, []
 
     std_match = re.search(r"\b(astm\s*[a-z]?\s*\d+|aci\s*\d+|asce\s*\d+|iso\s*\d+|eurocode\s*\d+|ibc\s*\d+|iecc\s*\d+|ashrae\s*[\d.]+)\b", s_l)
-    has_std = any(tok in s_l for tok in STD_TOKENS) or bool(std_match)
-    has_comp = contains_any(s_l, PASS_PHRASES) or contains_any(s_l, FAIL_PHRASES) or "requirement" in s_l or "standard" in s_l
+    has_std = bool(STD_TOKEN_PATTERN.search(s_l)) or bool(std_match)
+    has_comp = contains_any(s_l, PASS_PHRASES) or contains_any(s_l, FAIL_PHRASES) or contains_any(s_l, CODE_PHRASES)
 
     if not has_std and not has_comp:
         return None, []
@@ -29,8 +40,6 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     if std_match:
         std_name = std_match.group(1).upper()
         entities.append(make_entity("code_standard", std_name, "standard", "standard"))
-    elif has_std:
-        entities.append(make_entity("code_standard", "STANDARD", "standard", "standard"))
 
     outcome = "neutral"
     has_pass = contains_any(s_l, PASS_PHRASES)

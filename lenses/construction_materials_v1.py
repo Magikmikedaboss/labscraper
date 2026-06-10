@@ -6,6 +6,12 @@ from .construction_common import (
     LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
 
+
+class RouteDecision:
+    def __init__(self, decision: str, reason: str) -> None:
+        self.decision = decision
+        self.reason = reason
+
 MATERIALS = [
     "concrete", "reinforced concrete", "cement", "fly ash", "slag", "silica fume",
     "steel", "structural steel", "stainless steel",
@@ -25,6 +31,15 @@ POSITIVE_COMPARATORS = ["increased", "improved", "higher", "enhanced"]
 NEGATIVE_COMPARATORS = ["decreased", "reduced", "lower", "degraded"]
 COMPARATORS = POSITIVE_COMPARATORS + NEGATIVE_COMPARATORS
 TEST_MARKERS = ["test", "tested", "measured", "results", "specimen", "samples"]
+
+
+def route_materials_sentence(sentence: str) -> RouteDecision:
+    s_l = sentence.lower()
+    mats = list_hits(s_l, MATERIALS)
+    props = list_hits(s_l, PROPERTIES)
+    if mats or props or contains_any(s_l, TEST_MARKERS):
+        return RouteDecision("keep", "materials signal present")
+    return RouteDecision("skip", "no materials signal present")
 
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()

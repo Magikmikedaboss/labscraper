@@ -21,6 +21,7 @@ def test_init_test_db_creates_database(tmp_path):
 
     assert "sources" in tables
     assert "documents" in tables
+    assert "research_events" in tables
 
 
 def test_init_test_db_rejects_canonical_db(tmp_path):

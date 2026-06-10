@@ -62,6 +62,14 @@ MODERATE_CONTEXT_TERMS = [
     "due to", "caused by", "resulted from", "requirements", "standard", "specimens"
 ]
 
+CONSTRUCTION_CONTEXT_TERMS = [
+    "building", "construction", "building envelope", "wall", "roof", "foundation",
+    "slab", "basement", "attic", "crawlspace", "facade", "façade", "cladding",
+    "insulation", "air barrier", "vapor barrier", "concrete", "steel", "masonry",
+    "timber", "wood", "beam", "column", "window", "door", "hvac", "plumbing",
+    "electrical", "mechanical", "drainage", "structural", "structures"
+]
+
 """Generic placeholders filtered from extracted entities after lowercase normalization.
 
 These terms are broad analytical words (for example, 'result', 'method', 'study')
@@ -84,6 +92,10 @@ def has_number(s_l: str) -> bool:
 
 def contains_any(s_l: str, phrases: List[str]) -> bool:
     return any(p in s_l for p in phrases)
+
+
+def has_construction_context(s_l: str) -> bool:
+    return bool(list_hits(s_l, CONSTRUCTION_CONTEXT_TERMS))
 
 
 def wordhit(s_l: str, phrase: str) -> bool:

@@ -273,16 +273,15 @@ def _looks_like_climate_table_row(sentence_l: str, source_title_l: str) -> bool:
 
 
 def _classify_construction_event(sentence_l: str) -> str | None:
-    sentence = sentence_l
-    if any(term in sentence for term in ("climate zone", "climate load", "degree days", "heating degree days", "cooling degree days", "climate normals")):
-        if _has_climate_building_context(sentence):
+    if any(term in sentence_l for term in ("climate zone", "climate load", "degree days", "heating degree days", "cooling degree days", "climate normals", "snow load", "wind load", "rain load")):
+        if _has_climate_building_context(sentence_l):
             return "climate_load"
-    if not _has_construction_context(sentence):
+    if not _has_construction_context(sentence_l):
         return None
     for event_type, primary_terms, context_terms in CONSTRUCTION_EVENT_PATTERNS:
-        if not any(term in sentence for term in primary_terms):
+        if not any(term in sentence_l for term in primary_terms):
             continue
-        if any(term in sentence for term in context_terms):
+        if any(term in sentence_l for term in context_terms):
             return event_type
     return None
 
@@ -344,14 +343,12 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                                 continue
                             if resolved_domain == "construction_science" and _looks_like_climate_table_row(sent_l, source_title_l):
                                 continue
-                            ents = extract_entities(sent, domain=resolved_domain, SEEDS_DIR=SEEDS_DIR)
-                            measurements = extract_quantitative_data(sent)
                             if resolved_domain == "construction_science":
                                 event_type = _classify_construction_event(sent_l)
                                 if not event_type:
                                     continue
-                                if event_type == "climate_load" and not _has_climate_building_context(sent_l):
-                                    continue
+                                ents = extract_entities(sent, domain=resolved_domain, SEEDS_DIR=SEEDS_DIR)
+                                measurements = extract_quantitative_data(sent)
                                 ents = [
                                     ent for ent in ents
                                     if ent.get("entity_name", "").strip().lower() not in ENTITY_NAME_BLACKLIST
@@ -363,6 +360,8 @@ def main(input_dir="input/pdfs", db_path="db.sqlite", domain: str | None = None)
                                 if not ents:
                                     continue
                             else:
+                                ents = extract_entities(sent, domain=resolved_domain, SEEDS_DIR=SEEDS_DIR)
+                                measurements = extract_quantitative_data(sent)
                                 if not ents:
                                     continue
                                 method_tags = detect_method_tags(sent_l)

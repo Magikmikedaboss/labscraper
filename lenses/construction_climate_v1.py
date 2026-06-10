@@ -4,8 +4,14 @@ from __future__ import annotations
 import re
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits, has_construction_context
 )
+
+
+class RouteDecision:
+    def __init__(self, decision: str, reason: str) -> None:
+        self.decision = decision
+        self.reason = reason
 
 HAZARDS = [
     "flood", "storm surge", "sea-level rise", "sea level rise",
@@ -35,6 +41,13 @@ NEGATION_PATTERNS = tuple(
     re.compile(rf"\b{re.escape(token)}\b") if " " not in token else re.compile(re.escape(token))
     for token in NEGATION_TOKENS
 )
+
+
+def route_climate_sentence(sentence: str) -> RouteDecision:
+    s_l = sentence.lower()
+    if has_construction_context(s_l) and (list_hits(s_l, HAZARDS) or list_hits(s_l, RESILIENCE_TERMS)):
+        return RouteDecision("keep", "climate signal in construction context")
+    return RouteDecision("skip", "no climate signal in construction context")
 
 
 def _has_non_negated_signal(text_lower: str, phrases: list[str]) -> bool:
@@ -73,8 +86,12 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     # Use word-boundary matching for hazards and resilience terms
     haz = list_hits(s_l, HAZARDS)
     resil = list_hits(s_l, RESILIENCE_TERMS)
+    construction_context = has_construction_context(s_l)
 
     if not haz and not resil:
+        return None, []
+
+    if not construction_context:
         return None, []
 
     for h in haz[:6]:

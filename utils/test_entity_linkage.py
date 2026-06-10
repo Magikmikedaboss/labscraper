@@ -1,6 +1,7 @@
 
-import sqlite3
 from pathlib import Path
+
+from utils.db_utils import connect_with_foreign_keys
 
 DB_PATH = Path("db") / "runs.sqlite"
 
@@ -16,7 +17,7 @@ def main():
     print("\n1. Checking for duplicate entity names...")
     print("-" * 60)
 
-    with sqlite3.connect(DB_PATH) as con:
+    with connect_with_foreign_keys(DB_PATH) as con:
         cur = con.cursor()
 
         cur.execute("""

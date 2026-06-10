@@ -15,10 +15,14 @@ import logging
 from typing import Iterable, List, Optional, Protocol, Tuple, Dict, Union
 from .construction_common import LensEvent
 from .construction_building_physics_v1 import detect as detect_building_physics
+from .construction_building_physics_v1 import route_building_physics_sentence
 from .construction_climate_v1 import detect as detect_climate
+from .construction_climate_v1 import route_climate_sentence
 from .construction_compliance_v1 import detect as detect_compliance
 from .construction_failure_v1 import detect as detect_failure
 from .construction_materials_v1 import detect as detect_materials
+from .construction_materials_v1 import route_materials_sentence
+from utils.domain_router import route_construction_sentence
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +46,15 @@ LENS_REGISTRY: Dict[str, LensDetector] = {
     "compliance": detect_compliance,
     "failure": detect_failure,
     "materials": detect_materials,
+}
+
+DEFAULT_CONSTRUCTION_LENS_NAMES = frozenset(LENS_REGISTRY.keys())
+DEFAULT_CONSTRUCTION_LENS_ROUTERS = {
+    "building_physics": route_building_physics_sentence,
+    "climate": route_climate_sentence,
+    "materials": route_materials_sentence,
+    "compliance": route_construction_sentence,
+    "failure": route_construction_sentence,
 }
 
 
@@ -108,6 +121,8 @@ def _detect_multi_lens_internal(
     context_rank: Optional[Dict[str, int]] = None,
 ) -> Union[List[dict], Tuple[List[dict], Dict[str, str]]]:
     results: List[dict] = []
+    detector_errors = {}
+
     if isinstance(enabled_lenses, str):
         selected_lenses = [enabled_lenses]
     elif enabled_lenses is not None:
@@ -123,11 +138,33 @@ def _detect_multi_lens_internal(
     if invalid_lenses:
         raise ValueError(f"Invalid lens name(s): {invalid_lenses}. Valid options: {list(LENS_REGISTRY.keys())}")
 
-    detector_errors = {}
+    selected_default_lenses = [name for name in selected_lenses if name in DEFAULT_CONSTRUCTION_LENS_NAMES]
+    sentence_route = None
+    route_decisions = {}
+    if selected_default_lenses:
+        if any(name in {"compliance", "failure"} for name in selected_default_lenses):
+            sentence_route = route_construction_sentence(sentence)
+        for name in selected_default_lenses:
+            if name in {"compliance", "failure"}:
+                route_decisions[name] = sentence_route
+            else:
+                route_decisions[name] = DEFAULT_CONSTRUCTION_LENS_ROUTERS[name](sentence)
+        if all(route_decisions[name].decision == "skip" for name in selected_default_lenses):
+            if raise_on_no_match:
+                raise RuntimeError("No detector produced results (no match)")
+            if warn_on_no_match:
+                logger.warning("No detectors matched and no errors reported.")
+            else:
+                logger.debug("No detectors matched and no errors reported.")
+            return ([], detector_errors) if return_errors else []
+
     for lens_name in selected_lenses:
         detector = LENS_REGISTRY[lens_name]
         try:
-            event, entities = detector(sentence, source_type=source_type)
+            if lens_name in {"compliance", "failure"} and selected_default_lenses:
+                event, entities = detector(sentence, source_type=source_type, route_decision=route_decisions[lens_name])
+            else:
+                event, entities = detector(sentence, source_type=source_type)
         except Exception:
             tb = traceback.format_exc()
             logger.error("Exception in detector '%s':\n%s", lens_name, tb)

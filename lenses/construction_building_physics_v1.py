@@ -7,6 +7,12 @@ from .construction_common import (
     LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
 
+
+class RouteDecision:
+    def __init__(self, decision: str, reason: str) -> None:
+        self.decision = decision
+        self.reason = reason
+
 ASSEMBLIES = [
     "envelope", "wall", "roof", "attic", "basement", "slab", "window", "glazing",
     "facade", "cladding", "insulation", "air barrier", "vapor barrier", "duct", "hvac"
@@ -21,6 +27,13 @@ PHYSICS_TERMS = [
 ]
 
 ENERGY_WORD_WINDOW = 7
+
+
+def route_building_physics_sentence(sentence: str) -> RouteDecision:
+    s_l = sentence.lower()
+    if list_hits(s_l, PHYSICS_TERMS):
+        return RouteDecision("keep", "building physics terms present")
+    return RouteDecision("skip", "no building physics terms present")
 
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()

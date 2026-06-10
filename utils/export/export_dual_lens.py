@@ -195,6 +195,7 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
         filtered_entities=filtered_entities,
         entity_scores=entity_scores,
         entity_events=entity_events,
+        domain_id=domain_id,
     )
     print(f"   ✅ Report: {report_file}")
 

@@ -19,8 +19,6 @@ for node in version_module.body:
                         version_namespace["__version__"] = node.value.value
                     else:
                         raise ValueError("__version__ must be assigned a literal string")
-                elif isinstance(node.value, ast.Str):
-                    version_namespace["__version__"] = node.value.s
                 else:
                     raise ValueError("__version__ must be assigned a literal string")
                 break

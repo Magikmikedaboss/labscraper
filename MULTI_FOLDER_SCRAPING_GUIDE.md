@@ -2,7 +2,10 @@
 
 ## What's Happening Now
 
-We're scraping **two folders** into **one combined database**:
+We're scraping **two folders** into **one combined database**.
+
+This guide targets the legacy/phase-1 scraper entrypoint. The parallel scraper lives in `utils/scrape_pdfs_parallel.py`, and it defaults to `input_pdfs/` unless you override `--input-dir`. The other canonical paths in `utils/run_engine.py`, `utils/scrape_pdfs_phase1_full.py`, and `utils/source_triage.py` expect `input/pdfs/`, so keep the folder naming consistent or create an `input_pdfs/` symlink that points at `input/pdfs/`.
+Example: `ln -s input/pdfs input_pdfs`.
 
 ### Folder 1: `input/pdfs/` In Progress
 - **65 PDFs** (stem cell, peptide, longevity research)
@@ -36,6 +39,8 @@ python utils/scrape_pdfs_phase1.py \
   --output-db output/combined_biohacking_all.sqlite
 ```
 
+This step targets the phase-1 scraper entrypoint and expects `input/pdfs/`.
+
 **What it does:**
 - Reads 65 PDFs from `input/pdfs/`
 - Extracts research events (efficacy, toxicity, decisions, etc.)
@@ -49,6 +54,8 @@ python utils/scrape_pdfs_phase1.py \
   --input-dir input/pdfs/biohacking \
   --output-db output/combined_biohacking_all.sqlite
 ```
+
+This also targets the phase-1 scraper entrypoint. If you use the parallel scraper instead, point it at the same folder layout with `--input-dir input/pdfs` or a matching `input_pdfs/` symlink.
 
 **What it does:**
 - Reads PDFs from `input/pdfs/biohacking/`

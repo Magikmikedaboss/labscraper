@@ -3,10 +3,12 @@ from types import SimpleNamespace
 import sqlite3
 
 import pytest
-from unittest.mock import patch
+from requests.exceptions import HTTPError
+from unittest.mock import Mock, patch
 
-from run_rss_ingest import get_pdf_links_from_feed, process_feed_entry, _process_pdf_urls
+from run_rss_ingest import download_pdf, get_pdf_links_from_feed, process_feed_entry, _process_pdf_urls
 from run_rss_ingest import process_html_document
+from utils.domain_router import route_construction_source
 from utils.db_init import init_db_schema
 from utils.source_triage import TriagedSource
 
@@ -38,6 +40,30 @@ class TestGetPdfLinksFromFeed:
         assert mock_get.call_count == 2
         assert mock_sleep.call_count == 1
         assert mock_sleep.call_args.args[0] == pytest.approx(0.9)
+
+
+class TestDownloadPdf:
+    @patch("run_rss_ingest.requests.get")
+    def test_download_pdf_logs_and_skips_on_403(
+        self,
+        mock_get,
+        tmp_path,
+        caplog,
+    ):
+        def make_http_error(status_code: int) -> HTTPError:
+            error = HTTPError(f"{status_code} error")
+            error.response = SimpleNamespace(status_code=status_code)
+            return error
+
+        first_response = SimpleNamespace(raise_for_status=Mock(side_effect=make_http_error(403)))
+        ranged_response = SimpleNamespace(raise_for_status=Mock(side_effect=make_http_error(403)))
+        mock_get.side_effect = [first_response, ranged_response]
+
+        with caplog.at_level("WARNING"):
+            result = download_pdf("https://www.fema.gov/example.pdf", tmp_path)
+
+        assert result is None
+        assert any("HTTP 403" in message for message in caplog.messages)
 
 
 class TestHybridFeedEntryProcessing:
@@ -179,6 +205,26 @@ class TestHybridFeedEntryProcessing:
         mock_process_pdf.assert_not_called()
         mock_process_html_document.assert_not_called()
 
+    @patch("run_rss_ingest.find_abstract_links")
+    @patch("run_rss_ingest.get_pdf_links_from_entry")
+    def test_router_skips_obvious_biomedical_entry_before_pdf_discovery(
+        self,
+        mock_get_pdf_links_from_entry,
+        mock_find_abstract_links,
+    ):
+        entry = {
+            "title": "Stem cell organoid assay paper",
+            "summary": "biomedical protein and peptide study",
+            "link": "https://example.com/article",
+        }
+
+        result = process_feed_entry(entry, domain="construction_science", db_path=Path("db/test.sqlite"))
+
+        assert result["source_routed"] == "skip"
+        assert result["pdf_processed"] == 0
+        mock_get_pdf_links_from_entry.assert_not_called()
+        mock_find_abstract_links.assert_not_called()
+
 
 def test_process_html_document_writes_rows(tmp_path):
     db_path = tmp_path / "db" / "runs.sqlite"
@@ -227,3 +273,24 @@ def test_process_pdf_urls_handles_direct_pdf_lists(monkeypatch, tmp_path):
     assert result["pdf_links"] == 2
     assert result["pdf_processed"] == 2
     assert result["pdf_events"] == 4
+
+
+def test_route_construction_source_skips_biomedical_text():
+    route = route_construction_source(
+        title="Stem cell organoid assay paper",
+        text="protein peptide cell culture study",
+        url="https://example.com/paper",
+    )
+
+    assert route.decision == "skip"
+    assert route.contamination_score >= 2
+
+
+def test_route_construction_source_keeps_construction_text():
+    route = route_construction_source(
+        title="Moisture and wall assembly durability",
+        text="construction science corporation building envelope insulation roof assembly",
+        url="https://example.com/paper",
+    )
+
+    assert route.decision == "keep"

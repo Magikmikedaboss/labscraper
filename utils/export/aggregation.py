@@ -11,6 +11,7 @@ MIN_SCORE_THRESHOLD = 10  # MIN_SCORE_THRESHOLD is set to 10 to avoid very low m
 
 RowLike = Mapping[str, Any]
 RowSeq = Sequence[RowLike]
+SQLITE_ERROR = getattr(sqlite3, "Error", Exception)
 
 
 class OverlayScorerProtocol(Protocol):
@@ -30,15 +31,27 @@ class OverlayScorerProtocol(Protocol):
         ...
 
 
+def _select_research_event_stage_column(cur: sqlite3.Cursor) -> str:
+    columns = {
+        row[1]
+        for row in cur.execute("PRAGMA table_info(research_events)").fetchall()
+    }
+    if "stage" in columns:
+        return "stage"
+    if "study_stage" in columns:
+        return "study_stage"
+    return "NULL"
+
+
 def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowSeq]:
     try:
         with sqlite3.connect(db_path) as con:
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-
+            stage_column = _select_research_event_stage_column(cur)
             events = cur.execute(
-                """
-                SELECT event_id, event_type, stage, confidence, evidence_snippet,
+                f"""
+                SELECT event_id, event_type, {stage_column} AS stage, confidence, evidence_snippet,
                        source_id, doc_id, chunk_id, page_number, created_at
                 FROM research_events
                 """
@@ -60,7 +73,7 @@ def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowS
                 WHERE e.entity_type = 'model'
                 """
             ).fetchall()
-    except sqlite3.Error as e:
+    except SQLITE_ERROR as e:
         logger.error("Failed loading events/entities from %s: %s", db_path, e)
         raise
 

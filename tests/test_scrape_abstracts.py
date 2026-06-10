@@ -65,4 +65,5 @@ def test_main_logs_entry_failure_and_continues(monkeypatch, tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert "HYBRID PROCESSING COMPLETE" in captured.out
+    assert "message" in logged
     assert "Failed processing feed entry 'entry-1' from https://example.com/feed.xml" in logged["message"]

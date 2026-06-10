@@ -1,10 +1,11 @@
 # lenses/construction_failure_v1.py
 from __future__ import annotations
 
-from typing import List, Tuple, Optional
+from typing import Any, List, Tuple, Optional
 from .construction_common import (
     LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
+from utils.domain_router import route_construction_sentence
 
 FAILURE_MODES = [
     "cracking", "spalling", "buckling", "fatigue", "corrosion", "delamination",
@@ -21,9 +22,17 @@ CAUSAL_MARKERS = ["due to", "caused by", "attributed to", "resulted from", "led 
 
 HIGH_SIGNAL = ["failure", "failed", "collapse", "fracture", "investigation", "forensic", "root cause"]
 
-def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
+def detect(
+    sentence: str,
+    source_type: str = "research_paper",
+    route_decision: Any | None = None,
+) -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
+    if route_decision is None:
+        route_decision = route_construction_sentence(s_l)
+    if route_decision.decision == "skip":
+        return None, []
 
     mode_hits = list_hits(s_l, FAILURE_MODES)
     driver_hits = list_hits(s_l, FAILURE_DRIVERS)

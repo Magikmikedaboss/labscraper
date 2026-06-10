@@ -1,0 +1,32 @@
+[
+  {
+    "lens": "building_physics",
+    "pdf_hits": 32,
+    "sentence_hits": 2111,
+    "csv_path": "exports\\lens_cache_exports\\building_physics_cache_results.csv"
+  },
+  {
+    "lens": "climate",
+    "pdf_hits": 14,
+    "sentence_hits": 116,
+    "csv_path": "exports\\lens_cache_exports\\climate_cache_results.csv"
+  },
+  {
+    "lens": "compliance",
+    "pdf_hits": 13,
+    "sentence_hits": 37,
+    "csv_path": "exports\\lens_cache_exports\\compliance_cache_results.csv"
+  },
+  {
+    "lens": "failure",
+    "pdf_hits": 17,
+    "sentence_hits": 39,
+    "csv_path": "exports\\lens_cache_exports\\failure_cache_results.csv"
+  },
+  {
+    "lens": "materials",
+    "pdf_hits": 32,
+    "sentence_hits": 194,
+    "csv_path": "exports\\lens_cache_exports\\materials_cache_results.csv"
+  }
+]

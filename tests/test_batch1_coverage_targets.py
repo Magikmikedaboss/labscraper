@@ -201,3 +201,52 @@ def test_build_canonical_entities_filters_fragment_like_names(
     assert len(canonical_entities) == 1
     assert canonical_entities[0]["entity_name"] == "structural collapse"
     assert mapping == {"x3": "target:structural collapse"}
+
+
+def test_build_canonical_entities_skips_punctuation_only_names(
+    fake_get_entity_role: Callable[..., Any],
+    fake_should_skip: Callable[..., Any],
+) -> None:
+    entities = [
+        {"entity_id": "x1", "entity_type": "target", "entity_name": "]"},
+        {"entity_id": "x2", "entity_type": "target", "entity_name": "!!!"},
+    ]
+
+    canonical_entities, mapping = build_canonical_entities(
+        entities,
+        domain_id="drug_discovery",
+        norm_map={},
+        overlay_aliases={},
+        normalize_entity=lambda entity, norm_map, overlay_aliases: {**entity, "entity_name": entity["entity_name"].strip()},
+        get_entity_role=fake_get_entity_role,
+        should_skip_entity=fake_should_skip,
+    )
+
+    assert canonical_entities == []
+    assert mapping == {}
+
+
+def test_build_canonical_entities_skips_construction_model_noise(
+    fake_normalize_entity,
+    fake_get_entity_role: Callable[..., Any],
+    fake_should_skip: Callable[..., Any],
+) -> None:
+    entities = [
+        {"entity_id": "m1", "entity_type": "model", "entity_name": "human"},
+        {"entity_id": "m2", "entity_type": "model", "entity_name": "mouse"},
+        {"entity_id": "m3", "entity_type": "model", "entity_name": "building model"},
+    ]
+
+    canonical_entities, mapping = build_canonical_entities(
+        entities,
+        domain_id="construction_science",
+        norm_map={},
+        overlay_aliases={},
+        normalize_entity=fake_normalize_entity,
+        get_entity_role=fake_get_entity_role,
+        should_skip_entity=fake_should_skip,
+    )
+
+    assert len(canonical_entities) == 1
+    assert canonical_entities[0]["entity_name"] == "building model"
+    assert mapping == {"m3": "model:building model"}

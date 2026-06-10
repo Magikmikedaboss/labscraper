@@ -212,9 +212,23 @@ class TestFailureLens:
 
     def test_high_signal_words_trigger(self):
         from lenses.construction_failure_v1 import detect
-        sentence = "A forensic investigation identified collapse as the primary failure."
+        sentence = "A forensic investigation identified collapse of the steel beam as the primary failure."
         event, _ = detect(sentence)
         assert event is not None
+
+    def test_beam_only_physics_sentence_returns_none(self):
+        from lenses.construction_failure_v1 import detect
+        sentence = "Probe beam photoelastic effect was measured in the optical setup."
+        event, entities = detect(sentence)
+        assert event is None
+        assert entities == []
+
+    def test_non_construction_chemistry_sentence_returns_none(self):
+        from lenses.construction_failure_v1 import detect
+        sentence = "Surfactant-driven transport processes were analyzed in an interfacial chemistry study."
+        event, entities = detect(sentence)
+        assert event is None
+        assert entities == []
 
 
 # ---------------------------------------------------------------------------
@@ -334,7 +348,7 @@ class TestClimateLens:
 
     def test_negative_outcome_on_exacerbated(self):
         from lenses.construction_climate_v1 import detect
-        sentence = "Flood vulnerability was exacerbated by increased storm surge intensity."
+        sentence = "Flood vulnerability was exacerbated by increased storm surge intensity at the building foundation."
         event, _ = detect(sentence)
         assert event is not None
         assert event.outcome == "negative"
@@ -345,6 +359,13 @@ class TestClimateLens:
         event, _ = detect(sentence)
         assert event is not None
         assert event.outcome == "positive"
+
+    def test_non_construction_resilience_sentence_returns_none(self):
+        from lenses.construction_climate_v1 import detect
+        sentence = "Healthy primary cilia are essential for longevity and cellular resilience."
+        event, entities = detect(sentence)
+        assert event is None
+        assert entities == []
 
     def test_irrelevant_sentence_returns_none(self):
         from lenses.construction_climate_v1 import detect
@@ -381,6 +402,20 @@ class TestComplianceLens:
         _assert_entities(entities)
         assert any(e["entity_type"] == "code_standard" for e in entities)
 
+    def test_non_construction_standard_sentence_returns_none(self):
+        from lenses.construction_compliance_v1 import detect
+        sentence = "Clinical islet isolation procedures followed a standard protocol for cell sorting."
+        event, entities = detect(sentence)
+        assert event is None
+        assert entities == []
+
+    def test_building_code_phrase_triggers(self):
+        from lenses.construction_compliance_v1 import detect
+        sentence = "The building code requires a minimum insulation level of R-30."
+        event, entities = detect(sentence)
+        _assert_event(event)
+        assert event.event_type == "code_compliance"
+
     def test_pass_outcome(self):
         from lenses.construction_compliance_v1 import detect
         sentence = "The wall assembly meets the IECC 2021 thermal requirements."
@@ -395,11 +430,11 @@ class TestComplianceLens:
         assert event is not None
         assert event.outcome == "negative"
 
-    def test_standard_keyword_alone_triggers(self):
+    def test_standard_keyword_alone_does_not_trigger(self):
         from lenses.construction_compliance_v1 import detect
         sentence = "The energy standard requires a minimum insulation level of R-30."
         event, _ = detect(sentence)
-        assert event is not None
+        assert event is None
 
     def test_irrelevant_sentence_returns_none(self):
         from lenses.construction_compliance_v1 import detect
@@ -409,6 +444,15 @@ class TestComplianceLens:
 
 
 class TestMultiLensStacking:
+
+    def test_building_physics_selected_lens_runs_without_construction_context(self):
+        from lenses import detect_multi_lens
+
+        sentence = "Thermal conductivity and dew point were measured in the material study."
+        results = detect_multi_lens(sentence, enabled_lenses=["building_physics"])
+
+        assert len(results) == 1
+        assert results[0]["lens"] == "building_physics"
 
     def test_one_sentence_can_trigger_multiple_lenses(self):
         from lenses import detect_multi_lens

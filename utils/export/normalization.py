@@ -70,6 +70,22 @@ DOMAIN_TYPE_MAPPINGS = {
     }
 }
 
+CONSTRUCTION_MODEL_NOISE = {
+    "human",
+    "humans",
+    "mouse",
+    "mice",
+    "rat",
+    "rats",
+    "animal",
+    "animals",
+    "rodent",
+    "rodents",
+    "hela",
+    "hek293",
+    "hek-293",
+}
+
 def normalize_entity_type(name: str, entity_type: str, domain_id: str) -> str:
     """Apply type precedence rules before canonical normalization."""
     name_lower = (name or "").lower().strip()
@@ -90,10 +106,19 @@ def _is_fragment_entity_name(canonical_name: str) -> bool:
     if canonical in ENTITY_FRAGMENT_DENYLIST:
         return True
 
+    if not any(ch.isalnum() for ch in canonical):
+        return True
+
     tokens = [token for token in canonical.split() if token]
     if len(tokens) < 2:
         return False
     return tokens[0] in ENTITY_STOP_WORDS or tokens[-1] in ENTITY_STOP_WORDS
+
+
+def _is_construction_model_noise(entity_type: str, canonical_name: str, domain_id: str) -> bool:
+    if domain_id != "construction_science" or entity_type != "model":
+        return False
+    return canonical_name.lower().strip() in CONSTRUCTION_MODEL_NOISE
 
 def build_canonical_entities(
     entities: list,
@@ -150,6 +175,9 @@ def build_canonical_entities(
             {"entity_type": canonical_type, "entity_name": canonical_name},
             norm_map,
         )
+
+        if _is_construction_model_noise(canonical_type, canonical_name, domain_id):
+            continue
 
         if should_skip_entity(canonical_type, canonical_name, role):
             continue

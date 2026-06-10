@@ -6,6 +6,7 @@ from utils.export.aggregation import (
     build_entity_scores,
     build_event_models,
     build_event_overlay_scores,
+    load_events_and_entities,
 )
 from utils.export.filters import (
     DEFAULT_KNOWN_PEPTIDES,
@@ -155,3 +156,57 @@ def test_build_event_map_models_and_scores_are_defensive():
 
     assert "ent-canonical" in scores
     assert "overlay_a" in scores["ent-canonical"]
+
+
+def test_load_events_and_entities_supports_study_stage_schema(tmp_path):
+    db_path = tmp_path / "study_stage.sqlite"
+    import sqlite3
+
+    con = sqlite3.connect(db_path)
+    con.execute(
+        """
+        CREATE TABLE research_events (
+            event_id TEXT PRIMARY KEY,
+            event_type TEXT,
+            study_stage TEXT,
+            confidence TEXT,
+            evidence_snippet TEXT,
+            source_id TEXT,
+            doc_id TEXT,
+            chunk_id TEXT,
+            page_number INTEGER,
+            created_at TEXT
+        )
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE entities (
+            entity_id TEXT PRIMARY KEY,
+            entity_type TEXT,
+            entity_name TEXT,
+            entity_variant TEXT,
+            organism TEXT,
+            created_at TEXT
+        )
+        """
+    )
+    con.execute("CREATE TABLE event_entities (entity_id TEXT, event_id TEXT, role TEXT)")
+    con.execute(
+        "INSERT INTO research_events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("ev1", "failure", "pilot", "high", "snippet", "src1", "doc1", "chunk1", 1, "2026-01-01"),
+    )
+    con.execute(
+        "INSERT INTO entities VALUES (?, ?, ?, ?, ?, ?)",
+        ("ent1", "system", "Wall", "", "", "2026-01-01"),
+    )
+    con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("ent1", "ev1", "primary"))
+    con.commit()
+    con.close()
+
+    events, entities, event_entities, model_rows = load_events_and_entities(str(db_path))
+
+    assert events[0]["stage"] == "pilot"
+    assert entities[0]["entity_name"] == "Wall"
+    assert event_entities[0]["event_id"] == "ev1"
+    assert model_rows == []

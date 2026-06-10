@@ -22,6 +22,7 @@ from pdfminer.pdfparser import PDFSyntaxError
 from pdfplumber.utils.exceptions import PdfminerException
 
 from utils.abstract_collectors import extract_abstract_text_from_url, find_abstract_links
+from utils.domain_router import route_construction_source
 from utils.common import sha256_hex
 from utils.data_extractors import extract_quantitative_data
 from utils.db_init import init_db_schema
@@ -173,6 +174,12 @@ def _process_pdf_urls(
         if dry_run:
             pdf_processed += 1
             continue
+
+        if domain == "construction_science":
+            route = route_construction_source(title=source_title, text=pdf_url, url=pdf_url)
+            if route.decision == "skip":
+                print(f"⚠️ Skipping PDF before download ({route.reason})")
+                continue
 
         pdf = download_pdf(pdf_url, RSS_CACHE_DIR)
         if not pdf:
@@ -389,7 +396,10 @@ def download_pdf(url: str, cache_dir: Path):
     if file_path.exists():
         return file_path
 
-    headers = {"User-Agent": "LabScraper/1.0 (+https://github.com/labscraper/labscraper)"}
+    headers = {
+        "User-Agent": "LabScraper/1.0 (+https://github.com/labscraper/labscraper)",
+        "Accept": "application/pdf,application/octet-stream;q=0.9,*/*;q=0.8",
+    }
     max_attempts = 3
     backoff = 1
 
@@ -412,6 +422,16 @@ def download_pdf(url: str, cache_dir: Path):
                 status_code = int(status_code) if status_code is not None else None
             except (TypeError, ValueError):
                 status_code = None
+            if status_code == 403:
+                logging.warning("HTTP 403 for %s; trying range fallback before skipping", url)
+                try:
+                    ranged_response = requests.get(url, timeout=20, headers={**headers, "Range": "bytes=0-"})
+                    ranged_response.raise_for_status()
+                    file_path.write_bytes(ranged_response.content)
+                    return file_path
+                except Exception as fallback_exc:
+                    logging.error("❌ HTTP 403 for %s; range fallback failed: %s", url, fallback_exc)
+                    return None
             if isinstance(status_code, int) and status_code >= 500 and attempt < max_attempts:
                 logging.warning("Server error %s (attempt %s). Retrying in %ss...", status_code, attempt, backoff)
                 time.sleep(backoff)
@@ -592,6 +612,34 @@ def process_feed_entry(
     construction_keep_manifest_enabled: bool = False,
 ) -> dict[str, int | bool]:
     title = entry.get("title", "Unknown")
+    entry_text = "\n".join(
+        part for part in (
+            str(entry.get("summary", "") or "").strip(),
+            str(entry.get("description", "") or "").strip(),
+            str(entry.get("content", "") or "").strip(),
+        )
+        if part
+    )
+
+    if domain == "construction_science":
+        route = route_construction_source(
+            title=title,
+            text=entry_text,
+            url=str(entry.get("link", "") or ""),
+        )
+        if route.decision == "skip":
+            print(f"⚠️ Skipping feed entry before download ({route.reason})")
+            return {
+                "pdf_links": 0,
+                "pdf_processed": 0,
+                "pdf_events": 0,
+                "abstract_links": 0,
+                "abstract_processed": 0,
+                "abstract_events": 0,
+                "used_abstract_fallback": False,
+                "source_routed": "skip",
+            }
+
     pdf_urls = get_pdf_links_from_entry(entry)
     abstract_links = find_abstract_links(entry)
     triage_rows = source_triage_rows
@@ -653,6 +701,7 @@ def process_feed_entry(
         "abstract_processed": abstract_processed,
         "abstract_events": abstract_events,
         "used_abstract_fallback": bool(abstract_processed),
+        "source_routed": "allow",
     }
 
 
@@ -718,6 +767,12 @@ def main():
                     if args.dry_run:
                         continue
 
+                    if domain == "construction_science":
+                        route = route_construction_source(title=document.title, text=document.text, url=document.url)
+                        if route.decision == "skip":
+                            print(f"   ⚠️ Skipping page before PDF discovery ({route.reason})")
+                            continue
+
                     events = process_html_document(
                         con,
                         document.url,
@@ -734,6 +789,11 @@ def main():
                             continue
                         seen_pdf_urls.add(pdf_url)
                         print(f"      📎 PDF: {pdf_url}")
+                        if domain == "construction_science":
+                            route = route_construction_source(title=document.title, text=document.text, url=pdf_url)
+                            if route.decision == "skip":
+                                print(f"⚠️ Skipping PDF before download ({route.reason})")
+                                continue
                         pdf = download_pdf(pdf_url, RSS_CACHE_DIR)
                         if not pdf:
                             continue
