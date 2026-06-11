@@ -31,6 +31,9 @@ def _default_cache_dir() -> Path:
 
 def _default_manifest_path() -> Path:
     return ROOT / "exports" / "source_triage" / "construction_science_keep.json"
+    
+def _default_gold_corpus_path() -> Path:
+    return ROOT / "config" / "pdf_lists" / "construction_gold.json"
 
 
 def _default_output_dir() -> Path:
@@ -54,6 +57,24 @@ def _normalize_manifest_entries(manifest_path: Path) -> set[str]:
             item_path = ROOT / item_path
         normalized.add(item_path.resolve().as_posix())
     return normalized
+    
+def _load_gold_corpus_paths(corpus_path: Path) -> list[Path]:
+    if not corpus_path.exists():
+        return []
+
+    payload = json.loads(corpus_path.read_text(encoding="utf-8"))
+    pdf_paths = payload.get("pdf_paths", []) if isinstance(payload, dict) else []
+    if not isinstance(pdf_paths, list):
+        return []
+
+    paths: list[Path] = []
+    for item in pdf_paths:
+        item_path = Path(str(item))
+        if not item_path.is_absolute():
+            item_path = ROOT / item_path
+        if item_path.exists() and item_path.suffix.lower() == ".pdf":
+            paths.append(item_path)
+    return paths
 
 
 def _select_lens_order() -> list[str]:
@@ -74,6 +95,7 @@ def _triage_priority(row) -> tuple[int, int, int, int, int, str]:
 def _collect_candidate_pdfs(
     cache_dir: Path,
     manifest_entries: set[str],
+    gold_corpus_paths: list[Path],
     limit: int,
     triage_limit: int | None,
 ) -> list[Path]:
@@ -88,6 +110,16 @@ def _collect_candidate_pdfs(
     review_dir = ROOT / "cache" / "rss_organized" / "construction_science" / "review"
     if review_dir.exists():
         for pdf_path in sorted(review_dir.rglob("*.pdf")):
+            resolved = pdf_path.resolve().as_posix()
+            if resolved in seen:
+                continue
+            keep_files.append(pdf_path)
+            seen.add(resolved)
+            if len(keep_files) >= limit:
+                return keep_files[:limit]
+    
+    if len(keep_files) < limit:
+        for pdf_path in gold_corpus_paths:
             resolved = pdf_path.resolve().as_posix()
             if resolved in seen:
                 continue
@@ -237,6 +269,12 @@ def main(argv: list[str] | None = None) -> int:
         default=_default_manifest_path(),
         help="Construction keep manifest used to seed the evaluation set",
     )
+    parser.add_argument(
+        "--gold-corpus",
+        type=Path,
+        default=_default_gold_corpus_path(),
+        help="Construction gold corpus used to seed the evaluation set",
+    )
     parser.add_argument("--output-dir", type=Path, default=_default_output_dir(), help="Folder for evaluation outputs")
     parser.add_argument("--limit", type=int, default=25, help="Number of PDFs to evaluate")
     parser.add_argument(
@@ -261,9 +299,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     manifest_entries = _normalize_manifest_entries(args.manifest)
+    gold_corpus_paths = _load_gold_corpus_paths(args.gold_corpus)
     pdf_paths = _collect_candidate_pdfs(
         args.cache_dir,
         manifest_entries,
+        gold_corpus_paths,
         args.limit,
         args.triage_limit,
     )
@@ -275,12 +315,18 @@ def main(argv: list[str] | None = None) -> int:
     total_hits = sum(row["total_hits"] for row in rows)
     top_pdfs = sorted(rows, key=lambda row: (-row["total_hits"], row["pdf_name"]))[:10]
     manifest_selected_count = sum(1 for path in pdf_paths if path.resolve().as_posix() in manifest_entries)
+    gold_corpus_ids = {path.resolve().as_posix() for path in gold_corpus_paths}
+    review_bucket_ids = {path.resolve().as_posix() for path in pdf_paths if _is_review_bucket_pdf(path)}
+    evaluated_ids = {path.resolve().as_posix() for path in pdf_paths}
+    excluded_triage_ids = (gold_corpus_ids | review_bucket_ids) & evaluated_ids
+    gold_selected_count = sum(1 for path in pdf_paths if path.resolve().as_posix() in gold_corpus_ids)
 
     summary = {
         "pdfs_evaluated": len(rows),
         "manifest_pdfs": manifest_selected_count,
-        "review_bucket_pdfs": sum(1 for path in pdf_paths if _is_review_bucket_pdf(path)),
-        "triaged_pdfs": len(rows) - manifest_selected_count,
+        "review_bucket_pdfs": len(review_bucket_ids),
+        "gold_corpus_pdfs": gold_selected_count,
+        "triaged_pdfs": len(rows) - manifest_selected_count - len(excluded_triage_ids),
         "total_hits": total_hits,
         "lens_total_hits": dict(lens_totals),
         "lens_pdf_hits": dict(lens_pdf_totals),

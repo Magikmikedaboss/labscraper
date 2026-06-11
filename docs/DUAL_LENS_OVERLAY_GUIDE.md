@@ -147,7 +147,7 @@ The domain file is configured for dual-lens mode:
 
 **Single Run:**
 ```bash
-python run_rss_ingest.py \
+python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity
 ```
@@ -269,7 +269,7 @@ pattern_type,score_science,score_curiosity,bucket_science,bucket_curiosity,...
 # Edit config/domains/biohacking_longevity.json and set:
 #   "overlays": ["science_research_v1"]
 # Then run:
-python run_rss_ingest.py \
+python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity \
   --output-db output/test_science_lens.sqlite
@@ -277,7 +277,7 @@ python run_rss_ingest.py \
 # Edit config/domains/biohacking_longevity.json and set:
 #   "overlays": ["biohacking_curiosity_v1"]
 # Then run:
-python run_rss_ingest.py \
+python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity \
   --output-db output/test_curiosity_lens.sqlite

@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from utils.source_triage import classify_triage, main, write_triage_csv
+from utils.source_triage import TriagedSource, classify_triage, main, write_keep_manifest_report, write_triage_csv
 
 
 def test_classify_triage_keep_construction():
@@ -51,6 +51,32 @@ def test_classify_triage_review_mixed_signals(tmp_path):
     assert csv_path.read_text(encoding="utf-8").splitlines()[0] == (
         "title,building_physics_score,materials_score,failure_score,climate_score,triage_decision,lens_promoted,promotion_reason,lens_hit_counts,final_decision,decision,reason"
     )
+
+
+def test_write_keep_manifest_report(tmp_path):
+    row = TriagedSource(
+        file_path=str(tmp_path / "doc.pdf"),
+        title="Example source",
+        detected_domain="construction_science",
+        keep_skip_review="review",
+        confidence="med",
+        construction_signals="roof; wall",
+        contamination_signals="",
+        reason="review decision",
+        triage_decision="review",
+        lens_promoted=True,
+        promotion_reason="climate hits=3 >= 3",
+        lens_hit_counts='{"building_physics": 1, "materials": 0, "climate": 3, "failure": 0, "insurance_risk": 0}',
+        final_decision="keep",
+    )
+
+    csv_path = tmp_path / "keep_report.csv"
+    written = write_keep_manifest_report([row], csv_path)
+    assert written == csv_path
+    lines = csv_path.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "pdf_name,source,file_path,triage_decision,building_physics_hits,materials_hits,climate_hits,failure_hits,insurance_risk_hits,promotion_reason,final_decision"
+    assert "doc.pdf" in lines[1]
+    assert "climate hits=3 >= 3" in lines[1]
 
 
 def test_classify_triage_moderate_biomedical_contamination_skips() -> None:

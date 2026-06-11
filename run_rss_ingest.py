@@ -55,7 +55,7 @@ from utils.event_classification import (
     evidence_strength,
 )
 from utils.feed_utils import extract_pdf_links, parse_feed
-from utils.source_triage import TriagedSource, load_keep_manifest, scan_pdf, write_keep_manifest, write_triage_csv
+from utils.source_triage import TriagedSource, load_keep_manifest, scan_pdf, write_keep_manifest, write_keep_manifest_report, write_triage_csv
 from utils.site_collectors import _is_safe_url, collect_documents, extract_pdf_links_from_page
 from utils.text_utils import chunk_sentences, guess_section, guess_stage
 
@@ -68,6 +68,7 @@ RSS_CACHE_DIR = (DATA_ROOT / "cache" / "rss") if DATA_ROOT.exists() else (PROJEC
 RSS_ORGANIZED_DIR = (DATA_ROOT / "cache" / "rss_organized") if DATA_ROOT.exists() else (PROJECT_ROOT / "cache" / "rss_organized")
 CONSTRUCTION_TRIAGE_OUTPUT = PROJECT_ROOT / "exports" / "source_triage" / "construction_science_triage.csv"
 CONSTRUCTION_KEEP_MANIFEST = PROJECT_ROOT / "exports" / "source_triage" / "construction_science_keep.json"
+TRUSTED_CONSTRUCTION_SOURCES_CONFIG = PROJECT_ROOT / "config" / "construction_trusted_sources.json"
 CONSTRUCTION_REVIEW_LENS_ORDER = [
     "building_physics",
     "materials",
@@ -79,7 +80,7 @@ CONSTRUCTION_REVIEW_LENS_ORDER = [
 CONSTRUCTION_REVIEW_PROMOTION_THRESHOLDS = {
     "building_physics": 3,
     "materials": 3,
-    "climate": 2,
+    "climate": 3,
     "failure": 2,
     "insurance_risk": 2,
 }
@@ -209,7 +210,12 @@ def _promotion_decision_from_lens_counts(lens_counts: dict[str, int]) -> tuple[b
     return False, f"no lens threshold met ({counts_text})"
 
 
-def _finalize_construction_triage(pdf_path: Path, triage_rows: list[TriagedSource]) -> TriagedSource:
+def _finalize_construction_triage(
+    pdf_path: Path,
+    triage_rows: list[TriagedSource],
+    *,
+    allow_review_promotion: bool = True,
+) -> TriagedSource:
     triage = scan_pdf(pdf_path)
     triage_decision = triage.keep_skip_review
     lens_counts: dict[str, int] = {}
@@ -217,11 +223,13 @@ def _finalize_construction_triage(pdf_path: Path, triage_rows: list[TriagedSourc
     promotion_reason = ""
     final_decision = triage_decision
 
-    if triage_decision == "review":
+    if triage_decision == "review" and allow_review_promotion:
         lens_counts = _score_construction_review_lenses(pdf_path)
         lens_promoted, promotion_reason = _promotion_decision_from_lens_counts(lens_counts)
         if lens_promoted:
             final_decision = "keep"
+    elif triage_decision == "review" and not allow_review_promotion:
+        promotion_reason = "review promotion disabled for untrusted source"
 
     finalized = replace(
         triage,
@@ -255,8 +263,13 @@ def _store_triaged_construction_pdf(pdf_path: Path, decision: str) -> Path | Non
     return destination
 
 
-def _triage_and_store_construction_pdf(pdf_path: Path, triage_rows: list[TriagedSource]) -> TriagedSource:
-    return _finalize_construction_triage(pdf_path, triage_rows)
+def _triage_and_store_construction_pdf(
+    pdf_path: Path,
+    triage_rows: list[TriagedSource],
+    *,
+    allow_review_promotion: bool = True,
+) -> TriagedSource:
+    return _finalize_construction_triage(pdf_path, triage_rows, allow_review_promotion=allow_review_promotion)
 
 
 def _process_pdf_urls(
@@ -269,9 +282,13 @@ def _process_pdf_urls(
     source_triage_rows: list[TriagedSource] | None = None,
     construction_keep_paths: set[str] | None = None,
     construction_keep_manifest_enabled: bool = False,
+    trusted_construction_source_names: set[str] | None = None,
+    source_name: str | None = None,
 ) -> dict[str, int | bool]:
     pdf_events = 0
     pdf_processed = 0
+    trusted_source_names = trusted_construction_source_names or set()
+    trusted_construction_source = False if source_name is None else str(source_name).strip().casefold() in trusted_source_names
 
     for pdf_url in pdf_urls:
         if dry_run:
@@ -293,7 +310,11 @@ def _process_pdf_urls(
 
         if domain == "construction_science":
             if construction_keep_manifest_enabled:
-                triage = _triage_and_store_construction_pdf(pdf, source_triage_rows if source_triage_rows is not None else [])
+                triage = _triage_and_store_construction_pdf(
+                    pdf,
+                    source_triage_rows if source_triage_rows is not None else [],
+                    allow_review_promotion=trusted_construction_source,
+                )
                 in_keep_manifest = construction_keep_paths is not None and _is_construction_keep_path(pdf, construction_keep_paths)
                 if not in_keep_manifest:
                     if not (triage.triage_decision == "review" and triage.keep_skip_review == "keep"):
@@ -305,7 +326,11 @@ def _process_pdf_urls(
                     print("⚠️ Skipping PDF after review lens scan")
                     continue
             elif source_triage_rows is not None:
-                triage = _triage_and_store_construction_pdf(pdf, source_triage_rows)
+                triage = _triage_and_store_construction_pdf(
+                    pdf,
+                    source_triage_rows,
+                    allow_review_promotion=trusted_construction_source,
+                )
                 if triage.keep_skip_review == "keep" and construction_keep_paths is not None:
                     construction_keep_paths.add(str(pdf))
                 if triage.keep_skip_review != "keep":
@@ -395,6 +420,23 @@ def load_feeds_config(path: Path) -> dict[str, Any]:
         raise RuntimeError(f"Malformed JSON in feeds config file {path}: {exc}") from exc
 
 
+def load_trusted_construction_sources(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Malformed JSON in trusted construction sources file {path}: {exc}") from exc
+
+    trusted_sources = data.get("trusted_sources", []) if isinstance(data, dict) else []
+    if not isinstance(trusted_sources, list):
+        return set()
+
+    return {str(source).strip().casefold() for source in trusted_sources if str(source).strip()}
+
+
 def ensure_db_schema(db_path: Path):
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -408,10 +450,16 @@ def ensure_db_schema(db_path: Path):
         raise RuntimeError(f"[ensure_db_schema] Error executing schema script: {exc}") from exc
 
 
-def get_pdf_links_from_entry(entry: dict[str, Any]) -> list[str]:
+def get_pdf_links_from_entry(entry: dict[str, Any], *, source_domain: str = "") -> list[str]:
     found_urls = extract_pdf_links(entry)
 
     entry_link = entry.get("link", "")
+    entry_host = urlparse(entry_link).netloc.lower() if entry_link else ""
+
+    if source_domain == "construction_science" and entry_host:
+        same_host_urls = [url for url in found_urls if urlparse(url).netloc.lower() == entry_host]
+        found_urls = same_host_urls
+
     if "arxiv.org/abs/" in entry_link:
         arxiv_pdf = entry_link.replace("/abs/", "/pdf/") + ".pdf"
         if arxiv_pdf not in found_urls:
@@ -721,6 +769,8 @@ def process_feed_entry(
     source_triage_rows: list[TriagedSource] | None = None,
     construction_keep_paths: set[str] | None = None,
     construction_keep_manifest_enabled: bool = False,
+    trusted_construction_source_names: set[str] | None = None,
+    source_name: str | None = None,
 ) -> dict[str, int | bool]:
     title = entry.get("title", "Unknown")
     entry_text = "\n".join(
@@ -751,7 +801,7 @@ def process_feed_entry(
                 "source_routed": "skip",
             }
 
-    pdf_urls = get_pdf_links_from_entry(entry)
+    pdf_urls = get_pdf_links_from_entry(entry, source_domain=domain)
     abstract_links = find_abstract_links(entry)
     triage_rows = source_triage_rows
 
@@ -765,6 +815,8 @@ def process_feed_entry(
             source_triage_rows=triage_rows,
             construction_keep_paths=construction_keep_paths,
             construction_keep_manifest_enabled=construction_keep_manifest_enabled,
+            trusted_construction_source_names=trusted_construction_source_names,
+            source_name=source_name,
         )
 
         if pdf_summary["pdf_processed"] > 0 or (domain == "construction_science" and (construction_keep_manifest_enabled or triage_rows is not None)):
@@ -829,6 +881,7 @@ def main():
     triage_enabled = False
     construction_keep_paths = load_keep_manifest(CONSTRUCTION_KEEP_MANIFEST)
     construction_keep_manifest_enabled = CONSTRUCTION_KEEP_MANIFEST.exists()
+    trusted_construction_source_names = load_trusted_construction_sources(TRUSTED_CONSTRUCTION_SOURCES_CONFIG)
 
     ensure_db_schema(db_path)
 
@@ -913,7 +966,11 @@ def main():
                             continue
                         if domain == "construction_science":
                             if construction_keep_manifest_enabled:
-                                triage = _triage_and_store_construction_pdf(pdf, triage_rows)
+                                triage = _triage_and_store_construction_pdf(
+                                    pdf,
+                                    triage_rows,
+                                    allow_review_promotion=str(feed.get("name", "")).strip().casefold() in trusted_construction_source_names,
+                                )
                                 in_keep_manifest = _is_construction_keep_path(pdf, construction_keep_paths)
                                 if not in_keep_manifest:
                                     if not (triage.triage_decision == "review" and triage.keep_skip_review == "keep"):
@@ -924,7 +981,11 @@ def main():
                                     print("⚠️ Skipping PDF after review lens scan")
                                     continue
                             else:
-                                triage = _triage_and_store_construction_pdf(pdf, triage_rows)
+                                triage = _triage_and_store_construction_pdf(
+                                    pdf,
+                                    triage_rows,
+                                    allow_review_promotion=str(feed.get("name", "")).strip().casefold() in trusted_construction_source_names,
+                                )
                                 if triage.keep_skip_review != "keep":
                                     print("⚠️ Skipping PDF after source triage")
                                     continue
@@ -991,6 +1052,8 @@ def main():
                 source_triage_rows=triage_rows,
                 construction_keep_paths=construction_keep_paths,
                 construction_keep_manifest_enabled=construction_keep_manifest_enabled,
+                trusted_construction_source_names=trusted_construction_source_names,
+                source_name=str(feed.get("name", "")),
             )
             if result["pdf_links"]:
                 print(f"      📎 PDF links: {result['pdf_links']}")
@@ -1017,6 +1080,7 @@ def main():
     if triage_enabled:
         write_triage_csv(triage_rows, CONSTRUCTION_TRIAGE_OUTPUT)
         write_keep_manifest(construction_keep_paths, CONSTRUCTION_KEEP_MANIFEST)
+        write_keep_manifest_report(triage_rows, CONSTRUCTION_KEEP_MANIFEST.with_name("construction_science_keep_report.csv"))
 
 
 if __name__ == "__main__":

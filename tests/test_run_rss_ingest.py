@@ -6,11 +6,33 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from run_rss_ingest import _process_pdf_urls, download_pdf, get_pdf_links_from_feed, process_feed_entry
+from run_rss_ingest import _process_pdf_urls, download_pdf, get_pdf_links_from_entry, get_pdf_links_from_feed, process_feed_entry
 from utils.source_triage import TriagedSource
 
 
 class TestGetPdfLinksFromFeed:
+    @patch("run_rss_ingest.time.sleep")
+    @patch("run_rss_ingest.time.monotonic")
+    @patch("run_rss_ingest.requests.get")
+    @patch("run_rss_ingest.extract_pdf_links")
+    def test_construction_rss_ignores_off_host_pdf_and_discovers_same_host_pdf(
+        self,
+        mock_extract_pdf_links,
+        mock_get,
+        mock_monotonic,
+        mock_sleep,
+    ):
+        entry = {"link": "https://buildingscience.com/documents/example-article", "title": "Example"}
+        mock_extract_pdf_links.return_value = ["https://collaboration.cmc.ec.gc.ca/cmc/climate/1951-80Normals/En56-60-8-1984.pdf"]
+        mock_get.return_value = SimpleNamespace(ok=True, text='<a href="https://buildingscience.com/documents/building-science-insights/bsi-151.pdf">PDF</a>')
+        mock_monotonic.side_effect = [100.0, 100.1]
+
+        result = get_pdf_links_from_entry(entry, source_domain="construction_science")
+
+        assert result == ["https://buildingscience.com/documents/building-science-insights/bsi-151.pdf"]
+        mock_get.assert_called_once_with("https://buildingscience.com/documents/example-article", timeout=10)
+        mock_sleep.assert_not_called()
+
     @patch("run_rss_ingest.time.sleep")
     @patch("run_rss_ingest.time.monotonic")
     @patch("run_rss_ingest.requests.get")

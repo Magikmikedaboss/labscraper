@@ -484,6 +484,56 @@ def write_keep_manifest(rows: Iterable[TriagedSource] | Iterable[str], output_pa
     return output_path
 
 
+def write_keep_manifest_report(rows: Iterable[TriagedSource], output_path: Path) -> Path:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = [
+        "pdf_name",
+        "source",
+        "file_path",
+        "triage_decision",
+        "building_physics_hits",
+        "materials_hits",
+        "climate_hits",
+        "failure_hits",
+        "insurance_risk_hits",
+        "promotion_reason",
+        "final_decision",
+    ]
+
+    with output_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            final_decision = row.final_decision or row.keep_skip_review
+            if final_decision != "keep":
+                continue
+
+            hit_counts = {}
+            try:
+                hit_counts = json.loads(row.lens_hit_counts or "{}")
+            except json.JSONDecodeError:
+                hit_counts = {}
+
+            writer.writerow(
+                {
+                    "pdf_name": Path(row.file_path).name,
+                    "source": row.title,
+                    "file_path": row.file_path,
+                    "triage_decision": row.triage_decision or row.keep_skip_review,
+                    "building_physics_hits": hit_counts.get("building_physics", 0),
+                    "materials_hits": hit_counts.get("materials", 0),
+                    "climate_hits": hit_counts.get("climate", 0),
+                    "failure_hits": hit_counts.get("failure", 0),
+                    "insurance_risk_hits": hit_counts.get("insurance_risk", 0),
+                    "promotion_reason": row.promotion_reason,
+                    "final_decision": final_decision,
+                }
+            )
+
+    return output_path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Scan PDFs and triage construction-science sources before extraction")
     parser.add_argument("--input-dir", type=Path, default=Path("input/pdfs"), help="Folder containing PDFs to scan")

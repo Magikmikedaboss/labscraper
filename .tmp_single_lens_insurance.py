@@ -38,7 +38,8 @@ def _default_source_type(cache_dir: Path, source_type: str | None = None) -> str
         if normalized not in {"news", "research_paper"}:
             raise ValueError(f"Invalid source_type: {source_type}")
         return normalized
-        return "news" if cache_dir.name.lower() == "rss" else "research_paper"
+
+    return "news" if cache_dir.name.lower() == "rss" else "research_paper"
 
 
 def _scan_pdf(pdf_path: Path, source_type: str) -> tuple[str, list[dict], int]:

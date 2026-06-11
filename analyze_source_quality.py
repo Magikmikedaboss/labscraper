@@ -115,7 +115,7 @@ def _summarize_feed(feed: dict[str, Any], limit: int | None = None) -> dict[str,
         entries_found = len(entries)
 
         for entry in entries:
-            for pdf_url in get_pdf_links_from_entry(entry):
+            for pdf_url in get_pdf_links_from_entry(entry, source_domain=str(feed.get("domain", ""))):
                 if pdf_url in seen_pdf_urls:
                     continue
                 seen_pdf_urls.add(pdf_url)

@@ -96,7 +96,10 @@ def main(
 
     csv_path = out_dir / "materials_lens_cache_hits.csv"
     try:
-        csv_summary_path = csv_path.resolve().relative_to(ROOT).as_posix()
+        try:
+            csv_summary_path = csv_path.resolve().relative_to(ROOT).as_posix()
+        except ValueError:
+            csv_summary_path = csv_path.resolve().as_posix()
     except ValueError:
         csv_summary_path = csv_path.resolve().as_posix()
     with csv_path.open("w", encoding="utf-8", newline="") as handle:

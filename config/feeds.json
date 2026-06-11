@@ -95,12 +95,12 @@
     },
     {
       "name": "DOE Building Technologies Collector",
-      "url": "https://www.energy.gov/cmei/buildings/listings/news",
+      "url": "https://www.energy.gov/eere/buildings/resources",
       "domain": "construction_science",
       "source_kind": "collector",
       "collector_mode": "html_archive",
       "max_pages": 10,
-      "same_path_prefix": "/cmei/buildings/",
+      "same_path_prefix": "/eere/buildings/",
       "collector_max_depth": 2,
       "enabled": true
     },
