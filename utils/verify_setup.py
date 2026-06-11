@@ -55,7 +55,7 @@ def check_files():
         PROJECT_ROOT / 'utils/init_db.py': 'Database initialization',
         PROJECT_ROOT / 'utils/scrape_pdfs_phase1.py': 'Main scraper',
         PROJECT_ROOT / 'utils/export_csv.py': 'CSV export tool',
-        PROJECT_ROOT / 'README.md': 'Documentation',
+        PROJECT_ROOT / 'docs/README.md': 'Documentation',
         PROJECT_ROOT / 'requirements.txt': 'Dependencies list',
     }
     all_ok = True

@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-README_PATH = PROJECT_ROOT / "README.md"
+README_PATH = PROJECT_ROOT / "docs" / "README.md"
 VERSION_PATH = PROJECT_ROOT / "labscraper" / "__version__.py"
 version_namespace: dict[str, str] = {}
 # Load __version__ from a trusted file using a literal-only parse.

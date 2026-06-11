@@ -1,0 +1,16 @@
+{
+  "pdfs_scanned": 10,
+  "pdfs_with_hits": 1,
+  "pdfs_without_hits": 9,
+  "total_hits": 2,
+  "event_type_counts": {
+    "climate_resilience": 2
+  },
+  "top_pdfs": [
+    [
+      "086150b24ff9fba2e0de7660ec9d6979.pdf",
+      2
+    ]
+  ],
+  "csv_path": "tmp/lens_runs/climate/climate_lens_cache_hits.csv"
+}

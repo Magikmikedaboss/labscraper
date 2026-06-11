@@ -1,0 +1,131 @@
+{
+  "lens_pdf_hits": {
+    "building_physics": 4,
+    "climate": 2,
+    "compliance": 2,
+    "failure": 3,
+    "insurance_risk": 3,
+    "materials": 5
+  },
+  "lens_total_hits": {
+    "building_physics": 169,
+    "climate": 15,
+    "compliance": 3,
+    "failure": 5,
+    "insurance_risk": 8,
+    "materials": 82
+  },
+  "manifest_pdfs": 7,
+  "pdfs_evaluated": 7,
+  "selected_pdfs": [
+    "cache/rss/21b4ec6e220523a7b3344caaccd2a26b.pdf",
+    "cache/rss/2db6ff303f4d75fc7726f606ad673ff7.pdf",
+    "cache/rss/4a57a0b7b1c0bc79f2834dc1f2002f3a.pdf",
+    "cache/rss/ad1e8631b8e7330c060cbe696de79fe0.pdf",
+    "cache/rss/buildin_physics_heat_air_leseprobe.pdf",
+    "cache/rss/building-physics.pdf",
+    "cache/rss/df3719b603c42590735c52e1a48f00b7.pdf"
+  ],
+  "top_pdfs": [
+    {
+      "building_physics_hits": 87,
+      "climate_hits": 0,
+      "compliance_hits": 0,
+      "dominant_lens": "building_physics",
+      "failure_hits": 0,
+      "insurance_risk_hits": 0,
+      "materials_hits": 46,
+      "pages": 30,
+      "pdf_name": "df3719b603c42590735c52e1a48f00b7.pdf",
+      "scan_error": 0,
+      "sentences": 623,
+      "total_hits": 133
+    },
+    {
+      "building_physics_hits": 32,
+      "climate_hits": 0,
+      "compliance_hits": 0,
+      "dominant_lens": "building_physics",
+      "failure_hits": 0,
+      "insurance_risk_hits": 0,
+      "materials_hits": 22,
+      "pages": 30,
+      "pdf_name": "ad1e8631b8e7330c060cbe696de79fe0.pdf",
+      "scan_error": 0,
+      "sentences": 375,
+      "total_hits": 54
+    },
+    {
+      "building_physics_hits": 25,
+      "climate_hits": 7,
+      "compliance_hits": 2,
+      "dominant_lens": "building_physics",
+      "failure_hits": 3,
+      "insurance_risk_hits": 5,
+      "materials_hits": 2,
+      "pages": 28,
+      "pdf_name": "building-physics.pdf",
+      "scan_error": 0,
+      "sentences": 416,
+      "total_hits": 44
+    },
+    {
+      "building_physics_hits": 25,
+      "climate_hits": 8,
+      "compliance_hits": 1,
+      "dominant_lens": "building_physics",
+      "failure_hits": 0,
+      "insurance_risk_hits": 2,
+      "materials_hits": 3,
+      "pages": 34,
+      "pdf_name": "buildin_physics_heat_air_leseprobe.pdf",
+      "scan_error": 0,
+      "sentences": 204,
+      "total_hits": 39
+    },
+    {
+      "building_physics_hits": 0,
+      "climate_hits": 0,
+      "compliance_hits": 0,
+      "dominant_lens": "materials",
+      "failure_hits": 1,
+      "insurance_risk_hits": 0,
+      "materials_hits": 9,
+      "pages": 44,
+      "pdf_name": "4a57a0b7b1c0bc79f2834dc1f2002f3a.pdf",
+      "scan_error": 0,
+      "sentences": 695,
+      "total_hits": 10
+    },
+    {
+      "building_physics_hits": 0,
+      "climate_hits": 0,
+      "compliance_hits": 0,
+      "dominant_lens": "insurance_risk",
+      "failure_hits": 1,
+      "insurance_risk_hits": 1,
+      "materials_hits": 0,
+      "pages": 20,
+      "pdf_name": "21b4ec6e220523a7b3344caaccd2a26b.pdf",
+      "scan_error": 0,
+      "sentences": 330,
+      "total_hits": 2
+    },
+    {
+      "building_physics_hits": 0,
+      "climate_hits": 0,
+      "compliance_hits": 0,
+      "dominant_lens": "",
+      "failure_hits": 0,
+      "insurance_risk_hits": 0,
+      "materials_hits": 0,
+      "pages": 12,
+      "pdf_name": "2db6ff303f4d75fc7726f606ad673ff7.pdf",
+      "scan_error": 0,
+      "sentences": 801,
+      "total_hits": 0
+    }
+  ],
+  "total_hits": 282,
+  "triaged_pdfs": 0
+}

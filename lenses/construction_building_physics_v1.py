@@ -12,6 +12,22 @@ ASSEMBLIES = [
     "facade", "cladding", "insulation", "air barrier", "vapor barrier", "duct", "hvac"
 ]
 
+BUILDING_CONTEXT_TERMS = [
+    "building", "buildings", "wall", "roof", "envelope", "assembly", "insulation",
+    "facade", "window", "attic", "basement", "hvac", "ventilation", "indoor", "room",
+]
+
+BIO_DENY_TERMS = [
+    "mitosis", "mitotic", "chromosome", "chromatin", "nucleolus", "nucleoli",
+    "cell", "cells", "protein", "proteins", "gene", "genes", "dna", "rna",
+    "centromere", "centromeres", "nucleus", "nuclei",
+]
+
+CONDENSATION_BUILDING_TERMS = [
+    "condensation risk", "condensation control", "interstitial condensation",
+    "surface condensation", "window condensation", "wall condensation",
+]
+
 PHYSICS_TERMS = [
     "u-value", "u value", "r-value", "r value", "thermal conductivity", "heat flux",
     "air leakage", "infiltration", "ventilation rate", "ach", "air changes per hour",
@@ -25,6 +41,10 @@ ENERGY_WORD_WINDOW = 7
 
 def route_building_physics_sentence(sentence: str) -> RouteDecision:
     s_l = sentence.lower()
+    if list_hits(s_l, BIO_DENY_TERMS):
+        return RouteDecision("skip", "biological context present")
+    if "condensation" in s_l and not contains_any(s_l, BUILDING_CONTEXT_TERMS + CONDENSATION_BUILDING_TERMS):
+        return RouteDecision("skip", "condensation without building context")
     if list_hits(s_l, PHYSICS_TERMS):
         return RouteDecision("keep", "building physics terms present")
     return RouteDecision("skip", "no building physics terms present")
@@ -33,10 +53,15 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     s_l = sentence.lower()
     entities: List[dict] = []
 
+    if list_hits(s_l, BIO_DENY_TERMS):
+        return None, []
+
     asm = list_hits(s_l, ASSEMBLIES)
     terms = list_hits(s_l, PHYSICS_TERMS)
 
-    # Building physics is signal-led: physics terms are sufficient, and no separate construction-context gate is applied here.
+    if "condensation" in terms and not contains_any(s_l, BUILDING_CONTEXT_TERMS + CONDENSATION_BUILDING_TERMS):
+        return None, []
+
     if not terms:
         return None, []
 

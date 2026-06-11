@@ -111,8 +111,6 @@ def test_save_working_logic(tmp_path, monkeypatch):
         ),
         encoding="utf-8",
     )
-    # Patch validate_feed_config to pass through
-    monkeypatch.setattr(test_feeds, "validate_feed_config", lambda x: x)
     # Patch probe_feed to avoid network I/O
     monkeypatch.setattr(test_feeds, "probe_feed", lambda *a, **k: {'success': True, 'url': 'mock'})
     # Provide clean CLI args so argparse won’t see pytest’s argv
@@ -125,6 +123,39 @@ def test_save_working_logic(tmp_path, monkeypatch):
     assert saved_feed["collector_mode"] == "html_archive"
     assert saved_feed["same_domain_only"] is False
     assert saved_feed["max_pages"] == 7
+
+
+def test_main_handles_pdf_list_feed(tmp_path, monkeypatch, capsys):
+    from tools import test_feeds
+
+    config_path = tmp_path / "feeds.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "feeds": [
+                    {
+                        "name": "FEMA Building Science Publications",
+                        "domain": "construction_science",
+                        "source_kind": "pdf_list",
+                        "pdf_urls": [
+                            "https://example.com/a.pdf",
+                            "https://example.com/b.pdf",
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    test_feeds.main(["--config", str(config_path), "--save-working"])
+
+    output = capsys.readouterr().out
+    assert "PDF list source" in output
+    saved_config = json.loads(config_path.with_name("feeds_working.json").read_text(encoding="utf-8"))
+    saved_feed = saved_config["feeds"][0]
+    assert saved_feed["source_kind"] == "pdf_list"
+    assert saved_feed["pdf_urls"] == ["https://example.com/a.pdf", "https://example.com/b.pdf"]
 
 def test_probe_feed_with_invalid_config(monkeypatch):
     # probe_feed should return failure when config is missing 'url'

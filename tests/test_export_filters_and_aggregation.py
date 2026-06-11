@@ -66,10 +66,43 @@ def test_load_known_peptides_env_and_fallback(tmp_path):
     assert load_known_peptides(config_path=malformed_path, env={}) == set(DEFAULT_KNOWN_PEPTIDES)
 
 
+def test_load_known_peptides_prefers_env_file_and_text_sources(tmp_path, monkeypatch):
+    import utils.export.filters as filters
+
+    monkeypatch.setattr(filters, "_KNOWN_PEPTIDES", None, raising=False)
+
+    text_path = tmp_path / "peptides.txt"
+    text_path.write_text(" octreotide \nlanreotide\n\n", encoding="utf-8")
+
+    assert load_known_peptides(config_path=text_path, env={}) == {"OCTREOTIDE", "LANREOTIDE"}
+
+    csv_path = tmp_path / "peptides.csv"
+    csv_path.write_text("teriparatide\npasireotide\n", encoding="utf-8")
+
+    assert load_known_peptides(config_path=csv_path, env={}) == {"TERIPARATIDE", "PASIREOTIDE"}
+
+
+def test_iter_peptide_candidates_and_file_loader_cover_common_payload_shapes(tmp_path):
+    from utils.export.filters import _iter_peptide_candidates, _load_peptides_from_file
+
+    assert list(_iter_peptide_candidates({"peptides": ["octreotide", " lanreotide "]})) == ["octreotide", " lanreotide "]
+    assert list(_iter_peptide_candidates({"known_peptides": "etelcalcetide, teriparatide"})) == ["etelcalcetide", " teriparatide"]
+    assert list(_iter_peptide_candidates({"values": ("pasireotide", "somatostatin")})) == ["pasireotide", "somatostatin"]
+    assert list(_iter_peptide_candidates("octreotide; lanreotide\nteriparatide")) == ["octreotide", " lanreotide", "teriparatide"]
+    assert list(_iter_peptide_candidates(None)) == []
+
+    json_path = tmp_path / "peptides.json"
+    json_path.write_text('{"peptides": ["octreotide", "lanreotide", 123]}', encoding="utf-8")
+    assert _load_peptides_from_file(json_path) == {"OCTREOTIDE", "LANREOTIDE"}
+
+    missing_path = tmp_path / "missing.txt"
+    assert _load_peptides_from_file(missing_path) is None
+
+
 def test_get_known_peptides_caches_loaded_values(monkeypatch):
     import utils.export.filters as filters
 
-    filters._KNOWN_PEPTIDES = None
+    monkeypatch.setattr(filters, "_KNOWN_PEPTIDES", None, raising=False)
     calls = []
 
     def fake_load_known_peptides():
@@ -83,10 +116,22 @@ def test_get_known_peptides_caches_loaded_values(monkeypatch):
     assert calls == ["load"]
 
 
+def test_get_known_peptides_uses_config_file_env_var(tmp_path, monkeypatch):
+    import utils.export.filters as filters
+
+    monkeypatch.setattr(filters, "_KNOWN_PEPTIDES", None, raising=False)
+    peptides_path = tmp_path / "peptides.txt"
+    peptides_path.write_text("octreotide\n", encoding="utf-8")
+
+    result = load_known_peptides(env={"LABSCRAPER_KNOWN_PEPTIDES_FILE": str(peptides_path)})
+
+    assert result == {"OCTREOTIDE"}
+
+
 def test_get_known_peptides_falls_back_on_value_error(monkeypatch):
     import utils.export.filters as filters
 
-    filters._KNOWN_PEPTIDES = None
+    monkeypatch.setattr(filters, "_KNOWN_PEPTIDES", None, raising=False)
 
     def fake_load_known_peptides():
         raise ValueError("bad peptide config")

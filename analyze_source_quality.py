@@ -21,7 +21,7 @@ from utils.source_triage import scan_pdf
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_FEEDS_CONFIG = PROJECT_ROOT / "config" / "feeds.json"
 DEFAULT_OUTPUT_CSV = PROJECT_ROOT / "exports" / "source_quality" / "construction_science_feed_quality.csv"
-DEFAULT_OUTPUT_MD = PROJECT_ROOT / "exports" / "source_quality" / "construction_science_feed_quality.md"
+DEFAULT_OUTPUT_MD = PROJECT_ROOT / "docs" / "source_quality" / "construction_science_feed_quality.md"
 DOMAIN_BUCKETS = [
     "construction_science",
     "materials_science",

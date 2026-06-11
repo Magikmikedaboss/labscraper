@@ -293,6 +293,11 @@ class TestInsuranceRiskLens:
                 "negative",
             ),
             (
+                "Hail damaged the roof covering and caused water intrusion behind the wall assembly.",
+                "property_risk",
+                "negative",
+            ),
+            (
                 "Water intrusion behind stucco caused mold growth and interior wall damage.",
                 "claim_driver",
                 "negative",
@@ -332,6 +337,14 @@ class TestInsuranceRiskLens:
         from lenses.construction_insurance_risk_v1 import detect
 
         event, entities = detect(sentence)
+
+        assert event is None
+        assert entities == []
+
+    def test_generic_property_terms_do_not_fire_without_conjunction(self):
+        from lenses.construction_insurance_risk_v1 import detect
+
+        event, entities = detect("The building envelope had moisture during testing.")
 
         assert event is None
         assert entities == []
@@ -397,6 +410,15 @@ class TestBuildingPhysicsLens:
         _assert_entities(entities)
         types = {e["entity_type"] for e in entities}
         assert "building_component" in types or "physics_metric" in types
+
+    def test_biological_condensation_does_not_fire(self):
+        from lenses.construction_building_physics_v1 import detect
+
+        sentence = "The nucleolar number increased during mitotic condensation and chromosome segregation."
+        event, entities = detect(sentence)
+
+        assert event is None
+        assert entities == []
 
     def test_irrelevant_sentence_returns_none(self):
         from lenses.construction_building_physics_v1 import detect

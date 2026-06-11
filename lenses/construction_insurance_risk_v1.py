@@ -10,6 +10,11 @@ LENS_NAME = "insurance_risk"
 LOSS_CAUSES = {
     "water damage",
     "water intrusion",
+    "moisture intrusion",
+    "wind damage",
+    "hail damage",
+    "fire damage",
+    "flood damage",
     "roof leak",
     "plumbing leak",
     "mold",
@@ -23,6 +28,15 @@ LOSS_CAUSES = {
     "collapse",
     "foundation movement",
     "settlement",
+}
+
+PROPERTY_RISK_TERMS = {
+    "failure",
+    "leak",
+    "intrusion",
+    "rot",
+    "corrosion",
+    "moisture",
 }
 
 BUILDING_SYSTEMS = {
@@ -193,6 +207,15 @@ def _mitigation_hits(lower: str, insurance_terms: list[str]) -> list[str]:
     return mitigation_terms
 
 
+def _property_risk_supported(
+    property_risk_terms: list[str],
+    systems: list[str],
+    loss_causes: list[str],
+    insurance_terms: list[str],
+) -> bool:
+    return bool(property_risk_terms and (systems or loss_causes or insurance_terms))
+
+
 def route_insurance_risk_sentence(sentence: str):
     lower = sentence.lower()
 
@@ -204,14 +227,16 @@ def route_insurance_risk_sentence(sentence: str):
         return RouteDecision("skip", "no building context")
 
     loss_causes = _contains_any(lower, LOSS_CAUSES)
+    property_risk_terms = _contains_any(lower, PROPERTY_RISK_TERMS)
     insurance_terms = _contains_any(lower, INSURANCE_TERMS)
     systems = _contains_any(lower, BUILDING_SYSTEMS)
     mitigation_terms = _mitigation_hits(lower, insurance_terms)
+    property_risk_supported = _property_risk_supported(property_risk_terms, systems, loss_causes, insurance_terms)
 
-    if not loss_causes and not insurance_terms:
+    if not loss_causes and not property_risk_supported and not insurance_terms and not mitigation_terms:
         return RouteDecision("skip", "no insurance-risk signal")
 
-    if not systems and not loss_causes and not mitigation_terms:
+    if not systems and not loss_causes and not property_risk_supported and not mitigation_terms:
         return RouteDecision("skip", "no building or mitigation context")
 
     return RouteDecision("keep", "insurance-risk signal present")
@@ -228,14 +253,16 @@ def _detect_sentence(sentence: str, source_type: str = "research_paper", source_
         return None, []
 
     loss_causes = _contains_any(lower, LOSS_CAUSES)
+    property_risk_terms = _contains_any(lower, PROPERTY_RISK_TERMS)
     systems = _contains_any(lower, BUILDING_SYSTEMS)
     insurance_terms = _contains_any(lower, INSURANCE_TERMS)
     mitigation_terms = _mitigation_hits(lower, insurance_terms)
+    property_risk_supported = _property_risk_supported(property_risk_terms, systems, loss_causes, insurance_terms)
 
-    if not loss_causes and not insurance_terms:
+    if not loss_causes and not property_risk_supported and not insurance_terms and not mitigation_terms:
         return None, []
 
-    if not systems and not loss_causes and not mitigation_terms:
+    if not systems and not loss_causes and not property_risk_supported and not mitigation_terms:
         return None, []
 
     entities = _build_entities(loss_causes, systems, insurance_terms, mitigation_terms)
@@ -252,8 +279,11 @@ def _detect_sentence(sentence: str, source_type: str = "research_paper", source_
     elif mitigation_terms:
         event_type = "risk_mitigation"
         raw_outcome = "neutral"
-    elif insurance_terms and loss_causes:
+    elif insurance_terms and (loss_causes or property_risk_supported or systems):
         event_type = "claim_driver"
+        raw_outcome = "degraded"
+    elif property_risk_supported:
+        event_type = "property_risk"
         raw_outcome = "degraded"
     else:
         event_type = "property_loss_event"
@@ -263,6 +293,8 @@ def _detect_sentence(sentence: str, source_type: str = "research_paper", source_
     tags = ["insurance_risk"]
     if loss_causes:
         tags.append("loss_cause")
+    if property_risk_supported:
+        tags.append("property_risk")
     if systems:
         tags.append("building_system")
     if mitigation_terms:

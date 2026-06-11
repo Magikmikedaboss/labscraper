@@ -1,0 +1,8 @@
+pdf_name,pages,sentences,total_hits,dominant_lens,scan_error,building_physics_hits,climate_hits,compliance_hits,failure_hits,insurance_risk_hits,materials_hits
+21b4ec6e220523a7b3344caaccd2a26b.pdf,20,330,2,insurance_risk,0,0,0,0,1,1,0
+2db6ff303f4d75fc7726f606ad673ff7.pdf,12,801,0,,0,0,0,0,0,0,0
+4a57a0b7b1c0bc79f2834dc1f2002f3a.pdf,44,695,10,materials,0,0,0,0,1,0,9
+ad1e8631b8e7330c060cbe696de79fe0.pdf,30,375,54,building_physics,0,32,0,0,0,0,22
+buildin_physics_heat_air_leseprobe.pdf,34,204,39,building_physics,0,25,8,1,0,2,3
+building-physics.pdf,28,416,44,building_physics,0,25,7,2,3,5,2
+df3719b603c42590735c52e1a48f00b7.pdf,30,623,133,building_physics,0,87,0,0,0,0,46

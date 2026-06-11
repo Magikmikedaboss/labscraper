@@ -1,0 +1,20 @@
+{
+  "pdfs_scanned": 8,
+  "pdfs_with_hits": 2,
+  "pdfs_without_hits": 6,
+  "total_hits": 2,
+  "event_type_counts": {
+    "building_physics_performance": 2
+  },
+  "csv_path": "tmp/lens_runs/building_physics_tuned_small/building_physics_cache_results_single_lens.csv",
+  "top_pdfs": [
+    [
+      "048793376e84cfc9a50cfdeba112497b.pdf",
+      1
+    ],
+    [
+      "06a07821b80851b51ee847500ce227f1.pdf",
+      1
+    ]
+  ]
+}
