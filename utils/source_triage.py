@@ -142,6 +142,11 @@ class TriagedSource:
     materials_score: int = 0
     failure_score: int = 0
     climate_score: int = 0
+    triage_decision: str = ""
+    lens_promoted: bool = False
+    promotion_reason: str = ""
+    lens_hit_counts: str = ""
+    final_decision: str = ""
 
 
 def _normalize_text(value: str | None) -> str:
@@ -405,6 +410,11 @@ def write_triage_csv(rows: Iterable[TriagedSource], output_path: Path) -> Path:
         "materials_score",
         "failure_score",
         "climate_score",
+        "triage_decision",
+        "lens_promoted",
+        "promotion_reason",
+        "lens_hit_counts",
+        "final_decision",
         "decision",
         "reason",
     ]
@@ -419,6 +429,11 @@ def write_triage_csv(rows: Iterable[TriagedSource], output_path: Path) -> Path:
                     "materials_score": row.materials_score,
                     "failure_score": row.failure_score,
                     "climate_score": row.climate_score,
+                    "triage_decision": row.triage_decision or row.keep_skip_review,
+                    "lens_promoted": row.lens_promoted,
+                    "promotion_reason": row.promotion_reason,
+                    "lens_hit_counts": row.lens_hit_counts,
+                    "final_decision": row.final_decision or row.keep_skip_review,
                     "decision": row.keep_skip_review,
                     "reason": row.reason,
                 }
@@ -451,7 +466,8 @@ def write_keep_manifest(rows: Iterable[TriagedSource] | Iterable[str], output_pa
     keep_files: set[str] = set()
     for row in rows:
         if isinstance(row, TriagedSource):
-            if row.keep_skip_review == "keep":
+            final_decision = row.final_decision or row.keep_skip_review
+            if final_decision == "keep":
                 keep_files.add(row.file_path)
         else:
             value = str(row).strip()

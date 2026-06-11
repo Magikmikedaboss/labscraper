@@ -116,7 +116,7 @@ Edit `config/domains/biohacking_longevity.json` and set `overlays` to a single v
 ```bash
 # In config/domains/biohacking_longevity.json set:
 # "overlays": ["science_research_v1"]
-python run_rss_ingest.py \
+python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity
 ```
@@ -125,7 +125,7 @@ python run_rss_ingest.py \
 ```bash
 # In config/domains/biohacking_longevity.json set:
 # "overlays": ["biohacking_curiosity_v1"]
-python run_rss_ingest.py \
+python utils/run_engine.py \
   --input-dir input/pdfs/biohacking_longevity \
   --domain biohacking_longevity
 ```

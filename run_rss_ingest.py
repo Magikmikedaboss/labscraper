@@ -10,6 +10,8 @@ import re
 import sqlite3
 import sys
 import time
+from dataclasses import replace
+from shutil import copy2
 from functools import wraps
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,7 @@ from pdfminer.pdfexceptions import PDFNotImplementedError
 from pdfminer.pdfparser import PDFSyntaxError
 from pdfplumber.utils.exceptions import PdfminerException
 
+from lenses import LENS_REGISTRY, detect_multi_lens
 from utils.abstract_collectors import extract_abstract_text_from_url, find_abstract_links
 from utils.domain_router import route_construction_source
 from utils.common import sha256_hex
@@ -62,8 +65,24 @@ FEEDS_CONFIG = PROJECT_ROOT / "config" / "feeds.json"
 DB_PATH = PROJECT_ROOT / "db" / "rss.sqlite"
 DATA_ROOT = PROJECT_ROOT / "data"
 RSS_CACHE_DIR = (DATA_ROOT / "cache" / "rss") if DATA_ROOT.exists() else (PROJECT_ROOT / "cache" / "rss")
+RSS_ORGANIZED_DIR = (DATA_ROOT / "cache" / "rss_organized") if DATA_ROOT.exists() else (PROJECT_ROOT / "cache" / "rss_organized")
 CONSTRUCTION_TRIAGE_OUTPUT = PROJECT_ROOT / "exports" / "source_triage" / "construction_science_triage.csv"
 CONSTRUCTION_KEEP_MANIFEST = PROJECT_ROOT / "exports" / "source_triage" / "construction_science_keep.json"
+CONSTRUCTION_REVIEW_LENS_ORDER = [
+    "building_physics",
+    "materials",
+    "climate",
+    "failure",
+    "compliance",
+    "insurance_risk",
+]
+CONSTRUCTION_REVIEW_PROMOTION_THRESHOLDS = {
+    "building_physics": 3,
+    "materials": 3,
+    "climate": 2,
+    "failure": 2,
+    "insurance_risk": 2,
+}
 HTML_DISCOVERY_MIN_INTERVAL_SECONDS = 1.0
 _HTML_DISCOVERY_LAST_REQUEST_AT: dict[str, float] = {}
 logger = logging.getLogger(__name__)
@@ -152,8 +171,92 @@ def _triage_construction_pdf(pdf_path: Path, triage_rows: list[TriagedSource]) -
     return triage.keep_skip_review == "keep"
 
 
+def _construction_review_lens_order() -> list[str]:
+    return [lens_name for lens_name in CONSTRUCTION_REVIEW_LENS_ORDER if lens_name in LENS_REGISTRY]
+
+
+def _score_construction_review_lenses(pdf_path: Path, first_pages: int = 3) -> dict[str, int]:
+    lens_order = _construction_review_lens_order()
+    lens_counts = {lens_name: 0 for lens_name in lens_order}
+
+    if not lens_order:
+        return lens_counts
+
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages[:first_pages]:
+                text = page.extract_text() or ""
+                if not text.strip():
+                    continue
+                for sentence in chunk_sentences(text):
+                    results = detect_multi_lens(sentence, enabled_lenses=lens_order)
+                    for result in results:
+                        lens_name = result.get("lens")
+                        if lens_name in lens_counts:
+                            lens_counts[lens_name] += 1
+    except Exception:
+        logger.exception("Failed to score construction review PDF with lenses: %s", pdf_path)
+
+    return lens_counts
+
+
+def _promotion_decision_from_lens_counts(lens_counts: dict[str, int]) -> tuple[bool, str]:
+    for lens_name, threshold in CONSTRUCTION_REVIEW_PROMOTION_THRESHOLDS.items():
+        score = lens_counts.get(lens_name, 0)
+        if score >= threshold:
+            return True, f"{lens_name} hits={score} >= {threshold}"
+    counts_text = ", ".join(f"{name}={lens_counts.get(name, 0)}" for name in _construction_review_lens_order())
+    return False, f"no lens threshold met ({counts_text})"
+
+
+def _finalize_construction_triage(pdf_path: Path, triage_rows: list[TriagedSource]) -> TriagedSource:
+    triage = scan_pdf(pdf_path)
+    triage_decision = triage.keep_skip_review
+    lens_counts: dict[str, int] = {}
+    lens_promoted = False
+    promotion_reason = ""
+    final_decision = triage_decision
+
+    if triage_decision == "review":
+        lens_counts = _score_construction_review_lenses(pdf_path)
+        lens_promoted, promotion_reason = _promotion_decision_from_lens_counts(lens_counts)
+        if lens_promoted:
+            final_decision = "keep"
+
+    finalized = replace(
+        triage,
+        keep_skip_review=final_decision,
+        triage_decision=triage_decision,
+        lens_promoted=lens_promoted,
+        promotion_reason=promotion_reason,
+        lens_hit_counts=json.dumps(lens_counts, sort_keys=True),
+        final_decision=final_decision,
+    )
+    triage_rows.append(finalized)
+    _store_triaged_construction_pdf(pdf_path, triage_decision)
+    if triage_decision == "review" and final_decision == "keep":
+        _store_triaged_construction_pdf(pdf_path, "keep")
+    return finalized
+
+
 def _is_construction_keep_path(pdf_path: Path, keep_paths: set[str]) -> bool:
     return str(pdf_path) in keep_paths
+
+
+def _store_triaged_construction_pdf(pdf_path: Path, decision: str) -> Path | None:
+    if decision not in {"keep", "review"}:
+        return None
+
+    bucket_dir = RSS_ORGANIZED_DIR / "construction_science" / decision
+    bucket_dir.mkdir(parents=True, exist_ok=True)
+    destination = bucket_dir / pdf_path.name
+    if not destination.exists():
+        copy2(pdf_path, destination)
+    return destination
+
+
+def _triage_and_store_construction_pdf(pdf_path: Path, triage_rows: list[TriagedSource]) -> TriagedSource:
+    return _finalize_construction_triage(pdf_path, triage_rows)
 
 
 def _process_pdf_urls(
@@ -190,14 +293,22 @@ def _process_pdf_urls(
 
         if domain == "construction_science":
             if construction_keep_manifest_enabled:
-                if construction_keep_paths is not None and not _is_construction_keep_path(pdf, construction_keep_paths):
-                    print("⚠️ Skipping PDF not listed in keep manifest")
+                triage = _triage_and_store_construction_pdf(pdf, source_triage_rows if source_triage_rows is not None else [])
+                in_keep_manifest = construction_keep_paths is not None and _is_construction_keep_path(pdf, construction_keep_paths)
+                if not in_keep_manifest:
+                    if not (triage.triage_decision == "review" and triage.keep_skip_review == "keep"):
+                        print("⚠️ Skipping PDF not listed in keep manifest")
+                        continue
+                    if construction_keep_paths is not None:
+                        construction_keep_paths.add(str(pdf))
+                elif triage.keep_skip_review != "keep":
+                    print("⚠️ Skipping PDF after review lens scan")
                     continue
             elif source_triage_rows is not None:
-                keep_pdf = _triage_construction_pdf(pdf, source_triage_rows)
-                if keep_pdf and construction_keep_paths is not None:
+                triage = _triage_and_store_construction_pdf(pdf, source_triage_rows)
+                if triage.keep_skip_review == "keep" and construction_keep_paths is not None:
                     construction_keep_paths.add(str(pdf))
-                if not keep_pdf:
+                if triage.keep_skip_review != "keep":
                     print("⚠️ Skipping PDF after source triage")
                     continue
 
@@ -802,13 +913,19 @@ def main():
                             continue
                         if domain == "construction_science":
                             if construction_keep_manifest_enabled:
-                                if not _is_construction_keep_path(pdf, construction_keep_paths):
-                                    if not _triage_construction_pdf(pdf, triage_rows):
+                                triage = _triage_and_store_construction_pdf(pdf, triage_rows)
+                                in_keep_manifest = _is_construction_keep_path(pdf, construction_keep_paths)
+                                if not in_keep_manifest:
+                                    if not (triage.triage_decision == "review" and triage.keep_skip_review == "keep"):
                                         print("⚠️ Skipping PDF not listed in keep manifest")
                                         continue
                                     construction_keep_paths.add(str(pdf))
+                                elif triage.keep_skip_review != "keep":
+                                    print("⚠️ Skipping PDF after review lens scan")
+                                    continue
                             else:
-                                if not _triage_construction_pdf(pdf, triage_rows):
+                                triage = _triage_and_store_construction_pdf(pdf, triage_rows)
+                                if triage.keep_skip_review != "keep":
                                     print("⚠️ Skipping PDF after source triage")
                                     continue
                                 construction_keep_paths.add(str(pdf))
@@ -840,6 +957,9 @@ def main():
                 domain,
                 db_path,
                 feed.get("name", "Unknown"),
+                source_triage_rows=triage_rows,
+                construction_keep_paths=construction_keep_paths,
+                construction_keep_manifest_enabled=construction_keep_manifest_enabled,
             )
             print(f"   📎 PDF links: {result['pdf_links']}")
             if result["pdf_processed"] > 0:

@@ -38,6 +38,12 @@ NEGATION_PATTERNS = tuple(
 
 
 def route_climate_sentence(sentence: str) -> RouteDecision:
+    """Registered router callback used by DEFAULT_CONSTRUCTION_LENS_ROUTERS.
+
+    Return RouteDecision("keep", reason) for a climate signal in construction
+    context or RouteDecision("skip", reason) for sentences that should be
+    ignored by _detect_multi_lens_internal.
+    """
     s_l = sentence.lower()
     if has_construction_context(s_l) and (list_hits(s_l, HAZARDS) or list_hits(s_l, RESILIENCE_TERMS)):
         return RouteDecision("keep", "climate signal in construction context")
@@ -45,10 +51,11 @@ def route_climate_sentence(sentence: str) -> RouteDecision:
 
 
 def _has_non_negated_signal(text_lower: str, phrases: list[str]) -> bool:
+    lookback_length = 10
     for phrase in phrases:
         for match in re.finditer(re.escape(phrase), text_lower):
             prefix_tokens = re.findall(r"\b\w+\b", text_lower[: match.start()])
-            window = " ".join(prefix_tokens[-5:])
+            window = " ".join(prefix_tokens[-lookback_length:])
             if any(pattern.search(window) for pattern in NEGATION_PATTERNS):
                 continue
             return True
@@ -78,15 +85,14 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     entities: List[dict] = []
 
     # Use word-boundary matching for hazards and resilience terms
+    construction_context = has_construction_context(s_l)
     haz = list_hits(s_l, HAZARDS)
     resil = list_hits(s_l, RESILIENCE_TERMS)
-    construction_context = has_construction_context(s_l)
 
     # Climate lens requires construction context first, then hazard/resilience terms.
-    if not haz and not resil:
-        return None, []
-
     if not construction_context:
+        return None, []
+    if not haz and not resil:
         return None, []
 
     for h in haz[:6]:

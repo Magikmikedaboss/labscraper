@@ -10,6 +10,7 @@ import argparse
 import csv
 import json
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -21,6 +22,24 @@ from utils.text_utils import chunk_sentences
 
 logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent
+
+
+def _summary_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT).as_posix()
+    except ValueError:
+        return resolved.as_posix()
+
+
+def _max_workers(default_limit: int = 4) -> int:
+    default_value = str(min(default_limit, os.cpu_count() or 1))
+    raw_value = os.getenv("MAX_WORKERS", default_value)
+    try:
+        workers = int(raw_value)
+    except ValueError:
+        workers = int(default_value)
+    return max(1, workers)
 
 
 def _scan_pdf(pdf_path: Path) -> tuple[str, list[dict], int]:
@@ -78,7 +97,16 @@ def main(
     if max_pdfs is not None:
         pdf_paths = pdf_paths[:max_pdfs]
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+        max_workers_env = os.getenv("MAX_WORKERS")
+        default_workers = str(min(4, (os.cpu_count() or 1)))
+        try:
+            max_workers = int(max_workers_env) if max_workers_env is not None else int(default_workers)
+            if max_workers <= 0:
+                raise ValueError
+        except ValueError:
+            max_workers = int(default_workers)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for index, (pdf_name, local_rows, local_hits) in enumerate(executor.map(_scan_pdf, pdf_paths), start=1):
             rows.extend(local_rows)
             if local_hits:
@@ -112,7 +140,7 @@ def main(
         "total_hits": len(rows),
         "event_type_counts": {},
         "top_pdfs": sorted(pdf_hits.items(), key=lambda item: (-item[1], item[0]))[:10],
-        "csv_path": csv_path.resolve().relative_to(ROOT).as_posix(),
+        "csv_path": _summary_path(csv_path),
     }
     for row in rows:
         summary["event_type_counts"][row["event_type"]] = summary["event_type_counts"].get(row["event_type"], 0) + 1

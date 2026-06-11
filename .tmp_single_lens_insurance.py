@@ -24,8 +24,21 @@ logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent
 
 
-def _default_source_type(cache_dir: Path) -> str:
-    return "news" if cache_dir.name.lower() == "rss" else "research_paper"
+def _summary_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT).as_posix()
+    except ValueError:
+        return resolved.as_posix()
+
+
+def _default_source_type(cache_dir: Path, source_type: str | None = None) -> str:
+    if source_type is not None:
+        normalized = source_type.strip().lower()
+        if normalized not in {"news", "research_paper"}:
+            raise ValueError(f"Invalid source_type: {source_type}")
+        return normalized
+        return "news" if cache_dir.name.lower() == "rss" else "research_paper"
 
 
 def _scan_pdf(pdf_path: Path, source_type: str) -> tuple[str, list[dict], int]:
@@ -72,7 +85,7 @@ def main(
     source_type: str | None = None,
 ) -> int:
     max_pdfs = _env_limit("LABSCRAPER_MAX_PDFS") if max_pdfs is None else max_pdfs
-    source_type = source_type or _default_source_type(cache_dir)
+    source_type = _default_source_type(cache_dir, source_type)
 
     _configure_logging(logger, out_dir, "insurance_lens_cache_results.log")
 
@@ -127,7 +140,7 @@ def main(
         "total_hits": len(rows),
         "event_type_counts": {},
         "top_pdfs": sorted(pdf_hits.items(), key=lambda item: (-item[1], item[0]))[:10],
-        "csv_path": csv_path.resolve().relative_to(ROOT).as_posix(),
+        "csv_path": _summary_path(csv_path),
     }
     for row in rows:
         summary["event_type_counts"][row["event_type"]] = summary["event_type_counts"].get(row["event_type"], 0) + 1

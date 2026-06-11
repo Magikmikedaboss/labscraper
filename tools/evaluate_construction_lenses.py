@@ -37,6 +37,15 @@ def _default_output_dir() -> Path:
     return ROOT / "exports" / "lens_evaluation"
 
 
+def _is_review_bucket_pdf(path: Path) -> bool:
+    review_dir = (ROOT / "cache" / "rss_organized" / "construction_science" / "review").resolve()
+    try:
+        return path.resolve().is_relative_to(review_dir)
+    except AttributeError:
+        resolved = path.resolve()
+        return str(resolved).startswith(str(review_dir))
+
+
 def _normalize_manifest_entries(manifest_path: Path) -> set[str]:
     normalized: set[str] = set()
     for item in load_keep_manifest(manifest_path):
@@ -75,6 +84,17 @@ def _collect_candidate_pdfs(
             keep_files.append(pdf_path)
 
     seen = {path.resolve().as_posix() for path in keep_files}
+
+    review_dir = ROOT / "cache" / "rss_organized" / "construction_science" / "review"
+    if review_dir.exists():
+        for pdf_path in sorted(review_dir.rglob("*.pdf")):
+            resolved = pdf_path.resolve().as_posix()
+            if resolved in seen:
+                continue
+            keep_files.append(pdf_path)
+            seen.add(resolved)
+            if len(keep_files) >= limit:
+                return keep_files[:limit]
 
     if len(keep_files) < limit:
         scan_limit = triage_limit if triage_limit is not None else None
@@ -123,7 +143,7 @@ def _scan_pdf_for_lenses(pdf_path: Path, lens_order: list[str]) -> tuple[dict[st
                         if lens_name in lens_counts:
                             lens_counts[lens_name] += 1
     except (OSError, IOError, PDFSyntaxError):
-        logger.exception("Expected PDF scan failure for %s", pdf_path)
+        logger.exception("Handled PDF scan error for %s", pdf_path)
         error_count = 1
     except Exception:
         logger.exception("Failed to scan PDF %s", pdf_path)
@@ -180,6 +200,7 @@ def _write_markdown(rows: list[dict], lens_order: list[str], summary: dict[str, 
     lines = ["# Construction Lens Evaluation", ""]
     lines.append(f"- PDFs evaluated: {summary['pdfs_evaluated']}")
     lines.append(f"- PDFs from keep manifest: {summary['manifest_pdfs']}")
+    lines.append(f"- PDFs from review bucket: {summary['review_bucket_pdfs']}")
     lines.append(f"- PDFs added from triage: {summary['triaged_pdfs']}")
     lines.append("")
 
@@ -258,6 +279,7 @@ def main(argv: list[str] | None = None) -> int:
     summary = {
         "pdfs_evaluated": len(rows),
         "manifest_pdfs": manifest_selected_count,
+        "review_bucket_pdfs": sum(1 for path in pdf_paths if _is_review_bucket_pdf(path)),
         "triaged_pdfs": len(rows) - manifest_selected_count,
         "total_hits": total_hits,
         "lens_total_hits": dict(lens_totals),

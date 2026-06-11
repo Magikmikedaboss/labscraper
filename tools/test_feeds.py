@@ -201,12 +201,11 @@ def main(argv=None):
     if args.save_working and working:
         sanitized_feeds = []
         for r in working:
-            original_feed = dict(r.get("feed", {}))
-            domain = original_feed.get("domain") or args.default_domain
+            feed_entry = dict(r.get("feed", {}))
+            domain = feed_entry.get("domain") or args.default_domain
             if not domain:
                 print(f"⚠️ Skipping feed without a domain: {r.get('name')} ({r.get('url')})")
                 continue
-            feed_entry = original_feed.copy()
             feed_entry["domain"] = domain
             feed_entry["enabled"] = True
             sanitized_feeds.append(feed_entry)

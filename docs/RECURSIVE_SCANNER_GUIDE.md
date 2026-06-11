@@ -13,14 +13,14 @@ The recursive scanner automatically:
 
 ### Scan All Your PDFs (Recommended)
 ```bash
-python utils/scrape_all_pdfs_recursive.py --root-dirs "D:\myrepo\peptide-scraper\input_pdfs_test" "D:\myrepo\peptide-scraper\input_pdfs" --domain biohacking_longevity --output-db output/all_pdfs_master.sqlite --workers 8
+python utils/scrape_all_pdfs_recursive.py --root-dirs "./input_pdfs_test" "./input_pdfs" --domain <domain> --output-db <output_db.sqlite> --workers 8
 ```
 
 This will:
 - Scan both `input_pdfs_test` and `input_pdfs` directories
 - Find all PDFs in all subfolders
 - Process with 8 workers (8x faster!)
-- Create `output/all_pdfs_master.sqlite` with all results
+- Create `<output_db.sqlite>` with all results
 
 ## Command Options
 
@@ -33,31 +33,31 @@ python utils/scrape_all_pdfs_recursive.py --root-dirs FOLDER1 [FOLDER2 ...] [OPT
 
 | Option | Description | Default | Example |
 |--------|-------------|---------|---------|
-| `--root-dirs` | Root directories to scan (required, can specify multiple) | - | `"D:\pdfs1" "D:\pdfs2"` |
-| `--domain` | Research domain | `biohacking_longevity` | `neuroscience_cognition` |
-| `--output-db` | Output database path | `output/all_pdfs_combined.sqlite` | `output/my_data.sqlite` |
+| `--root-dirs` | Root directories to scan (required, can specify multiple) | - | `"./input_pdfs_test" "./input_pdfs"` |
+| `--domain` | Research domain | `biohacking_longevity` | `<domain>` |
+| `--output-db` | Output database path | `output/all_pdfs_combined.sqlite` | `<output_db.sqlite>` |
 | `--workers` | Number of parallel workers | `4` | `8` |
 
 ## Examples
 
 ### Example 1: Scan One Directory
 ```bash
-python utils/scrape_all_pdfs_recursive.py --root-dirs "D:\myrepo\peptide-scraper\input_pdfs" --workers 4
+python utils/scrape_all_pdfs_recursive.py --root-dirs "./input_pdfs" --domain <domain> --output-db <output_db.sqlite> --workers 4
 ```
 
 ### Example 2: Scan Multiple Directories
 ```bash
-python utils/scrape_all_pdfs_recursive.py --root-dirs "D:\myrepo\peptide-scraper\input_pdfs_test" "D:\myrepo\peptide-scraper\input_pdfs" --workers 8
+python utils/scrape_all_pdfs_recursive.py --root-dirs "./input_pdfs_test" "./input_pdfs" --domain <domain> --output-db <output_db.sqlite> --workers 8
 ```
 
 ### Example 3: Custom Output Database
 ```bash
-python utils/scrape_all_pdfs_recursive.py --root-dirs "D:\pdfs" --output-db output/my_research.sqlite --workers 6
+python utils/scrape_all_pdfs_recursive.py --root-dirs "/path/to/input_pdfs" --domain <domain> --output-db <output_db.sqlite> --workers 6
 ```
 
 ### Example 4: Different Domain
 ```bash
-python utils/scrape_all_pdfs_recursive.py --root-dirs "D:\neuroscience_pdfs" --domain neuroscience_cognition --workers 8
+python utils/scrape_all_pdfs_recursive.py --root-dirs "/path/to/input_pdfs" --domain <domain> --output-db <output_db.sqlite> --workers 8
 ```
 
 ## What Happens When You Run It
@@ -113,7 +113,7 @@ SCRAPING COMPLETE
  Total PDFs processed: 343
  Successful: 340
  Total events extracted: 15,234
- Database: D:\myrepo\peptide-scraper\output\all_pdfs_master.sqlite
+ Database: <output_db.sqlite>
 
 ======================================================================
 DATABASE STATISTICS
@@ -124,7 +124,7 @@ DATABASE STATISTICS
 
 ======================================================================
 NEXT STEP: Run dual-lens export
-  python utils/export/export_dual_lens.py output/all_pdfs_master.sqlite biohacking_longevity
+  python utils/export/export_dual_lens.py <output_db.sqlite> <domain>
 ======================================================================
 ```
 

@@ -49,7 +49,7 @@ def test_classify_triage_review_mixed_signals(tmp_path):
     assert written == csv_path
     assert csv_path.exists()
     assert csv_path.read_text(encoding="utf-8").splitlines()[0] == (
-        "title,building_physics_score,materials_score,failure_score,climate_score,decision,reason"
+        "title,building_physics_score,materials_score,failure_score,climate_score,triage_decision,lens_promoted,promotion_reason,lens_hit_counts,final_decision,decision,reason"
     )
 
 

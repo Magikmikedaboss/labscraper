@@ -21,6 +21,15 @@ from utils.text_utils import chunk_sentences
 from utils.lens_scan_utils import _configure_logging, _env_limit
 
 logger = logging.getLogger(__name__)
+ROOT = Path(__file__).resolve().parent
+
+
+def _summary_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT).as_posix()
+    except ValueError:
+        return resolved.as_posix()
 
 
 def _scan_pdf(
@@ -63,7 +72,7 @@ def _scan_pdf(
                         'context_strength': event.context_strength,
                         'source_weight': f'{event.source_weight:.2f}',
                         'tags': '|'.join(event.tags),
-                        'entities': json.dumps(entities, ensure_ascii=True),
+                        'entities': json.dumps(entities, ensure_ascii=False),
                     })
     except Exception:
         logger.exception(
@@ -114,7 +123,7 @@ def main(
             executor.map(_scan_pdf, pdf_paths, repeat(source_type), repeat(max_pages_per_pdf), repeat(max_sentences_per_page)),
             start=1,
         ):
-            logger.info("Scanning PDF %s (%s)", pdf_name, processed_pdfs)
+            logger.debug("Scanning PDF %s (%s)", pdf_name, processed_pdfs)
             rows.extend(local_rows)
             if local_hits:
                 pdf_hits[pdf_name] = local_hits
@@ -143,7 +152,7 @@ def main(
         'pdfs_without_hits': processed_pdfs - len(pdf_hits),
         'total_hits': sum(pdf_hits.values()),
         'event_type_counts': event_type_counts,
-        'csv_path': csv_path.as_posix(),
+        'csv_path': _summary_path(csv_path),
         'top_pdfs': [[pdf_name, count] for pdf_name, count in sorted(pdf_hits.items(), key=lambda item: (-item[1], item[0]))[:10]],
     }
     summary_path.write_text(json.dumps(summary, indent=2), encoding='utf-8')

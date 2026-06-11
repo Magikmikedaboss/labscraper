@@ -28,6 +28,10 @@ TEST_MARKERS = ["test", "tested", "measured", "results", "specimen", "samples"]
 
 
 def route_materials_sentence(sentence: str) -> RouteDecision:
+    """Registered router callback used by DEFAULT_CONSTRUCTION_LENS_ROUTERS and _detect_multi_lens_internal.
+
+    Return RouteDecision("keep", reason) for materials signals or RouteDecision("skip", reason) otherwise.
+    """
     s_l = sentence.lower()
     mats = list_hits(s_l, MATERIALS)
     props = list_hits(s_l, PROPERTIES)
@@ -52,7 +56,6 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         or (bool(props) and (has_unit_signal(s_l) or has_number(s_l)))
         or ((bool(mats) or bool(props)) and contains_any(s_l, TEST_MARKERS))
     )
-
     # Return early if no signal
     if not signal:
         return None, []

@@ -33,58 +33,57 @@ class OverlayScorerProtocol(Protocol):
 
 def load_events_and_entities(db_path: str) -> Tuple[RowSeq, RowSeq, RowSeq, RowSeq]:
     try:
-        with sqlite3.connect(db_path) as con:
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            columns = {
-                row[1]
-                for row in cur.execute("PRAGMA table_info(research_events)").fetchall()
-            }
+        con = sqlite3.connect(db_path)
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        columns = {row[1] for row in cur.execute("PRAGMA table_info(research_events)").fetchall()}
 
-            if "stage" in columns:
-                events = cur.execute(
-                    """
-                    SELECT event_id, event_type, stage AS stage, confidence, evidence_snippet,
-                           source_id, doc_id, chunk_id, page_number, created_at
-                    FROM research_events
-                    """
-                ).fetchall()
-            elif "study_stage" in columns:
-                events = cur.execute(
-                    """
-                    SELECT event_id, event_type, study_stage AS stage, confidence, evidence_snippet,
-                           source_id, doc_id, chunk_id, page_number, created_at
-                    FROM research_events
-                    """
-                ).fetchall()
-            else:
-                events = cur.execute(
-                    """
-                    SELECT event_id, event_type, NULL AS stage, confidence, evidence_snippet,
-                           source_id, doc_id, chunk_id, page_number, created_at
-                    FROM research_events
-                    """
-                ).fetchall()
-            entities = cur.execute(
+        if "stage" in columns:
+            events = cur.execute(
                 """
-                SELECT entity_id, entity_type, entity_name, entity_variant, organism, created_at
-                FROM entities
+                SELECT event_id, event_type, stage AS stage, confidence, evidence_snippet,
+                       source_id, doc_id, chunk_id, page_number, created_at
+                FROM research_events
                 """
             ).fetchall()
-            event_entities = cur.execute(
-                "SELECT entity_id, event_id, role FROM event_entities"
-            ).fetchall()
-            model_rows = cur.execute(
+        elif "study_stage" in columns:
+            events = cur.execute(
                 """
-                SELECT ee.event_id, ee.role, e.entity_name
-                FROM event_entities ee
-                JOIN entities e ON ee.entity_id = e.entity_id
-                WHERE e.entity_type = 'model'
+                SELECT event_id, event_type, study_stage AS stage, confidence, evidence_snippet,
+                       source_id, doc_id, chunk_id, page_number, created_at
+                FROM research_events
                 """
             ).fetchall()
+        else:
+            events = cur.execute(
+                """
+                SELECT event_id, event_type, NULL AS stage, confidence, evidence_snippet,
+                       source_id, doc_id, chunk_id, page_number, created_at
+                FROM research_events
+                """
+            ).fetchall()
+        entities = cur.execute(
+            """
+            SELECT entity_id, entity_type, entity_name, entity_variant, organism, created_at
+            FROM entities
+            """
+        ).fetchall()
+        event_entities = cur.execute(
+            "SELECT entity_id, event_id, role FROM event_entities"
+        ).fetchall()
+        model_rows = cur.execute(
+            """
+            SELECT ee.event_id, ee.role, e.entity_name
+            FROM event_entities ee
+            JOIN entities e ON ee.entity_id = e.entity_id
+            WHERE e.entity_type = 'model'
+            """
+        ).fetchall()
     except sqlite3.Error as e:
         logger.error("Failed loading events/entities from %s: %s", db_path, e)
         raise
+    finally:
+        con.close()
 
     return events, entities, event_entities, model_rows
 

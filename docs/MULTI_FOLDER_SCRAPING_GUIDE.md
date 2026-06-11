@@ -4,8 +4,9 @@
 
 We're scraping **two folders** into **one combined database**.
 
-This guide targets the legacy/phase-1 scraper entrypoint. The parallel scraper lives in `utils/scrape_pdfs_parallel.py`, and it defaults to `input_pdfs/` unless you override `--input-dir`. The other canonical paths in `utils/run_engine.py`, `utils/scrape_pdfs_phase1_full.py`, and `utils/source_triage.py` expect `input/pdfs/`, so keep the folder naming consistent or create an `input_pdfs/` symlink that points at `input/pdfs/`.
-Example: `ln -s input/pdfs input_pdfs`.
+This guide targets the legacy/phase-1 scraper entrypoint. The parallel scraper lives in `utils/scrape_pdfs_parallel.py`, and it defaults to `input_pdfs/` unless you override `--input-dir`. The other canonical paths in `utils/run_engine.py`, `utils/scrape_pdfs_phase1_full.py`, and `utils/source_triage.py` expect `input/pdfs/`, so keep the folder naming consistent or create a symlink `input_pdfs/ → input/pdfs/`.
+Example: `ln -s input/pdfs input_pdfs` so `input_pdfs/ -> input/pdfs/`.
+On Windows, use `mklink /D input_pdfs input\pdfs` from an elevated Command Prompt, or in PowerShell use `New-Item -ItemType SymbolicLink -Path input_pdfs -Target input\pdfs`. Windows requires elevated privileges for symlink creation, so pick the command that matches your OS and shell.
 
 ### Folder 1: `input/pdfs/` In Progress
 - **65 PDFs** (stem cell, peptide, longevity research)

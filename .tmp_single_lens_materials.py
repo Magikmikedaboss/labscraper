@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent
 
 
+def _summary_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT).as_posix()
+    except ValueError:
+        return resolved.as_posix()
+
+
 def _scan_pdf(pdf_path: Path) -> tuple[str, list[dict], int]:
     local_rows: list[dict] = []
     local_hits = 0
@@ -87,6 +95,10 @@ def main(
                 logger.info("Progress processed_pdfs=%s pdf_hits=%s rows=%s", index, len(pdf_hits), len(rows))
 
     csv_path = out_dir / "materials_lens_cache_hits.csv"
+    try:
+        csv_summary_path = csv_path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        csv_summary_path = csv_path.resolve().as_posix()
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,
@@ -112,7 +124,7 @@ def main(
         "total_hits": len(rows),
         "event_type_counts": {},
         "top_pdfs": sorted(pdf_hits.items(), key=lambda item: (-item[1], item[0]))[:10],
-        "csv_path": csv_path.resolve().relative_to(ROOT).as_posix(),
+        "csv_path": csv_summary_path,
     }
     for row in rows:
         summary["event_type_counts"][row["event_type"]] = summary["event_type_counts"].get(row["event_type"], 0) + 1

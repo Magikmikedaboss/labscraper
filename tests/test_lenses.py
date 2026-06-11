@@ -175,6 +175,12 @@ class TestConstructionCommon:
         sentence = "Compressive strength improved to 45 MPa after testing."
         assert infer_context_strength(sentence, has_numbers=True, has_units=True) == "strong"
 
+    def test_has_construction_context_supports_env_override(self, monkeypatch):
+        from lenses.construction_common import has_construction_context
+
+        monkeypatch.setenv("LABSCRAPER_CONSTRUCTION_CONTEXT_TERMS", "megastructure")
+        assert has_construction_context("The megastructure failed during testing.")
+
 
 # ---------------------------------------------------------------------------
 # construction_failure_v1
@@ -279,6 +285,66 @@ class TestMaterialsLens:
         assert result == (None, [])
 
 
+class TestRoutingHelpers:
+    def test_route_materials_sentence_keep_and_skip(self):
+        from lenses.construction_materials_v1 import route_materials_sentence
+
+        keep_decision = route_materials_sentence("Concrete specimens showed improved compressive strength.")
+        skip_decision = route_materials_sentence("The annual budget meeting was held in January.")
+
+        assert keep_decision.decision == "keep"
+        assert keep_decision.reason == "materials signal present"
+        assert skip_decision.decision == "skip"
+        assert skip_decision.reason == "no materials signal present"
+
+    def test_route_climate_sentence_keep_and_skip(self):
+        from lenses.construction_climate_v1 import route_climate_sentence
+
+        keep_decision = route_climate_sentence("Flood risk to building foundations increased under projections.")
+        skip_decision = route_climate_sentence("Flood risk increased under projections.")
+
+        assert keep_decision.decision == "keep"
+        assert keep_decision.reason == "climate signal in construction context"
+        assert skip_decision.decision == "skip"
+        assert skip_decision.reason == "no climate signal in construction context"
+
+
+class TestMaterialsRouter:
+    def test_route_materials_sentence_keeps_material_signal(self):
+        from lenses.construction_materials_v1 import route_materials_sentence
+
+        decision = route_materials_sentence("The concrete mix improved compressive strength.")
+
+        assert decision.decision == "keep"
+        assert "materials signal present" in decision.reason
+
+    def test_route_materials_sentence_skips_without_signal(self):
+        from lenses.construction_materials_v1 import route_materials_sentence
+
+        decision = route_materials_sentence("The meeting agenda covered general project updates.")
+
+        assert decision.decision == "skip"
+        assert "no materials signal" in decision.reason
+
+
+class TestClimateRouter:
+    def test_route_climate_sentence_keeps_climate_signal(self):
+        from lenses.construction_climate_v1 import route_climate_sentence
+
+        decision = route_climate_sentence("The building envelope improved resilience against flooding.")
+
+        assert decision.decision == "keep"
+        assert decision.reason == "climate signal in construction context"
+
+    def test_route_climate_sentence_skips_without_signal(self):
+        from lenses.construction_climate_v1 import route_climate_sentence
+
+        decision = route_climate_sentence("The committee reviewed unrelated logistics.")
+
+        assert decision.decision == "skip"
+        assert "no climate signal" in decision.reason
+
+
 # ---------------------------------------------------------------------------
 # construction_insurance_risk_v1
 # ---------------------------------------------------------------------------
@@ -341,7 +407,8 @@ class TestInsuranceRiskLens:
         assert event is None
         assert entities == []
 
-    def test_generic_property_terms_do_not_fire_without_conjunction(self):
+    # Property terms alone should not fire unless systems, loss_causes, or insurance_terms provide support.
+    def test_property_risk_terms_require_support_from_systems_or_loss_causes_or_insurance_terms(self):
         from lenses.construction_insurance_risk_v1 import detect
 
         event, entities = detect("The building envelope had moisture during testing.")

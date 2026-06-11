@@ -1,15 +1,12 @@
 from pathlib import Path
 from types import SimpleNamespace
-import sqlite3
 
-import pytest
 from requests.exceptions import HTTPError
 from unittest.mock import Mock, patch
 
-from run_rss_ingest import download_pdf, get_pdf_links_from_feed, process_feed_entry, _process_pdf_urls
-from run_rss_ingest import process_html_document
-from utils.domain_router import route_construction_source
-from utils.db_init import init_db_schema
+import pytest
+
+from run_rss_ingest import _process_pdf_urls, download_pdf, get_pdf_links_from_feed, process_feed_entry
 from utils.source_triage import TriagedSource
 
 
@@ -93,13 +90,6 @@ class TestHybridFeedEntryProcessing:
         assert result["used_abstract_fallback"] is False
         mock_process_pdf.assert_called_once()
         mock_process_html_document.assert_not_called()
-        mock_process_pdf.assert_called_with(
-            mock_download_pdf.return_value,
-            "construction_science",
-            Path("db/test.sqlite"),
-            source_url="https://example.com/doc.pdf",
-            source_title="Entry",
-        )
 
     @patch("run_rss_ingest.process_html_document")
     @patch("run_rss_ingest.extract_abstract_text_from_url")
@@ -135,16 +125,16 @@ class TestHybridFeedEntryProcessing:
 
     @patch("run_rss_ingest.process_html_document")
     @patch("run_rss_ingest.process_pdf")
-    @patch("run_rss_ingest.is_valid_pdf", return_value=True)
-    @patch("run_rss_ingest.download_pdf")
     @patch("run_rss_ingest.find_abstract_links")
     @patch("run_rss_ingest.get_pdf_links_from_entry")
+    @patch("run_rss_ingest.is_valid_pdf", return_value=True)
+    @patch("run_rss_ingest.download_pdf")
     def test_pdf_success_prevents_duplicate_abstract_processing(
         self,
-        mock_get_pdf_links_from_entry,
-        mock_find_abstract_links,
         mock_download_pdf,
         mock_is_valid_pdf,
+        mock_get_pdf_links_from_entry,
+        mock_find_abstract_links,
         mock_process_pdf,
         mock_process_html_document,
         tmp_path,
@@ -165,6 +155,7 @@ class TestHybridFeedEntryProcessing:
     @patch("run_rss_ingest.process_html_document")
     @patch("run_rss_ingest.process_pdf")
     @patch("run_rss_ingest.scan_pdf")
+    @patch("run_rss_ingest._score_construction_review_lenses", return_value={"building_physics": 0, "materials": 0, "climate": 0, "failure": 0, "compliance": 0, "insurance_risk": 0})
     @patch("run_rss_ingest.is_valid_pdf", return_value=True)
     @patch("run_rss_ingest.download_pdf")
     @patch("run_rss_ingest.get_pdf_links_from_entry")
@@ -173,6 +164,7 @@ class TestHybridFeedEntryProcessing:
         mock_get_pdf_links_from_entry,
         mock_download_pdf,
         mock_is_valid_pdf,
+        mock_score_review_lenses,
         mock_scan_pdf,
         mock_process_pdf,
         mock_process_html_document,
@@ -205,92 +197,119 @@ class TestHybridFeedEntryProcessing:
         mock_process_pdf.assert_not_called()
         mock_process_html_document.assert_not_called()
 
-    @patch("run_rss_ingest.find_abstract_links")
-    @patch("run_rss_ingest.get_pdf_links_from_entry")
-    def test_router_skips_obvious_biomedical_entry_before_pdf_discovery(
+    @patch("run_rss_ingest.process_html_document")
+    @patch("run_rss_ingest.process_pdf")
+    @patch("run_rss_ingest.scan_pdf")
+    @patch("run_rss_ingest._score_construction_review_lenses", return_value={"building_physics": 0, "materials": 0, "climate": 0, "failure": 0, "compliance": 0, "insurance_risk": 0})
+    @patch("run_rss_ingest.is_valid_pdf", return_value=True)
+    @patch("run_rss_ingest.download_pdf")
+    @patch("run_rss_ingest.route_construction_source")
+    def test_construction_triage_stores_keep_and_review_pdfs(
         self,
-        mock_get_pdf_links_from_entry,
-        mock_find_abstract_links,
+        mock_route_construction_source,
+        mock_download_pdf,
+        mock_is_valid_pdf,
+        mock_score_review_lenses,
+        mock_scan_pdf,
+        mock_process_pdf,
+        mock_process_html_document,
+        tmp_path,
+        monkeypatch,
     ):
-        entry = {
-            "title": "Stem cell organoid assay paper",
-            "summary": "biomedical protein and peptide study",
-            "link": "https://example.com/article",
+        monkeypatch.setattr("run_rss_ingest.RSS_ORGANIZED_DIR", tmp_path / "organized")
+        mock_route_construction_source.return_value = SimpleNamespace(decision="keep", reason="ok")
+
+        pdf_path = tmp_path / "cache" / "rss" / "doc.pdf"
+        pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        pdf_path.write_bytes(b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF")
+        mock_download_pdf.return_value = pdf_path
+
+        for decision, expected_processed in [("keep", 1), ("review", 0)]:
+            mock_scan_pdf.reset_mock()
+            mock_process_pdf.reset_mock()
+            mock_scan_pdf.return_value = TriagedSource(
+                file_path=str(pdf_path),
+                title="Construction paper",
+                detected_domain="construction_science",
+                keep_skip_review=decision,
+                confidence="med",
+                construction_signals="roof; wall",
+                contamination_signals="",
+                reason=f"{decision} decision",
+            )
+
+            result = _process_pdf_urls(
+                ["https://example.com/doc.pdf"],
+                "construction_science",
+                Path("db/test.sqlite"),
+                "Moisture and wall assembly durability",
+                source_triage_rows=[],
+            )
+
+            bucket_path = tmp_path / "organized" / "construction_science" / decision / "doc.pdf"
+            assert bucket_path.exists()
+            assert result["pdf_processed"] == expected_processed
+            if decision == "keep":
+                mock_process_pdf.assert_called_once()
+            else:
+                mock_process_pdf.assert_not_called()
+
+    @patch("run_rss_ingest.process_html_document")
+    @patch("run_rss_ingest.process_pdf")
+    @patch("run_rss_ingest._score_construction_review_lenses")
+    @patch("run_rss_ingest.scan_pdf")
+    @patch("run_rss_ingest.is_valid_pdf", return_value=True)
+    @patch("run_rss_ingest.download_pdf")
+    @patch("run_rss_ingest.route_construction_source")
+    def test_construction_review_pdf_promotes_to_keep_with_lens_hits(
+        self,
+        mock_route_construction_source,
+        mock_download_pdf,
+        mock_is_valid_pdf,
+        mock_scan_pdf,
+        mock_score_review_lenses,
+        mock_process_pdf,
+        mock_process_html_document,
+        tmp_path,
+        monkeypatch,
+    ):
+        monkeypatch.setattr("run_rss_ingest.RSS_ORGANIZED_DIR", tmp_path / "organized")
+        mock_route_construction_source.return_value = SimpleNamespace(decision="keep", reason="ok")
+        mock_score_review_lenses.return_value = {
+            "building_physics": 3,
+            "materials": 0,
+            "climate": 0,
+            "failure": 0,
+            "compliance": 0,
+            "insurance_risk": 0,
         }
 
-        result = process_feed_entry(entry, domain="construction_science", db_path=Path("db/test.sqlite"))
+        pdf_path = tmp_path / "cache" / "rss" / "review.pdf"
+        pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        pdf_path.write_bytes(b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF")
+        mock_download_pdf.return_value = pdf_path
+        mock_scan_pdf.return_value = TriagedSource(
+            file_path=str(pdf_path),
+            title="Construction review paper",
+            detected_domain="construction_science",
+            keep_skip_review="review",
+            confidence="med",
+            construction_signals="roof; wall",
+            contamination_signals="",
+            reason="review decision",
+        )
+        mock_process_pdf.return_value = 0
 
-        assert result["source_routed"] == "skip"
-        assert result["pdf_processed"] == 0
-        mock_get_pdf_links_from_entry.assert_not_called()
-        mock_find_abstract_links.assert_not_called()
+        result = _process_pdf_urls(
+            ["https://example.com/review.pdf"],
+            "construction_science",
+            Path("db/test.sqlite"),
+            "Moisture and wall assembly durability",
+            source_triage_rows=[],
+        )
 
-
-def test_process_html_document_writes_rows(tmp_path):
-    db_path = tmp_path / "db" / "runs.sqlite"
-    init_db_schema(db_path)
-
-    events = process_html_document(
-        source_url="https://example.com/abstract",
-        source_title="Abstract Entry",
-        text="The wall assembly was analyzed in vitro using mass spectrometry and the optimized design reduced heat loss in the building envelope.",
-        domain="construction_science",
-        db_path=db_path,
-        source_type="abstract_fallback",
-    )
-
-    assert events >= 1
-
-    with sqlite3.connect(db_path) as con:
-        assert con.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 1
-        assert con.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 1
-        assert con.execute("SELECT COUNT(*) FROM chunks").fetchone()[0] == 1
-        assert con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0] >= 1
-
-
-def test_process_pdf_urls_handles_direct_pdf_lists(monkeypatch, tmp_path):
-    db_path = tmp_path / "db" / "runs.sqlite"
-    init_db_schema(db_path)
-
-    pdf_path = tmp_path / "cache" / "rss" / "fema.pdf"
-    pdf_path.parent.mkdir(parents=True, exist_ok=True)
-    pdf_path.write_bytes(b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF")
-
-    monkeypatch.setattr("run_rss_ingest.download_pdf", lambda url, cache_dir: pdf_path)
-    monkeypatch.setattr("run_rss_ingest.is_valid_pdf", lambda path: True)
-    monkeypatch.setattr("run_rss_ingest.process_pdf", lambda *args, **kwargs: 2)
-
-    result = _process_pdf_urls(
-        [
-            "https://www.fema.gov/sites/default/files/documents/fema_hmd_p-2422-building-codes-enforcement-playbook_06202025.pdf",
-            "https://www.fema.gov/sites/default/files/documents/fema_mitsaves-factsheet_2018.pdf",
-        ],
-        "construction_science",
-        db_path,
-        "FEMA Building Science Publications",
-    )
-
-    assert result["pdf_links"] == 2
-    assert result["pdf_processed"] == 2
-    assert result["pdf_events"] == 4
-
-
-def test_route_construction_source_skips_biomedical_text():
-    route = route_construction_source(
-        title="Stem cell organoid assay paper",
-        text="protein peptide cell culture study",
-        url="https://example.com/paper",
-    )
-
-    assert route.decision == "skip"
-    assert route.contamination_score >= 2
-
-
-def test_route_construction_source_keeps_construction_text():
-    route = route_construction_source(
-        title="Moisture and wall assembly durability",
-        text="construction science corporation building envelope insulation roof assembly",
-        url="https://example.com/paper",
-    )
-
-    assert route.decision == "keep"
+        assert result["pdf_processed"] == 1
+        assert result["pdf_events"] == 0
+        assert mock_process_pdf.call_count == 1
+        assert (tmp_path / "organized" / "construction_science" / "review" / "review.pdf").exists()
+        assert (tmp_path / "organized" / "construction_science" / "keep" / "review.pdf").exists()

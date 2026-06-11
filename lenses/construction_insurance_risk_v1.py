@@ -78,6 +78,8 @@ BUILDING_CONTEXT = {
     "property",
 }
 
+ALLOWED_SOURCE_TYPES = {"news", "research_paper"}
+
 INSURANCE_TERMS = {
     "claim",
     "claims",
@@ -197,14 +199,15 @@ def _build_entities(loss_causes: list[str], systems: list[str], insurance_terms:
 
 def _mitigation_hits(lower: str, insurance_terms: list[str]) -> list[str]:
     mitigation_terms = _contains_any(lower, MITIGATION_TERMS)
-    # mitigation_terms starts from MITIGATION_TERMS, but we drop the generic "replacement" hit when lower only
-    # indicates replacement claims or insurance_terms already includes "replacement cost" so "replacement" stays
-    # tied to coverage/claim language instead of being treated as an actionable mitigation measure.
-    if "replacement" in mitigation_terms and (
-        re.search(r"\breplacement\s+claims?\b", lower) or "replacement cost" in insurance_terms
-    ):
+    # Drop the generic "replacement" mitigation token when the sentence is clearly about replacement claims
+    # or coverage language rather than an actionable mitigation measure.
+    if _should_drop_replacement(lower, insurance_terms) and "replacement" in mitigation_terms:
         mitigation_terms = [term for term in mitigation_terms if term != "replacement"]
     return mitigation_terms
+
+
+def _should_drop_replacement(lower: str, insurance_terms: list[str]) -> bool:
+    return bool(re.search(r"\breplacement\s+claims?\b", lower) or "replacement cost" in insurance_terms)
 
 
 def _property_risk_supported(
