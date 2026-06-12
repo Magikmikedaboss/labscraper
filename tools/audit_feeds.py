@@ -13,10 +13,9 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from run_rss_ingest import RSS_CACHE_DIR, download_pdf, get_pdf_links_from_entry, is_valid_pdf, load_feeds_config, load_trusted_construction_sources
-from run_rss_ingest import _promotion_decision_from_lens_counts, _score_construction_review_lenses
+from run_rss_ingest import RSS_CACHE_DIR, download_pdf, is_valid_pdf, load_feeds_config
 from utils.domain_router import route_construction_source
-from utils.feed_utils import parse_feed
+from utils.feed_utils import extract_pdf_links, normalize_feed_pdf_urls, parse_feed
 from utils.site_collectors import collect_documents, extract_pdf_links_from_page
 from utils.source_triage import scan_pdf
 
@@ -24,7 +23,6 @@ from utils.source_triage import scan_pdf
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_FEEDS_CONFIG = PROJECT_ROOT / "config" / "feeds.json"
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "exports" / "feed_audit"
-TRUSTED_CONSTRUCTION_SOURCES_CONFIG = PROJECT_ROOT / "config" / "construction_trusted_sources.json"
 logger = logging.getLogger(__name__)
 
 
@@ -56,6 +54,15 @@ def _entry_urls(entry: dict[str, Any]) -> list[str]:
     return urls
 
 
+def _rss_pdf_urls(entry: dict[str, Any]) -> list[str]:
+    return normalize_feed_pdf_urls(entry, extract_pdf_links(entry))
+
+
+def get_pdf_links_from_entry(entry: dict[str, Any]) -> list[str]:
+    """Backward-compatible wrapper for RSS PDF extraction."""
+    return _rss_pdf_urls(entry)
+
+
 def _record_pdf_outcome(
     *,
     feed: dict[str, Any],
@@ -63,7 +70,6 @@ def _record_pdf_outcome(
     source_title: str,
     skip_reasons: Counter[str],
     triage_counts: Counter[str],
-    trusted_construction_source: bool,
 ) -> dict[str, Any] | None:
     domain = str(feed.get("domain", "")).strip() or "methods_tooling"
     if domain == "construction_science":
@@ -86,13 +92,6 @@ def _record_pdf_outcome(
     final_decision = getattr(triage, "final_decision", "") or triage.keep_skip_review
     lens_promoted = bool(getattr(triage, "lens_promoted", False))
     promotion_reason = str(getattr(triage, "promotion_reason", "") or "")
-
-    if domain == "construction_science" and triage_decision == "review" and trusted_construction_source:
-        lens_counts = _score_construction_review_lenses(pdf_path)
-        lens_promoted, promotion_reason = _promotion_decision_from_lens_counts(lens_counts)
-        final_decision = "keep" if lens_promoted else "review"
-    elif domain == "construction_science" and triage_decision == "review" and not trusted_construction_source:
-        promotion_reason = "review promotion disabled for untrusted source"
 
     triage_counts[triage.keep_skip_review] += 1
     if triage.keep_skip_review == "review":
@@ -125,7 +124,6 @@ def _summarize_pdf_list_feed(feed: dict[str, Any], *, max_pdf_attempts: int | No
     pdfs_accepted = 0
     lens_promoted = 0
     processed_urls: set[str] = set()
-    trusted_source = bool(feed.get("trusted_source", False))
 
     for pdf_url in pdf_urls:
         if pdf_url in processed_urls:
@@ -141,7 +139,6 @@ def _summarize_pdf_list_feed(feed: dict[str, Any], *, max_pdf_attempts: int | No
             source_title=str(feed.get("name", "")),
             skip_reasons=skip_reasons,
             triage_counts=triage_counts,
-            trusted_construction_source=trusted_source,
         )
         if not outcome:
             continue
@@ -171,7 +168,6 @@ def _summarize_pdf_list_feed(feed: dict[str, Any], *, max_pdf_attempts: int | No
         "errors": [],
         "first_10_discovered_urls": discovered_urls,
         "first_10_pdf_urls": discovered_urls,
-        "trusted_source": trusted_source,
         "triage_decision": dict(triage_decision_counts),
         "lens_promoted": lens_promoted,
         "promotion_reason": dict(promotion_reason_counts),
@@ -195,7 +191,6 @@ def _summarize_collector_feed(feed: dict[str, Any], *, max_pdf_attempts: int | N
     pdfs_downloaded = 0
     pdfs_accepted = 0
     lens_promoted = 0
-    trusted_source = bool(feed.get("trusted_source", False))
 
     try:
         collected_documents = collect_documents(
@@ -225,7 +220,6 @@ def _summarize_collector_feed(feed: dict[str, Any], *, max_pdf_attempts: int | N
             "errors": [f"{type(exc).__name__}: {exc}"],
             "first_10_discovered_urls": [],
             "first_10_pdf_urls": [],
-            "trusted_source": False,
             "triage_decision": {},
             "lens_promoted": 0,
             "promotion_reason": {},
@@ -263,7 +257,6 @@ def _summarize_collector_feed(feed: dict[str, Any], *, max_pdf_attempts: int | N
                 source_title=document.title,
                 skip_reasons=skip_reasons,
                 triage_counts=triage_counts,
-                trusted_construction_source=trusted_source,
             )
             if not outcome:
                 continue
@@ -293,7 +286,6 @@ def _summarize_collector_feed(feed: dict[str, Any], *, max_pdf_attempts: int | N
         "errors": errors,
         "first_10_discovered_urls": first_discovered_urls,
         "first_10_pdf_urls": first_pdf_urls,
-        "trusted_source": trusted_source,
         "triage_decision": dict(triage_decision_counts),
         "lens_promoted": lens_promoted,
         "promotion_reason": dict(promotion_reason_counts),
@@ -317,7 +309,6 @@ def _summarize_rss_feed(feed: dict[str, Any], *, max_pdf_attempts: int | None = 
     pdfs_downloaded = 0
     pdfs_accepted = 0
     lens_promoted = 0
-    trusted_source = bool(feed.get("trusted_source", False))
 
     try:
         parsed_feed = parse_feed(feed["url"], timeout=int(feed.get("request_timeout", 20)))
@@ -339,7 +330,6 @@ def _summarize_rss_feed(feed: dict[str, Any], *, max_pdf_attempts: int | None = 
             "errors": [f"{type(exc).__name__}: {exc}"],
             "first_10_discovered_urls": [],
             "first_10_pdf_urls": [],
-            "trusted_source": False,
             "triage_decision": {},
             "lens_promoted": 0,
             "promotion_reason": {},
@@ -359,7 +349,7 @@ def _summarize_rss_feed(feed: dict[str, Any], *, max_pdf_attempts: int | None = 
             _append_unique(first_discovered_urls, url, limit=10)
 
         try:
-            pdf_urls = get_pdf_links_from_entry(entry, source_domain=str(feed.get("domain", "")))
+            pdf_urls = get_pdf_links_from_entry(entry)
         except Exception as exc:
             errors.append(f"{entry.get('title', 'Unknown')}: {type(exc).__name__}: {exc}")
             continue
@@ -381,7 +371,6 @@ def _summarize_rss_feed(feed: dict[str, Any], *, max_pdf_attempts: int | None = 
                 source_title=str(entry.get("title", feed.get("name", ""))),
                 skip_reasons=skip_reasons,
                 triage_counts=triage_counts,
-                trusted_construction_source=trusted_source,
             )
             if not outcome:
                 continue
@@ -411,7 +400,6 @@ def _summarize_rss_feed(feed: dict[str, Any], *, max_pdf_attempts: int | None = 
         "errors": errors,
         "first_10_discovered_urls": first_discovered_urls,
         "first_10_pdf_urls": first_pdf_urls,
-        "trusted_source": trusted_source,
         "triage_decision": dict(triage_decision_counts),
         "lens_promoted": lens_promoted,
         "promotion_reason": dict(promotion_reason_counts),
@@ -439,11 +427,6 @@ def _load_enabled_feeds(config_path: Path) -> list[dict[str, Any]]:
     return [feed for feed in feeds if isinstance(feed, dict) and feed.get("enabled", True)]
 
 
-def _is_trusted_construction_feed(feed: dict[str, Any], trusted_sources: set[str]) -> bool:
-    feed_name = str(feed.get("name", "")).strip().casefold()
-    return bool(feed_name) and feed_name in trusted_sources
-
-
 def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
@@ -462,7 +445,6 @@ def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> Path:
         "errors",
         "first_10_discovered_urls",
         "first_10_pdf_urls",
-        "trusted_source",
         "triage_decision",
         "lens_promoted",
         "promotion_reason",
@@ -503,7 +485,6 @@ def _print_summary(rows: list[dict[str, Any]]) -> None:
             f"{row['feed_name']}: kind={row['source_kind']} entries={row['entries_found']} "
             f"html={row['html_pages_collected']} pdf_links={row['pdf_links_found']} "
             f"downloaded={row['pdfs_downloaded']} skipped={row['pdfs_skipped']} "
-            f"trusted={bool(row.get('trusted_source', False))} "
             f"triage={{keep:{triage_decision.get('keep', 0)}, review:{triage_decision.get('review', 0)}, skip:{triage_decision.get('skip', 0)}}} "
             f"promoted={row.get('lens_promoted', 0)} "
             f"final={{keep:{final_decision.get('keep', 0)}, review:{final_decision.get('review', 0)}, skip:{final_decision.get('skip', 0)}}}"
@@ -520,11 +501,9 @@ def main(argv: list[str] | None = None) -> int:
     config_path = Path(args.config)
     output_dir = Path(args.output_dir)
     feeds = _load_enabled_feeds(config_path)
-    trusted_sources = load_trusted_construction_sources(TRUSTED_CONSTRUCTION_SOURCES_CONFIG)
 
     rows = []
     for feed in feeds:
-        feed["trusted_source"] = _is_trusted_construction_feed(feed, trusted_sources)
         print(f"Auditing {feed.get('name', feed.get('url', '<unnamed>'))}")
         rows.append(_summarize_feed(feed, max_pdf_attempts=args.max_pdfs))
 

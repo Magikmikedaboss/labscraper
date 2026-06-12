@@ -24,6 +24,8 @@ from . import construction_insurance_risk_v1
 from .construction_insurance_risk_v1 import route_insurance_risk_sentence
 from .construction_materials_v1 import detect as detect_materials
 from .construction_materials_v1 import route_materials_sentence
+from .construction_methods_tooling_v1 import detect as detect_methods_tooling
+from .construction_methods_tooling_v1 import route_methods_tooling_sentence
 from utils.domain_router import route_construction_sentence
 
 logger = logging.getLogger(__name__)
@@ -49,6 +51,7 @@ LENS_REGISTRY: Dict[str, LensDetector] = {
     "failure": detect_failure,
     "insurance_risk": construction_insurance_risk_v1.detect,
     "materials": detect_materials,
+    "methods_tooling": detect_methods_tooling,
 }
 
 DEFAULT_CONSTRUCTION_LENS_NAMES = frozenset(LENS_REGISTRY.keys())
@@ -57,6 +60,7 @@ DEFAULT_CONSTRUCTION_LENS_ROUTERS = {
     "climate": route_climate_sentence,
     "insurance_risk": route_insurance_risk_sentence,
     "materials": route_materials_sentence,
+    "methods_tooling": route_methods_tooling_sentence,
     "compliance": route_construction_sentence,
     "failure": route_construction_sentence,
 }

@@ -1,3 +1,0 @@
-pdf_name,page_number,event_type,outcome,confidence,context_strength,entity_count,entities,sentence
-086150b24ff9fba2e0de7660ec9d6979.pdf,5,climate_resilience,neutral,med,weak,2,resilience_term:exposure[concept]; system:beam[system],The beam is expanded and directed via a press unintended exposure.
-086150b24ff9fba2e0de7660ec9d6979.pdf,7,climate_resilience,neutral,low,weak,1,resilience_term:exposure[concept],We first focus on the re- port structures by brief exposure to an ultrasonic bath.

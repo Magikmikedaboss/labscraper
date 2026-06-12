@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import logging
+import os
 import re
 import sqlite3
 import sys
@@ -54,7 +55,7 @@ from utils.event_classification import (
     detect_outcome,
     evidence_strength,
 )
-from utils.feed_utils import extract_pdf_links, parse_feed
+from utils.feed_utils import extract_pdf_links, normalize_feed_pdf_urls, parse_feed
 from utils.source_triage import TriagedSource, load_keep_manifest, scan_pdf, write_keep_manifest, write_keep_manifest_report, write_triage_csv
 from utils.site_collectors import _is_safe_url, collect_documents, extract_pdf_links_from_page
 from utils.text_utils import chunk_sentences, guess_section, guess_stage
@@ -62,7 +63,8 @@ from utils.text_utils import chunk_sentences, guess_section, guess_stage
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 FEEDS_CONFIG = PROJECT_ROOT / "config" / "feeds.json"
-DB_PATH = PROJECT_ROOT / "db" / "rss.sqlite"
+db_path_str = os.getenv("DB_RSS_PATH") or os.getenv("DB_PATH") or str(PROJECT_ROOT / "db" / "rss.sqlite")
+DB_PATH = Path(db_path_str)
 DATA_ROOT = PROJECT_ROOT / "data"
 RSS_CACHE_DIR = (DATA_ROOT / "cache" / "rss") if DATA_ROOT.exists() else (PROJECT_ROOT / "cache" / "rss")
 RSS_ORGANIZED_DIR = (DATA_ROOT / "cache" / "rss_organized") if DATA_ROOT.exists() else (PROJECT_ROOT / "cache" / "rss_organized")
@@ -288,7 +290,9 @@ def _process_pdf_urls(
     pdf_events = 0
     pdf_processed = 0
     trusted_source_names = trusted_construction_source_names or set()
-    trusted_construction_source = False if source_name is None else str(source_name).strip().casefold() in trusted_source_names
+    trusted_construction_source = (
+        True if source_name is None else str(source_name).strip().casefold() in trusted_source_names
+    )
 
     for pdf_url in pdf_urls:
         if dry_run:
@@ -460,20 +464,7 @@ def get_pdf_links_from_entry(entry: dict[str, Any], *, source_domain: str = "") 
         same_host_urls = [url for url in found_urls if urlparse(url).netloc.lower() == entry_host]
         found_urls = same_host_urls
 
-    if "arxiv.org/abs/" in entry_link:
-        arxiv_pdf = entry_link.replace("/abs/", "/pdf/") + ".pdf"
-        if arxiv_pdf not in found_urls:
-            found_urls.append(arxiv_pdf)
-
-    for link in entry.get("links", []):
-        href = link.get("href", "")
-        if href and (
-            "application/pdf" in link.get("type", "")
-            or link.get("title", "").lower() == "pdf"
-        ):
-            resolved_href = _resolve_pdf_url(entry_link, href)
-            if resolved_href and resolved_href not in found_urls:
-                found_urls.append(resolved_href)
+    found_urls = normalize_feed_pdf_urls(entry, found_urls)
 
     pdf_urls = [url for url in found_urls if DOC_LINK_REGEX.search(url)]
 
@@ -1021,6 +1012,7 @@ def main():
                 source_triage_rows=triage_rows,
                 construction_keep_paths=construction_keep_paths,
                 construction_keep_manifest_enabled=construction_keep_manifest_enabled,
+                source_name=str(feed.get("name", "")),
             )
             print(f"   📎 PDF links: {result['pdf_links']}")
             if result["pdf_processed"] > 0:

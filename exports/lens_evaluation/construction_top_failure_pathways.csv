@@ -1,0 +1,4 @@
+chain_name,pathway,evidence_terms,status
+moisture_chain,humidity -> condensation -> mold -> water damage,humidity; condensation; mold; water damage,high confidence
+fire_chain,wind -> heat flux -> collapse -> material degradation,wildfire; heat flux; ignition; material degradation,high confidence
+structural_chain,wind -> structural loading -> collapse -> structural distress,wind; structural loading; collapse; structural distress,thin coverage

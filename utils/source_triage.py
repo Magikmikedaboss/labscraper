@@ -19,6 +19,7 @@ from utils.text_utils import chunk_sentences
 
 
 logger = logging.getLogger(__name__)
+ROOT = Path(__file__).resolve().parents[1]
 
 
 CONSTRUCTION_PATTERNS = [
@@ -464,15 +465,25 @@ def write_keep_manifest(rows: Iterable[TriagedSource] | Iterable[str], output_pa
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     keep_files: set[str] = set()
+
+    def _normalize_keep_file(value: str) -> str:
+        path = Path(value)
+        if not path.is_absolute():
+            path = ROOT / path
+        try:
+            return path.resolve().relative_to(ROOT).as_posix()
+        except ValueError:
+            return path.resolve().as_posix()
+
     for row in rows:
         if isinstance(row, TriagedSource):
             final_decision = row.final_decision or row.keep_skip_review
             if final_decision == "keep":
-                keep_files.add(row.file_path)
+                keep_files.add(_normalize_keep_file(row.file_path))
         else:
             value = str(row).strip()
             if value:
-                keep_files.add(value)
+                keep_files.add(_normalize_keep_file(value))
 
     payload = {
         "domain": domain,
@@ -512,7 +523,14 @@ def write_keep_manifest_report(rows: Iterable[TriagedSource], output_path: Path)
             hit_counts = {}
             try:
                 hit_counts = json.loads(row.lens_hit_counts or "{}")
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
+                logger.warning(
+                    "Failed to parse lens_hit_counts for source=%s file_path=%s: %s (value=%r)",
+                    row.title,
+                    row.file_path,
+                    exc,
+                    row.lens_hit_counts,
+                )
                 hit_counts = {}
 
             writer.writerow(

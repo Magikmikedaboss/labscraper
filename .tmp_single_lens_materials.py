@@ -95,13 +95,11 @@ def main(
                 logger.info("Progress processed_pdfs=%s pdf_hits=%s rows=%s", index, len(pdf_hits), len(rows))
 
     csv_path = out_dir / "materials_lens_cache_hits.csv"
+    resolved_csv_path = csv_path.resolve()
     try:
-        try:
-            csv_summary_path = csv_path.resolve().relative_to(ROOT).as_posix()
-        except ValueError:
-            csv_summary_path = csv_path.resolve().as_posix()
+        csv_summary_path = resolved_csv_path.relative_to(ROOT).as_posix()
     except ValueError:
-        csv_summary_path = csv_path.resolve().as_posix()
+        csv_summary_path = resolved_csv_path.as_posix()
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,

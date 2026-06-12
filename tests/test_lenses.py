@@ -222,6 +222,43 @@ class TestFailureLens:
         event, _ = detect(sentence)
         assert event is not None
 
+    def test_investigation_only_does_not_trigger(self):
+        from lenses.construction_failure_v1 import detect
+        sentence = "Structural investigation of the proton-coupled secondary transporters was performed."
+        event, entities = detect(sentence)
+        assert event is None
+        assert entities == []
+
+    def test_corrosion_resistant_does_not_trigger_failure_mode(self):
+        from lenses.construction_failure_v1 import detect
+        sentence = "Metal joists are corrosion resistant and lightweight."
+        event, entities = detect(sentence)
+        assert event is None
+        assert entities == []
+
+    def test_corrosion_damage_triggers_detection(self):
+        from lenses.construction_failure_v1 import detect
+
+        sentence = "Corrosion damage and rust were observed on the steel beam after years of exposure."
+        event, entities = detect(sentence)
+        _assert_event(event)
+        failure_modes = [e.get("entity_name", "") for e in entities if e.get("entity_type") == "failure_mode"]
+        assert any(mode == "corrosion" for mode in failure_modes)
+
+    def test_moisture_damage_triggers_detection(self):
+        from lenses.construction_failure_v1 import detect
+        sentence = "Moisture damage and water intrusion were observed in the wall assembly."
+        event, entities = detect(sentence)
+        _assert_event(event)
+        failure_modes = [e.get("entity_name", "") for e in entities if e.get("entity_type") == "failure_mode"]
+        assert any("moisture damage" in mode for mode in failure_modes)
+
+    def test_failure_vocabulary_includes_freeze_thaw_and_seismic(self):
+        from lenses.construction_failure_v1 import MATERIAL_FAILURE_MODES, STRUCTURAL_FAILURE_MODES
+
+        assert "freeze-thaw" in MATERIAL_FAILURE_MODES
+        assert "seismic" in STRUCTURAL_FAILURE_MODES
+
     def test_beam_only_physics_sentence_returns_none(self):
         from lenses.construction_failure_v1 import detect
         sentence = "Probe beam photoelastic effect was measured in the optical setup."
@@ -271,18 +308,81 @@ class TestMaterialsLens:
         assert event is not None
         assert event.outcome == "negative"
 
+    def test_material_degradation_terms_detected(self):
+        from lenses.construction_materials_v1 import detect
+
+        sentence = "Concrete durability declined after freeze-thaw cycling, carbonation, and chloride ingress."
+        event, entities = detect(sentence)
+        _assert_event(event)
+        assert any(e["entity_type"] == "mechanism" for e in entities)
+
+    def test_materials_v2_terms_detected(self):
+        from lenses.construction_materials_v1 import detect
+
+        sentence = "Rebar yield strength and fatigue resistance improved in fiber reinforced polymer coatings."
+        event, entities = detect(sentence)
+        _assert_event(event)
+        assert event.event_type == "material_performance"
+        assert any(e["entity_type"] == "material" for e in entities)
+
+    def test_materials_structural_bucket_tags(self):
+        from lenses.construction_materials_v1 import detect
+
+        sentence = "Steel rebar showed improved yield strength in the concrete beam after curing."
+        event, _ = detect(sentence)
+        _assert_event(event)
+        assert "structural_material" in event.tags
+        assert "material_property" in event.tags
+
+    def test_materials_degradation_bucket_tags(self):
+        from lenses.construction_materials_v1 import detect
+
+        sentence = "Concrete durability declined after chloride ingress, carbonation, and spalling."
+        event, _ = detect(sentence)
+        _assert_event(event)
+        assert "material_degradation" in event.tags
+
     def test_irrelevant_sentence_returns_none(self):
         from lenses.construction_materials_v1 import detect
         event, entities = detect("The annual budget meeting was held in January.")
         assert event is None
         assert entities == []
 
-    def test_test_marker_alone_triggers(self):
+    def test_materials_ignores_marker_only_sentence(self):
         from lenses.construction_materials_v1 import detect
-        # "tested specimens" alone should be rejected by the detector (marker-only rejection)
+
         sentence = "Specimens were tested to characterize long-term behaviour."
         result = detect(sentence)
         assert result == (None, [])
+
+    def test_materials_ignores_methods_noise_without_materials(self):
+        from lenses.construction_materials_v1 import detect
+
+        sentence = "The test results showed improved permeability of the sample."
+        result = detect(sentence)
+        assert result == (None, [])
+
+
+class TestMethodsLens:
+    def test_methods_marker_alone_triggers(self):
+        from lenses.construction_methods_tooling_v1 import detect
+
+        sentence = "Specimens were tested to characterize long-term behaviour."
+        event, entities = detect(sentence)
+        _assert_event(event)
+        assert event.event_type == "experimental_methods"
+        assert any(e["entity_type"] == "method_term" for e in entities)
+
+    def test_route_methods_sentence_keep_and_skip(self):
+        from lenses.construction_methods_tooling_v1 import route_methods_tooling_sentence
+
+        keep_decision = route_methods_tooling_sentence("Specimens were tested to characterize long-term behaviour.")
+        skip_decision = route_methods_tooling_sentence("The annual budget meeting was held in January.")
+
+        assert keep_decision.decision == "keep"
+        assert keep_decision.reason == "methods signal present"
+        assert skip_decision.decision == "skip"
+        assert skip_decision.reason == "no methods signal present"
 
 
 class TestRoutingHelpers:

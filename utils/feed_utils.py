@@ -1,4 +1,6 @@
 """Shared utilities for RSS feed operations"""
+from urllib.parse import urljoin
+
 import re
 import feedparser
 import requests
@@ -49,6 +51,33 @@ def extract_pdf_links(entry: Dict) -> List[str]:
         if href:
             pdf_links.extend(PDF_LINK_REGEX.findall(href))
     return list(dict.fromkeys(pdf_links))
+
+
+def normalize_feed_pdf_urls(entry: Dict, pdf_urls: List[str]) -> List[str]:
+    """Normalize PDF URLs discovered from an RSS/Atom entry."""
+    normalized_urls = list(dict.fromkeys(pdf_urls))
+
+    entry_link = str(entry.get('link', '') or '')
+    if 'arxiv.org/abs/' in entry_link:
+        arxiv_pdf = entry_link.replace('/abs/', '/pdf/') + '.pdf'
+        if arxiv_pdf not in normalized_urls:
+            normalized_urls.append(arxiv_pdf)
+
+    for link in entry.get('links', []):
+        if not isinstance(link, dict):
+            continue
+        href = str(link.get('href', '') or '')
+        if not href:
+            continue
+        if (
+            'application/pdf' in str(link.get('type', '')).lower()
+            or str(link.get('title', '')).lower() == 'pdf'
+        ):
+            resolved_href = urljoin(entry_link, href) if entry_link else href
+            if resolved_href not in normalized_urls:
+                normalized_urls.append(resolved_href)
+
+    return normalized_urls
 
 def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None, timeout: int = 20) -> Dict:
     """
