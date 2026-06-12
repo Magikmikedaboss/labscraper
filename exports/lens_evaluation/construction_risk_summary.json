@@ -1,0 +1,81 @@
+{
+  "rows": [
+    {
+      "count": 116,
+      "lens": "building_physics",
+      "notes": "Envelope and thermal-performance signal",
+      "pdf_count": 3,
+      "top_issue": "Building physics issue",
+      "top_pdf": "df3719b603c42590735c52e1a48f00b7.pdf",
+      "top_pdf_count": 83,
+      "top_term": "thermal conductivity",
+      "trigger_kind": "physics_term"
+    },
+    {
+      "count": 45,
+      "lens": "materials",
+      "notes": "Method/process vocabulary is excluded from materials-only scoring",
+      "pdf_count": 3,
+      "top_issue": "Material performance",
+      "top_pdf": "Handbook_of_Materials_Failure_Analysis.pdf",
+      "top_pdf_count": 39,
+      "top_term": "steel",
+      "trigger_kind": "material"
+    },
+    {
+      "count": 233,
+      "lens": "methods_tooling",
+      "notes": "Research-process vocabulary separated from materials",
+      "pdf_count": 9,
+      "top_issue": "Experimental methods",
+      "top_pdf": "Handbook_of_Materials_Failure_Analysis.pdf",
+      "top_pdf_count": 103,
+      "top_term": "results",
+      "trigger_kind": "test_marker"
+    },
+    {
+      "count": 212,
+      "lens": "failure",
+      "notes": "Bucketed failure taxonomy",
+      "pdf_count": 3,
+      "top_issue": "Structural",
+      "top_pdf": "GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf",
+      "top_pdf_count": 94,
+      "top_term": "collapse",
+      "trigger_kind": "failure_mode"
+    },
+    {
+      "count": 23,
+      "lens": "climate",
+      "notes": "Hazard/exposure/resilience vocabulary",
+      "pdf_count": 2,
+      "top_issue": "Climate hazard",
+      "top_pdf": "Handbook_of_Materials_Failure_Analysis.pdf",
+      "top_pdf_count": 16,
+      "top_term": "risk",
+      "trigger_kind": "resilience_term"
+    },
+    {
+      "count": 50,
+      "lens": "compliance",
+      "notes": "Regulatory and code-related vocabulary",
+      "pdf_count": 3,
+      "top_issue": "Compliance",
+      "top_pdf": "Handbook_of_Materials_Failure_Analysis.pdf",
+      "top_pdf_count": 34,
+      "top_term": "astm",
+      "trigger_kind": "std_token"
+    },
+    {
+      "count": 92,
+      "lens": "insurance_risk",
+      "notes": "Claims, loss, mitigation, and property-risk vocabulary",
+      "pdf_count": 4,
+      "top_issue": "Insurance risk",
+      "top_pdf": "GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf",
+      "top_pdf_count": 52,
+      "top_term": "collapse",
+      "trigger_kind": "loss_cause"
+    }
+  ]
+}

@@ -4,12 +4,28 @@ from __future__ import annotations
 import re
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, RouteDecision, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
 )
 
 ASSEMBLIES = [
     "envelope", "wall", "roof", "attic", "basement", "slab", "window", "glazing",
     "facade", "cladding", "insulation", "air barrier", "vapor barrier", "duct", "hvac"
+]
+
+BUILDING_CONTEXT_TERMS = [
+    "building", "buildings", "wall", "roof", "envelope", "assembly", "insulation",
+    "facade", "window", "attic", "basement", "hvac", "ventilation", "indoor", "room",
+]
+
+BIO_DENY_TERMS = [
+    "mitosis", "mitotic", "chromosome", "chromatin", "nucleolus", "nucleoli",
+    "cell", "cells", "protein", "proteins", "gene", "genes", "dna", "rna",
+    "centromere", "centromeres", "nucleus", "nuclei",
+]
+
+CONDENSATION_BUILDING_TERMS = [
+    "condensation risk", "condensation control", "interstitial condensation",
+    "surface condensation", "window condensation", "wall condensation",
 ]
 
 PHYSICS_TERMS = [
@@ -22,12 +38,29 @@ PHYSICS_TERMS = [
 
 ENERGY_WORD_WINDOW = 7
 
+
+def route_building_physics_sentence(sentence: str) -> RouteDecision:
+    s_l = sentence.lower()
+    if list_hits(s_l, BIO_DENY_TERMS):
+        return RouteDecision("skip", "biological context present")
+    if "condensation" in s_l and not contains_any(s_l, BUILDING_CONTEXT_TERMS + CONDENSATION_BUILDING_TERMS):
+        return RouteDecision("skip", "condensation without building context")
+    if list_hits(s_l, PHYSICS_TERMS):
+        return RouteDecision("keep", "building physics terms present")
+    return RouteDecision("skip", "no building physics terms present")
+
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     s_l = sentence.lower()
     entities: List[dict] = []
 
+    if list_hits(s_l, BIO_DENY_TERMS):
+        return None, []
+
     asm = list_hits(s_l, ASSEMBLIES)
     terms = list_hits(s_l, PHYSICS_TERMS)
+
+    if "condensation" in terms and not contains_any(s_l, BUILDING_CONTEXT_TERMS + CONDENSATION_BUILDING_TERMS):
+        return None, []
 
     if not terms:
         return None, []
@@ -46,14 +79,21 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         "lower heat loss", "lower energy use", "lower energy consumption",
         "improved r-value", "improved r value", "reduced infiltration"
     ])
-    # Flexible positive: require reducer + energy phrase (consumption/use/demand) within ENERGY_WORD_WINDOW words.
+    # energy_phrase matches energy consumption/use/demand.
+    # between_tokens allows up to ENERGY_WORD_WINDOW words with non-word separators between the two phrases.
+    # reduc\w* covers reduce, reduced, reduction, reducing, and similar forms.
+    # A connector token must also be present in the matched span to avoid loose proximity false positives.
     flexible_positive = False
     energy_phrase = r"\benergy\s+(?:consumption|use|demand)\b"
     between_tokens = rf"(?:\W*\b\w+\b){{0,{ENERGY_WORD_WINDOW}}}\W*"
     pattern1 = rf"\breduc\w*\b{between_tokens}{energy_phrase}"
     pattern2 = rf"{energy_phrase}{between_tokens}\breduc\w*\b"
-    if re.search(pattern1, s_l) or re.search(pattern2, s_l):
-        flexible_positive = True
+    connector_pattern = r"\b(?:for|in|of|to|by|with|on|via|through|from|into|under|after|over)\b"
+    match = re.search(pattern1, s_l) or re.search(pattern2, s_l)
+    if match:
+        substring = s_l[max(0, match.start() - 20):min(len(s_l), match.end() + 20)]
+        if re.search(connector_pattern, substring):
+            flexible_positive = True
     neg = contains_any(s_l, ["higher energy", "increased leakage", "worsened", "condensation risk", "mold growth", "mold detected"])
     if neg:
         outcome = "degraded"

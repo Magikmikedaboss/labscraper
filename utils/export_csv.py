@@ -2,12 +2,12 @@
 CSV Export v5 - Domain-Aware with Overlay Support
 """
 
-import sqlite3
 import csv
 import argparse
 import logging
 from pathlib import Path
 from collections import defaultdict
+from utils.db_utils import connect_with_foreign_keys
 from utils.entity_normalizer import load_normalization_map, load_overlay_aliases, normalize_entity, get_entity_role
 from utils.process_words import is_process_word
 from utils.path_validation import validate_domain_id
@@ -28,7 +28,7 @@ def export_candidates_domain_aware(domain_id: str = None):
     overlay_aliases = load_overlay_aliases(domain_id) if domain_id else {}
 
 
-    with sqlite3.connect(DB_PATH) as con:
+    with connect_with_foreign_keys(DB_PATH) as con:
         cur = con.cursor()
 
         if domain_id:
@@ -47,7 +47,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                         e.entity_type,
                         e.entity_name as canonical_name,
                         (
-                            SELECT GROUP_CONCAT(v.entity_variant, '|||')
+                            SELECT GROUP_CONCAT(v.entity_variant, ?)
                             FROM (
                                 SELECT DISTINCT e2.entity_variant AS entity_variant
                                 FROM entities e2
@@ -68,7 +68,7 @@ def export_candidates_domain_aware(domain_id: str = None):
                     WHERE re.research_domain = ?
                     GROUP BY e.entity_type, e.entity_name
                     ORDER BY event_count DESC
-                """, (domain_id, domain_id)).fetchall()
+                """, (ENTITY_VARIANT_DELIM, domain_id, domain_id)).fetchall()
         else:
             entities_data = cur.execute("""
                 SELECT 
@@ -145,7 +145,7 @@ def export_candidates_domain_aware(domain_id: str = None):
             writer.writerow(['entity_name', 'entity_type', 'entity_variant', 'event_count'])
             # Only write rows if there are any entities
             for (etype, canonical_name), data in canonical_entities.items():
-                variant_str = ','.join(sorted(data["entity_variant"])) if data["entity_variant"] else ''
+                variant_str = ENTITY_VARIANT_DELIM.join(sorted(data["entity_variant"])) if data["entity_variant"] else ''
                 writer.writerow([
                     canonical_name,
                     etype,
@@ -162,10 +162,13 @@ def export_candidates_domain_aware(domain_id: str = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--domain", type=str, required=True)
+    parser.add_argument("--domain", type=str, required=False, default=None, help="optional domain id")
     args = parser.parse_args()
 
-
+    if args.domain is not None:
+        args.domain = args.domain.strip()
+        if not args.domain:
+            raise SystemExit("--domain must be a non-empty value if provided")
 
     canonical_entities = export_candidates_domain_aware(args.domain)
     print("✅ Export complete!")

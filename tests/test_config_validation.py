@@ -2,6 +2,7 @@
 import tempfile
 from pathlib import Path
 from utils.run_engine import load_seed_file
+from utils.common import load_seed_file as load_common_seed_file
 
 
 class TestConfigValidation:
@@ -64,6 +65,17 @@ class TestConfigValidation:
             assert 'valid_seed2' in seeds
             assert 'valid_seed3' in seeds
             assert 'comment' not in seeds
+
+    def test_load_seed_file_preserves_hash_in_value(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            seed_file = Path(temp_dir) / "hash_seeds.txt"
+            seed_file.write_text("c#sharp\nrapamycin  # synonym\n# comment\n", encoding="utf-8")
+
+            seeds = load_common_seed_file(seed_file, case="lower")
+
+            assert "c#sharp" in seeds
+            assert "rapamycin" in seeds
+            assert "rapamycin  # synonym" not in seeds
 
     def test_load_seed_file_case_insensitive(self):
         """Test that seed loading is case insensitive"""

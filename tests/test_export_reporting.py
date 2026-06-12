@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 
 import pytest
 
@@ -43,7 +44,7 @@ def test_export_entities_csv_writes_overlay_scores_and_defaults(tmp_path):
     assert row["entity_name"] == "Entity One"
     assert row["event_count"] == "2"
     assert row["ov1_score"] == "1.23"
-    assert row["ov1_bucket"] == "strong"
+    assert row["ov1_bucket"] == "critical"
     assert row["ov2_score"] == ""
     assert row["ov2_bucket"] == "N/A"
 
@@ -87,7 +88,7 @@ def test_export_events_csv_formats_scores_and_defaults(tmp_path):
     assert rows[1]["ov1_score"] == "+0.0"
 
 
-def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch):
+def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch, caplog):
     monkeypatch.chdir(tmp_path)
 
     entities_file = tmp_path / "entities.csv"
@@ -104,6 +105,22 @@ def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch):
     assert latest_events is not None
     assert latest_events.exists()
 
+    def fail_unlink(*args, **kwargs):
+        raise OSError("unlink failed")
+
+    def fail_replace(*args, **kwargs):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(Path, "unlink", fail_unlink, raising=False)
+    monkeypatch.setattr(reporting.os, "replace", fail_replace)
+
+    with caplog.at_level("WARNING"):
+        result, error = reporting._publish_latest_file(entities_file, tmp_path / "latest.csv")
+
+    assert result is None
+    assert isinstance(error, OSError)
+    assert any("Failed to clean up temp file" in msg for msg in caplog.messages)
+
     with pytest.raises(ValueError):
         reporting.publish_latest_entities(entities_file, "../bad")
 
@@ -111,7 +128,7 @@ def test_publish_latest_files_and_invalid_domain(tmp_path, monkeypatch):
 def test_write_dual_lens_report_handles_empty_overlays(tmp_path, caplog):
     report_file = tmp_path / "dual_lens_report.txt"
 
-    with caplog.at_level("WARNING"):
+    with caplog.at_level("INFO"):
         reporting.write_dual_lens_report(
             report_file=report_file,
             domain_config="not-a-dict",
@@ -127,3 +144,29 @@ def test_write_dual_lens_report_handles_empty_overlays(tmp_path, caplog):
     assert "No bucket data available (no overlays configured)." in content
     assert any("domain_config is not a dict" in msg for msg in caplog.messages)
     assert any("No overlays configured" in msg for msg in caplog.messages)
+
+
+def test_write_dual_lens_report_uses_construction_bucket_labels(tmp_path):
+    report_file = tmp_path / "dual_lens_report.txt"
+
+    entities = [{"entity_id": "e1", "entity_name": "Entity One", "entity_type": "system"}]
+    filtered_entities = entities
+    entity_scores = {"e1": {"ov1": {"score": 1.0, "bucket": "strong"}}}
+    entity_events = {"e1": ["ev1"]}
+
+    reporting.write_dual_lens_report(
+        report_file=report_file,
+        domain_config={"name": "Construction Science"},
+        overlay_ids=["ov1"],
+        events=[{"event_id": "ev1"}],
+        entities=entities,
+        filtered_entities=filtered_entities,
+        entity_scores=entity_scores,
+        entity_events=entity_events,
+        domain_id="construction_science",
+    )
+
+    content = report_file.read_text(encoding="utf-8")
+    assert "critical       :" in content
+    assert "critical" in content
+    assert "[strong" not in content

@@ -72,7 +72,13 @@ def load_overlay_aliases(domain_id: Optional[str] = None, overlays_dir: str = "s
             logger.warning(f"seed_overlay_loader found but no loader function or alias map present for {domain_id}")
     except Exception as e:
         logger.error(f"Error loading overlay aliases for {domain_id}: {e}")
-    return overlay_map
+
+    validated_aliases: Dict[str, str] = {}
+    for alias, mapped_name in overlay_map.items():
+        if not isinstance(alias, str) or not isinstance(mapped_name, str):
+            raise ValueError(f"Invalid overlay alias entry for {domain_id}: {alias!r} -> {mapped_name!r}")
+        validated_aliases[alias.strip().lower()] = mapped_name.strip()
+    return validated_aliases
 
 
 def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dict] = None) -> dict:
@@ -85,7 +91,7 @@ def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dic
     Returns:
         dict with normalized 'entity_type', 'entity_name', 'entity_variant', preserving extra keys
     Notes:
-        Keys are matched case-sensitively, but mapped values from overlay_aliases and norm_map will be lowercased for consistency (see etype, name).
+        Input fields (etype, name, variant) are normalized to lowercase before matching. Matching against overlay_aliases and norm_map is case-insensitive because the code compares against v.lower(), and mapped values are lowercased for consistency.
     """
     copy = dict(entity)
     name = (entity.get('entity_name') or '').strip().lower()
@@ -93,9 +99,11 @@ def normalize_entity(entity: dict, norm_map: dict, overlay_aliases: Optional[dic
     variant = (entity.get('entity_variant') or '').strip().lower()
     # Overlay alias normalization (mapped values are lowercased)
     if overlay_aliases and name in overlay_aliases:
-        name = overlay_aliases[name].lower()
+        mapped_name = overlay_aliases[name]
+        name = str(mapped_name).lower()
     if overlay_aliases and variant in overlay_aliases:
-        variant = overlay_aliases[variant].lower()
+        mapped_variant = overlay_aliases[variant]
+        variant = str(mapped_variant).lower()
     # Normalization map: match input name to any variant in norm_map[etype] and set to canonical_name
     # Supported shapes for variants_entry:
     #   list:  ["a", "b"]

@@ -30,7 +30,6 @@
   "dual_lens": {
     "enabled": true,
     "primary_lens": "construction_science",
-    "secondary_lens": "biohacking_longevity",
     "overlay_config": {
       "include_files": [],
       "prefer_types": ["material", "system", "failure_mode", "environment", "hazard", "test_method", "code", "property"]

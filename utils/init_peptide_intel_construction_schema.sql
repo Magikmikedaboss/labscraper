@@ -34,6 +34,32 @@ CREATE TABLE IF NOT EXISTS chunks (
     FOREIGN KEY (source_id) REFERENCES sources(source_id)
 );
 
+CREATE TRIGGER IF NOT EXISTS chunks_source_id_matches_document_insert
+BEFORE INSERT ON chunks
+FOR EACH ROW
+BEGIN
+    SELECT RAISE(ABORT, 'chunks.source_id must match documents.source_id')
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM documents
+        WHERE doc_id = NEW.doc_id
+          AND source_id = NEW.source_id
+    );
+END;
+
+CREATE TRIGGER IF NOT EXISTS chunks_source_id_matches_document_update
+BEFORE UPDATE OF doc_id, source_id ON chunks
+FOR EACH ROW
+BEGIN
+    SELECT RAISE(ABORT, 'chunks.source_id must match documents.source_id')
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM documents
+        WHERE doc_id = NEW.doc_id
+          AND source_id = NEW.source_id
+    );
+END;
+
 CREATE TABLE IF NOT EXISTS entities (
     entity_id TEXT PRIMARY KEY,
     entity_type TEXT,
@@ -91,7 +117,7 @@ CREATE TABLE IF NOT EXISTS quantitative_measurements (
     measurement_id TEXT PRIMARY KEY,
     event_id TEXT,
     measurement_type TEXT,
-    value REAL,
+    value TEXT,
     unit TEXT,
     context TEXT,
     created_at TEXT,

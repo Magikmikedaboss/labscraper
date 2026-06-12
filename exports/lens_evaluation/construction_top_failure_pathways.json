@@ -1,0 +1,31 @@
+{
+  "rows": [
+    {
+      "chain_name": "moisture_chain",
+      "evidence_terms": "humidity; condensation; mold; water damage",
+      "failure": "mold",
+      "hazard": "humidity",
+      "material_effect": "water damage",
+      "physics_mechanism": "condensation",
+      "status": "high confidence"
+    },
+    {
+      "chain_name": "fire_chain",
+      "evidence_terms": "wildfire; heat flux; ignition; material degradation",
+      "failure": "collapse",
+      "hazard": "wind",
+      "material_effect": "material degradation",
+      "physics_mechanism": "heat flux",
+      "status": "high confidence"
+    },
+    {
+      "chain_name": "structural_chain",
+      "evidence_terms": "wind; structural loading; collapse; structural distress",
+      "failure": "collapse",
+      "hazard": "wind",
+      "material_effect": "structural distress",
+      "physics_mechanism": "structural loading",
+      "status": "thin coverage"
+    }
+  ]
+}

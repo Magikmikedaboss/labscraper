@@ -8,7 +8,18 @@ HIGH_VALUE_ENTITY_TYPES_BY_DOMAIN = {
     "construction_science": {"material", "system", "failure_mode", "environment", "hazard"},
     # Add more domains as needed
 }
+# Biomedical-specific high-value types. Keep this out of the global fallback path so unknown
+# or non-biomedical domains do not inherit biomedical confidence boosts by accident.
 DEFAULT_HIGH_VALUE_SET = {"compound", "target", "stem_cell"}
+# Domains that are allowed to use the biomedical fallback set when they have no explicit
+# high-value mapping of their own.
+BIOMED_DOMAINS = {
+    "methods_tooling",
+    "drug_discovery",
+    "biohacking_longevity",
+    "neuroscience_cognition",
+    "stem_cells_regen",
+}
 """
 Scoring and confidence logic for export pipeline
 """
@@ -108,7 +119,9 @@ def safe_confidence_boost(
     # ---------------------------------------------------------
     # Domain-aware scoring (edit HIGH_VALUE_ENTITY_TYPES_BY_DOMAIN to change rules)
     # ---------------------------------------------------------
-    high_value_set = HIGH_VALUE_ENTITY_TYPES_BY_DOMAIN.get(domain_id, DEFAULT_HIGH_VALUE_SET)
+    high_value_set = HIGH_VALUE_ENTITY_TYPES_BY_DOMAIN.get(domain_id, set())
+    if not high_value_set and domain_id in BIOMED_DOMAINS:
+        high_value_set = DEFAULT_HIGH_VALUE_SET
     has_high_value = bool(entity_types & high_value_set)
 
     # "assay" doesn't exist in construction → expand meaning

@@ -7,7 +7,6 @@ from pathlib import Path, PurePosixPath
 import datetime
 import time
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 MAX_FILE_COUNT = 10_000
@@ -28,6 +27,14 @@ def extract_all_zips(base_dir):
                         total_extracted_bytes = 0
                         extracted_file_count = 0
                         for member in zip_ref.infolist():
+                            if getattr(member, "is_symlink", lambda: False)():
+                                print(f"  ⚠️  Skipping symlink entry in {zip_path}: {member.filename}")
+                                failures.append({
+                                    "zip_path": str(zip_path),
+                                    "member": member.filename,
+                                    "reason": "symlink member"
+                                })
+                                continue
                             # Sanitize member.filename
                             orig_name = member.filename
                             p = PurePosixPath(orig_name)
@@ -119,13 +126,12 @@ def extract_all_zips(base_dir):
                                         dst.write(chunk)
                                         bytes_written += len(chunk)
                                 if bytes_written != member.file_size:
-                                    logger.warning(
-                                        "Extracted byte count mismatch for %s in %s: expected %s bytes, wrote %s bytes",
-                                        orig_name,
-                                        zip_path,
-                                        member.file_size,
-                                        bytes_written,
+                                    error_message = (
+                                        f"Extracted byte count mismatch for {orig_name} in {zip_path}: "
+                                        f"expected {member.file_size} bytes, wrote {bytes_written} bytes"
                                     )
+                                    logger.error(error_message)
+                                    raise RuntimeError(error_message)
                                 extracted_file_count += 1
                                 total_extracted_bytes += bytes_written
                             # Set permissions and timestamps for both files and directories

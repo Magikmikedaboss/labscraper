@@ -22,16 +22,21 @@ def init_test_db(db_path="test.db"):
     target_db = Path(db_path).resolve()
     if target_db == canonical_db:
         raise RuntimeError(f"Refusing to initialize canonical DB at {canonical_db} from init_test_db!")
+    if target_db.exists():
+        logger.warning("Schema initialization will be applied in-place to existing database at %s", target_db)
 
     # Always use the canonical root-level schema.sql
     schema_path = project_root / "schema.sql"
     if not schema_path.exists():
         raise FileNotFoundError(f"Missing schema.sql at {schema_path}")
     schema_sql = schema_path.read_text(encoding="utf-8")
-    with sqlite3.connect(str(target_db)) as con:
+    con = sqlite3.connect(str(target_db))
+    try:
         con.execute("PRAGMA foreign_keys = ON")
         con.executescript(schema_sql)
-    logger.info(f"Initialized test DB at {target_db}")
+        logger.info(f"Initialized test DB at {target_db}")
+    finally:
+        con.close()
     return target_db
 
 if __name__ == "__main__":

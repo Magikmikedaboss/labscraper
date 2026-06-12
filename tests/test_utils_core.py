@@ -97,3 +97,14 @@ def test_text_utils_chunk_and_guess():
     assert text_utils.guess_section("results only") == "results"
     assert text_utils.guess_section("discussion section") == "discussion"
     assert text_utils.guess_section("random text") == "unknown"
+
+
+def test_text_utils_chunk_sentences_masks_common_edge_cases():
+    text = "Visit www.example.com. The sample was 3.14 mg... Next sentence follows."
+    chunks = text_utils.chunk_sentences(text)
+
+    assert chunks == [
+        "Visit www.example.com.",
+        "The sample was 3.14 mg...",
+        "Next sentence follows.",
+    ]

@@ -10,6 +10,14 @@ YEAR_PATTERN = re.compile(r'(19|20)\d{2}')
 
 AFFILIATION_KEYWORDS = ["university", "institute", "department", "dept", "school", "hospital", "center", "centre", "faculty", "college", "clinic", "laboratory", "lab", "company", "corporation", "inc", "llc", "ltd", "email", "@", ".edu", ".org", ".com", "http://", "https://"]
 
+
+def _is_valid_author_line(line: str) -> bool:
+    if any(kw in line.lower() for kw in AFFILIATION_KEYWORDS):
+        return False
+    if re.search(r"@|http[s]?://|www\.", line):
+        return False
+    return ("," in line or " and " in line.lower()) and 3 < len(line) < 200
+
 def extract_year_from_creation_date(creation_date: str) -> Optional[int]:
     """Extracts year from PDF creation date string."""
     if not creation_date or not isinstance(creation_date, str):
@@ -52,17 +60,12 @@ def parse_first_page_text(text: str, max_header_scan: int = 10) -> Dict[str, Any
     # Heuristics for authors
     author_candidate = None
     for line in nonempty[1:max_header_scan]:
-        if any(kw in line.lower() for kw in AFFILIATION_KEYWORDS):
+        if not _is_valid_author_line(line):
             continue
-        if re.search(r"@|http[s]?://|www\.", line):
-            continue
-        if ("," in line or " and " in line.lower()) and 3 < len(line) < 200:
-            author_candidate = line
-            break
+        author_candidate = line
+        break
     if author_candidate:
         meta["authors"] = author_candidate
-    elif len(nonempty) > 1:
-        meta["authors"] = nonempty[1]
     # DOI extraction: only set if valid regex or clean 'doi:' suffix
     for line in lines:
         if "doi" in line.lower() and not meta["doi"]:

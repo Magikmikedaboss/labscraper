@@ -2,12 +2,16 @@
 Entity normalization, role assignment, and counting utilities
 """
 
+from __future__ import annotations
 
 import logging
 from typing import Tuple, Dict
 from utils.entity_normalizer import normalize_entity, get_entity_role
 from utils.process_words import is_process_word
 import re
+
+
+logger = logging.getLogger(__name__)
 
 def count_entities_by_role(entities_str: str, norm_map: dict, overlay_aliases: dict | None = None) -> Tuple[int, int, str, str, str]:
     """
@@ -62,6 +66,5 @@ def load_overlay_aliases_safe(domain_id: str | None = None) -> Dict[str, str]:
         from utils.entity_normalizer import load_overlay_aliases
         return load_overlay_aliases(domain_id)
     except Exception as e:
-        logger = logging.getLogger(__name__)
         logger.debug("Failed to load overlay aliases for domain_id '%s': %s", domain_id, e, exc_info=True)
         return {}

@@ -1,11 +1,12 @@
-import sqlite3
 from pathlib import Path
 
-DB_PATH = Path("output") / "peptide_intel.sqlite"
+from utils.db_utils import connect_with_foreign_keys
+
+DB_PATH = Path("db") / "runs.sqlite"
 
 def check_confidence_distribution():
     """Check confidence score distribution"""
-    with sqlite3.connect(DB_PATH) as con:
+    with connect_with_foreign_keys(DB_PATH) as con:
         total = con.execute("SELECT COUNT(*) FROM research_events").fetchone()[0]
         high = con.execute("SELECT COUNT(*) FROM research_events WHERE confidence = 'high'").fetchone()[0]
         med = con.execute("SELECT COUNT(*) FROM research_events WHERE confidence = 'med'").fetchone()[0]

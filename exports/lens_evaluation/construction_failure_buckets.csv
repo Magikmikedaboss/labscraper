@@ -1,0 +1,20 @@
+failure_bucket,trigger_term,trigger_kind,count,pdf_count,top_pdf,top_pdf_count
+moisture,humidity,failure_mode,16,2,Handbook_of_Materials_Failure_Analysis.pdf,14
+moisture,condensation,failure_mode,13,4,building-physics.pdf,8
+moisture,mold,failure_mode,2,2,547c9f48c4ff3e9c42eef62cdbf8addab65cda1bc6c84d6304eec43e0bb89a4a.pdf,1
+moisture,water damage,failure_mode,1,1,547c9f48c4ff3e9c42eef62cdbf8addab65cda1bc6c84d6304eec43e0bb89a4a.pdf,1
+structural,collapse,failure_mode,212,3,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,94
+structural,fracture,failure_mode,22,2,Handbook_of_Materials_Failure_Analysis.pdf,20
+structural,seismic,failure_mode,22,2,Handbook_of_Materials_Failure_Analysis.pdf,18
+structural,fatigue,failure_mode,16,2,Handbook_of_Materials_Failure_Analysis.pdf,14
+structural,cracking,failure_mode,14,3,Handbook_of_Materials_Failure_Analysis.pdf,11
+structural,buckling,failure_mode,11,1,Handbook_of_Materials_Failure_Analysis.pdf,11
+structural,settlement,failure_mode,4,1,Handbook_of_Materials_Failure_Analysis.pdf,4
+material,corrosion,failure_mode,23,2,Handbook_of_Materials_Failure_Analysis.pdf,16
+material,deterioration,failure_mode,15,2,JCE-72-2020-7-3-3234-EN.pdf,11
+material,degradation,failure_mode,12,1,Handbook_of_Materials_Failure_Analysis.pdf,12
+material,creep,failure_mode,1,1,JCE-72-2020-7-3-3234-EN.pdf,1
+material,shrinkage,failure_mode,1,1,JCE-72-2020-7-3-3234-EN.pdf,1
+material,delamination,failure_mode,1,1,JCE-72-2020-7-3-3234-EN.pdf,1
+fire,fire spread,failure_mode,1,1,building-physics.pdf,1
+fire,fire damage,failure_mode,1,1,JCE-72-2020-7-3-3234-EN.pdf,1

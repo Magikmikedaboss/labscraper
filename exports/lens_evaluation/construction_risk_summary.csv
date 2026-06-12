@@ -1,0 +1,8 @@
+lens,top_issue,top_term,trigger_kind,count,pdf_count,top_pdf,top_pdf_count,notes
+building_physics,Building physics issue,thermal conductivity,physics_term,116,3,df3719b603c42590735c52e1a48f00b7.pdf,83,Envelope and thermal-performance signal
+materials,Material performance,steel,material,45,3,Handbook_of_Materials_Failure_Analysis.pdf,39,Method/process vocabulary is excluded from materials-only scoring
+methods_tooling,Experimental methods,results,test_marker,233,9,Handbook_of_Materials_Failure_Analysis.pdf,103,Research-process vocabulary separated from materials
+failure,Structural,collapse,failure_mode,212,3,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,94,Bucketed failure taxonomy
+climate,Climate hazard,risk,resilience_term,23,2,Handbook_of_Materials_Failure_Analysis.pdf,16,Hazard/exposure/resilience vocabulary
+compliance,Compliance,astm,std_token,50,3,Handbook_of_Materials_Failure_Analysis.pdf,34,Regulatory and code-related vocabulary
+insurance_risk,Insurance risk,collapse,loss_cause,92,4,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,52,"Claims, loss, mitigation, and property-risk vocabulary"

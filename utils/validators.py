@@ -36,7 +36,11 @@ def validate_directory(path: Union[str, Path], must_exist: bool = True) -> Path:
 
 
 def validate_database(path: Union[str, Path], must_exist: bool = False) -> Path:
-    """Validate SQLite database path."""
+    """Validate SQLite database path.
+
+    Args:
+        must_exist: When True, require the database file and its parent directory to exist.
+    """
     p = Path(path)
 
     if p.suffix.lower() not in ['.db', '.sqlite', '.sqlite3']:
@@ -47,10 +51,6 @@ def validate_database(path: Union[str, Path], must_exist: bool = False) -> Path:
 
     if p.exists() and not p.is_file():
         raise ValidationError(f"Not a file: {path}")
-
-    parent = p.parent
-    if not parent.exists():
-        raise ValidationError(f"Database directory not found: {parent}")
 
     return p
 
@@ -111,7 +111,7 @@ def validate_feed_entry(feed: Dict[str, Any], index: Optional[int] = None) -> Di
     if missing:
         raise ValidationError(f"{prefix}Missing required field(s): {', '.join(missing)}")
 
-    empty = [field for field in required_fields if str(feed.get(field, "")).strip() == ""]
+    empty = [field for field in required_fields if feed.get(field) is None or str(feed.get(field)).strip() == ""]
     if empty:
         raise ValidationError(f"{prefix}Empty value for field(s): {', '.join(empty)}")
 
@@ -120,6 +120,25 @@ def validate_feed_entry(feed: Dict[str, Any], index: Optional[int] = None) -> Di
         "url": validate_feed_url(str(feed["url"]).strip()),
         "enabled": bool(feed.get("enabled", True)),
     }
+
+    for optional_key in ("source_kind", "collector_mode"):
+        if optional_key in feed:
+            value = feed[optional_key]
+            if not isinstance(value, str) or not value.strip():
+                raise ValidationError(f"{prefix}Feed '{feed.get('name', '<unknown>')}' has invalid value for '{optional_key}'")
+            validated[optional_key] = value.strip().lower()
+
+    if "same_domain_only" in feed:
+        validated["same_domain_only"] = bool(feed["same_domain_only"])
+
+    if "max_pages" in feed:
+        try:
+            max_pages = int(feed["max_pages"])
+        except (TypeError, ValueError) as err:
+            raise ValidationError(f"{prefix}Feed '{feed.get('name', '<unknown>')}' has invalid value for 'max_pages'") from err
+        if max_pages <= 0:
+            raise ValidationError(f"{prefix}Feed '{feed.get('name', '<unknown>')}' has invalid value for 'max_pages'")
+        validated["max_pages"] = max_pages
 
     if feed.get("domain"):
         validated["domain"] = validate_domain_name(str(feed["domain"]).strip())

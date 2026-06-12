@@ -1,0 +1,102 @@
+lens,failure_bucket,trigger_term,trigger_kind,count,pdf_count,top_pdf,top_pdf_count
+building_physics,,thermal conductivity,physics_term,116,3,df3719b603c42590735c52e1a48f00b7.pdf,83
+building_physics,,moisture,physics_term,38,5,buildin_physics_heat_air_leseprobe.pdf,13
+building_physics,,comfort,physics_term,11,3,building-physics.pdf,5
+building_physics,,condensation,physics_term,10,3,building-physics.pdf,8
+building_physics,,insulation,assembly,10,2,building-physics.pdf,9
+building_physics,,heat flux,physics_term,9,3,df3719b603c42590735c52e1a48f00b7.pdf,6
+building_physics,,u value,physics_term,8,1,building-physics.pdf,8
+building_physics,,mold,physics_term,5,3,Handbook_of_Materials_Failure_Analysis.pdf,3
+building_physics,,wall,assembly,5,1,building-physics.pdf,5
+building_physics,,energy use,physics_term,4,2,building-physics.pdf,2
+building_physics,,indoor temperature,physics_term,4,1,building-physics.pdf,4
+building_physics,,relative humidity,physics_term,4,3,Handbook_of_Materials_Failure_Analysis.pdf,2
+building_physics,,roof,assembly,4,3,buildin_physics_heat_air_leseprobe.pdf,2
+building_physics,,glazing,assembly,2,1,building-physics.pdf,2
+building_physics,,infiltration,physics_term,2,1,building-physics.pdf,2
+building_physics,,air leakage,physics_term,1,1,buildin_physics_heat_air_leseprobe.pdf,1
+building_physics,,facade,assembly,1,1,building-physics.pdf,1
+building_physics,,r value,physics_term,1,1,building-physics.pdf,1
+building_physics,,u-value,physics_term,1,1,buildin_physics_heat_air_leseprobe.pdf,1
+building_physics,,ventilation rate,physics_term,1,1,buildin_physics_heat_air_leseprobe.pdf,1
+materials,,steel,material,45,3,Handbook_of_Materials_Failure_Analysis.pdf,39
+materials,,thermal conductivity,property,39,3,df3719b603c42590735c52e1a48f00b7.pdf,29
+materials,,coating,material,35,2,Handbook_of_Materials_Failure_Analysis.pdf,33
+materials,,concrete,material,27,4,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,12
+materials,,modulus,property,23,3,Handbook_of_Materials_Failure_Analysis.pdf,15
+materials,,compressive strength,property,17,2,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,14
+materials,,porosity,property,16,2,Handbook_of_Materials_Failure_Analysis.pdf,12
+materials,,elastic modulus,property,14,2,Handbook_of_Materials_Failure_Analysis.pdf,10
+materials,,tensile strength,property,14,3,Handbook_of_Materials_Failure_Analysis.pdf,9
+materials,,service life,property,13,2,JCE-72-2020-7-3-3234-EN.pdf,8
+materials,,durability,property,11,2,Handbook_of_Materials_Failure_Analysis.pdf,10
+materials,,permeability,property,11,3,4a57a0b7b1c0bc79f2834dc1f2002f3a.pdf,9
+materials,,reinforced concrete,material,9,3,Handbook_of_Materials_Failure_Analysis.pdf,4
+materials,,insulation,material,8,2,Handbook_of_Materials_Failure_Analysis.pdf,6
+materials,,shear strength,property,8,2,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,6
+materials,,masonry,material,7,1,Handbook_of_Materials_Failure_Analysis.pdf,7
+materials,,yield strength,property,7,1,Handbook_of_Materials_Failure_Analysis.pdf,7
+materials,,reinforcement,material,6,2,Handbook_of_Materials_Failure_Analysis.pdf,5
+materials,,stainless steel,material,5,1,Handbook_of_Materials_Failure_Analysis.pdf,5
+materials,,wood,material,5,3,Handbook_of_Materials_Failure_Analysis.pdf,2
+methods_tooling,,results,test_marker,233,9,Handbook_of_Materials_Failure_Analysis.pdf,103
+methods_tooling,,samples,test_marker,158,5,Handbook_of_Materials_Failure_Analysis.pdf,69
+methods_tooling,,test,test_marker,134,5,Handbook_of_Materials_Failure_Analysis.pdf,88
+methods_tooling,,measured,test_marker,49,5,df3719b603c42590735c52e1a48f00b7.pdf,14
+methods_tooling,,tested,test_marker,25,3,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,19
+methods_tooling,,specimen,test_marker,21,3,Handbook_of_Materials_Failure_Analysis.pdf,15
+failure,structural,collapse,failure_mode,212,3,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,47
+failure,material,corrosion,failure_mode,23,2,Handbook_of_Materials_Failure_Analysis.pdf,16
+failure,structural,fracture,failure_mode,22,2,Handbook_of_Materials_Failure_Analysis.pdf,10
+failure,structural,seismic,failure_mode,22,2,Handbook_of_Materials_Failure_Analysis.pdf,9
+failure,structural,fatigue,failure_mode,16,2,Handbook_of_Materials_Failure_Analysis.pdf,14
+failure,moisture,humidity,failure_mode,16,2,Handbook_of_Materials_Failure_Analysis.pdf,7
+failure,material,deterioration,failure_mode,15,2,JCE-72-2020-7-3-3234-EN.pdf,11
+failure,structural,cracking,failure_mode,14,3,Handbook_of_Materials_Failure_Analysis.pdf,11
+failure,moisture,condensation,failure_mode,13,4,building-physics.pdf,8
+failure,material,degradation,failure_mode,12,1,Handbook_of_Materials_Failure_Analysis.pdf,12
+failure,structural,buckling,failure_mode,11,1,Handbook_of_Materials_Failure_Analysis.pdf,11
+failure,structural,settlement,failure_mode,4,1,Handbook_of_Materials_Failure_Analysis.pdf,4
+failure,moisture,mold,failure_mode,2,2,547c9f48c4ff3e9c42eef62cdbf8addab65cda1bc6c84d6304eec43e0bb89a4a.pdf,1
+climate,,risk,resilience_term,23,2,Handbook_of_Materials_Failure_Analysis.pdf,16
+climate,,moisture,hazard,18,4,building-physics.pdf,6
+climate,,wind,hazard,18,5,Handbook_of_Materials_Failure_Analysis.pdf,9
+climate,,vulnerability,resilience_term,13,1,Handbook_of_Materials_Failure_Analysis.pdf,13
+climate,,humidity,hazard,7,2,Handbook_of_Materials_Failure_Analysis.pdf,6
+climate,,resilience,resilience_term,3,1,Handbook_of_Materials_Failure_Analysis.pdf,3
+climate,,hazard,resilience_term,2,2,Handbook_of_Materials_Failure_Analysis.pdf,1
+climate,,flood,hazard,1,1,JCE-72-2020-7-3-3234-EN.pdf,1
+climate,,high temperature,hazard,1,1,Handbook_of_Materials_Failure_Analysis.pdf,1
+climate,,icing,hazard,1,1,Handbook_of_Materials_Failure_Analysis.pdf,1
+compliance,,astm,std_token,50,3,Handbook_of_Materials_Failure_Analysis.pdf,34
+compliance,,asce,std_token,29,3,Handbook_of_Materials_Failure_Analysis.pdf,21
+compliance,,aci,std_token,24,1,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,24
+compliance,,eurocode,std_token,11,2,Handbook_of_Materials_Failure_Analysis.pdf,10
+compliance,,in accordance with,pass_phrase,5,2,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,3
+compliance,,building code,code_phrase,4,1,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,4
+compliance,,ul,std_token,3,2,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,2
+compliance,,iso,std_token,2,1,building-physics.pdf,2
+compliance,,meets,pass_phrase,2,2,547c9f48c4ff3e9c42eef62cdbf8addab65cda1bc6c84d6304eec43e0bb89a4a.pdf,1
+compliance,,ashrae,std_token,1,1,buildin_physics_heat_air_leseprobe.pdf,1
+compliance,,code requirement,code_phrase,1,1,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,1
+compliance,,icc,std_token,1,1,Handbook_of_Materials_Failure_Analysis.pdf,1
+insurance_risk,,collapse,loss_cause,92,4,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,52
+insurance_risk,,failure,risk_term,38,3,Handbook_of_Materials_Failure_Analysis.pdf,24
+insurance_risk,,roof,system,22,4,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,14
+insurance_risk,,foundation,system,11,2,Handbook_of_Materials_Failure_Analysis.pdf,9
+insurance_risk,,wind,loss_cause,11,3,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,6
+insurance_risk,,floor,system,10,2,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,9
+insurance_risk,,wall,system,10,4,Handbook_of_Materials_Failure_Analysis.pdf,6
+insurance_risk,,corrosion,risk_term,7,1,Handbook_of_Materials_Failure_Analysis.pdf,7
+insurance_risk,,fire,loss_cause,7,5,building-physics.pdf,3
+insurance_risk,,damage,insurance_term,6,3,Handbook_of_Materials_Failure_Analysis.pdf,3
+insurance_risk,,loss,insurance_term,5,2,Handbook_of_Materials_Failure_Analysis.pdf,3
+insurance_risk,,repair,mitigation_term,3,2,Handbook_of_Materials_Failure_Analysis.pdf,2
+insurance_risk,,flood,loss_cause,2,1,Handbook_of_Materials_Failure_Analysis.pdf,2
+insurance_risk,,settlement,loss_cause,2,1,Handbook_of_Materials_Failure_Analysis.pdf,2
+insurance_risk,,claims,insurance_term,1,1,JCE-72-2020-7-3-3234-EN.pdf,1
+insurance_risk,,electrical,system,1,1,GOVPUB-C13-ceefee8ac748574856d8ae9ea1cf2d70.pdf,1
+insurance_risk,,losses,insurance_term,1,1,JCE-72-2020-7-3-3234-EN.pdf,1
+insurance_risk,,moisture,risk_term,1,1,547c9f48c4ff3e9c42eef62cdbf8addab65cda1bc6c84d6304eec43e0bb89a4a.pdf,1
+insurance_risk,,mold,loss_cause,1,1,547c9f48c4ff3e9c42eef62cdbf8addab65cda1bc6c84d6304eec43e0bb89a4a.pdf,1
+insurance_risk,,water damage,loss_cause,1,1,547c9f48c4ff3e9c42eef62cdbf8addab65cda1bc6c84d6304eec43e0bb89a4a.pdf,1

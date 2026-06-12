@@ -22,7 +22,9 @@ def _init_minimal_export_db(db_path: Path):
             """
             CREATE TABLE event_entities (
                 entity_id TEXT,
-                event_id TEXT
+                event_id TEXT,
+                role TEXT,
+                PRIMARY KEY (entity_id, event_id, role)
             )
             """
         )
@@ -50,7 +52,7 @@ def test_export_candidates_domain_aware_writes_domain_csv(tmp_path, monkeypatch)
     with sqlite3.connect(db_path) as con:
         con.execute("INSERT INTO entities VALUES (?, ?, ?, ?)", ("e1", "assay", "PCR", "v1"))
         con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev1", "construction_science", "s1"))
-        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("e1", "ev1"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("e1", "ev1", "primary"))
 
     monkeypatch.setattr(export_csv, "DB_PATH", db_path)
     monkeypatch.setattr(export_csv, "load_normalization_map", lambda: {})
@@ -71,7 +73,7 @@ def test_export_candidates_domain_aware_writes_domain_csv(tmp_path, monkeypatch)
     assert "PCR,assay,v1,1" in content
 
 
-def test_export_candidates_domain_aware_logs_malformed_variant_split(tmp_path, monkeypatch, caplog):
+def test_export_candidates_domain_aware_accepts_whitespace_padded_variants(tmp_path, monkeypatch, caplog):
     monkeypatch.chdir(tmp_path)
     db_path = tmp_path / "runs.sqlite"
     _init_minimal_export_db(db_path)
@@ -81,8 +83,8 @@ def test_export_candidates_domain_aware_logs_malformed_variant_split(tmp_path, m
         con.execute("INSERT INTO entities VALUES (?, ?, ?, ?)", ("e2", "compound", "Alpha", "beta  "))
         con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev1", "construction_science", "s1"))
         con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev2", "construction_science", "s2"))
-        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("e1", "ev1"))
-        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("e2", "ev2"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("e1", "ev1", "primary"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("e2", "ev2", "primary"))
 
     monkeypatch.setattr(export_csv, "DB_PATH", db_path)
     monkeypatch.setattr(export_csv, "load_normalization_map", lambda: {})
@@ -106,7 +108,7 @@ def test_export_candidates_domain_aware_warns_on_true_malformed_variant_split(tm
     with sqlite3.connect(db_path) as con:
         con.execute("INSERT INTO entities VALUES (?, ?, ?, ?)", ("e1", "compound", "Alpha", "alpha|||"))
         con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev1", "construction_science", "s1"))
-        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("e1", "ev1"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("e1", "ev1", "primary"))
 
     monkeypatch.setattr(export_csv, "DB_PATH", db_path)
     monkeypatch.setattr(export_csv, "load_normalization_map", lambda: {})
@@ -128,7 +130,7 @@ def test_export_candidates_domain_aware_without_domain_uses_default_query(tmp_pa
     with sqlite3.connect(db_path) as con:
         con.execute("INSERT INTO entities VALUES (?, ?, ?, ?)", ("e1", "target", "mTOR", "isoform A"))
         con.execute("INSERT INTO research_events VALUES (?, ?, ?)", ("ev1", "methods_tooling", "s1"))
-        con.execute("INSERT INTO event_entities VALUES (?, ?)", ("e1", "ev1"))
+        con.execute("INSERT INTO event_entities VALUES (?, ?, ?)", ("e1", "ev1", "primary"))
 
     monkeypatch.setattr(export_csv, "DB_PATH", db_path)
     monkeypatch.setattr(export_csv, "load_normalization_map", lambda: {})

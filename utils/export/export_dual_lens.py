@@ -42,9 +42,19 @@ from utils.axon_domains import load_all_domains
 logger = logging.getLogger(__name__)
 
 
+def _find_repo_root() -> Path:
+    resolved = Path(__file__).resolve()
+    for candidate in resolved.parents:
+        if (candidate / ".git").exists() or (candidate / "pyproject.toml").exists():
+            return candidate
+    raise RuntimeError(
+        f"Unable to determine repository root from {resolved}: no .git or pyproject.toml found in ancestor directories"
+    )
+
+
 @lru_cache(maxsize=1)
 def _get_valid_domain_ids() -> frozenset[str]:
-    domains_dir = Path(__file__).resolve().parents[2] / "config" / "domains"
+    domains_dir = _find_repo_root() / "config" / "domains"
     if not domains_dir.exists() or not domains_dir.is_dir():
         logger.warning("Domain profiles directory missing: %s", domains_dir)
         return frozenset()
@@ -81,8 +91,10 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
         db_path_obj = None
     else:
         db_path_obj = Path(db_path)
-        if not db_path_obj.exists() or not db_path_obj.is_file():
+        if not db_path_obj.exists():
             raise FileNotFoundError(f"Database file not found on disk: {db_path_obj}")
+        if not db_path_obj.is_file():
+            raise IsADirectoryError(f"Expected a file but found a directory: {db_path_obj}")
         db_path = str(db_path_obj)
 
     output_path = Path(output_dir)
@@ -134,6 +146,7 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
         entity_models_map=entity_models_map,
         event_overlay_scores=event_overlay_scores,
         scorer=scorer,
+        domain_id=domain_id,
     )
     print(f"   ✅ Calculated scores for {len(canonical_entities)} entities")
 
@@ -183,6 +196,7 @@ def export_dual_lens(db_path, domain_id="construction_science", output_dir="expo
         filtered_entities=filtered_entities,
         entity_scores=entity_scores,
         entity_events=entity_events,
+        domain_id=domain_id,
     )
     print(f"   ✅ Report: {report_file}")
 

@@ -3,9 +3,14 @@ Multi-Folder Scraper
 Run the scraper against multiple PDF folders and combine results into one database
 """
 
-import subprocess
+import logging
+import os
+import subprocess  # nosec B404 - controlled local scraper invocation
 import sys
 from pathlib import Path
+
+
+logger = logging.getLogger(__name__)
 
 def run_scraper(input_dir: str, domain: str, output_db: str):
     """Run scraper on a specific folder"""
@@ -31,7 +36,7 @@ def run_scraper(input_dir: str, domain: str, output_db: str):
 
     timeout_seconds = 600  # 10 minutes, adjust as needed
     try:
-        result = subprocess.run(cmd, capture_output=False, timeout=timeout_seconds)
+        result = subprocess.run(cmd, capture_output=False, timeout=timeout_seconds)  # nosec B603 - command is built from a local script path and explicit args
     except subprocess.TimeoutExpired:
         print(f"⏰ Timeout: Scraper timed out after {timeout_seconds} seconds for {input_dir}")
         return 1  # Non-zero status for timeout
@@ -40,6 +45,39 @@ def run_scraper(input_dir: str, domain: str, output_db: str):
         print(f"⚠️  Warning: Scraper returned non-zero exit code for {input_dir}")
 
     return result.returncode
+
+
+def validate_configs(configs: list[dict[str, str]]) -> None:
+    for config in configs:
+        input_raw = config.get("input_dir", "")
+        output_raw = config.get("output_db", "")
+        domain = config.get("domain", "(unknown domain)")
+
+        missing_fields = [key for key, value in (("input_dir", input_raw), ("output_db", output_raw)) if not value]
+        if missing_fields:
+            message = f"ERROR: Invalid config for domain '{domain}': missing or empty fields: {', '.join(missing_fields)}"
+            print(message)
+            logger.error("Invalid config for domain '%s': missing or empty fields: %s", domain, ", ".join(missing_fields))
+            sys.exit(1)
+
+        input_dir = Path(input_raw).expanduser()
+        output_db = Path(output_raw).expanduser()
+
+        if not input_dir.exists() or not input_dir.is_dir():
+            print(f"ERROR: Invalid config for domain '{domain}': input_dir does not exist or is not a directory: {input_dir}")
+            logger.error("Invalid config for domain '%s': input_dir does not exist or is not a directory: %s", domain, input_dir)
+            sys.exit(1)
+
+        output_parent = output_db.parent
+        if not output_parent.exists() or not output_parent.is_dir():
+            print(f"ERROR: Invalid config for domain '{domain}': output_db parent directory does not exist or is not a directory: {output_parent}")
+            logger.error("Invalid config for domain '%s': output_db parent directory does not exist or is not a directory: %s", domain, output_parent)
+            sys.exit(1)
+
+        if not os.access(output_parent, os.W_OK):
+            print(f"ERROR: Invalid config for domain '{domain}': output_db parent directory is not writable: {output_parent}")
+            logger.error("Invalid config for domain '%s': output_db parent directory is not writable: %s", domain, output_parent)
+            sys.exit(1)
 
 
 def main():
@@ -55,16 +93,18 @@ def main():
     # Configuration
     configs = [
         {
-            "input_dir": "input_pdfs/biohacking",
+            "input_dir": "input/pdfs/biohacking_longevity",
             "domain": "biohacking_longevity",
             "output_db": "output/combined_biohacking.sqlite"
         },
         {
-            "input_dir": "input_pdfs/longevity_v1",
-            "domain": "biohacking_longevity",
+            "input_dir": "input/pdfs/neuroscience_cognition",
+            "domain": "neuroscience_cognition",
             "output_db": "output/combined_biohacking.sqlite"  # Same DB = combined!
         },
     ]
+
+    validate_configs(configs)
     
     print("\n" + "="*70)
     print("MULTI-FOLDER SCRAPER")

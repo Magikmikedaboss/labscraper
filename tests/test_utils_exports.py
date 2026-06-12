@@ -60,7 +60,7 @@ def test_write_run_meta(tmp_path, monkeypatch):
     assert "counts" in meta and isinstance(meta["counts"], dict)
     assert "confidence_distribution" in meta and isinstance(meta["confidence_distribution"], dict)
     assert "top_entities" in meta and isinstance(meta["top_entities"], list)
-    # Normalization map is deterministic via monkeypatch.
+    assert meta["normalization_map"] == deterministic_norm_map
 
 
 def test_get_overlay_version_branches():

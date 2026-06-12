@@ -4,7 +4,7 @@ Comprehensive test of anchor entity extraction functionality
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path("output") / "peptide_intel.sqlite"
+DB_PATH = Path("db") / "runs.sqlite"
 
 def print_section(title):
     print("\n" + "="*70)

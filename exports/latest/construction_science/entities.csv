@@ -1,0 +1,27 @@
+entity_name,entity_type,entity_variant,event_count
+beam,system,,12
+wall,system,,7
+composite,material,,3
+fiber,material,,3
+foundation,system,,3
+bending,test_method,,3
+glass,material,,2
+strength,test_method,,2
+and failure,failure_mode,,1
+collapse,failure_mode,,1
+instability,failure_mode,,1
+lattice collapse,failure_mode,,1
+the collapse,failure_mode,,1
+yielding,failure_mode,,1
+corrosion,hazard,,1
+copper,material,,1
+insulation,material,,1
+polymer,material,,1
+column,system,,1
+panel,system,,1
+window,system,,1
+compression,test_method,,1
+impact,test_method,,1
+modulus,test_method,,1
+stiffness,test_method,,1
+thermal analysis,test_method,,1

@@ -2,6 +2,29 @@ import copy
 from typing import Any, Callable, Optional
 
 
+ENTITY_STOP_WORDS = {
+    "a",
+    "an",
+    "this",
+    "that",
+    "the",
+    "of",
+    "and",
+    "for",
+    "with",
+}
+
+
+ENTITY_FRAGMENT_DENYLIST = {
+    "a failure",
+    "the failure",
+    "of failure",
+    "explain failure",
+    "a collapse",
+    "the collapse",
+}
+
+
 GLOBAL_TYPE_MAPPINGS = {
     "neural_cell": {
         "microglia", "astrocyte", "neuron", "neurons",
@@ -47,6 +70,22 @@ DOMAIN_TYPE_MAPPINGS = {
     }
 }
 
+CONSTRUCTION_MODEL_NOISE = {
+    "human",
+    "humans",
+    "mouse",
+    "mice",
+    "rat",
+    "rats",
+    "animal",
+    "animals",
+    "rodent",
+    "rodents",
+    "hela",
+    "hek293",
+    "hek-293",
+}
+
 def normalize_entity_type(name: str, entity_type: str, domain_id: str) -> str:
     """Apply type precedence rules before canonical normalization."""
     name_lower = (name or "").lower().strip()
@@ -60,6 +99,26 @@ def normalize_entity_type(name: str, entity_type: str, domain_id: str) -> str:
             return mapped_type
 
     return entity_type
+
+
+def _is_fragment_entity_name(canonical_name: str) -> bool:
+    canonical = canonical_name.lower().strip()
+    if canonical in ENTITY_FRAGMENT_DENYLIST:
+        return True
+
+    if not any(ch.isalnum() for ch in canonical):
+        return True
+
+    tokens = [token for token in canonical.split() if token]
+    if len(tokens) < 2:
+        return False
+    return tokens[0] in ENTITY_STOP_WORDS or tokens[-1] in ENTITY_STOP_WORDS
+
+
+def _is_construction_model_noise(entity_type: str, canonical_name: str, domain_id: str) -> bool:
+    if domain_id != "construction_science" or entity_type != "model":
+        return False
+    return canonical_name.lower().strip() in CONSTRUCTION_MODEL_NOISE
 
 def build_canonical_entities(
     entities: list,
@@ -81,7 +140,10 @@ def build_canonical_entities(
 
     for entity in entities:
         if not isinstance(entity, dict):
-            continue
+            try:
+                entity = dict(entity)
+            except (TypeError, ValueError):
+                continue
 
         name = entity.get("entity_name")
         entity_type = entity.get("entity_type")
@@ -105,12 +167,17 @@ def build_canonical_entities(
         canonical_name = str(normalized_name).strip()
         if not canonical_name:
             continue
+        if _is_fragment_entity_name(canonical_name):
+            continue
         canonical_key = canonical_name.lower()
 
         role = get_entity_role(
             {"entity_type": canonical_type, "entity_name": canonical_name},
             norm_map,
         )
+
+        if _is_construction_model_noise(canonical_type, canonical_name, domain_id):
+            continue
 
         if should_skip_entity(canonical_type, canonical_name, role):
             continue
@@ -131,7 +198,7 @@ def build_canonical_entities(
                 canonical_entity["original_names"].append(name)
 
         orig_id = entity.get("entity_id")
-        if orig_id is not None:
+        if orig_id is not None and str(orig_id).strip():
             entity_id_mapping[orig_id] = entity_id_str
 
     return list(entity_canonical.values()), entity_id_mapping

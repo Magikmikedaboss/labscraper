@@ -51,6 +51,8 @@ def test_show_pdf_cache(tmp_path, caplog, init_test_schema):
     # Create a fake PDF file
     pdf_file = cache_dir / "test.pdf"
     pdf_file.write_bytes(b"%PDF-1.4 test")
+    text_file = cache_dir / "notes.txt"
+    text_file.write_text("not a pdf", encoding="utf-8")
     # Setup DB connection and insert required source/document
     db_path = init_test_schema
     conn = db_utils.connect_db(str(db_path))
@@ -61,8 +63,10 @@ def test_show_pdf_cache(tmp_path, caplog, init_test_schema):
             db_utils.show_pdf_cache(str(cache_dir))
         output = " ".join([r.getMessage() for r in caplog.records])
         assert "PDF CACHE" in output
+        assert any("Skipping unexpected non-PDF cache file" in msg for msg in caplog.messages)
+        assert "test.pdf" in output
         # Insert chunk
-        chunk_id = db_utils.insert_chunk(conn, "SRC2", doc_id, 1, "Methods", "Some chunk text.")
+        chunk_id = db_utils.insert_chunk(conn, doc_id, 1, "Methods", "Some chunk text.")
         assert isinstance(chunk_id, str)
         # Upsert entity
         entity_id = db_utils.upsert_entity(conn, "compound", "aspirin", None, None)
@@ -90,6 +94,10 @@ def test_show_pdf_cache(tmp_path, caplog, init_test_schema):
         assert isinstance(event_id, str)
         # Link event to entity
         db_utils.link_event_entity(conn, event_id, entity_id, "primary")
+        with caplog.at_level(logging.WARNING):
+            inserted = db_utils.link_event_entity(conn, event_id, entity_id, "primary")
+        assert inserted is False
+        assert "Skipping duplicate event_entities link" in " ".join(r.getMessage() for r in caplog.records)
         # Link event tag
         db_utils.link_event_tag(conn, event_id, "tag1")
         # Insert measurement (valid)
@@ -98,6 +106,9 @@ def test_show_pdf_cache(tmp_path, caplog, init_test_schema):
         with pytest.raises(ValueError) as excinfo:
             db_utils.insert_measurement(conn, event_id, {"measurement_type": None, "value": None, "unit": None})
         assert "Missing required measurement fields" in str(excinfo.value)
+        with pytest.raises(ValueError) as excinfo:
+            db_utils.insert_measurement(conn, event_id, {"measurement_type": "IC50", "value": "not-a-number", "unit": "uM"})
+        assert "Measurement value must be numeric" in str(excinfo.value)
     finally:
         conn.close()
 
@@ -118,6 +129,48 @@ def test_upsert_source_finds_fuzzy_match_beyond_first_thousand_rows(init_test_sc
             "NEW_SOURCE",
             "paper.pdf",
             {"title": target_title, "authors": "Shared Author"},
+        )
+
+        assert resolved == "SRC_MATCH"
+    finally:
+        conn.close()
+
+
+def test_upsert_source_serializes_and_parses_authors_with_commas(init_test_schema):
+    conn = db_utils.connect_db(str(init_test_schema))
+    try:
+        stored_id = db_utils.upsert_source(
+            conn,
+            "SRC_LIST",
+            "paper.pdf",
+            {
+                "title": "List Authors Paper",
+                "authors": ["Doe, Jane", "Smith, John"],
+            },
+        )
+
+        stored_authors = conn.execute(
+            "SELECT authors FROM sources WHERE source_id = ?",
+            (stored_id,),
+        ).fetchone()[0]
+        assert stored_authors == "Doe, Jane; Smith, John"
+
+        target_title = "x" * 100 + "a"
+        fuzzy_title = "x" * 100 + "b"
+        conn.execute(
+            "INSERT INTO sources (source_id, title, authors) VALUES (?, ?, ?)",
+            ("SRC_MATCH", fuzzy_title, "Doe, Jane; Smith, John"),
+        )
+        conn.commit()
+
+        resolved = db_utils.upsert_source(
+            conn,
+            "NEW_SOURCE",
+            "paper.pdf",
+            {
+                "title": target_title,
+                "authors": ["Doe, Jane", "Smith, John"],
+            },
         )
 
         assert resolved == "SRC_MATCH"

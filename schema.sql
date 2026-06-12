@@ -199,16 +199,7 @@ CREATE INDEX IF NOT EXISTS idx_event_tags_tag ON event_tags(tag);
 -- 8) QUANTITATIVE MEASUREMENTS (numerical data extraction)
 -- =========================================================
 
--- NOTE: value column changed from REAL to TEXT for high-precision decimal storage.
--- For existing databases, run the migration inside a transaction:
---   BEGIN TRANSACTION;
---   ALTER TABLE quantitative_measurements RENAME TO quantitative_measurements_old;
---   CREATE TABLE quantitative_measurements (... value TEXT ...);
---   INSERT INTO quantitative_measurements SELECT ... CAST(value AS TEXT) ... FROM quantitative_measurements_old;
---   Verify row counts, NULL constraints, and foreign key integrity match.
---   If verification fails, ROLLBACK so quantitative_measurements_old is preserved.
---   DROP TABLE quantitative_measurements_old;
---   COMMIT;
+-- For existing databases, use migrations/03_value_text_precision.sql.
 CREATE TABLE IF NOT EXISTS quantitative_measurements (
   measurement_id TEXT PRIMARY KEY,
   event_id TEXT NOT NULL,

@@ -1,7 +1,9 @@
 """Shared utilities for database inspection"""
 
 from difflib import SequenceMatcher
+from decimal import Decimal, InvalidOperation
 import logging
+import re
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -18,13 +20,23 @@ def _quote_sql_identifier(identifier: str) -> str:
     return f'"{identifier}"'
 
 
+# Fuzzy title matching is intentionally conservative: these thresholds limit the
+# candidate set before SequenceMatcher is applied and keep tuning centralized.
+TITLE_PREFIX_LEN = 12
+LENGTH_DIFF_THRESHOLD = 20
+SIMILARITY_THRESHOLD = 0.97
+
+
+REQUIRED_TABLES = [
+    "sources", "documents", "chunks", "entities", "research_events",
+    "event_entities", "event_tags", "quantitative_measurements", "entity_relationships", "tags"
+]
+
+
 def db_has_all_tables(con, required_tables=None):
     """Check if all required tables exist in the database connection."""
     if required_tables is None:
-        required_tables = [
-            "sources", "documents", "chunks", "entities", "research_events",
-            "event_entities", "event_tags", "quantitative_measurements", "entity_relationships", "tags"
-        ]
+        required_tables = REQUIRED_TABLES
     cursor = con.cursor()
     try:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
@@ -35,12 +47,24 @@ def db_has_all_tables(con, required_tables=None):
 
 
 logger = logging.getLogger(__name__)
+AUTHOR_SEPARATOR = "; "
+EVIDENCE_SNIPPET_MAX_LENGTH = 500
+
+_sqlite3_connect = sqlite3.connect
+
+
+def connect_with_foreign_keys(*args, **kwargs) -> sqlite3.Connection:
+    """Open a SQLite connection with foreign-key enforcement enabled."""
+    conn = _sqlite3_connect(*args, **kwargs)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
 def connect_db(db_path: str = 'db/runs.sqlite') -> sqlite3.Connection:
     """Connect to database with standard settings"""
     if not Path(db_path).exists():
         raise FileNotFoundError(f"Database not found: {db_path}")
     
-    conn = sqlite3.connect(db_path)
+    conn = connect_with_foreign_keys(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -182,10 +206,14 @@ def show_pdf_cache(cache_dir: str = 'input/rss_cache'):
 
     # Enumerate files in the cache directory and log their details
     for f in cache_dir.iterdir():
-        if f.is_file():
-            st = f.stat()
-            mod_time = datetime.fromtimestamp(st.st_mtime).isoformat(sep=' ', timespec='seconds')
-            logger.info("  %s | %d bytes | modified: %s", f.name, st.st_size, mod_time)
+        if not f.is_file():
+            continue
+        if f.suffix.lower() != ".pdf":
+            logger.warning("Skipping unexpected non-PDF cache file: %s", f.name)
+            continue
+        st = f.stat()
+        mod_time = datetime.fromtimestamp(st.st_mtime).isoformat(sep=' ', timespec='seconds')
+        logger.info("  %s | %d bytes | modified: %s", f.name, st.st_size, mod_time)
 
 def get_entity_distribution(conn: sqlite3.Connection):
     """Show entity distribution across types"""
@@ -278,7 +306,8 @@ def _normalize_doi(value: Any) -> str:
 
 def _table_columns(con: sqlite3.Connection, table_name: str) -> set[str]:
     safe_table_name = _quote_sql_identifier(table_name)
-    rows = con.execute(f"PRAGMA table_info({safe_table_name})").fetchall()
+    # _table_columns relies on _quote_sql_identifier to strictly validate table_name before interpolation.
+    rows = con.execute(f"PRAGMA table_info({safe_table_name})").fetchall()  # nosec B608
     return {row[1] for row in rows}
 
 
@@ -342,7 +371,7 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
     if exact:
         return exact[0]
 
-    title_prefix = title[:12]
+    title_prefix = title[:TITLE_PREFIX_LEN]
     title_length = len(title)
     candidates = con.execute(
         """
@@ -351,10 +380,10 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
         WHERE title IS NOT NULL
           AND trim(title) <> ''
           AND lower(trim(title)) LIKE ?
-          AND abs(length(lower(trim(title))) - ?) <= 20
-        ORDER BY abs(length(lower(trim(title))) - ?), source_id
+                    AND abs(length(lower(trim(title))) - ?) <= ?
+                ORDER BY abs(length(lower(trim(title))) - ?), source_id
         """,
-        (f"{title_prefix}%", title_length, title_length),
+                (f"{title_prefix}%", title_length, LENGTH_DIFF_THRESHOLD, title_length),
     ).fetchall()
 
     def _split_authors(value) -> set[str]:
@@ -366,7 +395,10 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
             text = str(value)
             text = text.replace(" and ", ",")
             text = text.replace(" & ", ",")
-            parts = text.split(",")
+            if ";" in text or "|" in text:
+                parts = re.split(r"\s*[;|]\s*", text)
+            else:
+                parts = text.split(",")
         return {
             str(part).strip().lower()
             for part in parts
@@ -378,7 +410,7 @@ def _resolve_existing_source_id(con: sqlite3.Connection, source_id: str, metadat
         if not candidate_title:
             continue
         score = SequenceMatcher(None, title, _normalize_text(candidate_title)).ratio()
-        if score >= 0.97:
+        if score >= SIMILARITY_THRESHOLD:
             candidate_authors = con.execute(
                 "SELECT authors FROM sources WHERE source_id = ? LIMIT 1",
                 (candidate_id,),
@@ -407,7 +439,8 @@ def upsert_source(con: sqlite3.Connection, source_id: str, pdf_file: str, metada
 
     authors = metadata.get("authors")
     if isinstance(authors, (list, tuple)):
-        authors = ", ".join(str(a) for a in authors if a)
+        # Authors are stored as a separator-delimited string to preserve names that contain commas.
+        authors = AUTHOR_SEPARATOR.join(str(a).strip() for a in authors if a)
 
     year = metadata.get("year")
     if isinstance(year, str) and year.isdigit():
@@ -485,8 +518,16 @@ def insert_document(con, source_id: str, file_path: str, sha256: str) -> str:
     )
     return doc_id
 
-def insert_chunk(con, source_id: str, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
+def insert_chunk(con, doc_id: str, page_number: int, section_guess: str, chunk_text: str) -> str:
     # Use full chunk text to avoid collisions from identical prefixes.
+    source_row = con.execute(
+        "SELECT source_id FROM documents WHERE doc_id = ? LIMIT 1",
+        (doc_id,),
+    ).fetchone()
+    if not source_row:
+        raise ValueError(f"Unknown document: {doc_id}")
+
+    source_id = source_row[0]
     chunk_id = sha256_hex(f"{doc_id}|{page_number}|{chunk_text}")
     con.execute(
         """INSERT OR IGNORE INTO chunks(chunk_id, doc_id, source_id, page_number, section_guess, chunk_text, created_at)
@@ -527,8 +568,24 @@ def insert_event(
     evidence_snippet: str,
     evidence_strength_v: str,
     confidence_v: str,
+    evidence_snippet_max_length: int = EVIDENCE_SNIPPET_MAX_LENGTH,
 ) -> str:
-    base = f"{source_id}|{doc_id}|{page_number}|{event_type}|{evidence_snippet[:180]}"
+    evidence_snippet_stored = evidence_snippet[:evidence_snippet_max_length]
+    if len(evidence_snippet) > len(evidence_snippet_stored):
+        logger.warning(
+            "Truncating evidence_snippet for event_id storage and hashing to %s characters (source_id=%s, doc_id=%s, page_number=%s, event_type=%s)",
+            evidence_snippet_max_length,
+            source_id,
+            doc_id,
+            page_number,
+            event_type,
+        )
+
+    # Keep the event_id aligned with the stored snippet so deduplication is stable.
+    base = (
+        f"{source_id}|{doc_id}|{page_number}|{domain}|{event_type}|{stage}|{outcome}|"
+        f"{failure_reason}|{decision_taken}|{evidence_snippet_stored}"
+    )
     event_id = sha256_hex(base)
     con.execute(
         """INSERT OR IGNORE INTO research_events(
@@ -540,21 +597,42 @@ def insert_event(
         (
             event_id, domain, event_type, stage, system_context, application_context,
             outcome, failure_reason, decision_taken, decision_driver,
-            evidence_snippet[:500], evidence_strength_v, confidence_v,
+            evidence_snippet_stored, evidence_strength_v, confidence_v,
             source_id, doc_id, chunk_id, page_number, now_iso()
         ),
     )
     return event_id
 
 def link_event_entity(con, event_id: str, entity_id: str, role: str):
-    con.execute(
-        """INSERT OR IGNORE INTO event_entities(event_id, entity_id, role)
-           VALUES (?,?,?)""",
+    cursor = con.execute(
+        "SELECT 1 FROM event_entities WHERE event_id = ? AND entity_id = ? AND role = ? LIMIT 1",
         (event_id, entity_id, role),
     )
+    try:
+        if cursor.fetchone() is not None:
+            logger.warning(
+                "Skipping duplicate event_entities link for event_id=%s entity_id=%s role=%s",
+                event_id,
+                entity_id,
+                role,
+            )
+            return False
+    finally:
+        cursor.close()
+
+    con.execute(
+        "INSERT INTO event_entities(event_id, entity_id, role) VALUES (?,?,?)",
+        (event_id, entity_id, role),
+    )
+    return True
 
 def insert_measurement(con, event_id: str, measurement: dict):
-    """Insert quantitative measurement. Tolerates missing fields and raises ValueError for required ones."""
+    """Insert a quantitative measurement.
+
+    measurement_type, value, and unit are required. The function raises
+    ValueError if any of those fields are missing, or if value is empty,
+    non-numeric, or non-finite. context is optional and may be omitted.
+    """
     mtype = measurement.get('measurement_type')
     value = measurement.get('value')
     unit = measurement.get('unit')
@@ -562,12 +640,23 @@ def insert_measurement(con, event_id: str, measurement: dict):
     # measurement_type, value, and unit are required for a valid measurement
     if mtype is None or value is None or unit is None:
         raise ValueError(f"Missing required measurement fields: measurement_type={mtype}, value={value}, unit={unit}")
-    measurement_id = sha256_hex(f"{event_id}|{mtype}|{value}|{unit}")
+    value_text = str(value).strip()
+    if not value_text:
+        raise ValueError("Measurement value must be a non-empty numeric string")
+    try:
+        decimal_value = Decimal(value_text)
+    except InvalidOperation as exc:
+        raise ValueError(f"Measurement value must be numeric: {value!r}") from exc
+    if not decimal_value.is_finite():
+        raise ValueError(f"Measurement value must be finite: {value!r}")
+
+    normalized_value = str(decimal_value)
+    measurement_id = sha256_hex(f"{event_id}|{mtype}|{normalized_value}|{unit}")
     con.execute(
         """INSERT OR IGNORE INTO quantitative_measurements(
              measurement_id, event_id, measurement_type, value, unit, context, created_at
            ) VALUES (?,?,?,?,?,?,?)""",
-        (measurement_id, event_id, mtype, value, unit, context, now_iso()),
+        (measurement_id, event_id, mtype, normalized_value, unit, context, now_iso()),
     )
 
 def insert_relationship(con, entity_id_1: str, entity_id_2: str, relationship_type: str):
@@ -591,28 +680,14 @@ def link_event_tag(con, event_id: str, tag: str):
 
 def _db_has_all_tables(db_path: Path) -> bool:
     """Check if all required tables exist in the DB."""
-    required_tables = {
-        "sources",
-        "documents",
-        "chunks",
-        "entities",
-        "research_events",
-        "event_entities",
-        "tags",
-        "event_tags",
-        "quantitative_measurements",
-        "entity_relationships",
-    }
     try:
         with sqlite3.connect(db_path, timeout=30.0) as con:
-            tables = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-            table_names = {t[0] for t in tables}
-            return required_tables.issubset(table_names)
+            return db_has_all_tables(con, REQUIRED_TABLES)
     except Exception as e:
         logger.debug(
             "_db_has_all_tables failed for db_path=%s required_tables=%s: %s",
             db_path,
-            sorted(required_tables),
+            sorted(REQUIRED_TABLES),
             e,
             exc_info=True,
         )

@@ -20,6 +20,7 @@ DEFAULT_KNOWN_PEPTIDES = {
 KNOWN_PEPTIDES_ENV_VAR = "LABSCRAPER_KNOWN_PEPTIDES"
 KNOWN_PEPTIDES_FILE_ENV_VAR = "LABSCRAPER_KNOWN_PEPTIDES_FILE"
 DEFAULT_KNOWN_PEPTIDES_FILE = Path(__file__).resolve().parents[2] / "seeds" / "domain" / "peptides.txt"
+_KNOWN_PEPTIDES: set[str] | None = None
 
 
 def _normalize_peptide_value(value: object) -> str | None:
@@ -62,7 +63,7 @@ def _load_peptides_from_file(path: Path) -> set[str] | None:
         elif path.suffix.lower() in {".yml", ".yaml"}:
             try:
                 import yaml  # type: ignore
-            except Exception:
+            except ImportError:
                 return None
             try:
                 payload = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -110,8 +111,14 @@ def load_known_peptides(
 
     return set(DEFAULT_KNOWN_PEPTIDES)
 
-
-KNOWN_PEPTIDES = load_known_peptides()
+def get_known_peptides() -> set[str]:
+    global _KNOWN_PEPTIDES
+    if _KNOWN_PEPTIDES is None:
+        try:
+            _KNOWN_PEPTIDES = load_known_peptides()
+        except (OSError, ValueError):
+            _KNOWN_PEPTIDES = set(DEFAULT_KNOWN_PEPTIDES)
+    return _KNOWN_PEPTIDES
 
 # Minimum number of linked events required to keep peptide rows in CSV exports.
 PEPTIDE_EVENT_THRESHOLD = 2
@@ -127,7 +134,7 @@ def is_valid_export_peptide(name: str) -> bool:
     if re.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]{8,100}", token_upper):
         return True
 
-    return token_upper in KNOWN_PEPTIDES
+    return token_upper in get_known_peptides()
 
 def should_skip_entity(
     entity_type: str,

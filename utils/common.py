@@ -16,14 +16,28 @@ def _to_bytes(s: Union[str, bytes]) -> bytes:
         return s
     return s.encode("utf-8")
 
-def sha256_short(s: Union[str, bytes]) -> str:
+def sha256_short_unsafe(s: Union[str, bytes]) -> str:
     """Return the first 16 hex chars of SHA-256.
 
-    This is a 64-bit identifier and is not appropriate for security-sensitive
-    uses because collisions are materially more likely than with a full digest.
+    Warning: this is a 64-bit truncation and has a materially higher collision
+    risk than the full digest. Use only when a short, non-security identifier
+    is acceptable.
     """
     data = _to_bytes(s)
     return hashlib.sha256(data).hexdigest()[:16]
+
+
+def sha256_short(s: Union[str, bytes]) -> str:
+    """Deprecated wrapper for sha256_short_unsafe.
+
+    Prefer :func:`sha256_short_unsafe` for new code.
+    """
+    warnings.warn(
+        "sha256_short is deprecated; use sha256_short_unsafe instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return sha256_short_unsafe(s)
 
 def sha256_hex(s: Union[str, bytes]) -> str:
     """Return the full SHA-256 hex digest of input."""
@@ -77,10 +91,15 @@ def get_seeds(SEEDS_DIR=None):
 # PATH RESOLUTION (FIXED)
 # ---------------------------------------------------------
 # Helper for seeds root normalization
-def _normalize_seeds_root(resolved: Path) -> Path:
-    """If path ends with base/life_sciences, return grandparent, else resolved."""
-    if len(resolved.parts) >= 2 and resolved.parts[-2:] == ("base", "life_sciences"):
-        return resolved.parent.parent.resolve()
+def _normalize_seeds_root(resolved: Path, suffix: tuple[str, ...] = ("base", "life_sciences")) -> Path:
+    """Normalize a seeds directory root when it ends with a known project suffix.
+
+    Example: ``/repo/seeds/base/life_sciences`` -> ``/repo/seeds``
+    """
+    if not suffix:
+        return resolved
+    if suffix and len(resolved.parts) >= len(suffix) and resolved.parts[-len(suffix):] == suffix:
+        return resolved.parents[len(suffix) - 1].resolve()
     return resolved
 
 def _resolve_seeds_dir(SEEDS_DIR=None):
@@ -88,12 +107,12 @@ def _resolve_seeds_dir(SEEDS_DIR=None):
         p = Path(SEEDS_DIR)
         if p.exists():
             resolved = p.resolve()
-            return _normalize_seeds_root(resolved)
+            return _normalize_seeds_root(resolved, suffix=("base", "life_sciences"))
 
         p2 = Path.cwd() / p
         if p2.exists():
             resolved = p2.resolve()
-            return _normalize_seeds_root(resolved)
+            return _normalize_seeds_root(resolved, suffix=("base", "life_sciences"))
 
         logging.warning(f"Provided SEEDS_DIR '{SEEDS_DIR}' not found as absolute or relative path; falling back to auto-discovery.")
 
@@ -181,10 +200,15 @@ def load_seed_file(filepath: Path, case: str = None) -> Set[str]:
 
     with open(filepath, "r", encoding="utf-8") as f:
         for line in f:
-            line = line.strip()
-            # Remove inline comments
-            if "#" in line:
-                line = line.split("#", 1)[0].strip()
+            stripped = line.strip()
+            if not stripped:
+                continue
+            comment_index = None
+            for idx, char in enumerate(line):
+                if char == "#" and (idx == 0 or line[idx - 1].isspace()):
+                    comment_index = idx
+                    break
+            line = line[:comment_index].strip() if comment_index is not None else line.strip()
             if not line:
                 continue
             if case == "upper":

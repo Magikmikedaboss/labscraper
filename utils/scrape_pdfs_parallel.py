@@ -44,6 +44,8 @@ from utils.db_utils import (
 )
 from utils.deduplication import normalize_event_key
 from utils.common import sha256_hex as _sha64
+from utils.db_init import init_db_schema
+from utils.source_triage import scan_pdf
 
 
 def sha64(s):
@@ -70,6 +72,47 @@ def _has_signal(s_l: str) -> bool:
     )
 
 
+CONSTRUCTION_CONTEXT_TERMS = {
+    "building",
+    "buildings",
+    "construction",
+    "structural",
+    "structure",
+    "wall",
+    "roof",
+    "foundation",
+    "slab",
+    "beam",
+    "column",
+    "assembly",
+    "envelope",
+    "insulation",
+    "material",
+    "masonry",
+    "concrete",
+    "steel",
+    "frame",
+    "facade",
+    "cladding",
+    "building envelope",
+    "roof assembly",
+    "wall assembly",
+}
+
+CONSTRUCTION_GENERIC_ENTITY_DENYLIST = {
+    "temperature",
+    "exposure",
+    "pressure",
+    "humidity",
+    "uv",
+    "thermal",
+}
+
+
+def _has_construction_context(s_l: str) -> bool:
+    return any(term in s_l for term in CONSTRUCTION_CONTEXT_TERMS)
+
+
 def _sha256_file(path: Path, chunk_size: int = 64 * 1024) -> str:
     """Hash a file in chunks to avoid loading large PDFs fully into memory."""
     hasher = hashlib.sha256()
@@ -80,6 +123,32 @@ def _sha256_file(path: Path, chunk_size: int = 64 * 1024) -> str:
                 break
             hasher.update(chunk)
     return hasher.hexdigest()
+
+
+def _normalize_source_part(value: object) -> str:
+    text = str(value).strip().lower()
+    return re.sub(r"\s+", " ", text)
+
+
+def _derive_stable_source_id(pdf_path: Path, metadata: dict) -> str:
+    doi = metadata.get("doi")
+    if isinstance(doi, str):
+        normalized_doi = doi.strip()
+        if normalized_doi:
+            return normalized_doi
+
+    source_parts = [
+        metadata.get("title"),
+        metadata.get("authors"),
+        metadata.get("year"),
+        metadata.get("venue"),
+        metadata.get("journal"),
+    ]
+    normalized_parts = [_normalize_source_part(part) for part in source_parts if part not in (None, "")]
+    if normalized_parts:
+        return _sha64("|".join(normalized_parts))
+
+    return pdf_path.stem
 
 
 def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
@@ -93,18 +162,16 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
 
     try:
         with _connect(db_path) as con:
-            digest = _sha256_file(pdf_path)
-            source_id = digest
-            file_hash = digest
-
             # Track number of events inserted; partial commits are intentional—already-committed rows may remain if a mid-PDF commit fails
             events_count = 0
             seen_events = set()
 
-            with pdfplumber.open(str(pdf_path)) as pdf:
+            with pdfplumber.open(pdf_path) as pdf:
                 metadata = extract_metadata(pdf_path, pdf)
                 metadata.setdefault("domain", domain)
                 metadata.setdefault("publication_date", metadata.get("year"))
+                source_id = _derive_stable_source_id(pdf_path, metadata)
+                file_hash = _sha256_file(pdf_path)
                 resolved_source_id = upsert_source(con, source_id, pdf_path.name, metadata)
                 if resolved_source_id != source_id:
                     process_logger.warning(
@@ -122,11 +189,14 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         continue
 
                     section = guess_section(text.lower())
-                    chunk_id = insert_chunk(con, source_id, doc_id, page_idx, section, text)
+                    chunk_id = insert_chunk(con, doc_id, page_idx, section, text)
 
                     for sent in chunk_sentences(text):
                         s_l = sent.lower()
                         if not _has_signal(s_l):
+                            continue
+
+                        if domain == "construction_science" and not _has_construction_context(s_l):
                             continue
 
 
@@ -138,6 +208,13 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                         event_type = classify_event_type(s_l, tags, failure_reason, decision_taken)
                         strength = evidence_strength(s_l)
                         ents = extract_entities(sent, domain)
+                        if domain == "construction_science":
+                            ents = [
+                                ent for ent in ents
+                                if ent.get("entity_name", "").strip().lower() not in CONSTRUCTION_GENERIC_ENTITY_DENYLIST
+                            ]
+                            if not ents:
+                                continue
                         measurements = extract_quantitative_data(sent)
 
                         # Use new confidence_score for filtering
@@ -198,7 +275,7 @@ def process_single_pdf(job: Tuple[str, str, str]) -> Tuple[str, int, bool, str]:
                             except sqlite3.Error as e:
                                 last_exc = e
                                 sleep_time = base_sleep * (2 ** attempt)
-                                sleep_time += random.uniform(0, 0.05)
+                                sleep_time += random.uniform(0, 0.05)  # nosec B311 - bounded jitter only affects retry backoff
                                 time.sleep(sleep_time)
                         else:
                             process_logger.warning(
@@ -248,18 +325,15 @@ def _ensure_db_schema(db_path: Path) -> None:
     """Ensure the database has the required schema initialized."""
     if _db_has_all_tables(db_path):
         print("✅ Database schema already initialized")
-        return
-    
-    print("🔧 Initializing database schema...")
-    schema_path = Path(__file__).resolve().parent / "schema.sql"
-    if not schema_path.exists():
-        raise SystemExit(f"Schema file not found: {schema_path}")
-    
-    schema = schema_path.read_text(encoding="utf-8")
-    with sqlite3.connect(db_path) as con:
-        con.executescript(schema)
-        con.commit()
+    else:
+        print("🔧 Initializing database schema...")
+    init_db_schema(db_path)
     print("✅ Database schema initialized successfully")
+
+
+def _is_rss_cache_input(input_dir: Path) -> bool:
+    parts = [part.lower() for part in input_dir.parts]
+    return len(parts) >= 2 and parts[-2:] == ["cache", "rss"]
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Parallel PDF Scraper (Phase 1 Enhanced)")
@@ -290,6 +364,27 @@ def main() -> None:
         raise SystemExit(f"Missing folder: {input_dir.resolve()}")
 
     pdfs = sorted(input_dir.glob("*.pdf"))
+
+    if domain == "construction_science" and _is_rss_cache_input(input_dir):
+        triaged_pdfs: list[Path] = []
+        skipped_pdfs = 0
+        for pdf_path in pdfs:
+            try:
+                triage = scan_pdf(pdf_path, first_pages=4, max_chars=3000)
+            except Exception as exc:
+                print(f"⚠️  Construction triage skipped unreadable PDF {pdf_path.name}: {exc}")
+                skipped_pdfs += 1
+                continue
+            if triage.keep_skip_review == "skip":
+                skipped_pdfs += 1
+                continue
+            triaged_pdfs.append(pdf_path)
+        print(
+            f"🧭 Construction triage kept {len(triaged_pdfs)}/{len(pdfs)} PDFs from {input_dir} "
+            f"(skipped {skipped_pdfs} biomedical PDFs)"
+        )
+        pdfs = triaged_pdfs
+
     if not pdfs:
         raise SystemExit(f"No PDFs found in: {input_dir.resolve()}")
 

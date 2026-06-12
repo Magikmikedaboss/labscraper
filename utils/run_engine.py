@@ -1,13 +1,14 @@
 # ---------------------------------------------------------
 # IMPORTS
 # ---------------------------------------------------------
-from utils.common import get_seeds, load_seed_file, sha256_short, sha256_hex
+from utils.common import get_seeds, load_seed_file, sha256_short, sha256_short_unsafe, sha256_hex
 from utils.deduplication import normalize_event_key
 from pathlib import Path
 import sqlite3
 import sys
 import logging
 import argparse
+import re
 import secrets
 import time
 from utils.db_init import init_db_schema
@@ -15,9 +16,11 @@ from utils.axon_domains import get_domain_by_id
 import pdfplumber
 from pdfminer.pdfparser import PDFSyntaxError
 from pdfminer.pdfexceptions import PDFNotImplementedError
+from pdfplumber.utils.exceptions import PdfminerException
 
 from tqdm import tqdm
 from utils.metadata_utils import extract_metadata
+from utils.source_triage import scan_pdf
 
 # Local utils
 
@@ -37,6 +40,7 @@ from utils.event_classification import (
 )
 from utils.db_utils import (
     _db_has_all_tables,
+    connect_with_foreign_keys,
     upsert_source,
     insert_document,
     insert_chunk,
@@ -49,10 +53,51 @@ from utils.db_utils import (
 from utils.scrape_pdfs_parallel import _sha256_file
 
 # Re-export for test imports
-sha16 = sha256_short
+sha16 = sha256_short_unsafe
 sha64 = sha256_hex
 
-__all__ = ["sha16", "sha64", "sha256_short", "sha256_hex", "get_seeds", "load_seed_file"]
+__all__ = ["sha16", "sha64", "sha256_short", "sha256_short_unsafe", "sha256_hex", "get_seeds", "load_seed_file"]
+
+
+CONSTRUCTION_CONTEXT_TERMS = {
+    "building",
+    "buildings",
+    "construction",
+    "structural",
+    "structure",
+    "wall",
+    "roof",
+    "foundation",
+    "slab",
+    "beam",
+    "column",
+    "assembly",
+    "envelope",
+    "insulation",
+    "material",
+    "masonry",
+    "concrete",
+    "steel",
+    "frame",
+    "facade",
+    "cladding",
+    "building envelope",
+    "roof assembly",
+    "wall assembly",
+}
+
+CONSTRUCTION_GENERIC_ENTITY_DENYLIST = {
+    "temperature",
+    "exposure",
+    "pressure",
+    "humidity",
+    "uv",
+    "thermal",
+}
+
+
+def _has_construction_context(s_l: str) -> bool:
+    return any(term in s_l for term in CONSTRUCTION_CONTEXT_TERMS)
 
 # DB INIT
 # ---------------------------------------------------------
@@ -99,6 +144,7 @@ def _init_db_schema_if_needed(db_path):
 
 def _retry_sqlite_write(action, *args, attempts: int = 3, base_sleep: float = 0.1, **kwargs):
     last_exc = None
+    jitter_rng = secrets.SystemRandom()
     for attempt in range(attempts):
         try:
             return action(*args, **kwargs)
@@ -109,7 +155,7 @@ def _retry_sqlite_write(action, *args, attempts: int = 3, base_sleep: float = 0.
             if attempt == attempts - 1:
                 break
             sleep_time = base_sleep * (2 ** attempt)
-            sleep_time += secrets.SystemRandom().uniform(0, 0.05)
+            sleep_time += jitter_rng.uniform(0, 0.05)
             time.sleep(sleep_time)
 
     logger = logging.getLogger(__name__)
@@ -142,6 +188,11 @@ def _default_input_dir() -> Path:
     if data_documents.exists():
         return data_documents
     return Path("input/pdfs")
+
+
+def _is_rss_cache_input(input_dir: Path) -> bool:
+    parts = [part.lower() for part in input_dir.parts]
+    return len(parts) >= 2 and parts[-2:] == ["cache", "rss"]
 
 
 def main(domain=None, input_dir=None, db_path=None, lenses=None):
@@ -180,37 +231,77 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
         raise SystemExit(f"Missing folder: {input_dir.resolve()}")
 
     pdfs = sorted(input_dir.rglob("*.pdf"))
+
+    # Only RSS-cache inputs are triaged here; direct PDF directories are left alone
+    # so manually curated construction folders are not filtered twice.
+    if research_domain == "construction_science" and _is_rss_cache_input(input_dir):
+        triaged_pdfs: list[Path] = []
+        skipped_pdfs = 0
+        for pdf_path in pdfs:
+            try:
+                # scan_pdf(...) returns a triage object; keep/skip/review controls whether
+                # the PDF is retained, dropped, or counted for manual review downstream.
+                triage = scan_pdf(pdf_path, first_pages=4, max_chars=3000)
+            except Exception as exc:
+                # Unreadable PDFs are treated as skipped inputs and counted with other drops.
+                logging.getLogger(__name__).warning(
+                    "Construction triage skipped unreadable PDF %s: %s",
+                    pdf_path,
+                    exc,
+                )
+                skipped_pdfs += 1
+                continue
+            if triage.keep_skip_review == "skip":
+                skipped_pdfs += 1
+                continue
+            triaged_pdfs.append(pdf_path)
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "Construction triage kept %s/%s PDFs from %s (skipped %s biomedical PDFs)",
+            len(triaged_pdfs),
+            len(pdfs),
+            input_dir,
+            skipped_pdfs,
+        )
+        # Replace the raw cache list with the triaged subset so all downstream
+        # extraction and event generation only sees the approved PDFs.
+        pdfs = triaged_pdfs
+
     print(f"Found {len(pdfs)} PDFs")
 
     if not pdfs:
         raise SystemExit("No PDFs found.")
 
 
-    with sqlite3.connect(str(db_path), timeout=30.0) as con:
+    with connect_with_foreign_keys(str(db_path), timeout=30.0) as con:
         success_count = 0
         for pdf_path in tqdm(pdfs, desc="PDFs"):
             print(f"Processing: {pdf_path.name}")
             try:
                 content_hash = _sha256_file(pdf_path)
                 source_id = content_hash
-                file_hash = content_hash
-
-                with pdfplumber.open(str(pdf_path)) as pdf:
+                with pdfplumber.open(pdf_path) as pdf:
                     metadata = extract_metadata(pdf_path, pdf)
                     metadata.setdefault("domain", research_domain)
                     metadata.setdefault("publication_date", metadata.get("year"))
                     source_id = _retry_sqlite_write(upsert_source, con, source_id, pdf_path.name, metadata)
-                    doc_id = _retry_sqlite_write(insert_document, con, source_id, str(pdf_path), file_hash)
+                    doc_id = _retry_sqlite_write(insert_document, con, source_id, str(pdf_path), content_hash)
                     seen_events = set()
                     for page_idx, page in enumerate(pdf.pages, start=1):
                         text = page.extract_text() or ""
                         if not text.strip():
                             continue
                         section = guess_section(text.lower())
-                        chunk_id = _retry_sqlite_write(insert_chunk, con, source_id, doc_id, page_idx, section, text)
+                        chunk_id = _retry_sqlite_write(insert_chunk, con, doc_id, page_idx, section, text)
                         for sent in chunk_sentences(text):
                             s_l = sent.lower()
                             quantitative = extract_quantitative_data(sent)
+                            if (
+                                research_domain == "construction_science"
+                                and not _has_construction_context(s_l)
+                                and not quantitative
+                            ):
+                                continue
                             tags = detect_method_tags(s_l)
                             decision_taken = detect_decision(s_l)
                             has_failure_phrase = any(
@@ -228,6 +319,13 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                             )
                             strength = evidence_strength(s_l)
                             entities = extract_entities(sent, research_domain, SEEDS_DIR)
+                            if research_domain == "construction_science":
+                                entities = [
+                                    entity for entity in entities
+                                    if entity.get("entity_name", "").strip().lower() not in CONSTRUCTION_GENERIC_ENTITY_DENYLIST
+                                ]
+                                if not entities and not quantitative:
+                                    continue
                             event_key = normalize_event_key(event_type, entities, page_idx, sent)
                             if event_key in seen_events:
                                 continue
@@ -252,7 +350,15 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                                 domain=research_domain,
                                 event_type=event_type,
                                 stage=stage,
-                                system_context=None,
+                                system_context=(
+                                    "serum/plasma"
+                                    if "serum" in tags
+                                    else "organoid"
+                                    if "organoid" in s_l
+                                    else "cells"
+                                    if "cell line" in s_l or re.search(r'\bcell culture\b|\bcell lines?\b', s_l)
+                                    else None
+                                ),
                                 application_context=None,
                                 outcome=outcome,
                                 failure_reason=failure_reason,
@@ -288,7 +394,7 @@ def main(domain=None, input_dir=None, db_path=None, lenses=None):
                 success_count += 1
             except KeyboardInterrupt:
                 raise
-            except (PDFSyntaxError, PDFNotImplementedError, sqlite3.Error, OSError, ValueError) as e:
+            except (PDFSyntaxError, PDFNotImplementedError, PdfminerException, sqlite3.Error, OSError, ValueError) as e:
                 logging.exception("⚠️ %s processing %s: %s", type(e).__name__, pdf_path, e)
                 con.rollback()
                 continue

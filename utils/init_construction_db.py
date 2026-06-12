@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS research_events (
 );
 
 CREATE TABLE IF NOT EXISTS event_entities (
+    -- Intentional composite primary key: a single event/entity pair may appear with multiple roles.
+    -- Keeping role in the key preserves distinct primary/context links while still deduplicating exact duplicates.
     event_id TEXT,
     entity_id TEXT,
     role TEXT,
@@ -77,10 +79,10 @@ CREATE TABLE IF NOT EXISTS event_entities (
 CREATE TABLE IF NOT EXISTS entity_relationships (
     -- Stores directed relationships between entities via source_entity_id and target_entity_id.
     -- Typical relationship_type values include parent_of, related_to, and derived_from.
-    -- FOREIGN KEYs use ON DELETE CASCADE, so removing an entity also removes inbound and outbound links and can affect graph integrity.
+    -- FOREIGN KEYs use ON DELETE RESTRICT, so entities with relationships cannot be deleted accidentally and graph integrity is preserved.
     relationship_id TEXT PRIMARY KEY,
-    source_entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE CASCADE,
-    target_entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE CASCADE,
+    source_entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE RESTRICT,
+    target_entity_id TEXT NOT NULL REFERENCES entities(entity_id) ON DELETE RESTRICT,
     relationship_type TEXT NOT NULL,
     context TEXT,
     created_at TEXT
@@ -106,7 +108,7 @@ CREATE TABLE IF NOT EXISTS quantitative_measurements (
     measurement_id TEXT PRIMARY KEY,
     event_id TEXT,
     measurement_type TEXT,
-    value REAL,
+    value TEXT,
     unit TEXT,
     context TEXT,
     created_at TEXT

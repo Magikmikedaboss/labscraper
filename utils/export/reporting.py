@@ -9,6 +9,29 @@ from utils.path_validation import validate_domain_id
 
 logger = logging.getLogger(__name__)
 
+BUCKET_NAMES = (
+    "strong",
+    "promising",
+    "exploratory",
+    "stalled",
+    "deprioritized",
+)
+
+CONSTRUCTION_BUCKET_LABELS = {
+    "strong": "critical",
+    "promising": "major",
+    "exploratory": "relevant",
+    "stalled": "minor",
+    "deprioritized": "noise",
+}
+
+
+def _display_bucket_label(bucket: str | None, domain_id: str | None) -> str:
+    bucket_value = (bucket or "").strip()
+    if domain_id == "construction_science":
+        return CONSTRUCTION_BUCKET_LABELS.get(bucket_value, bucket_value)
+    return bucket_value
+
 
 def _publish_latest_file(source_file: Path, latest_file: Path):
     temp_path = latest_file.with_suffix(".tmp")
@@ -21,8 +44,13 @@ def _publish_latest_file(source_file: Path, latest_file: Path):
         if temp_path.exists():
             try:
                 temp_path.unlink()
-            except Exception:
-                pass
+            except Exception as cleanup_exc:
+                logger.warning(
+                    "Failed to clean up temp file %s after publish failure: %s",
+                    temp_path,
+                    cleanup_exc,
+                    exc_info=True,
+                )
         return None, e
 
 def export_entities_csv(
@@ -55,8 +83,14 @@ def export_entities_csv(
         writer = csv.DictWriter(f, fieldnames=base_cols + overlay_cols)
         writer.writeheader()
 
-        for entity in filtered_entities:
+        for index, entity in enumerate(filtered_entities):
             if not isinstance(entity, dict):
+                logger.warning(
+                    "Skipping malformed entity at index %s: type=%s repr=%r",
+                    index,
+                    type(entity).__name__,
+                    entity,
+                )
                 continue
 
             entity_id = entity.get("entity_id")
@@ -73,7 +107,7 @@ def export_entities_csv(
                 overlay_scores = entity_scores.get(entity_id, {}).get(overlay_id)
                 if overlay_scores:
                     row[f"{overlay_id}_score"] = f"{overlay_scores.get('score', 0):.2f}"
-                    row[f"{overlay_id}_bucket"] = overlay_scores.get("bucket", "N/A")
+                    row[f"{overlay_id}_bucket"] = _display_bucket_label(overlay_scores.get("bucket", "N/A"), domain_id)
                 else:
                     row[f"{overlay_id}_score"] = ""
                     row[f"{overlay_id}_bucket"] = "N/A"
@@ -155,6 +189,7 @@ def write_dual_lens_report(
     filtered_entities,
     entity_scores,
     entity_events,
+    domain_id: str | None = None,
 ):
     domain_name = "<unknown domain>"
     if isinstance(domain_config, dict):
@@ -197,7 +232,8 @@ def write_dual_lens_report(
                 f.write(f"{i:2d}. {entity.get('entity_name',''):30s} ")
                 f.write(f"({entity.get('entity_type',''):12s}) ")
                 f.write(f"Score: {scores.get('score', 0):6.2f} ")
-                f.write(f"[{scores.get('bucket',''):15s}] ")
+                display_bucket = _display_bucket_label(scores.get("bucket", ""), domain_id)
+                f.write(f"[{display_bucket:15s}] ")
                 f.write(f"Events: {event_count:3d}\n")
 
             f.write("\n")
@@ -207,7 +243,7 @@ def write_dual_lens_report(
         f.write("=" * 70 + "\n\n")
 
         if not overlay_ids:
-            logger.warning("No overlays configured; bucket distribution is empty")
+            logger.info("No overlays configured; bucket distribution is empty")
             f.write("No bucket data available (no overlays configured).\n")
 
         for overlay_id in overlay_ids:
@@ -220,16 +256,15 @@ def write_dual_lens_report(
                     continue
                 overlay_scores = entity_scores.get(entity_id, {}).get(overlay_id)
                 if overlay_scores and "bucket" in overlay_scores:
-                    bucket = overlay_scores["bucket"]
+                    bucket = _display_bucket_label(overlay_scores["bucket"], domain_id)
                     bucket_counts[bucket] += 1
             total = sum(bucket_counts.values())
-            for bucket in [
-                "strong",
-                "promising",
-                "exploratory",
-                "stalled",
-                "deprioritized",
-            ]:
+            bucket_display_names = (
+                tuple(CONSTRUCTION_BUCKET_LABELS[bucket] for bucket in BUCKET_NAMES)
+                if domain_id == "construction_science"
+                else BUCKET_NAMES
+            )
+            for bucket in bucket_display_names:
                 count = bucket_counts.get(bucket, 0)
                 pct = (count / total * 100) if total else 0
                 f.write(f"  {bucket:15s}: {count:4d} ({pct:5.1f}%)\n")

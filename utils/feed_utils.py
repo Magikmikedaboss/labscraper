@@ -1,20 +1,39 @@
 """Shared utilities for RSS feed operations"""
+from urllib.parse import urljoin
+
 import re
 import feedparser
+import requests
 from typing import List, Dict, Optional
 
 PDF_LINK_REGEX = re.compile(r'https?://[^\s<>"\']+\.pdf(?:\?[^\s<>"\']*)?(?:#[^\s<>"\']*)?', re.IGNORECASE)
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
-def parse_feed(url: str, raise_on_error: bool = False):
-    """Parse an RSS/Atom feed"""
+def parse_feed(url: str, raise_on_error: bool = False, timeout: int = 20):
+    """Parse an RSS/Atom feed with a timeout-bound fetch."""
+    if not isinstance(url, str) or not url.strip():
+        if raise_on_error:
+            raise ValueError("url must be a non-empty string")
+        return {}
     try:
-        return feedparser.parse(url)
+        response = requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT}, verify=True)
     except Exception:
         if raise_on_error:
             raise
-        # Return empty dict on error (matches test expectation)
         return {}
+
+    try:
+        parsed = feedparser.parse(response.content)
+    except Exception:
+        if raise_on_error:
+            raise
+        return {}
+
+    if isinstance(parsed, dict):
+        parsed.setdefault('status', response.status_code)
+    else:
+        setattr(parsed, 'status', getattr(parsed, 'status', response.status_code))
+    return parsed
 
 def extract_pdf_links(entry: Dict) -> List[str]:
     """Extract PDF links from a feed entry"""
@@ -30,12 +49,37 @@ def extract_pdf_links(entry: Dict) -> List[str]:
     for link in entry.get('links', []):
         href = link.get('href', '')
         if href:
-            found_list = PDF_LINK_REGEX.findall(href)
-            if found_list:
-                pdf_links.extend(found_list)
+            pdf_links.extend(PDF_LINK_REGEX.findall(href))
     return list(dict.fromkeys(pdf_links))
 
-def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
+
+def normalize_feed_pdf_urls(entry: Dict, pdf_urls: List[str]) -> List[str]:
+    """Normalize PDF URLs discovered from an RSS/Atom entry."""
+    normalized_urls = list(dict.fromkeys(pdf_urls))
+
+    entry_link = str(entry.get('link', '') or '')
+    if 'arxiv.org/abs/' in entry_link:
+        arxiv_pdf = entry_link.replace('/abs/', '/pdf/') + '.pdf'
+        if arxiv_pdf not in normalized_urls:
+            normalized_urls.append(arxiv_pdf)
+
+    for link in entry.get('links', []):
+        if not isinstance(link, dict):
+            continue
+        href = str(link.get('href', '') or '')
+        if not href:
+            continue
+        if (
+            'application/pdf' in str(link.get('type', '')).lower()
+            or str(link.get('title', '')).lower() == 'pdf'
+        ):
+            resolved_href = urljoin(entry_link, href) if entry_link else href
+            if resolved_href not in normalized_urls:
+                normalized_urls.append(resolved_href)
+
+    return normalized_urls
+
+def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None, timeout: int = 20) -> Dict:
     """
     Probe a feed and return results
     
@@ -52,7 +96,7 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) 
 
     print(f"Testing {name}: {url}")
     try:
-        feed = parse_feed(url, raise_on_error=True)
+        feed = parse_feed(url, raise_on_error=True, timeout=timeout)
         
         # Handle both dict and feedparser object for compatibility
         if isinstance(feed, dict):
@@ -123,6 +167,6 @@ def probe_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) 
         return {'success': False, 'error': str(e)}
 
 
-def test_feed(url: str, name: str, check_keywords: Optional[List[str]] = None) -> Dict:
+def test_feed(url: str, name: str, check_keywords: Optional[List[str]] = None, timeout: int = 20) -> Dict:
     """Backward-compatible alias for older scripts."""
-    return probe_feed(url, name, check_keywords=check_keywords)
+    return probe_feed(url, name, check_keywords=check_keywords, timeout=timeout)

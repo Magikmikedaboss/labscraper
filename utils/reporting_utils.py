@@ -2,7 +2,7 @@
 import json
 import logging
 import os
-import subprocess
+import subprocess  # nosec B404 - controlled git metadata lookup for run metadata
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple, Dict, Any, Optional
@@ -30,6 +30,11 @@ def get_overlay_version(domain) -> str:
     return "v1"
 
 def _ensure_set(value):
+    """Normalize input to a set.
+
+    Accepts None, an existing set, or any iterable; returns an empty set for None,
+    the original set if one is provided, or a new set built from the iterable.
+    """
     if value is None:
         return set()
     if isinstance(value, set):
@@ -43,9 +48,9 @@ def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[
     overlay_aliases_count = len(overlay_aliases)
     try:
         norm_map = load_normalization_map()
-    except ValueError as e:
+    except Exception as e:
         norm_map = {}
-        logging.warning("Failed to load normalization map; proceeding with empty map: %s", e)
+        logging.warning("Failed to load normalization map; proceeding with empty map: %s", e, exc_info=True)
     normalized_entities = {}
     for (etype, ename), data in canonical_entities.items():
         norm_e = normalize_entity({"entity_type": etype, "entity_name": ename}, norm_map, overlay_aliases)
@@ -113,6 +118,7 @@ def write_run_meta(confidence_changes: Dict[str, int], canonical_entities: Dict[
                 reverse=True
             )[:20]
         ],
+        "normalization_map": norm_map,
         "process_words_demoted": list(PROCESS_WORDS_TO_DEMOTE),
         "confidence_boost_rule": "Domain-specific: construction_science uses (material|system|failure_mode|environment|hazard) + assay + model_context; biomedical domains use (compound|target|stem_cell) + assay + model_context"
     }
@@ -162,7 +168,7 @@ def resolve_seeds_version(run_cmd=None):
         # Optionally log timeout here
         pass
     except Exception:
-        pass
+        pass  # nosec B110 - best-effort git metadata lookup falls back to "unknown"
     return "unknown"
 
 def get_domain_info(domain_id: Optional[str] = None) -> Tuple[str, Optional[str]]:

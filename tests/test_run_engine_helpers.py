@@ -5,26 +5,23 @@ from unittest.mock import Mock
 
 import pytest
 
-from utils.run_engine import (
-    chunk_sentences,
+from utils import metadata_utils
+from utils.event_classification import ConfidenceInput
+from utils.data_extractors import extract_relationships
+from utils.common import now_iso
+from utils.common import sha256_hex, sha256_short
+from utils.deduplication import normalize_event_key
+from utils.data_extractors import extract_quantitative_data
+from utils.event_classification import (
     classify_event_type,
     confidence_score,
     detect_decision,
     detect_failure_reason,
     detect_method_tags,
     detect_outcome,
-    extract_metadata,
-    extract_quantitative_data,
-    guess_section,
-    guess_stage,
-    sha256_short,
-    sha256_hex,
 )
-from utils import metadata_utils
-from utils.event_classification import ConfidenceInput, DECISION_PHRASES
-from utils.data_extractors import extract_relationships
-from utils.common import now_iso
-from utils.deduplication import normalize_event_key
+from utils.metadata_utils import extract_metadata
+from utils.text_utils import chunk_sentences, guess_section, guess_stage
 
 
 def test_basic_helpers_return_expected_formats():
@@ -140,10 +137,8 @@ def test_detection_classification_and_confidence_helpers_work_together():
 
     assert "lc-ms/ms" in tags
     assert failure_reason == "stability_failure"
-    # The sentence contains both "decided to" (continued) and "optimize" (modified).
-    # Check that the detected decision is one of the allowed decision types.
-    allowed = set(DECISION_PHRASES.keys())
-    assert decision_taken in allowed
+    # The sentence contains "decided to", which the helper currently classifies as continued.
+    assert decision_taken == "continued"
     assert outcome == "positive"
     assert event_type == "stability_issue"
     measurements = extract_quantitative_data(sentence)
@@ -154,14 +149,15 @@ def test_detection_classification_and_confidence_helpers_work_together():
             {"entity_name": "COMPOUNDB"},
         ],
     )
-    event_key = normalize_event_key("efficacy_result", [{"entity_name": "COMPOUNDA"}], 1, sentence)
+    # Keep normalize_event_key aligned with the detected stability_issue event_type.
+    event_key = normalize_event_key(event_type, [{"entity_name": "COMPOUNDA"}], 1, sentence)
 
     measurement_types = {item["measurement_type"] for item in measurements}
     assert {"ic50", "half_life"}.issubset(measurement_types)
     assert len(relationships) > 0, "Expected at least one relationship to be extracted"
     assert relationships[0]["relationship_type"] == "more_stable_than"
     # event_key format is 'event_type|ENTITY1|page|snippet_hash'
-    assert event_key.startswith("efficacy_result|COMPOUNDA|1|")
+    assert event_key.startswith("stability_issue|COMPOUNDA|1|")
 
 def test_init_db_schema_if_needed(monkeypatch, tmp_path):
     """Covers both canonical and non-canonical DB path branches."""
@@ -175,7 +171,7 @@ def test_init_db_schema_if_needed(monkeypatch, tmp_path):
     # Patch the imported symbol in utils.run_engine, not the definition site
     import utils.run_engine
     monkeypatch.setattr(utils.run_engine, "init_db_schema", fake_init_db_schema)
-    monkeypatch.setattr(utils.run_engine, "_db_has_all_tables", lambda _: True, raising=False)
+    monkeypatch.setattr(utils.run_engine, "_db_has_all_tables", lambda _: True, raising=False)  # raising=False is intentional because utils.run_engine._db_has_all_tables may be dynamically attached or absent in some test runtimes.
 
     # Should NOT call for canonical path
     canonical = str(Path("db/runs.sqlite").resolve())

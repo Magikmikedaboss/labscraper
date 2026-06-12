@@ -5,6 +5,15 @@ from pathlib import Path
 
 OUTPUT_DIR = Path("output")
 
+
+def _get_open_command() -> str:
+    if sys.platform.startswith("win"):
+        return "start"
+    if sys.platform.startswith("darwin"):
+        return "open"
+    return "xdg-open"
+
+
 def main() -> int:
     print("=" * 70)
     print("ALL CSV EXPORTS WITH TIMESTAMPS")
@@ -47,12 +56,7 @@ def main() -> int:
         print(f"\n✅ All {len(csv_files)} CSV exports are current!")
         print("\nTo open them:")
         for filename in existing_files:
-            if sys.platform.startswith("win"):
-                print(f"  start output/{filename}")
-            elif sys.platform.startswith("darwin"):
-                print(f"  open output/{filename}")
-            else:
-                print(f"  xdg-open output/{filename}")
+            print(f"  {_get_open_command()} output/{filename}")
     else:
         print(f"\n⚠️  Missing {len(missing_files)} file(s):")
         for filename in missing_files:
@@ -62,14 +66,9 @@ def main() -> int:
         print(f"\n✅ Found {len(existing_files)} file(s):")
         print("\nTo open existing files:")
         for filename in existing_files:
-            if sys.platform.startswith("win"):
-                print(f"  start output/{filename}")
-            elif sys.platform.startswith("darwin"):
-                print(f"  open output/{filename}")
-            else:
-                print(f"  xdg-open output/{filename}")
+            print(f"  {_get_open_command()} output/{filename}")
 
-    return 0
+    return 1 if missing_files else 0
 
 
 if __name__ == "__main__":

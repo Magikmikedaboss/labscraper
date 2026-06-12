@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import re
 import logging
+import os
+from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 # ---------- Basic unit / numeric signals ----------
 UNIT_PATTERNS = [
@@ -52,6 +54,12 @@ SOURCE_WEIGHTS = {
     "code_standard": 1.0,
 }
 
+
+@dataclass
+class RouteDecision:
+    decision: str
+    reason: str
+
 STRONG_RESULT_TERMS = [
     "improved", "enhanced", "higher", "reduced", "lower", "decreased",
     "failed", "collapse", "non-compliant", "complies", "meets", "worsened", "exacerbated"
@@ -61,6 +69,24 @@ MODERATE_CONTEXT_TERMS = [
     "measured", "tested", "evaluated", "simulated", "modeled", "validated",
     "due to", "caused by", "resulted from", "requirements", "standard", "specimens"
 ]
+
+DEFAULT_CONSTRUCTION_CONTEXT_TERMS = [
+    "building", "construction", "building envelope", "wall", "roof", "foundation",
+    "slab", "basement", "attic", "crawlspace", "facade", "façade", "cladding",
+    "insulation", "air barrier", "vapor barrier", "concrete", "steel", "masonry",
+    "timber", "wood", "beam", "column", "window", "door", "hvac", "plumbing",
+    "electrical", "mechanical", "drainage", "structural", "structures"
+]
+
+DOMAIN_CONSTRUCTION_CONTEXT_TERMS = [
+    "mep", "mechanical room", "ductwork", "air handling", "ahu", "vav", "chiller",
+    "boiler", "heat pump", "spray foam", "xps", "eps", "mineral wool", "curtain wall",
+    "rain screen", "rainscreen", "insulated concrete form", "icf", "siding", "roofing",
+    "subfloor", "joist", "girder", "truss", "façade system", "envelope system",
+]
+
+CONSTRUCTION_CONTEXT_TERMS_ENV_VAR = "LABSCRAPER_CONSTRUCTION_CONTEXT_TERMS"
+CONSTRUCTION_CONTEXT_TERMS_FILE_ENV_VAR = "LABSCRAPER_CONSTRUCTION_CONTEXT_TERMS_FILE"
 
 """Generic placeholders filtered from extracted entities after lowercase normalization.
 
@@ -84,6 +110,46 @@ def has_number(s_l: str) -> bool:
 
 def contains_any(s_l: str, phrases: List[str]) -> bool:
     return any(p in s_l for p in phrases)
+
+
+def _split_term_text(text: str) -> list[str]:
+    return [part.strip().lower() for part in re.split(r"[\n,;]+", text) if part.strip()]
+
+
+def _load_construction_context_terms_from_env() -> list[str]:
+    terms: list[str] = []
+    raw_terms = os.getenv(CONSTRUCTION_CONTEXT_TERMS_ENV_VAR, "").strip()
+    if raw_terms:
+        terms.extend(_split_term_text(raw_terms))
+
+    raw_path = os.getenv(CONSTRUCTION_CONTEXT_TERMS_FILE_ENV_VAR, "").strip()
+    if raw_path:
+        try:
+            path = Path(raw_path)
+            if path.exists() and path.is_file():
+                terms.extend(_split_term_text(path.read_text(encoding="utf-8")))
+        except OSError:
+            pass
+
+    return terms
+
+
+def get_construction_context_terms(extra_terms: Optional[Iterable[str]] = None) -> list[str]:
+    merged: list[str] = []
+    for term in (*DEFAULT_CONSTRUCTION_CONTEXT_TERMS, *DOMAIN_CONSTRUCTION_CONTEXT_TERMS, *_load_construction_context_terms_from_env()):
+        normalized = str(term).strip().lower()
+        if normalized and normalized not in merged:
+            merged.append(normalized)
+    if extra_terms is not None:
+        for term in extra_terms:
+            normalized = str(term).strip().lower()
+            if normalized and normalized not in merged:
+                merged.append(normalized)
+    return merged
+
+
+def has_construction_context(s_l: str, terms: Optional[Iterable[str]] = None) -> bool:
+    return bool(list_hits(s_l, get_construction_context_terms(terms)))
 
 
 def wordhit(s_l: str, phrase: str) -> bool:

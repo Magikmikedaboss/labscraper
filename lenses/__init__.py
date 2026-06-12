@@ -1,15 +1,32 @@
 
+"""Convenience helpers for the construction lens suite.
+
+Registry entries in LENS_REGISTRY are detector callables with the signature
+detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]
+as used by the detector(sentence, source_type=source_type) call site.
+"""
+
 from __future__ import annotations
+
+# ruff: noqa: E402
+
 import traceback
 import logging
-from typing import Iterable, List, Optional, Tuple, Dict, Union
+from typing import Iterable, List, Optional, Protocol, Tuple, Dict, Union
+from .construction_common import LensEvent
 from .construction_building_physics_v1 import detect as detect_building_physics
+from .construction_building_physics_v1 import route_building_physics_sentence
 from .construction_climate_v1 import detect as detect_climate
+from .construction_climate_v1 import route_climate_sentence
 from .construction_compliance_v1 import detect as detect_compliance
 from .construction_failure_v1 import detect as detect_failure
+from . import construction_insurance_risk_v1
+from .construction_insurance_risk_v1 import route_insurance_risk_sentence
 from .construction_materials_v1 import detect as detect_materials
-
-"""Convenience helpers for the construction lens suite."""
+from .construction_materials_v1 import route_materials_sentence
+from .construction_methods_tooling_v1 import detect as detect_methods_tooling
+from .construction_methods_tooling_v1 import route_methods_tooling_sentence
+from utils.domain_router import route_construction_sentence
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +35,34 @@ DEFAULT_CONFIDENCE_RANK = {"low": 1, "med": 2, "medium": 2, "high": 3}
 DEFAULT_CONTEXT_RANK = {"weak": 1, "moderate": 2, "strong": 3}
 
 
-LENS_REGISTRY = {
+class LensDetector(Protocol):
+    def __call__(
+        self,
+        sentence: str,
+        source_type: str = "research_paper",
+    ) -> Tuple[Optional[LensEvent], List[dict]]:
+        ...
+
+
+LENS_REGISTRY: Dict[str, LensDetector] = {
     "building_physics": detect_building_physics,
     "climate": detect_climate,
     "compliance": detect_compliance,
     "failure": detect_failure,
+    "insurance_risk": construction_insurance_risk_v1.detect,
     "materials": detect_materials,
+    "methods_tooling": detect_methods_tooling,
+}
+
+DEFAULT_CONSTRUCTION_LENS_NAMES = frozenset(LENS_REGISTRY.keys())
+DEFAULT_CONSTRUCTION_LENS_ROUTERS = {
+    "building_physics": route_building_physics_sentence,
+    "climate": route_climate_sentence,
+    "insurance_risk": route_insurance_risk_sentence,
+    "materials": route_materials_sentence,
+    "methods_tooling": route_methods_tooling_sentence,
+    "compliance": route_construction_sentence,
+    "failure": route_construction_sentence,
 }
 
 
@@ -90,6 +129,8 @@ def _detect_multi_lens_internal(
     context_rank: Optional[Dict[str, int]] = None,
 ) -> Union[List[dict], Tuple[List[dict], Dict[str, str]]]:
     results: List[dict] = []
+    detector_errors = {}
+
     if isinstance(enabled_lenses, str):
         selected_lenses = [enabled_lenses]
     elif enabled_lenses is not None:
@@ -105,11 +146,34 @@ def _detect_multi_lens_internal(
     if invalid_lenses:
         raise ValueError(f"Invalid lens name(s): {invalid_lenses}. Valid options: {list(LENS_REGISTRY.keys())}")
 
-    detector_errors = {}
+    selected_default_lenses = [name for name in selected_lenses if name in DEFAULT_CONSTRUCTION_LENS_NAMES]
+    sentence_route = None
+    route_decisions = {}
+    if selected_default_lenses:
+        # The shared router only gates lenses that need construction framing; signal-led lenses run their own checks.
+        if any(name in {"compliance", "failure"} for name in selected_default_lenses):
+            sentence_route = route_construction_sentence(sentence)
+        for name in selected_default_lenses:
+            if name in {"compliance", "failure"}:
+                route_decisions[name] = sentence_route
+            else:
+                route_decisions[name] = DEFAULT_CONSTRUCTION_LENS_ROUTERS[name](sentence)
+        if all(route_decisions[name].decision == "skip" for name in selected_default_lenses):
+            if raise_on_no_match:
+                raise RuntimeError("No detector produced results (no match)")
+            if warn_on_no_match:
+                logger.warning("No detectors matched and no errors reported.")
+            else:
+                logger.debug("No detectors matched and no errors reported.")
+            return ([], detector_errors) if return_errors else []
+
     for lens_name in selected_lenses:
         detector = LENS_REGISTRY[lens_name]
         try:
-            event, entities = detector(sentence, source_type=source_type)
+            if lens_name in {"compliance", "failure"} and selected_default_lenses:
+                event, entities = detector(sentence, source_type=source_type, route_decision=route_decisions[lens_name])
+            else:
+                event, entities = detector(sentence, source_type=source_type)
         except Exception:
             tb = traceback.format_exc()
             logger.error("Exception in detector '%s':\n%s", lens_name, tb)
@@ -157,10 +221,18 @@ def _detect_multi_lens_internal(
                 item.get("event_id"),
                 item.get("event_type"),
             )
+        context_strength = item.get("context_strength", "weak")
+        if context_strength not in active_context_rank:
+            logger.warning(
+                "Unexpected context_strength value %r for item event_id=%r event_type=%r; defaulting context rank to 1",
+                context_strength,
+                item.get("event_id"),
+                item.get("event_type"),
+            )
         return (
             item.get("source_weight", 0.0),
             active_confidence_rank.get(conf, 1),
-            active_context_rank.get(item.get("context_strength", "weak"), 0),
+            active_context_rank.get(context_strength, 1),
         )
 
     results.sort(

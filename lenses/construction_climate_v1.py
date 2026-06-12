@@ -1,9 +1,10 @@
 # lenses/construction_climate_v1.py
 from __future__ import annotations
 
+import re
 from typing import List, Tuple, Optional
 from .construction_common import (
-    LensEvent, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits
+    LensEvent, RouteDecision, build_lens_event, contains_any, has_unit_signal, has_number, make_entity, dedupe_entities, list_hits, has_construction_context
 )
 
 HAZARDS = [
@@ -29,6 +30,37 @@ CONSTRUCTION_SYSTEMS = [
     "drainage", "plumbing", "electrical", "mechanical", "structural system", "building envelope"
 ]
 
+NEGATION_TOKENS = ("not", "never", "no", "without", "failed to", "no longer")
+NEGATION_PATTERNS = tuple(
+    re.compile(rf"\b{re.escape(token)}\b") if " " not in token else re.compile(re.escape(token))
+    for token in NEGATION_TOKENS
+)
+
+
+def route_climate_sentence(sentence: str) -> RouteDecision:
+    """Registered router callback used by DEFAULT_CONSTRUCTION_LENS_ROUTERS.
+
+    Return RouteDecision("keep", reason) for a climate signal in construction
+    context or RouteDecision("skip", reason) for sentences that should be
+    ignored by _detect_multi_lens_internal.
+    """
+    s_l = sentence.lower()
+    if has_construction_context(s_l) and (list_hits(s_l, HAZARDS) or list_hits(s_l, RESILIENCE_TERMS)):
+        return RouteDecision("keep", "climate signal in construction context")
+    return RouteDecision("skip", "no climate signal in construction context")
+
+
+def _has_non_negated_signal(text_lower: str, phrases: list[str]) -> bool:
+    lookback_length = 10
+    for phrase in phrases:
+        for match in re.finditer(re.escape(phrase), text_lower):
+            prefix_tokens = re.findall(r"\b\w+\b", text_lower[: match.start()])
+            window = " ".join(prefix_tokens[-lookback_length:])
+            if any(pattern.search(window) for pattern in NEGATION_PATTERNS):
+                continue
+            return True
+    return False
+
 def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional[LensEvent], List[dict]]:
     """Detect climate-resilience lens events in construction sentences.
 
@@ -53,9 +85,13 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
     entities: List[dict] = []
 
     # Use word-boundary matching for hazards and resilience terms
+    construction_context = has_construction_context(s_l)
     haz = list_hits(s_l, HAZARDS)
     resil = list_hits(s_l, RESILIENCE_TERMS)
 
+    # Climate lens requires construction context first, then hazard/resilience terms.
+    if not construction_context:
+        return None, []
     if not haz and not resil:
         return None, []
 
@@ -66,8 +102,8 @@ def detect(sentence: str, source_type: str = "research_paper") -> Tuple[Optional
         entities.append(make_entity("resilience_term", r, "concept", "context"))
 
     # Classify outcome from hazard and valence signals.
-    has_negative = contains_any(s_l, ["increased risk", "risk increased", "worsened", "exacerbated", "higher vulnerability"])
-    has_positive = contains_any(s_l, ["reduced", "mitigated", "improved", "enhanced"])
+    has_negative = _has_non_negated_signal(s_l, ["increased risk", "risk increased", "worsened", "exacerbated", "higher vulnerability"])
+    has_positive = _has_non_negated_signal(s_l, ["reduced", "mitigated", "improved", "enhanced"])
 
     outcome = "neutral"
     if has_negative and has_positive:

@@ -1,8 +1,9 @@
 import json
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
+
+from utils.entities import normalize_name
 
 # ----------------------------
 # Seed loading
@@ -12,7 +13,15 @@ def load_text_seed_file(path: Path) -> list:
     """
     Loads a text file and returns a list of non-empty, stripped lines.
     """
-    return [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    values = []
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        hash_index = raw_line.find("#")
+        if hash_index != -1 and (hash_index == 0 or raw_line[hash_index - 1].isspace()):
+            raw_line = raw_line[:hash_index]
+        value = raw_line.strip()
+        if value:
+            values.append(value)
+    return values
 
 def load_seed_file(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -56,13 +65,6 @@ def load_seeds(seeds_dir: str = "seeds") -> Dict[str, dict]:
 
     return d
 
-# ----------------------------
-# Helpers
-# ----------------------------
-
-def norm(text: str) -> str:
-    return re.sub(r"\s+", " ", text.strip()).lower()
-
 def contains_any(hay: str, needles: List[str]) -> bool:
     h = hay.lower()
     return any(n.lower() in h for n in needles)
@@ -86,7 +88,7 @@ def extract_entities(text: str, seeds: Dict[str, dict]) -> List[Entity]:
     if not text:
         return []
 
-    t = norm(text)
+    t = normalize_name(text, preserve_spaces=True)
     out: List[Entity] = []
 
     # Access json_seeds namespace (or support legacy flat structure)
@@ -142,7 +144,7 @@ def score_event_confidence(entities: List[Entity], text: str, seeds: Dict[str, d
     if not text:
         return ("low", 0.0)
 
-    t = norm(text)
+    t = normalize_name(text, preserve_spaces=True)
 
     # Base score from entity presence
     score = 0.0

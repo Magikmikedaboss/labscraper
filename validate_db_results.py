@@ -6,6 +6,8 @@ Quick validation script for database results
 import sqlite3
 from pathlib import Path
 
+from utils.db_utils import connect_with_foreign_keys
+
 def validate_db_results(db_path):
     """Validate database results for construction science domain"""
     if not Path(db_path).exists():
@@ -15,7 +17,7 @@ def validate_db_results(db_path):
     print(f'🏗️  VALIDATING DATABASE RESULTS: {db_path}')
     print('=' * 50)
     
-    with sqlite3.connect(db_path) as con:
+    with connect_with_foreign_keys(db_path) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
         

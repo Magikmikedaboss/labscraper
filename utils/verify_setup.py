@@ -6,17 +6,20 @@ Run this after installation to ensure everything works.
 import sys
 from pathlib import Path
 
+from utils.db_utils import connect_with_foreign_keys
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def check_python_version():
-    """Check if Python version is 3.8+"""
+    """Check if Python version is 3.11+"""
     print("Checking Python version...")
     version = sys.version_info
-    if (version.major, version.minor) >= (3, 8):
+    # Python 3.11+ is required because the codebase uses modern typing syntax such as `str | None`.
+    if (version.major, version.minor) >= (3, 11):
         print(f"  Python {version.major}.{version.minor}.{version.micro} (OK)")
         return True
     else:
-        print(f"  Python {version.major}.{version.minor}.{version.micro} (Need 3.8+)")
+        print(f"  Python {version.major}.{version.minor}.{version.micro} (Need 3.11+)")
         return False
 
 def check_dependencies():
@@ -49,10 +52,10 @@ def check_files():
     print("\nChecking required files...")
     required_files = {
         PROJECT_ROOT / 'schema.sql': 'Database schema',
-        PROJECT_ROOT / 'init_db.py': 'Database initialization',
+        PROJECT_ROOT / 'utils/init_db.py': 'Database initialization',
         PROJECT_ROOT / 'utils/scrape_pdfs_phase1.py': 'Main scraper',
         PROJECT_ROOT / 'utils/export_csv.py': 'CSV export tool',
-        PROJECT_ROOT / 'README.md': 'Documentation',
+        PROJECT_ROOT / 'docs/README.md': 'Documentation',
         PROJECT_ROOT / 'requirements.txt': 'Dependencies list',
     }
     all_ok = True
@@ -97,7 +100,7 @@ def check_database():
     
     # Check for domain-specific databases first, then fall back to general
     db_paths = [
-        Path('db') / 'runs.sqlite',                                      # Canonical database
+        PROJECT_ROOT / 'db' / 'runs.sqlite',                             # Canonical database
     ]
     
     db_path = None
@@ -110,7 +113,7 @@ def check_database():
         print("  No database found. Expected one of:")
         for path in db_paths:
             print(f"    - {path}")
-        print("  Run: python init_db.py or python -m init_db")
+        print("  Run: python utils/init_db.py db/runs.sqlite --force")
         return True
     
     print(f"  Found database: {db_path.name}")
@@ -118,8 +121,7 @@ def check_database():
     try:
         if db_path.suffix == '.sqlite':
             # SQLite database
-            import sqlite3
-            with sqlite3.connect(db_path) as con:
+            with connect_with_foreign_keys(db_path) as con:
                 # Check if tables exist
                 tables = con.execute(
                     "SELECT name FROM sqlite_master WHERE type='table'"
@@ -133,7 +135,7 @@ def check_database():
                 missing = [t for t in expected_tables if t not in table_names]
                 if missing:
                     print(f"  Database exists but missing tables: {', '.join(missing)}")
-                    print("     Run: python init_db.py or python -m init_db")
+                    print("     Run: python utils/init_db.py db/runs.sqlite --force")
                     return False
                 
                 # Check record counts
