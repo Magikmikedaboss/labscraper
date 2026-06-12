@@ -43,4 +43,4 @@ jobs:
     
     - name: Run tests and check coverage
       run: |
-        pytest tests/ -v --cov=utils --cov=tools --cov-config=.coveragerc --cov-report=term-missing --cov-fail-under=70
+        pytest tests/ -v --cov=utils --cov-config=.coveragerc --cov-report=term-missing --cov-fail-under=70

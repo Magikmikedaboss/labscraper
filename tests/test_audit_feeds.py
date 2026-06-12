@@ -79,12 +79,6 @@ def test_summarize_rss_feed_surfaces_promotion_fields(monkeypatch):
     monkeypatch.setattr(audit_feeds, "get_pdf_links_from_entry", lambda entry, source_domain="": ["https://example.com/paper-1.pdf"])
     monkeypatch.setattr(audit_feeds, "download_pdf", lambda *args, **kwargs: object())
     monkeypatch.setattr(audit_feeds, "is_valid_pdf", lambda *args, **kwargs: True)
-    monkeypatch.setattr(audit_feeds, "_score_construction_review_lenses", lambda *args, **kwargs: {"building_physics": 12})
-    monkeypatch.setattr(
-        audit_feeds,
-        "_promotion_decision_from_lens_counts",
-        lambda lens_counts: (True, "building_physics hits=12 >= 3"),
-    )
     monkeypatch.setattr(
         audit_feeds,
         "scan_pdf",
@@ -92,6 +86,9 @@ def test_summarize_rss_feed_surfaces_promotion_fields(monkeypatch):
             keep_skip_review="review",
             triage_decision="review",
             detected_domain="construction_science",
+            lens_promoted=True,
+            promotion_reason="building_physics hits=12 >= 3",
+            final_decision="keep",
         ),
     )
 

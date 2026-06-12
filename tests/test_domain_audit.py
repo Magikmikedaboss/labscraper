@@ -47,6 +47,7 @@ def test_audit_domains_reports_current_domain_and_lens_layout():
         "failure",
         "insurance_risk",
         "materials",
+        "methods_tooling",
     }
     assert construction.preferred_types_not_allowed == []
     assert construction.biomedical_leakage == []
